@@ -1,6 +1,6 @@
 ## Resubmission
 
-* Fixed error in test.
+* Fixed error in test under win-builder.
 * Fixed error with apparently broken URL.
 
 ## Test environments

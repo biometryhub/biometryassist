@@ -103,5 +103,5 @@ pred.out}
 
 }
 \references{
-Jørgensen, E. & Pedersen, A. R. How to Obtain Those Nasty Standard Errors From Transformed Data - and Why They Should Not Be Used. \url{http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.47.9023}
+Jørgensen, E. & Pedersen, A. R. How to Obtain Those Nasty Standard Errors From Transformed Data - and Why They Should Not Be Used. \url{https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.47.9023&rep=rep1&type=pdf}
 }
