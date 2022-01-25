@@ -1,3 +1,8 @@
+## Resubmission
+
+* Fixed error in test.
+* Fixed error with apparently broken URL.
+
 ## Test environments
 * Local Windows 10 install, R 4.1.2
 * Ubuntu 20.04 (on Virtual Box), R 4.1.2

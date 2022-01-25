@@ -29,7 +29,7 @@
 #'
 #' @return A list containing a data frame with predicted means, standard errors, confidence interval upper and lower bounds, and significant group allocations (named `predicted_values`), as well as a plot visually displaying the predicted values (named `predicted_plot`). If some of the predicted values are aliased, a warning is printed, and the aliased treatment levels are returned in the output (named `aliased`).
 #'
-#' @references Jørgensen, E. & Pedersen, A. R. How to Obtain Those Nasty Standard Errors From Transformed Data - and Why They Should Not Be Used. [http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.47.9023](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.47.9023)
+#' @references Jørgensen, E. & Pedersen, A. R. How to Obtain Those Nasty Standard Errors From Transformed Data - and Why They Should Not Be Used. [https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.47.9023&rep=rep1&type=pdf](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.47.9023&rep=rep1&type=pdf)
 #'
 #' @examples
 #' # Fit aov model
