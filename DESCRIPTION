@@ -1,0 +1,64 @@
+Type: Package
+Package: biometryassist
+Title: Functions to Assist Design and Analysis of Agronomic Experiments
+Version: 1.0.0
+Date: 2021-10-20
+Authors@R: 
+    c(person(given = "Sharon",
+             family = "Nielsen",
+             role = "aut",
+             email = "biometrytraining@adelaide.edu.au"),
+      person(given = "Sam",
+             family = "Rogers",
+             role = c("aut", "cre"),
+             email = "biometrytraining@adelaide.edu.au"),
+      person(given = "Annie",
+             family = "Conway",
+             role = "aut",
+             email = "biometrytraining@adelaide.edu.au"),
+      person(given = "University of Adelaide",
+             role = c("cph", "fnd"),
+             comment = "https://adelaide.edu.au/"),
+      person(given = "Grains Research and Development Corporation",
+             role = c("cph", "fnd"),
+             comment = "https://grdc.com.au/"))
+Description: Provides functions to aid in the design and analysis of
+    agronomic and agricultural experiments through easy access to
+    documentation and helper functions, especially for users who are
+    learning these concepts.
+License: MIT + file LICENSE
+URL: https://biometryhub.github.io/biometryassist/
+BugReports: https://github.com/biometryhub/biometryassist/issues
+Depends: 
+    R (>= 3.6.0)
+Imports: 
+    akima,
+    agricolae,
+    cowplot,
+    curl,
+    ellipsis,
+    farver,
+    ggplot2,
+    lattice,
+    multcompView,
+    predictmeans,
+    rlang,
+    scales, 
+    stringi,
+    withr
+Suggests: 
+    covr,
+    crayon,
+    mockery,
+    testthat,
+    vdiffr
+Enhances: 
+    asreml,
+    lme4,
+    nlme,
+    sommer
+Config/testthat/edition: 3
+Config/testthat/parallel: true
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.2

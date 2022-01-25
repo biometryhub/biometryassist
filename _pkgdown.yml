@@ -1,0 +1,27 @@
+url: https://biometryhub.github.io/biometryassist/
+
+destination: docs
+
+template:
+  bootstrap: 5
+  params:
+    ganalytics: G-3DTR7EJN4Q
+
+reference:
+- title: Design
+  desc: Functions to help with the design of experiments
+- contents:
+  - starts_with("des")
+- title: Analysis
+  desc: Functions to help with the analysis of experiments
+- contents:
+  - resplot
+  - multiple_comparisons
+  - variogram
+  - logl_test
+- title: Utilities
+  desc: Other helper functions
+- contents:
+  - autoplot
+  - print.mct
+  - ends_with("asreml")
