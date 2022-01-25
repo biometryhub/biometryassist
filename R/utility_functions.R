@@ -23,7 +23,7 @@ quiet <- function(x) {
 # this function is executed once the package is loaded
 ######################################################
 
-#' @importFrom utils available.packages
+#' @importFrom utils available.packages packageVersion
 #' @importFrom rlang is_interactive is_installed
 .onAttach <- function(library, pkg)
 {
@@ -40,7 +40,7 @@ quiet <- function(x) {
   # print(.btenv)
 
   # current_version <- "0.9.1"
-  installed_version <- packageVersion('biometryassist')
+  installed_version <- utils::packageVersion('biometryassist')
 
   if(rlang::is_interactive()) {# && Sys.time() > (last_load + 1)) {
     output <- paste("    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
