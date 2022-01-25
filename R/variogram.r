@@ -126,7 +126,7 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
 #'
 #' @param model.obj An asreml model
 #'
-#' @return A data frame with the variogram for a model. The data frame contains the spatial coordinaties (typically row and column), the $gamma$ for that position and the number of points with the separation.
+#' @return A data frame with the variogram for a model. The data frame contains the spatial coordinates (typically row and column), the $gamma$ for that position and the number of points with the separation.
 #' @keywords internal
 #'
 #'

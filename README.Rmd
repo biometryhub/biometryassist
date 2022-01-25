@@ -56,7 +56,7 @@ Load the package and start using it with:
 library(biometryassist)
 ```
 
-If you find this pacakge useful, please cite it! Type `citation("biometryassist")` on the R console to find out how.
+If you find this package useful, please cite it! Type `citation("biometryassist")` on the R console to find out how.
 
 ## Troubleshooting Installation
 
@@ -77,5 +77,5 @@ If you find this pacakge useful, please cite it! Type `citation("biometryassist"
 2: In untar2(tarfile, files, list, exdir) :<br>
   skipping pax global extended headers</span>
 
-- If you receive an error that the package could not install because `rlang` or another package could not be upgraded, the easiest way to deal with this is to uninstall the package(s) that could not be updated (`remove.packages("rlang")`). Then reinstall with `install.packages("rlang")` and then try installing `biometryassist` again.
+- If you receive an error that the package could not install because `rlang` or another package could not be upgraded, the easiest way to deal with this is to uninstall the package(s) that could not be updated (`remove.packages("rlang")`). Then re-install with `install.packages("rlang")` and then try installing `biometryassist` again.
 
