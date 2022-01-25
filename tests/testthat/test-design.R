@@ -447,7 +447,7 @@ test_that("factorial designs produce warnings when incorrect number of treatment
 
 test_that("passing unknown arguments to ggsave causes an error", {
     expect_error(design(type = "crd", treatments = c(1, 5, 10, 20),
-                        reps = 5, nrows = 4, ncols = 5, seed = 42, Width = 6), NULL)
+                        reps = 5, nrows = 4, ncols = 5, seed = 42, Width = 6, quiet = TRUE), NULL)
 })
 
 test_that("Area and treatment size mismatches produce warnings", {
