@@ -7,3 +7,5 @@ rhub::check(platform = "macos-highsierra-release-cran")
 rhub::check(platform = "ubuntu-gcc-release")
 
 rhub::check_for_cran()
+devtools::check_win_release()
+devtools::check_win_devel()
