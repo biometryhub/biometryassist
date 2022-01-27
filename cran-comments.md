@@ -1,3 +1,7 @@
+## Resubmission 2
+
+* Removed dependency on akima
+
 ## Resubmission
 
 * Fixed error in test under win-builder.

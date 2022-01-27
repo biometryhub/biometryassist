@@ -32,13 +32,13 @@ BugReports: https://github.com/biometryhub/biometryassist/issues
 Depends: 
     R (>= 3.6.0)
 Imports: 
-    akima,
     agricolae,
     cowplot,
     curl,
     ellipsis,
     farver,
     ggplot2,
+    interp,
     lattice,
     multcompView,
     predictmeans,
