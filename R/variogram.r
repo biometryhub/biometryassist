@@ -42,7 +42,7 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
     xnam <- names(aa)[2]
     ynam <- names(aa)[1]
     fld <- interp::interp(y = aa[,1], x = aa[,2], z = aa$gamma)
-    gdat2 <- cbind(expand.grid(x = fld$x, y = fld$y), z = as.vector(fld$z))
+    gdat <- cbind(expand.grid(x = fld$x, y = fld$y), z = as.vector(fld$z))
 
     a <- ggplot2::ggplot(gdat, ggplot2::aes(x = y, y = x, z = z, fill = z)) +
         ggplot2::geom_tile(alpha = 0.6) +
