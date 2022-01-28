@@ -4,7 +4,7 @@
       biometryassist:::.onAttach(pkg = "biometryassist")
     Message <packageStartupMessage>
           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-          |  biometryassist version 1.0.0                                     |
+          |  biometryassist version 1.0.1                                     |
           |  Authors: Sharon Nielsen, Sam Rogers, Annie Conway                |
           |  Developed at the University of Adelaide with funding provided    |
           |  by the Australian Grains Research and Development Corporation.   |
@@ -24,7 +24,7 @@
       biometryassist:::.onAttach(pkg = "biometryassist")
     Message <packageStartupMessage>
           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-          |  biometryassist version 1.0.0                                     |
+          |  biometryassist version 1.0.1                                     |
           |  Authors: Sharon Nielsen, Sam Rogers, Annie Conway                |
           |  Developed at the University of Adelaide with funding provided    |
           |  by the Australian Grains Research and Development Corporation.   |
