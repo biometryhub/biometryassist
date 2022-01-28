@@ -28,7 +28,7 @@
 
 \item{label_height}{Height of the text labels above the upper error bar on the plot. Default is 0.1 (10\%) of the difference between upper and lower error bars above the top error bar.}
 
-\item{...}{Other arguments to be passed through.}
+\item{...}{Arguments passed to methods.}
 
 \item{margin}{Logical (default \code{FALSE}). A value of \code{FALSE} will expand the plot to the edges of the plotting area i.e. remove white space between plot and axes.}
 

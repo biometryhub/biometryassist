@@ -9,7 +9,7 @@
 \arguments{
 \item{x}{An mct object to print to the console.}
 
-\item{...}{Other arguments to be passed through.}
+\item{...}{Arguments passed to methods.}
 }
 \value{
 The original object invisibly.

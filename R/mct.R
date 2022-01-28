@@ -407,7 +407,7 @@ multiple_comparisons <- function(model.obj,
 #' Print method for multiple_comparisons
 #'
 #' @param x An mct object to print to the console.
-#' @param ... Other arguments to be passed through.
+#' @inheritParams rlang::args_dots_used
 #'
 #' @return The original object invisibly.
 #' @seealso [multiple_comparisons()]
