@@ -1,3 +1,7 @@
+## Resubmission 3
+
+* Removed example in internal function `vario_df()`
+
 ## Resubmission 2
 
 * Removed dependency on akima

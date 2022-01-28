@@ -3,9 +3,6 @@
 #' Produces variogram plots for checking spatial trends.
 #'
 #' @param model.obj An `asreml` model object.
-#' @param row A row variable.
-#' @param column A column variable.
-#' @param horizontal Logical (default `TRUE`). The direction the plots are arranged. The default `TRUE` places the plots above and below, while `FALSE` will place them side by side.
 #' @param palette A string specifying the colour scheme to use for plotting. The default value (`"default"`) is equivalent to `"rainbow"`. Colour blind friendly palettes can also be provided via options `"colour blind"` (or `"color blind"`, both equivalent to `"viridis"`), `"magma"`, `"inferno"`, `"plasma"` or `"cividis"`. The `"Spectral"` palette from [scales::brewer_pal()] is also possible.
 #'
 #' @return A ggplot2 object.
@@ -32,7 +29,7 @@
 #' }
 #' @export
 
-variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palette = "default") {
+variogram <- function(model.obj, palette = "default") {
 
     if(!(inherits(model.obj, "asreml"))) {
         stop("model.obj must be an asreml model object")
@@ -128,21 +125,7 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
 #'
 #' @return A data frame with the variogram for a model. The data frame contains the spatial coordinates (typically row and column), the $gamma$ for that position and the number of points with the separation.
 #' @keywords internal
-#'
-#'
-#' @examples
-#' \dontrun{
-#' library(asreml)
-#' oats <- asreml::oats
-#' oats <- oats[order(oats$Row, oats$Column),]
-#' model.asr <- asreml(yield ~ Nitrogen + Variety + Nitrogen:Variety,
-#'                     random = ~ Blocks + Blocks:Wplots,
-#'                     residual = ~ ar1(Row):ar1(Column),
-#'                     data = oats)
-#' vario_df(model.asr)
-#' }
-#'
-vario_df <- function(model.obj, Row, Col) {
+vario_df <- function(model.obj) {
     # The 'z' value for the variogram is the residuals
     # Need to be able to pull out the x/y from the model object
 
