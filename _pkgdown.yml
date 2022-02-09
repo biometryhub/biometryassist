@@ -5,7 +5,7 @@ destination: docs
 template:
   bootstrap: 5
   params:
-    ganalytics: G-3DTR7EJN4Q
+    ganalytics: G-971LPN0BS4
 
 reference:
 - title: Design
