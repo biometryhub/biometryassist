@@ -1,6 +1,6 @@
 #' Residual plots of linear models.
 #'
-#' Produces plots of residuals for assumption checking of linear (mixed) model.
+#' Produces plots of residuals for assumption checking of linear (mixed) models.
 #'
 #' @param model.obj An `aov`, `lm`, `lme` ([nlme::lme()]), `lmerMod` ([lme4::lmer()]), `asreml` or `mmer` (sommer) model object.
 #' @param shapiro (Logical) Display the Shapiro-Wilks test of normality on the plot?
@@ -15,8 +15,6 @@
 #' @importFrom ggplot2 ggplot geom_histogram aes theme_bw stat_qq labs geom_qq_line geom_point
 #' @importFrom stats fitted qnorm quantile residuals sd shapiro.test
 #' @importFrom cowplot plot_grid add_sub
-#'
-#' @aliases resplt
 #'
 #' @examples
 #' dat.aov <- aov(Petal.Length ~ Petal.Width, data = iris)
@@ -119,6 +117,7 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
         return(output[[1]])
     }
 }
+
 
 #' @rdname biometryassist-deprecated
 #' @section `resplt`:

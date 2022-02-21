@@ -9,11 +9,9 @@ test_that("Residual plots work for aov", {
 test_that("resplt is deprecated and produces a warning", {
     dat.aov <- aov(Petal.Length ~ Petal.Width, data = iris)
 
-    expect_warning(resplt(dat.aov), "Warning message:
-    'resplt' is deprecated.
-Use 'resplot' instead.")
+    expect_warning(p1 <- resplt(dat.aov), "'resplt' is deprecated")
     vdiffr::expect_doppelganger(title = "Resplot for aov", p1)
-}
+})
 
 test_that("resplot produces an error for invalid data types work for aov", {
     expect_error(resplot(1:10), "model.obj must be an aov, lm, lmerMod, lmerModLmerTest, asreml or mmer object")

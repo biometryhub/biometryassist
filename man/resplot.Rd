@@ -2,7 +2,6 @@
 % Please edit documentation in R/resplot.R
 \name{resplot}
 \alias{resplot}
-\alias{resplt}
 \title{Residual plots of linear models.}
 \usage{
 resplot(
@@ -34,7 +33,7 @@ resplot(
 A list containing ggplot2 objects which are diagnostic plots.
 }
 \description{
-Produces plots of residuals for assumption checking of linear (mixed) model.
+Produces plots of residuals for assumption checking of linear (mixed) models.
 }
 \examples{
 dat.aov <- aov(Petal.Length ~ Petal.Width, data = iris)
