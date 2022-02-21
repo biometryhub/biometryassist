@@ -52,13 +52,13 @@ satab <- function(design.obj) {
     trt <- names(design.obj)[3:length(names(design.obj))]
     totdf <- nrow(design.obj) - 1
     trtdf <- c()
-    for (i in 1:length(trt)) {
+    for (i in seq_along(trt)) {
       dd <- length(unique(design.obj[[trt[i]]])) - 1
       trtdf <- c(trtdf, dd)
     }
     trtABdf <- trtdf[1] * trtdf[2]
     errdf <- totdf - sum(trtdf) - trtABdf
-    for (i in 1:length(trt)) {
+    for (i in seq_along(trt)) {
       output <- c(output, paste0(format(trt[i], width = 40), trtdf[i], "\n"))
     }
     output <- c(output, paste0(format(paste0(names(design.obj)[3:length(names(design.obj))], collapse = ":"), width = 40), trtABdf, "\n"))
@@ -72,7 +72,7 @@ satab <- function(design.obj) {
     trt <- names(design.obj)[3:length(names(design.obj))]
     totdf <- nrow(design.obj) - 1
     trtdf <- c()
-    for (i in 1:length(trt)) {
+    for (i in seq_along(trt)) {
       dd <- length(unique(design.obj[[trt[i]]])) - 1
       trtdf <- c(trtdf, dd)
     }
@@ -81,7 +81,7 @@ satab <- function(design.obj) {
     output <- c(output, paste0(format("Block stratum", width = 40), blkdf, "\n"))
     output <- c(output, paste0("---------------------------------------------\n"))
     errdf <- totdf - sum(trtdf) - trtABdf - blkdf
-    for (i in 1:length(trt)) {
+    for (i in seq_along(trt)) {
       output <- c(output, paste0(format(trt[i], width = 40), trtdf[i], "\n"))
     }
     output <- c(output, paste0(format(paste0(names(design.obj)[3:length(names(design.obj))], collapse = ":"), width = 40), trtABdf, "\n"))

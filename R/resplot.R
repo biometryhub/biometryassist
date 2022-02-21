@@ -21,7 +21,7 @@
 #' @examples
 #' dat.aov <- aov(Petal.Length ~ Petal.Width, data = iris)
 #' resplot(dat.aov)
-#' resplt(dat.aov, call = TRUE)
+#' resplot(dat.aov, call = TRUE)
 #' @export
 
 resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, axes.size = 10, call.size = 9, mod.obj){

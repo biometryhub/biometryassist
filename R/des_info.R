@@ -543,7 +543,7 @@ des_info <- function(design.obj,
     class(des) <- c("design", class(des))
 
     if(plot) {
-        info$plot.des = autoplot(des, rotation = rotation, size = size, margin = margin)
+        info$plot.des <- autoplot(des, rotation = rotation, size = size, margin = margin)
     }
     info$satab <- satab(design.obj)
 

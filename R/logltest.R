@@ -105,7 +105,7 @@ logl_test <- function(model.obj, rand.terms = NULL, resid.terms = NULL, decimals
 
         # Fitting the models
 
-        for (i in 1:length(tt)) {
+        for (i in seq_along(tt)) {
             if (grepl("ar", tt[i])) {
                 tt.new <- paste("id", substring(tt[i], 4), sep = "")
                 old.resid <- substring(toString(model.obj$formulae$residual), 4)
