@@ -1,3 +1,10 @@
+# biometryassist 1.0.1
+
+## Minor changes
+
+- `resplt()` has been deprecated and will be removed in a future version (#20).
+
+
 # biometryassist 1.0.0
 
 ## Minor changes
