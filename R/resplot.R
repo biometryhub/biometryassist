@@ -120,6 +120,13 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
     }
 }
 
-#' @rdname resplot
+#' @rdname biometryassist-deprecated
+#' @section `resplt`:
+#' @return A list containing ggplot2 objects which are diagnostic plots.
+#' For `resplt`, use [resplot()].
+#'
 #' @export
-resplt <- resplot
+resplt <- function(...) {
+    .Deprecated("resplot")
+    resplot(...)
+}

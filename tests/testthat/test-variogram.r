@@ -9,7 +9,9 @@ test_that("vario_df produces a dataframe", {
 })
 
 test_that("variogram produces a plot", {
-    v1 <- variogram(model.asr)
+    expect_warning(
+        v1 <- variogram(model.asr),
+                   "Removed 81 rows containing non-finite values \\(stat_contour\\)")
     expect_type(v1, "list")
     expect_s3_class(v1, "ggplot")
     skip_on_os(c("windows", "mac"))

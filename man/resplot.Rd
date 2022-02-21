@@ -14,16 +14,6 @@ resplot(
   call.size = 9,
   mod.obj
 )
-
-resplt(
-  model.obj,
-  shapiro = TRUE,
-  call = FALSE,
-  label.size = 10,
-  axes.size = 10,
-  call.size = 9,
-  mod.obj
-)
 }
 \arguments{
 \item{model.obj}{An \code{aov}, \code{lm}, \code{lme} (\code{\link[nlme:lme]{nlme::lme()}}), \code{lmerMod} (\code{\link[lme4:lmer]{lme4::lmer()}}), \code{asreml} or \code{mmer} (sommer) model object.}
@@ -49,5 +39,5 @@ Produces plots of residuals for assumption checking of linear (mixed) model.
 \examples{
 dat.aov <- aov(Petal.Length ~ Petal.Width, data = iris)
 resplot(dat.aov)
-resplt(dat.aov, call = TRUE)
+resplot(dat.aov, call = TRUE)
 }
