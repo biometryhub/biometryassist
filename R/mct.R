@@ -10,18 +10,18 @@
 #' @param trans Transformation that was applied to the response variable. One of `log`, `sqrt`, `logit` or `inverse`. Default is `NA`.
 #' @param offset Numeric offset applied to response variable prior to transformation. Default is `NA`. Use 0 if no offset was applied to the transformed data. See Details for more information.
 #' @param decimals Controls rounding of decimal places in output. Default is 2 decimal places.
-#' @param order Order of the letters in the groups output. Options are `'default'`, `'ascending'` or `'descending'`. Alternative options that are accepted are `increasing` and `decreasing`. Partial matching of text is performed, allowing entry of `'desc'` for example.
+#' @param decreasing Logical (default `FALSE`). Order of the output sorted by the predicted value. If `TRUE`, largest will be first, through to smallest last.
 #' @param plot Automatically produce a plot of the output of the multiple comparison test? Default is `FALSE`. This is maintained for backwards compatibility, but the preferred method now is to use `autoplot(<multiple_comparisons output>)`. See [biometryassist::autoplot.mct()] for more details.
 #' @param label_height Height of the text labels above the upper error bar on the plot. Default is 0.1 (10%) of the difference between upper and lower error bars above the top error bar.
 #' @param rotation Rotate the text output as Treatments within the plot. Allows for easier reading of long treatment labels. Number between 0 and 360 (inclusive) - default 0
 #' @param save Logical (default `FALSE`). Save the predicted values to a csv file?
 #' @param savename A file name for the predicted values to be saved to. Default is `predicted_values`.
+#' @param order Deprecated. Use `decreasing` instead.
 #' @param pred Deprecated. Use `classify` instead.
 #'
 #' @importFrom multcompView multcompLetters
 #' @importFrom predictmeans predictmeans
 #' @importFrom stats predict qtukey qt
-#' @importFrom stringi stri_order
 #' @importFrom utils packageVersion
 #' @importFrom ggplot2 ggplot aes_ aes geom_errorbar geom_text geom_point theme_bw labs theme element_text facet_wrap
 #'
@@ -66,7 +66,7 @@
 #'
 #' #Determine ranking and groups according to Tukey's Test
 #' pred.out <- multiple_comparisons(model.obj = model.asr, pred.obj = pred.asr,
-#'                     classify = "Nitrogen", order = "descending", decimals = 5)
+#'                     classify = "Nitrogen", decreasing = TRUE, decimals = 5)
 #'
 #' pred.out}
 #'
@@ -80,21 +80,26 @@ multiple_comparisons <- function(model.obj,
                     trans = NA,
                     offset = NA,
                     decimals = 2,
-                    order = "default",
+                    decreasing = FALSE,
                     plot = FALSE,
                     label_height = 0.1,
                     rotation = 0,
                     save = FALSE,
                     savename = "predicted_values",
+                    order,
                     pred) {
 
     if(!missing(pred)) {
-        warning("Argument pred has been deprecated and will be removed in a future version. Please use classify instead.")
+        warning("Argument `pred` has been deprecated and will be removed in a future version. Please use `classify` instead.")
         classify <- pred
     }
 
+    if(!missing(order)) {
+        warning("Argument `order` has been deprecated and will be removed in a future version. Please use `decreasing` instead.")
+    }
+
     if(sig > 0.5)  {
-        warning("Significance level given by sig is high. Perhaps you meant ", 1-sig, "?", call. = FALSE)
+        warning("Significance level given by `sig` is high. Perhaps you meant ", 1-sig, "?", call. = FALSE)
     }
 
     if(inherits(model.obj, "asreml")){
@@ -156,6 +161,9 @@ multiple_comparisons <- function(model.obj,
     }
 
     else if (inherits(model.obj, c("aov", "lm", "lmerMod", "lmerModLmerTest"))) {
+        # if(any(sapply(2:ncol(model.obj$model), function(i) is.factor(model.obj$model[i])))) {
+        #
+        # }
         pred.out <- suppressWarnings(predictmeans::predictmeans(model.obj, classify, mplot = FALSE, ndecimal = decimals))
 
         pred.out$mean_table <- pred.out$mean_table[,!grepl("95", names(pred.out$mean_table))]
@@ -215,27 +223,27 @@ multiple_comparisons <- function(model.obj,
 
     # Check ordering of output
     # Refactor with switch cases?
-    ordering <- grep(order, c('ascending', 'descending', 'increasing', 'decreasing', 'default'), value = TRUE)
+    # ordering <- grep(order, c('ascending', 'descending', 'increasing', 'decreasing', 'default'), value = TRUE)
 
-    if(length(ordering) == 0) {
-        # No match found, error
-        stop("order must be one of 'ascending', 'increasing', 'descending', 'decreasing' or 'default'")
-    }
-    else if(ordering == "ascending" | ordering == "increasing") {
+    # if(length(ordering) == 0) {
+    #     # No match found, error
+    #     stop("order must be one of 'ascending', 'increasing', 'descending', 'decreasing' or 'default'")
+    # }
+    # else if(ordering == "ascending" | ordering == "increasing") {
         # Set ordering to FALSE to set decreasing = FALSE in order function
-        ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp, reversed = TRUE)
-        ordering <- TRUE
-    }
+        ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp, reversed = !decreasing)
+        # ordering <- TRUE
+    # }
 
-    else if(ordering == "descending" | ordering == "decreasing") {
-        # Set ordering to TRUE to set decreasing = TRUE in order function
-        ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp, reversed = FALSE)
-        ordering <- FALSE
-    }
+    # else if(ordering == "descending" | ordering == "decreasing") {
+    #     # Set ordering to TRUE to set decreasing = TRUE in order function
+    #     ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp, reversed = FALSE)
+    #     ordering <- FALSE
+    # }
 
-    else if(ordering == "default") {
-        ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp)
-    }
+    # else if(ordering == "default") {
+    #     ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp)
+    # }
 
     rr <- data.frame(groups = ll$Letters)
     rr$Names <- row.names(rr)
@@ -335,16 +343,16 @@ multiple_comparisons <- function(model.obj,
     }
 
     # Change the order of letters and factors if ordering == default
-    if(ordering == "default") {
-        # Change to a factor for use in ordering if needed
-        pp.tab <- pp.tab[stringi::stri_order(pp.tab$Names),]
-        pp.tab$groups <- factor(pp.tab$groups)
-        levs <- unique(pp.tab$groups)
-        levels(pp.tab$groups) <- sort(levs)[order(levs)]
-    }
-    else {
-        pp.tab <- pp.tab[order(pp.tab$predicted.value, decreasing = !ordering),]
-    }
+    # if(ordering == "default") {
+    #     # Change to a factor for use in ordering if needed
+    #     pp.tab <- pp.tab[stringi::stri_order(pp.tab$Names),]
+    #     pp.tab$groups <- factor(pp.tab$groups)
+    #     levs <- unique(pp.tab$groups)
+    #     levels(pp.tab$groups) <- sort(levs)[order(levs)]
+    # }
+    # else {
+        pp.tab <- pp.tab[base::order(pp.tab$predicted.value, decreasing = decreasing),]
+    # }
 
     pp.tab$Names <- NULL
 

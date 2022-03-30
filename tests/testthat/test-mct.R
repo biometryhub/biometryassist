@@ -57,12 +57,12 @@ test_that("transformations are handled", {
     expect_equal(output.sqrt$predicted.value, c(0.49, 1.15, 1.42))
     expect_equal(output.sqrt2$predicted.value, c(0.49, 1.15, 1.42))
     expect_equal(output.sqrt3$predicted.value, c(0.49, 1.15, 1.42))
-    expect_equal(output.logit$predicted.value, c(-3.07, -4.87, -5.30))
-    expect_equal(output.logit2$predicted.value, c(-3.07, -4.87, -5.30))
-    expect_equal(output.logit3$predicted.value, c(-3.07, -4.87, -5.30))
-    expect_equal(output.inverse$predicted.value, c(4.79, 0.77, 0.50))
-    expect_equal(output.inverse2$predicted.value, c(4.79, 0.77, 0.50))
-    expect_equal(output.inverse3$predicted.value, c(4.79, 0.77, 0.50))
+    expect_equal(output.logit$predicted.value, c(-5.30, -4.87, -3.07))
+    expect_equal(output.logit2$predicted.value, c(-5.30, -4.87, -3.07))
+    expect_equal(output.logit3$predicted.value, c(-5.30, -4.87, -3.07))
+    expect_equal(output.inverse$predicted.value, c(0.50, 0.77, 4.79))
+    expect_equal(output.inverse2$predicted.value, c(0.50, 0.77, 4.79))
+    expect_equal(output.inverse3$predicted.value, c(0.50, 0.77, 4.79))
 
     # skip_if(interactive())
     vdiffr::expect_doppelganger("mct log output", autoplot(output.log))
@@ -77,8 +77,8 @@ test_that("transformations with no offset produces an error", {
 })
 
 test_that("ordering output works", {
-    output1 <- multiple_comparisons(dat.aov, classify = "Species", order = "asc")
-    output2 <- multiple_comparisons(dat.aov, classify = "Species", order = "desc")
+    output1 <- multiple_comparisons(dat.aov, classify = "Species", decreasing = FALSE)
+    output2 <- multiple_comparisons(dat.aov, classify = "Species", decreasing = TRUE)
     expect_equal(output1$predicted.value, c(0.25, 1.33, 2.03))
     expect_equal(output2$predicted.value, c(2.03, 1.33, 0.25))
 
@@ -117,20 +117,16 @@ test_that("Interaction terms work", {
     load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
     output <- multiple_comparisons(model.asr, pred.asr, classify = "Nitrogen:Variety")
     expect_equal(output$predicted.value,
-                 c(76.58, 85.86, 70.85, 99.91, 108.32, 92.22, 116.63, 113.50, 113.10, 123.75, 127.53, 118.40))
+                 c(70.85, 76.58, 85.86, 92.22, 99.91, 108.32, 113.1, 113.5, 116.63, 118.4, 123.75, 127.53))
 
     # skip_if(interactive())
     vdiffr::expect_doppelganger("Interactions work", autoplot(output))
 })
 
-test_that("invalid order input produces an error", {
+test_that("order argument is deprecated", {
     # dat.aov <- aov(Petal.Width ~ Species, data = iris)
-    expect_error(multiple_comparisons(dat.aov, classify = "Species", order = "xyz"),
-                 "order must be one of 'ascending', 'increasing', 'descending', 'decreasing' or 'default'")
-    expect_error(
-        expect_warning(multiple_comparisons(dat.aov, classify = "Species", order = 1:2),
-                       "argument 'pattern' has length > 1 and only the first element will be used"),
-        "order must be one of 'ascending', 'increasing', 'descending', 'decreasing' or 'default'")
+    expect_warning(multiple_comparisons(dat.aov, classify = "Species", order = "xyz"),
+                   "Argument `order` has been deprecated and will be removed in a future version. Please use `decreasing` instead.")
 })
 
 test_that("dashes are handled", {
@@ -199,13 +195,13 @@ test_that("mct handles aliased results in asreml with a warning", {
 test_that("Significance values that are too high give a warning", {
     # dat.aov <- aov(Petal.Width ~ Species, data = iris)
     expect_warning(multiple_comparisons(dat.aov, classify = "Species", sig = 0.95),
-                   "Significance level given by sig is high. Perhaps you meant 0.05?")
+                   "Significance level given by `sig` is high. Perhaps you meant 0.05?")
 })
 
 test_that("Use of pred argument gives warning", {
     # dat.aov <- aov(Petal.Width ~ Species, data = iris)
     expect_warning(multiple_comparisons(dat.aov, pred = "Species"),
-                   "Argument pred has been deprecated and will be removed in a future version. Please use classify instead.")
+                   "Argument `pred` has been deprecated and will be removed in a future version. Please use `classify` instead.")
 })
 
 test_that("Missing pred.obj object causes error", {
@@ -250,7 +246,7 @@ test_that("3 way interaction works", {
     dat.aov <- aov(response~A*B*C, data = des$design)
     output <- multiple_comparisons(dat.aov, classify = "A:B:C")
     expect_equal(output$predicted.value[1:10],
-                 c(100.68, 100.46, 99.79, 99.08, 100.48, 99.90, 100.19, 99.26, 100.22, 99.94))
+                 c(99.08, 99.26, 99.57, 99.73, 99.73, 99.73, 99.77, 99.79, 99.9, 99.94))
     expect_equal(output$std.error,
                  rep(0.63, 27))
     # skip_if(interactive())
@@ -265,13 +261,13 @@ test_that("plots are produced when requested", {
     des$design$B <- factor(des$design$B)
     des$design$C <- factor(des$design$C)
     dat.aov <- aov(response~A*B*C, data = des$design)
-    output <- multiple_comparisons(dat.aov, classify = "A:B:C")
+    output <- multiple_comparisons(dat.aov, classify = "A:B:C", plot = TRUE)
     expect_equal(output$predicted.value[1:10],
-                 c(100.68, 100.46, 99.79, 99.08, 100.48, 99.90, 100.19, 99.26, 100.22, 99.94))
+                 c(99.08, 99.26, 99.57, 99.73, 99.73, 99.73, 99.77, 99.79, 99.9, 99.94))
     expect_equal(output$std.error,
                  rep(0.63, 27))
-    # skip_if(interactive())
-    vdiffr::expect_doppelganger("3 way interaction", autoplot(output))
+    skip_if(interactive())
+    vdiffr::expect_doppelganger("3 way interaction internal", output <- multiple_comparisons(dat.aov, classify = "A:B:C", plot = TRUE))
 })
 
 test_that("nlme model produces an error", {
