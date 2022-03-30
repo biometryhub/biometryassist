@@ -28,12 +28,25 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
         model.obj <- mod.obj
     }
 
-    if (inherits(model.obj, c("aov", "lm", "lmerMod", "lme", "lmerModLmerTest"))) {
+    if (inherits(model.obj, c("aov", "lm", "lme"))) {
         facet <- 1
         facet_name <- NULL
         resids <- residuals(model.obj)
         k <- length(resids)
         fits <- fitted(model.obj)
+        if(call) {
+            model_call <- paste(trimws(deparse(model.obj$call, width.cutoff = 50)), collapse = "\n")
+        }
+    }
+    if (inherits(model.obj, c("lmerMod", "lmerModLmerTest"))) {
+        facet <- 1
+        facet_name <- NULL
+        resids <- residuals(model.obj)
+        k <- length(resids)
+        fits <- fitted(model.obj)
+        if(call) {
+            model_call <- paste(trimws(deparse(model.obj@call, width.cutoff = 50)), collapse = "\n")
+        }
     }
     else if (inherits(model.obj, "asreml")){
         facet <- length(names(model.obj$R.param))
@@ -47,6 +60,11 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
         }
         resids <- residuals(model.obj)
         fits <- fitted(model.obj)
+        if(call) {
+            model_call <- paste(trimws(deparse(model.obj$call, width.cutoff = 50), collapse = "\n"))
+            model_call <- gsub("G\\.param \\= model\\.asr\\$G\\.param, ", "", model_call)
+            model_call <- gsub("R\\.param = model\\.asr\\$R\\.param, \\\n", "", model_call)
+        }
     }
     else if(inherits(model.obj, "mmer")) { # sommer doesn't display residuals the same way
         facet <- model.obj$termsN$rcov
@@ -55,6 +73,8 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
 
         resids <- residuals(model.obj)[,ncol(residuals(model.obj))]
         fits <- fitted(model.obj)$dataWithFitted[,paste0(model.obj$terms$response[[1]], ".fitted")]
+        model_call <- paste(trimws(deparse(model.obj$call[c("fixed", "random", "rcov")], width.cutoff = 50)), collapse = "\n")
+        model_call <- gsub("list", "mmer", model_call)
     }
     else {
         stop("model.obj must be an aov, lm, lmerMod, lmerModLmerTest, asreml or mmer object")
@@ -100,7 +120,7 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
             bottom_row <- cowplot::plot_grid(NULL, c, NULL, ncol=3, rel_widths=c(0.25,0.5,0.25), labels = c("", "C", ""), hjust = -1, label_size = label.size)
         }
         if(call) {
-            title <- cowplot::ggdraw() + cowplot::draw_label(paste(deparse(model.obj$call), collapse = "\n"), size = call.size, hjust = 0.5)
+            title <- cowplot::ggdraw() + cowplot::draw_label(model_call, size = call.size, hjust = 0.5)
             call_row <- cowplot::plot_grid(title, ncol=1)
             output[[i]] <- cowplot::plot_grid(call_row, top_row, bottom_row, ncol=1, rel_heights = c(0.1, 0.4, 0.4))
         }
