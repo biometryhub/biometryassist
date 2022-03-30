@@ -116,18 +116,26 @@ multiple_comparisons <- function(model.obj,
             # If multiple treatments, first need to concatenate columns, then collapse rows
             aliased_names <- pred.obj$pvals[aliased, !names(pred.obj$pvals) %in% c("predicted.value", "std.error", "status")]
 
-            if(grepl(":", classify)) {
+            if(is.data.frame(aliased_names) & length(aliased_names)==3) {
                 # aliased_names <- as.data.frame(aliased_names)
-                aliased_names <- paste(apply(aliased_names, 1, paste, collapse = ":"), collapse = ", ")
+                aliased_names <- paste(aliased_names[,1], aliased_names[,2], aliased_names[,3], sep = ":")
+            }
+            else if(is.data.frame(aliased_names) & length(aliased_names)==2) {
+                # aliased_names <- as.data.frame(aliased_names)
+                aliased_names <- paste(aliased_names[,1], aliased_names[,2], sep = ":")
+            }
+
+            if(length(aliased_names) > 1) {
+                warn_string <- paste0("Some levels of ", classify, " are aliased. They have been removed from predicted output.\n  Aliased levels are: ", paste(aliased_names, collapse = ", "), ".\n  These levels are saved in the output object.")
             }
             else {
-                aliased_names <- paste(aliased_names, collapse = ", ")
+                warn_string <- paste0("A level of ", classify, " is aliased. It has been removed from predicted output.\n  Aliased level is: ", aliased_names, ".\n  This level is saved as an attribute of the output object.")
             }
 
             pred.obj$pvals <- pred.obj$pvals[!is.na(pred.obj$pvals$predicted.value),]
             pred.obj$pvals <- droplevels(pred.obj$pvals)
             pred.obj$sed <- pred.obj$sed[-aliased, -aliased]
-            warning(paste0("Some levels of ", classify, " are aliased. They have been removed from predicted output.\n  Aliased levels are: ", aliased_names, "\n  These levels are saved in the output object."))
+            warning(warn_string, call. = FALSE)
         }
 
         #For use with asreml 4+
@@ -403,7 +411,7 @@ multiple_comparisons <- function(model.obj,
     }
 
     if(exists("aliased_names")) {
-        attr(pp.tab, 'aliased') <- aliased_names
+        attr(pp.tab, 'aliased') <- as.character(aliased_names)
     }
 
     # class(output$predicted_values) <- c("mct", class(output$predicted_values))
@@ -434,7 +442,7 @@ print.mct <- function(x, ...) {
             cat("Aliased levels are:", paste(aliased[1:(length(aliased)-1)], collapse = ", "), "and", aliased[length(aliased)], "\n\n")
         }
         else {
-            cat("Aliased level is: ", aliased, "\n\n")
+            cat("Aliased level is:", aliased, "\n\n")
         }
     }
     print.data.frame(x, ...)
