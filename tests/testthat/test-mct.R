@@ -77,8 +77,8 @@ test_that("transformations with no offset produces an error", {
 })
 
 test_that("ordering output works", {
-    output1 <- multiple_comparisons(dat.aov, classify = "Species", decreasing = FALSE)
-    output2 <- multiple_comparisons(dat.aov, classify = "Species", decreasing = TRUE)
+    output1 <- multiple_comparisons(dat.aov, classify = "Species", descending = FALSE)
+    output2 <- multiple_comparisons(dat.aov, classify = "Species", descending = TRUE)
     expect_equal(output1$predicted.value, c(0.25, 1.33, 2.03))
     expect_equal(output2$predicted.value, c(2.03, 1.33, 0.25))
 
@@ -126,7 +126,7 @@ test_that("Interaction terms work", {
 test_that("order argument is deprecated", {
     # dat.aov <- aov(Petal.Width ~ Species, data = iris)
     expect_warning(multiple_comparisons(dat.aov, classify = "Species", order = "xyz"),
-                   "Argument `order` has been deprecated and will be removed in a future version. Please use `decreasing` instead.")
+                   "Argument `order` has been deprecated and will be removed in a future version. Please use `descending` instead.")
 })
 
 test_that("dashes are handled", {
@@ -174,10 +174,10 @@ test_that("mct handles aliased results in asreml with a warning", {
     pred.asr$sed[12, ] <- NA
     pred.asr$sed[, 12] <- NA
     expect_warning(
-        expect_output(
-            print(multiple_comparisons(model.asr, pred.asr, classify = "Nitrogen:Variety")),
-            "Aliased level is:  0.6_cwt:Victory"),
-        NULL)
+        expect_snapshot_output(
+            print(multiple_comparisons(model.asr, pred.asr, classify = "Nitrogen:Variety"))
+        )
+    )
     pred.asr$pvals$predicted.value[11] <- NA
     pred.asr$sed[11, ] <- NA
     pred.asr$sed[, 11] <- NA
@@ -245,8 +245,7 @@ test_that("3 way interaction works", {
     des$design$C <- factor(des$design$C)
     dat.aov <- aov(response~A*B*C, data = des$design)
     output <- multiple_comparisons(dat.aov, classify = "A:B:C")
-    expect_equal(output$predicted.value[1:10],
-                 c(99.08, 99.26, 99.57, 99.73, 99.73, 99.73, 99.77, 99.79, 99.9, 99.94))
+    expect_snapshot_output(output$predicted.value)
     expect_equal(output$std.error,
                  rep(0.63, 27))
     # skip_if(interactive())
@@ -261,9 +260,9 @@ test_that("plots are produced when requested", {
     des$design$B <- factor(des$design$B)
     des$design$C <- factor(des$design$C)
     dat.aov <- aov(response~A*B*C, data = des$design)
-    output <- multiple_comparisons(dat.aov, classify = "A:B:C", plot = TRUE)
-    expect_equal(output$predicted.value[1:10],
-                 c(99.08, 99.26, 99.57, 99.73, 99.73, 99.73, 99.77, 99.79, 99.9, 99.94))
+
+    expect_snapshot_output(output <- multiple_comparisons(dat.aov, classify = "A:B:C", plot = TRUE))
+    # expect_snapshot_output(output$predicted.value)
     expect_equal(output$std.error,
                  rep(0.63, 27))
     skip_if(interactive())
@@ -282,6 +281,19 @@ test_that("multiple_comparisons output has a class of 'mct'", {
     output <- multiple_comparisons(dat.aov, classify = "Species")
     expect_s3_class(output, "mct")
 })
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # test_that("sommer model works", {
 #     skip_if_not_installed("sommer")

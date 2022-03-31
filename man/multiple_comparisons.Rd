@@ -13,7 +13,7 @@ multiple_comparisons(
   trans = NA,
   offset = NA,
   decimals = 2,
-  decreasing = FALSE,
+  descending = FALSE,
   plot = FALSE,
   label_height = 0.1,
   rotation = 0,
@@ -40,7 +40,7 @@ multiple_comparisons(
 
 \item{decimals}{Controls rounding of decimal places in output. Default is 2 decimal places.}
 
-\item{decreasing}{Logical (default \code{FALSE}). Order of the output sorted by the predicted value. If \code{TRUE}, largest will be first, through to smallest last.}
+\item{descending}{Logical (default \code{FALSE}). Order of the output sorted by the predicted value. If \code{TRUE}, largest will be first, through to smallest last.}
 
 \item{plot}{Automatically produce a plot of the output of the multiple comparison test? Default is \code{FALSE}. This is maintained for backwards compatibility, but the preferred method now is to use \verb{autoplot(<multiple_comparisons output>)}. See \code{\link[=autoplot.mct]{autoplot.mct()}} for more details.}
 
@@ -52,7 +52,7 @@ multiple_comparisons(
 
 \item{savename}{A file name for the predicted values to be saved to. Default is \code{predicted_values}.}
 
-\item{order}{Deprecated. Use \code{decreasing} instead.}
+\item{order}{Deprecated. Use \code{descending} instead.}
 
 \item{pred}{Deprecated. Use \code{classify} instead.}
 }
@@ -100,7 +100,7 @@ pred.asr <- predict(model.asr, classify = "Nitrogen", sed = TRUE)
 
 #Determine ranking and groups according to Tukey's Test
 pred.out <- multiple_comparisons(model.obj = model.asr, pred.obj = pred.asr,
-                    classify = "Nitrogen", decreasing = TRUE, decimals = 5)
+                    classify = "Nitrogen", descending = TRUE, decimals = 5)
 
 pred.out}
 

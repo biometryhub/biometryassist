@@ -10,13 +10,13 @@
 #' @param trans Transformation that was applied to the response variable. One of `log`, `sqrt`, `logit` or `inverse`. Default is `NA`.
 #' @param offset Numeric offset applied to response variable prior to transformation. Default is `NA`. Use 0 if no offset was applied to the transformed data. See Details for more information.
 #' @param decimals Controls rounding of decimal places in output. Default is 2 decimal places.
-#' @param decreasing Logical (default `FALSE`). Order of the output sorted by the predicted value. If `TRUE`, largest will be first, through to smallest last.
+#' @param descending Logical (default `FALSE`). Order of the output sorted by the predicted value. If `TRUE`, largest will be first, through to smallest last.
 #' @param plot Automatically produce a plot of the output of the multiple comparison test? Default is `FALSE`. This is maintained for backwards compatibility, but the preferred method now is to use `autoplot(<multiple_comparisons output>)`. See [biometryassist::autoplot.mct()] for more details.
 #' @param label_height Height of the text labels above the upper error bar on the plot. Default is 0.1 (10%) of the difference between upper and lower error bars above the top error bar.
 #' @param rotation Rotate the text output as Treatments within the plot. Allows for easier reading of long treatment labels. Number between 0 and 360 (inclusive) - default 0
 #' @param save Logical (default `FALSE`). Save the predicted values to a csv file?
 #' @param savename A file name for the predicted values to be saved to. Default is `predicted_values`.
-#' @param order Deprecated. Use `decreasing` instead.
+#' @param order Deprecated. Use `descending` instead.
 #' @param pred Deprecated. Use `classify` instead.
 #'
 #' @importFrom multcompView multcompLetters
@@ -66,28 +66,28 @@
 #'
 #' #Determine ranking and groups according to Tukey's Test
 #' pred.out <- multiple_comparisons(model.obj = model.asr, pred.obj = pred.asr,
-#'                     classify = "Nitrogen", decreasing = TRUE, decimals = 5)
+#'                     classify = "Nitrogen", descending = TRUE, decimals = 5)
 #'
 #' pred.out}
 #'
 #' @export
 #'
 multiple_comparisons <- function(model.obj,
-                    pred.obj,
-                    classify,
-                    sig = 0.05,
-                    int.type = "ci",
-                    trans = NA,
-                    offset = NA,
-                    decimals = 2,
-                    decreasing = FALSE,
-                    plot = FALSE,
-                    label_height = 0.1,
-                    rotation = 0,
-                    save = FALSE,
-                    savename = "predicted_values",
-                    order,
-                    pred) {
+                                 pred.obj,
+                                 classify,
+                                 sig = 0.05,
+                                 int.type = "ci",
+                                 trans = NA,
+                                 offset = NA,
+                                 decimals = 2,
+                                 descending = FALSE,
+                                 plot = FALSE,
+                                 label_height = 0.1,
+                                 rotation = 0,
+                                 save = FALSE,
+                                 savename = "predicted_values",
+                                 order,
+                                 pred) {
 
     if(!missing(pred)) {
         warning("Argument `pred` has been deprecated and will be removed in a future version. Please use `classify` instead.")
@@ -95,7 +95,7 @@ multiple_comparisons <- function(model.obj,
     }
 
     if(!missing(order)) {
-        warning("Argument `order` has been deprecated and will be removed in a future version. Please use `decreasing` instead.")
+        warning("Argument `order` has been deprecated and will be removed in a future version. Please use `descending` instead.")
     }
 
     if(sig > 0.5)  {
@@ -231,20 +231,20 @@ multiple_comparisons <- function(model.obj,
 
     # Check ordering of output
     # Refactor with switch cases?
-    # ordering <- grep(order, c('ascending', 'descending', 'increasing', 'decreasing', 'default'), value = TRUE)
+    # ordering <- grep(order, c('ascending', 'q     dxs', 'increasing', 'descending', 'default'), value = TRUE)
 
     # if(length(ordering) == 0) {
     #     # No match found, error
-    #     stop("order must be one of 'ascending', 'increasing', 'descending', 'decreasing' or 'default'")
+    #     stop("order must be one of 'ascending', 'increasing', 'descending', 'descending' or 'default'")
     # }
     # else if(ordering == "ascending" | ordering == "increasing") {
-        # Set ordering to FALSE to set decreasing = FALSE in order function
-        ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp, reversed = !decreasing)
-        # ordering <- TRUE
+    # Set ordering to FALSE to set descending = FALSE in order function
+    ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp, reversed = !descending)
+    # ordering <- TRUE
     # }
 
-    # else if(ordering == "descending" | ordering == "decreasing") {
-    #     # Set ordering to TRUE to set decreasing = TRUE in order function
+    # else if(ordering == "descending" | ordering == "descending") {
+    #     # Set ordering to TRUE to set descending = TRUE in order function
     #     ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp, reversed = FALSE)
     #     ordering <- FALSE
     # }
@@ -359,7 +359,7 @@ multiple_comparisons <- function(model.obj,
     #     levels(pp.tab$groups) <- sort(levs)[order(levs)]
     # }
     # else {
-        pp.tab <- pp.tab[base::order(pp.tab$predicted.value, decreasing = decreasing),]
+    pp.tab <- pp.tab[base::order(pp.tab$predicted.value, decreasing = descending),]
     # }
 
     pp.tab$Names <- NULL
