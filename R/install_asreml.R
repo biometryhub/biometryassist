@@ -34,28 +34,30 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
         invisible(TRUE)
     }
     else {
-        # if(Sys.info()["sysname"] == "Darwin" && Sys.info()["release"] >= 21 && !dir.exists("/Library/Application Support/Reprise/")) {
-        #
-        #     result <- tryCatch(
-        #         expr = {
-        #             dir.create("/Library/Application Support/Reprise/", recursive = T)
-        #         }
-        #         error = function(cond) {
-        #             return(FALSE)
-        #         }
-        #     )
-        #
-        #     message("The ASReml-R package uses Reprise license management and will require administrator privilege to create the folder ‘/Library/Application Support/Reprise’ before it can be loaded.")
-        #     input <- readline("Would you like to create this folder now (Yes/No)? ")
-        #
-        #     if(toupper(input) == "YES") {
-        #         system("sudo mkdir '/Library/Application Support/Reprise' && sudo chmod 777 '/Library/Application Support/Reprise'",
-        #                input = rstudioapi::askForPassword("sudo password"))
-        #     }
-        #     else {
-        #         print("You said no!")
-        #     }
-        # }
+        if(Sys.info()["sysname"] == "Darwin" && Sys.info()["release"] >= 21 && !dir.exists("/Library/Application Support/Reprise/")) {
+
+            result <- tryCatch(
+                expr = {
+                    dir.create("/Library/Application Support/Reprise/", recursive = T)
+                }
+                error = function(cond) {
+                    return(FALSE)
+                }
+            )
+
+            if(isFALSE(result)) {
+                message("The ASReml-R package uses Reprise license management and will require administrator privilege to create the folder ‘/Library/Application Support/Reprise’ before it can be loaded.")
+                input <- readline("Would you like to create this folder now (Yes/No)? You will be prompted for your password if yes. ")
+
+                if(toupper(input) == "YES") {
+                    system("sudo -kS mkdir '/Library/Application Support/Reprise' && sudo -kS chmod 777 '/Library/Application Support/Reprise'",
+                           input = rstudioapi::askForPassword("sudo password"))
+                }
+                else {
+                    stop("ASReml-R cannot be installed until the folder '/Library/Application Support/Reprise' is created with appropriate permissions.")
+                }
+            }
+        }
 
         if(!quiet) {
             message("\nDownloading and installing ASReml-R. This may take some time, depending on internet speed...\n")
