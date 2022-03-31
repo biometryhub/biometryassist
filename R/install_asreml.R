@@ -39,7 +39,7 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
             result <- tryCatch(
                 expr = {
                     dir.create("/Library/Application Support/Reprise/", recursive = T)
-                }
+                },
                 error = function(cond) {
                     return(FALSE)
                 }
