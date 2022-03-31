@@ -28,7 +28,7 @@ test_that("Residual plots work for asreml", {
     skip_if_not(requireNamespace("asreml", quietly = TRUE))
 
     dat.asr <- quiet(asreml::asreml(Petal.Length ~ Petal.Width, data = iris, trace = FALSE))
-    p1_single <- resplot(dat.asr, shapiro = FALSE)
+    p1_single <- resplot(dat.asr, shapiro = FALSE, call = T)
 
     final.m.asr <- readRDS(test_path("data", "complex_model.rds"))
     p1_multi <- suppressWarnings(resplot(final.m.asr))
@@ -49,7 +49,7 @@ test_that("Residual plots work for lme4", {
     dat.lme4 <- lme4::lmer(Reaction ~ Days + (Days | Subject), lme4::sleepstudy)
 
     # expect_error(resplot(1:10), "mod.obj must be an aov, lm, lmerMod, lmerModLmerTest, asreml or mmer object")
-    p1 <- resplot(dat.lme4)
+    p1 <- resplot(dat.lme4, call = T)
     # p2 <- resplot(dat.lme4, shapiro = FALSE)
 
     vdiffr::expect_doppelganger(title = "Resplot for lme4", p1)
@@ -65,7 +65,7 @@ test_that("Residual plots work for nlme", {
                            random = Asym ~ 1,
                            start = c(Asym = 103, R0 = -8.5, lrc = -3.3))
 
-    p1 <- resplot(dat.nlme)
+    p1 <- resplot(dat.nlme, call = T)
 
     vdiffr::expect_doppelganger(title = "Resplot for nlme", dat.nlme)
     # vdiffr::expect_doppelganger(title = "Resplot for aov without shapiro", p2)
@@ -79,7 +79,7 @@ test_that("Residual plots work for sommer", {
                             rcov = ~ units,
                             data = dat)
 
-    p1 <- resplot(dat.som)
+    p1 <- resplot(dat.som, call = T)
     # p2 <- resplot(dat.aov, shapiro = FALSE)
 
     vdiffr::expect_doppelganger(title = "Resplot for sommer", p1)

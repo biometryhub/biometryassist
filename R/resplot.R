@@ -28,29 +28,24 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
         model.obj <- mod.obj
     }
 
-    if (inherits(model.obj, c("aov", "lm", "lme"))) {
+    if(inherits(model.obj, c("aov", "lm", "lme", "lmerMod", "lmerModLmerTest"))) {
         facet <- 1
         facet_name <- NULL
         resids <- residuals(model.obj)
         k <- length(resids)
         fits <- fitted(model.obj)
         if(call) {
-            model_call <- paste(trimws(deparse(model.obj$call, width.cutoff = 50)), collapse = "\n")
+            if(inherits(model.obj, c("aov", "lm", "lme"))) {
+                model_call <- paste(trimws(deparse(model.obj$call, width.cutoff = 50)), collapse = "\n")
+            }
+            else if(inherits(model.obj, c("lmerMod", "lmerModLmerTest")))  {
+                model_call <- paste(trimws(deparse(model.obj@call, width.cutoff = 50)), collapse = "\n")
+            }
         }
     }
-    if (inherits(model.obj, c("lmerMod", "lmerModLmerTest"))) {
-        facet <- 1
-        facet_name <- NULL
-        resids <- residuals(model.obj)
-        k <- length(resids)
-        fits <- fitted(model.obj)
-        if(call) {
-            model_call <- paste(trimws(deparse(model.obj@call, width.cutoff = 50)), collapse = "\n")
-        }
-    }
-    else if (inherits(model.obj, "asreml")){
+    else if(inherits(model.obj, "asreml")){
         facet <- length(names(model.obj$R.param))
-        if (facet > 1) {
+        if(facet > 1) {
             facet_name <- names(model.obj$R.param)
             k <- unlist(lapply(1:facet, function(i) model.obj$R.param[[i]]$variance$size))
         }
@@ -61,7 +56,7 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
         resids <- residuals(model.obj)
         fits <- fitted(model.obj)
         if(call) {
-            model_call <- paste(trimws(deparse(model.obj$call, width.cutoff = 50), collapse = "\n"))
+            model_call <- paste(trimws(deparse(model.obj$call, width.cutoff = 50)), collapse = "\n")
             model_call <- gsub("G\\.param \\= model\\.asr\\$G\\.param, ", "", model_call)
             model_call <- gsub("R\\.param = model\\.asr\\$R\\.param, \\\n", "", model_call)
         }
@@ -84,7 +79,7 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
 
     output <- list()
 
-    for (i in 1:facet){
+    for(i in 1:facet){
 
         aa.f <- aa[aa$lvl==i,]
         aa.f$stdres <- aa.f$residuals/(sd(aa.f$residuals, na.rm = TRUE)*sqrt((length(!is.na(aa.f$residuals)-1))/(length(!is.na(aa.f$residuals)))))
