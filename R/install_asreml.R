@@ -46,7 +46,7 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
             )
 
             if(isFALSE(result)) {
-                message("The ASReml-R package uses Reprise license management and will require administrator privilege to create the folder ‘/Library/Application Support/Reprise’ before it can be loaded.")
+                message("The ASReml-R package uses Reprise license management and will require administrator privilege to create the folder '/Library/Application Support/Reprise' before it can be loaded.")
                 input <- readline("Would you like to create this folder now (Yes/No)? You will be prompted for your password if yes. ")
 
                 if(toupper(input) == "YES") {
