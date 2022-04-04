@@ -40,11 +40,23 @@ The goal of biometryassist is to provide functions to aid in the Design and Anal
 
 ## Installation
 
-Use the following code to install this package:
+As of version 1.0.0 the biometryassist package is now [on CRAN](https://cloud.r-project.org/web/packages/biometryassist/index.html) `r emo::ji("raised_hands")`.
+That means that installation is as easy as running:
+
+```{r installing_cran, eval=FALSE}
+install.packages("biometryassist")
+```
+
+
+### Development version
+
+`r emo::ji("warning")`**Warning**: The development version is unstable and liable to change more often than the CRAN version. It may have bugs fixed, but there may be other currently unknown bugs introduced. `r emo::ji("warning")`
+
+Use the following code to install the latest development version of this package.
 
 ```{r eval=F}
 if(!require("remotes")) install.packages("remotes") 
-remotes::install_github("biometryhub/biometryassist", upgrade = FALSE)
+remotes::install_github("biometryhub/biometryassist@dev", upgrade = FALSE)
 ```
 
 
@@ -60,22 +72,5 @@ If you find this package useful, please cite it! Type `citation("biometryassist"
 
 ## Troubleshooting Installation
 
-- If you have the latest version already installed, you will get a response like:
-
-<span style="color: red;">Skipping install of 'biometryassist' from a github remote, the SHA1 (e034b603) has not changed since last install.<br>
-  Use `force = TRUE` to force installation</span>
-
-- The following warning messages can usually be ignored:
-
-<span style="color: red;">WARNING: Rtools is required to build R packages, but is not currently installed.</span>
-
-<span style="color: red;">Please download and install Rtools custom from https://cran.r-project.org/bin/windows/Rtools/.</span>
-
-<span style="color: red;">Warning messages:<br>
-1: In untar2(tarfile, files, list, exdir) :<br>
-  skipping pax global extended headers<br>
-2: In untar2(tarfile, files, list, exdir) :<br>
-  skipping pax global extended headers</span>
-
-- If you receive an error that the package could not install because `rlang` or another package could not be upgraded, the easiest way to deal with this is to uninstall the package(s) that could not be updated (`remove.packages("rlang")`). Then re-install with `install.packages("rlang")` and then try installing `biometryassist` again.
+- If you receive an error that the package could not install because `rlang` or another package could not be upgraded, the easiest way to deal with this is to uninstall the package(s) that could not be updated (`remove.packages("rlang")`). Then restart R, re-install with `install.packages("rlang")` and then try installing `biometryassist` again.
 
