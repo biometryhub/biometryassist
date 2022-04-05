@@ -169,8 +169,10 @@ multiple_comparisons <- function(model.obj,
     }
 
     else if (inherits(model.obj, c("aov", "lm", "lmerMod", "lmerModLmerTest"))) {
-        # if(any(sapply(2:ncol(model.obj$model), function(i) is.factor(model.obj$model[i])))) {
-        #
+        # non_factors <- sapply(2:ncol(model.obj$model), function(i) !is.factor(model.obj$model[[i]]))
+        # if(any(non_factors)) {
+        #     sapply()
+        #     model.obj <- update(model.obj, as.formula(paste0(". ~ . - ", classify, " + as.factor(", classify, ")")))
         # }
         pred.out <- suppressWarnings(predictmeans::predictmeans(model.obj, classify, mplot = FALSE, ndecimal = decimals))
 
