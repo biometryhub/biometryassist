@@ -9,7 +9,7 @@ test_that("Residual plots work for aov", {
 test_that("resplt is deprecated and produces a warning", {
     dat.aov <- aov(Petal.Length ~ Petal.Width, data = iris)
 
-    expect_warning(p1 <- resplt(dat.aov), "'resplt' is deprecated")
+    expect_warning(p1 <- resplt(dat.aov), "resplt has been deprecated in version 1\\.0\\.1 and will be removed in a future version\\.\\nPlease use resplot\\(\\) instead\\.")
     vdiffr::expect_doppelganger(title = "Resplot for aov", p1)
 })
 
