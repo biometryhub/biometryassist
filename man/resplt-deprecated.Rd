@@ -4,7 +4,8 @@
 \alias{resplt-deprecated}
 \title{Residual plots of linear models.}
 \usage{
-resplt(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, axes.size = 10, call.size = 9, mod.obj)
+resplt(model.obj, shapiro = TRUE, call = FALSE, label.size = 10,
+axes.size = 10, call.size = 9, mod.obj)
 }
 \arguments{
 \item{model.obj}{An \code{aov}, \code{lm}, \code{lme} (\code{\link[nlme:lme]{nlme::lme()}}), \code{lmerMod} (\code{\link[lme4:lmer]{lme4::lmer()}}), \code{asreml} or \code{mmer} (sommer) model object.}

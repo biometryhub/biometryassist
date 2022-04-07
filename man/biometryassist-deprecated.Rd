@@ -5,7 +5,15 @@
 \alias{resplt}
 \title{Deprecated functions in package \pkg{biometryassist}.}
 \usage{
-resplt(...)
+resplt(
+  model.obj,
+  shapiro = TRUE,
+  call = FALSE,
+  label.size = 10,
+  axes.size = 10,
+  call.size = 9,
+  mod.obj
+)
 }
 \value{
 No return value.
@@ -19,8 +27,9 @@ the future. When possible, alternative functions with similar
 functionality are also mentioned. Help pages for deprecated functions are
 available at \code{help("<function>-deprecated")}.
 }
-\section{\code{resplt}}{
+\section{resplt}{
 
+Residual plots of linear models.
 }
 
 \keyword{internal}

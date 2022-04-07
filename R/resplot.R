@@ -147,18 +147,20 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
 #' @return A list containing ggplot2 objects which are diagnostic plots.
 #'
 #' @name resplt-deprecated
-#' @usage resplt(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, axes.size = 10, call.size = 9, mod.obj)
+#' @usage resplt(model.obj, shapiro = TRUE, call = FALSE, label.size = 10,
+#' axes.size = 10, call.size = 9, mod.obj)
 #' @seealso \code{\link{biometryassist-deprecated}}
 #' @keywords internal
 NULL
 
 #' @rdname biometryassist-deprecated
-#' @section `resplt`:
+#' @section resplt:
+#' Residual plots of linear models.
 #' @return A list containing ggplot2 objects which are diagnostic plots.
 #' For `resplt`, use [resplot()].
 #'
 #' @export
-resplt <- function(...) {
+resplt <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, axes.size = 10, call.size = 9, mod.obj) {
     .Deprecated(msg = "resplt has been deprecated in version 1.0.1 and will be removed in a future version.\nPlease use resplot() instead.")
-    resplot(...)
+    resplot(model.obj, shapiro, call, label.size, axes.size, call.size, mod.obj)
 }
