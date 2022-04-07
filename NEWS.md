@@ -4,10 +4,13 @@
 
 - The `order` argument of `multiple_comparisons()` has been deprecated in favour of a new argument `descending`. This takes logical (`TRUE` or `FALSE`) values only, so `default` is no longer possible as it was producing incorrect results. (#8)
 - `resplt()` has been deprecated in favour of `resplot()` and will be removed in a future version (#20).
-- Warning about lack of convergence are no longer output in `logl_test()`. (#17)
+- Warnings about lack of convergence are no longer output in `logl_test()`. (#17)
+
+## Bug fixes
+
 - Aliased levels are printed properly in `multiple_comparisons()` now. (#14)
 - R.param and G.param are removed from the `asreml()` call on `resplot()` if not explicitly provided. (#21)
-
+- Fixed a bug where `install_asreml()` would not work on macOS Monterey. (#16)
 
 # biometryassist 1.0.0
 

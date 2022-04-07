@@ -133,6 +133,24 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
     }
 }
 
+# resplt
+#' @title Residual plots of linear models.
+#' @description Produces plots of residuals for assumption checking of linear (mixed) models.
+#' @param model.obj An `aov`, `lm`, `lme` ([nlme::lme()]), `lmerMod` ([lme4::lmer()]), `asreml` or `mmer` (sommer) model object.
+#' @param shapiro (Logical) Display the Shapiro-Wilks test of normality on the plot?
+#' @param call (Logical) Display the model call on the plot?
+#' @param axes.size A numeric value for the size of the axes label font size in points.
+#' @param label.size A numeric value for the size of the label (A,B,C) font point size.
+#' @param call.size A numeric value for the size of the model displayed on the plot.
+#' @param mod.obj Deprecated to be consistent with other functions. Please use `model.obj` instead.
+#'
+#' @return A list containing ggplot2 objects which are diagnostic plots.
+#'
+#' @name resplt-deprecated
+#' @usage resplt(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, axes.size = 10, call.size = 9, mod.obj)
+#' @seealso \code{\link{biometryassist-deprecated}}
+#' @keywords internal
+NULL
 
 #' @rdname biometryassist-deprecated
 #' @section `resplt`:
@@ -141,6 +159,6 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
 #'
 #' @export
 resplt <- function(...) {
-    .Deprecated("resplot")
+    .Deprecated(msg = "resplt has been deprecated in version 1.0.1 and will be removed in a future version.\nPlease use resplot() instead.")
     resplot(...)
 }
