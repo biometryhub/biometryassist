@@ -14,9 +14,6 @@
           |  Type 'citation('biometryassist')' for the citation details.      |
           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       
-          The latest version of this package is available at
-          https://github.com/biometryhub/biometryassist. To update type:
-          remotes::install_github('biometryhub/biometryassist')
 
 # Output prints if crayon is not installed
 
@@ -34,7 +31,4 @@
           |  Type 'citation('biometryassist')' for the citation details.      |
           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       
-          The latest version of this package is available at
-          https://github.com/biometryhub/biometryassist. To update type:
-          remotes::install_github('biometryhub/biometryassist')
 

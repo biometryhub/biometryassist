@@ -15,8 +15,6 @@ quiet <- function(x) {
   invisible(force(x))
 }
 
-# .btenv <- new.env(parent=emptyenv())
-
 
 ######################################################
 # Start up function
@@ -27,19 +25,6 @@ quiet <- function(x) {
 #' @importFrom rlang is_interactive is_installed
 .onAttach <- function(library, pkg)
 {
-  # Create a hidden variable to only print this output every 8 hours
-  # if(!exists(".btenv", where = .GlobalEnv, mode = "environment")) {
-  #   .btenv <- new.env(parent=.GlobalEnv)
-  #   assign("last_load", Sys.time(), envir=.btenv)
-  #   last_load <- .btenv$last_load
-  # }
-  # else {
-  #   last_load <- .btenv$last_load
-  # }
-  # print(last_load)
-  # print(.btenv)
-
-  # current_version <- "0.9.1"
   installed_version <- utils::packageVersion('biometryassist')
 
   if(rlang::is_interactive()) {# && Sys.time() > (last_load + 1)) {
@@ -72,23 +57,23 @@ quiet <- function(x) {
       }
     )
 
-    if(!is.na(current_version) && current_version > installed_version){ # installed version < current version on CRAN
+    if(!is.na(current_version) && current_version > installed_version) { # installed version < current version on CRAN
       warning("    biometryassist version ", current_version, " is now available.\n",
               "    Please update biometryassist by running\n",
               "    install.packages('biometryassist')", call. = FALSE)
     }
-    else {
-      output2 <- paste("    The latest version of this package is available at",
-                       "    https://github.com/biometryhub/biometryassist. To update type:",
-                       "    remotes::install_github('biometryhub/biometryassist')", sep = "\n")
-
-      if(rlang::is_installed("crayon")) {
-        packageStartupMessage(crayon::green(output2),appendLF=TRUE)
-      }
-      else {
-        packageStartupMessage(output2,appendLF=TRUE)
-      }
-    }
+    # else {
+    #   output2 <- paste("    The latest version of this package is available at",
+    #                    "    https://github.com/biometryhub/biometryassist. To update type:",
+    #                    "    remotes::install_github('biometryhub/biometryassist')", sep = "\n")
+    #
+    #   if(rlang::is_installed("crayon")) {
+    #     packageStartupMessage(crayon::green(output2),appendLF=TRUE)
+    #   }
+    #   else {
+    #     packageStartupMessage(output2,appendLF=TRUE)
+    #   }
+    # }
   }
   invisible()
 }
