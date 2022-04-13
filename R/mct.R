@@ -167,23 +167,23 @@ multiple_comparisons <- function(model.obj,
     }
 
     else if(inherits(model.obj, c("aov", "lm", "lmerMod", "lmerModLmerTest"))) {
-        vars <- unlist(strsplit(classify, "\\:"))
-
-        if(inherits(model.obj, c("aov", "lm"))) {
-            mdf <- stats::model.frame(model.obj)
-            not_factors <- intersect(vars, names(mdf)[!sapply(mdf, is.factor)])
-        }
-        else if(inherits(model.obj, c("lmerMod", "lmerModLmerTest"))) {
-            mdf <- get(model.obj@call$data, pos = parent.frame())
-            not_factors <- intersect(vars, names(mdf)[!sapply(mdf, is.factor)])
-        }
-
-        if(length(not_factors) == 1) {
-            stop(paste(not_factors, "must be a factor."), call. = F)
-        }
-        else if(length(not_factors) > 1) {
-            stop(paste(paste(not_factors[-length(not_factors)], collapse = ", "), "and", not_factors[length(not_factors)], "must be factors"), call. = F)
-        }
+        # vars <- unlist(strsplit(classify, "\\:"))
+        #
+        # if(inherits(model.obj, c("aov", "lm"))) {
+        #     mdf <- stats::model.frame(model.obj)
+        #     not_factors <- intersect(vars, names(mdf)[!sapply(mdf, is.factor)])
+        # }
+        # else if(inherits(model.obj, c("lmerMod", "lmerModLmerTest"))) {
+        #     mdf <- get(model.obj@call$data, pos = parent.frame())
+        #     not_factors <- intersect(vars, names(mdf)[!sapply(mdf, is.factor)])
+        # }
+        #
+        # if(length(not_factors) == 1) {
+        #     stop(paste(not_factors, "must be a factor."), call. = F)
+        # }
+        # else if(length(not_factors) > 1) {
+        #     stop(paste(paste(not_factors[-length(not_factors)], collapse = ", "), "and", not_factors[length(not_factors)], "must be factors"), call. = F)
+        # }
 
         pred.out <- predictmeans::predictmeans(model.obj, classify, mplot = FALSE, ndecimal = decimals)
 
@@ -240,29 +240,7 @@ multiple_comparisons <- function(model.obj,
 
     names(diffs) <- m
 
-    # Check ordering of output
-    # Refactor with switch cases?
-    # ordering <- grep(order, c('ascending', 'q     dxs', 'increasing', 'descending', 'default'), value = TRUE)
-
-    # if(length(ordering) == 0) {
-    #     # No match found, error
-    #     stop("order must be one of 'ascending', 'increasing', 'descending', 'descending' or 'default'")
-    # }
-    # else if(ordering == "ascending" | ordering == "increasing") {
-    # Set ordering to FALSE to set descending = FALSE in order function
     ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp, reversed = !descending)
-    # ordering <- TRUE
-    # }
-
-    # else if(ordering == "descending" | ordering == "descending") {
-    #     # Set ordering to TRUE to set descending = TRUE in order function
-    #     ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp, reversed = FALSE)
-    #     ordering <- FALSE
-    # }
-
-    # else if(ordering == "default") {
-    #     ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp)
-    # }
 
     rr <- data.frame(groups = ll$Letters)
     rr$Names <- row.names(rr)
@@ -361,17 +339,7 @@ multiple_comparisons <- function(model.obj,
 
     }
 
-    # Change the order of letters and factors if ordering == default
-    # if(ordering == "default") {
-    #     # Change to a factor for use in ordering if needed
-    #     pp.tab <- pp.tab[stringi::stri_order(pp.tab$Names),]
-    #     pp.tab$groups <- factor(pp.tab$groups)
-    #     levs <- unique(pp.tab$groups)
-    #     levels(pp.tab$groups) <- sort(levs)[order(levs)]
-    # }
-    # else {
     pp.tab <- pp.tab[base::order(pp.tab$predicted.value, decreasing = descending),]
-    # }
 
     pp.tab$Names <- NULL
 
@@ -392,8 +360,6 @@ multiple_comparisons <- function(model.obj,
 
     # rounding to the correct number of decimal places
     pp.tab <- rapply(object = pp.tab, f = round, classes = "numeric", how = "replace", digits = decimals)
-    # pp.tab[[grep("groups", names(pp.tab))-2]] <- round(pp.tab[[grep("groups", names(pp.tab))-2]], decimals)
-    # pp.tab[[grep("groups", names(pp.tab))-1]] <- round(pp.tab[[grep("groups", names(pp.tab))-1]], decimals)
 
     if(save) {
         write.csv(pp.tab, file = paste0(savename, ".csv"), row.names = FALSE)
@@ -404,8 +370,6 @@ multiple_comparisons <- function(model.obj,
         ylab <- as.character(ylab)[2]
     }
     attr(pp.tab, "ylab") <- ylab
-
-    # output <- pp.tab
 
     if(grepl(":", classify)) {
         split_classify <- unlist(strsplit(classify, ":"))
@@ -424,8 +388,6 @@ multiple_comparisons <- function(model.obj,
     if(exists("aliased_names")) {
         attr(pp.tab, 'aliased') <- as.character(aliased_names)
     }
-
-    # class(output$predicted_values) <- c("mct", class(output$predicted_values))
 
     return(pp.tab)
 }
@@ -446,17 +408,17 @@ multiple_comparisons <- function(model.obj,
 #' print(output)
 print.mct <- function(x, ...) {
     stopifnot(inherits(x, "mct"))
+    print.data.frame(x, ...)
 
     if(!is.null(attr(x, "aliased"))) {
         aliased <- attr(x, "aliased")
         if(length(aliased) > 1) {
-            cat("Aliased levels are:", paste(aliased[1:(length(aliased)-1)], collapse = ", "), "and", aliased[length(aliased)], "\n\n")
+            cat("\nAliased levels are:", paste(aliased[1:(length(aliased)-1)], collapse = ", "), "and", aliased[length(aliased)], "\n")
         }
         else {
-            cat("Aliased level is:", aliased, "\n\n")
+            cat("\nAliased level is:", aliased, "\n")
         }
     }
-    print.data.frame(x, ...)
     invisible(x)
 }
 

@@ -7,8 +7,6 @@
 
 # mct handles aliased results in asreml with a warning
 
-    Aliased level is: 0.6_cwt:Victory 
-    
        Nitrogen     Variety predicted.value std.error groups    ci    low     up
     11    0_cwt     Victory           70.85      8.62     ab 14.57  56.29  85.42
     9     0_cwt Golden_rain           76.58      8.62      a 14.55  62.02  91.13
@@ -21,6 +19,8 @@
     4   0.4_cwt Golden_rain          116.63      8.67   cdef 14.65 101.99 131.28
     7   0.6_cwt Golden_rain          123.75      8.67      f 14.65 109.10 138.40
     8   0.6_cwt  Marvellous          127.53      8.64     ef 14.59 112.94 142.13
+    
+    Aliased level is: 0.6_cwt:Victory 
 
 # 3 way interaction works
 

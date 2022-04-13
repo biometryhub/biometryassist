@@ -282,25 +282,6 @@ test_that("multiple_comparisons output has a class of 'mct'", {
     expect_s3_class(output, "mct")
 })
 
-test_that("Models without factors throw errors", {
-    iris2 <- iris
-    iris2$Species <- as.character(iris2$Species)
-    dat.aov <- aov(Petal.Width ~ Species, data = iris2)
-    expect_error(multiple_comparisons(dat.aov, classify = "Species"),
-                 "Species must be a factor")
-    skip_if_not_installed("lme4")
-    quiet(library(lme4))
-    dat <- readRDS(test_path("data", "oats_data.rds"))
-    dat$Nitrogen <- as.character(dat$Nitrogen)
-    dat.lmer <- lmer(yield ~ Nitrogen*Variety + (1|Blocks), data = dat)
-    expect_error(multiple_comparisons(dat.lmer, classify = "Nitrogen"),
-                 "Nitrogen must be a factor")
-    dat$Variety <- as.character(dat$Variety)
-    dat.lmer <- lmer(yield ~ Nitrogen*Variety + (1|Blocks), data = dat)
-    expect_error(multiple_comparisons(dat.lmer, classify = "Nitrogen:Variety"),
-                 "Nitrogen and Variety must be factors")
-})
-
 
 
 

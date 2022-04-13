@@ -12,6 +12,7 @@
 - R.param and G.param are removed from the `asreml()` call on `resplot()` if not explicitly provided. (#21)
 - Fixed a bug where `install_asreml()` would not work on macOS Monterey. (#16)
 
+
 # biometryassist 1.0.0
 
 ## Minor changes
