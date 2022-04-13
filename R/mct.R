@@ -21,7 +21,7 @@
 #'
 #' @importFrom multcompView multcompLetters
 #' @importFrom predictmeans predictmeans
-#' @importFrom stats predict qtukey qt
+#' @importFrom stats model.frame predict qtukey qt
 #' @importFrom utils packageVersion
 #' @importFrom ggplot2 ggplot aes_ aes geom_errorbar geom_text geom_point theme_bw labs theme element_text facet_wrap
 #'
@@ -117,11 +117,9 @@ multiple_comparisons <- function(model.obj,
             aliased_names <- pred.obj$pvals[aliased, !names(pred.obj$pvals) %in% c("predicted.value", "std.error", "status")]
 
             if(is.data.frame(aliased_names) & length(aliased_names)==3) {
-                # aliased_names <- as.data.frame(aliased_names)
                 aliased_names <- paste(aliased_names[,1], aliased_names[,2], aliased_names[,3], sep = ":")
             }
             else if(is.data.frame(aliased_names) & length(aliased_names)==2) {
-                # aliased_names <- as.data.frame(aliased_names)
                 aliased_names <- paste(aliased_names[,1], aliased_names[,2], sep = ":")
             }
 
@@ -172,11 +170,11 @@ multiple_comparisons <- function(model.obj,
         vars <- unlist(strsplit(classify, "\\:"))
 
         if(inherits(model.obj, c("aov", "lm"))) {
-            mdf <- model.frame(model.obj)
+            mdf <- stats::model.frame(model.obj)
             not_factors <- intersect(vars, names(mdf)[!sapply(mdf, is.factor)])
         }
         else if(inherits(model.obj, c("lmerMod", "lmerModLmerTest"))) {
-            mdf <- eval(model.obj@call$data)
+            mdf <- get(model.obj@call$data, pos = parent.frame())
             not_factors <- intersect(vars, names(mdf)[!sapply(mdf, is.factor)])
         }
 
@@ -197,12 +195,10 @@ multiple_comparisons <- function(model.obj,
 
         SED <- matrix(data = sed, nrow = nrow(pp), ncol = nrow(pp))
         diag(SED) <- NA
-        # Mean <- pp$predicted.value
         ifelse(grepl(":", classify),
                pp$Names <- apply(pp[,unlist(strsplit(classify, ":"))], 1, paste, collapse = "_"),
                pp$Names <- pp[[classify]])
 
-        # Names <-  as.character(pp$Names)
         ndf <- pp$Df[1]
         crit.val <- 1/sqrt(2)* stats::qtukey((1-sig), nrow(pp), ndf)*SED
 
