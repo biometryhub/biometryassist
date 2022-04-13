@@ -40,7 +40,7 @@ The goal of biometryassist is to provide functions to aid in the Design and Anal
 
 ## Installation
 
-As of version 1.0.0 the biometryassist package is now [on CRAN](https://cloud.r-project.org/web/packages/biometryassist/index.html) `r emo::ji("raised_hands")`.
+As of version 1.0.0 the biometryassist package is now [on CRAN](https://cran.r-project.org/package=biometryassist) `r emo::ji("raised_hands")`.
 That means that installation is as easy as running:
 
 ```{r installing_cran, eval=FALSE}

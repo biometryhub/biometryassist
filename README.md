@@ -33,8 +33,8 @@ longer maintained, but can still be found at
 ## Installation
 
 As of version 1.0.0 the biometryassist package is now [on
-CRAN](https://cloud.r-project.org/web/packages/biometryassist/index.html)
-🙌. That means that installation is as easy as running:
+CRAN](https://cran.r-project.org/package=biometryassist) 🙌. That means
+that installation is as easy as running:
 
 ``` r
 install.packages("biometryassist")
