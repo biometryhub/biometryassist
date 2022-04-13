@@ -168,13 +168,26 @@ multiple_comparisons <- function(model.obj,
         ylab <- model.obj$formulae$fixed[[2]]
     }
 
-    else if (inherits(model.obj, c("aov", "lm", "lmerMod", "lmerModLmerTest"))) {
-        # non_factors <- sapply(2:ncol(model.obj$model), function(i) !is.factor(model.obj$model[[i]]))
-        # if(any(non_factors)) {
-        #     sapply()
-        #     model.obj <- update(model.obj, as.formula(paste0(". ~ . - ", classify, " + as.factor(", classify, ")")))
-        # }
-        pred.out <- suppressWarnings(predictmeans::predictmeans(model.obj, classify, mplot = FALSE, ndecimal = decimals))
+    else if(inherits(model.obj, c("aov", "lm", "lmerMod", "lmerModLmerTest"))) {
+        vars <- unlist(strsplit(classify, "\\:"))
+
+        if(inherits(model.obj, c("aov", "lm"))) {
+            mdf <- model.frame(model.obj)
+            not_factors <- intersect(vars, names(mdf)[!sapply(mdf, is.factor)])
+        }
+        else if(inherits(model.obj, c("lmerMod", "lmerModLmerTest"))) {
+            mdf <- eval(model.obj@call$data)
+            not_factors <- intersect(vars, names(mdf)[!sapply(mdf, is.factor)])
+        }
+
+        if(length(not_factors) == 1) {
+            stop(paste(not_factors, "must be a factor."), call. = F)
+        }
+        else if(length(not_factors) > 1) {
+            stop(paste(paste(not_factors[-length(not_factors)], collapse = ", "), "and", not_factors[length(not_factors)], "must be factors"), call. = F)
+        }
+
+        pred.out <- predictmeans::predictmeans(model.obj, classify, mplot = FALSE, ndecimal = decimals)
 
         pred.out$mean_table <- pred.out$mean_table[,!grepl("95", names(pred.out$mean_table))]
         sed <- pred.out$`Standard Error of Differences`[1]
