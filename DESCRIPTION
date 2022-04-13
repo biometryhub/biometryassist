@@ -1,7 +1,7 @@
 Type: Package
 Package: biometryassist
 Title: Functions to Assist Design and Analysis of Agronomic Experiments
-Version: 1.0.1
+Version: 1.1.0
 Authors@R: 
     c(person(given = "Sharon",
              family = "Nielsen",

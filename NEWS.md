@@ -1,4 +1,8 @@
-# biometryassist 1.0.1
+# biometryassist 1.1.0
+
+## Major changes
+
+- `multiple_comparisons()` no longer requires calls to `predict.asreml()` to be passed into the function, as the predicted values are now calculated internally. Additional arguments can be passed to `predict.asreml()` via the `...` argument. (#27)
 
 ## Minor changes
 
