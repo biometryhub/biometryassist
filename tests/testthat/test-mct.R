@@ -115,7 +115,7 @@ test_that("Interaction terms work", {
     skip_if_not(requireNamespace("asreml", quietly = TRUE))
     quiet(library(asreml))
     load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
-    output <- multiple_comparisons(model.asr, pred.asr, classify = "Nitrogen:Variety")
+    output <- multiple_comparisons(model.asr, classify = "Nitrogen:Variety")
     expect_equal(output$predicted.value,
                  c(70.85, 76.58, 85.86, 92.22, 99.91, 108.32, 113.1, 113.5, 116.63, 118.4, 123.75, 127.53))
 
@@ -162,35 +162,35 @@ test_that("mct removes aliased treatments in aov", {
 })
 
 
-test_that("mct handles aliased results in asreml with a warning", {
-    skip_if_not(requireNamespace("asreml", quietly = TRUE))
-    quiet(library(asreml))
-    model.asr <- readRDS(test_path("data", "model_asr.rds"))
-    pred.asr <- readRDS(test_path("data", "pred_asr.rds"))
-    model2.asr <- readRDS(test_path("data", "model_asr2.rds"))
-    pred2.asr <- readRDS(test_path("data", "pred_asr2.rds"))
-    dat <- readRDS(test_path("data", "oats_data.rds"))
-    pred.asr$pvals$predicted.value[12] <- NA
-    pred.asr$sed[12, ] <- NA
-    pred.asr$sed[, 12] <- NA
-    expect_warning(
-        expect_snapshot_output(
-            print(multiple_comparisons(model.asr, pred.asr, classify = "Nitrogen:Variety"))
-        )
-    )
-    pred.asr$pvals$predicted.value[11] <- NA
-    pred.asr$sed[11, ] <- NA
-    pred.asr$sed[, 11] <- NA
-    expect_warning(multiple_comparisons(model.asr, pred.asr, classify = "Nitrogen:Variety"), NULL)
-    pred2.asr$pvals$predicted.value[4] <- NA
-    pred2.asr$sed[4, ] <- NA
-    pred2.asr$sed[, 4] <- NA
-    expect_warning(multiple_comparisons(model2.asr, pred2.asr, classify = "Nitrogen"), NULL)
-    pred2.asr$pvals$predicted.value[3] <- NA
-    pred2.asr$sed[3, ] <- NA
-    pred2.asr$sed[, 3] <- NA
-    expect_warning(multiple_comparisons(model2.asr, pred2.asr, classify = "Nitrogen"), NULL)
-})
+# test_that("mct handles aliased results in asreml with a warning", {
+#     skip_if_not(requireNamespace("asreml", quietly = TRUE))
+#     quiet(library(asreml))
+#     model.asr <- readRDS(test_path("data", "model_asr.rds"))
+#     pred.asr <- readRDS(test_path("data", "pred_asr.rds"))
+#     model2.asr <- readRDS(test_path("data", "model_asr2.rds"))
+#     pred2.asr <- readRDS(test_path("data", "pred_asr2.rds"))
+#     dat <- readRDS(test_path("data", "oats_data.rds"))
+#     pred.asr$pvals$predicted.value[12] <- NA
+#     pred.asr$sed[12, ] <- NA
+#     pred.asr$sed[, 12] <- NA
+#     expect_warning(
+#         expect_snapshot_output(
+#             print(multiple_comparisons(model.asr, pred.asr, classify = "Nitrogen:Variety"))
+#         )
+#     )
+#     pred.asr$pvals$predicted.value[11] <- NA
+#     pred.asr$sed[11, ] <- NA
+#     pred.asr$sed[, 11] <- NA
+#     expect_warning(multiple_comparisons(model.asr, pred.asr, classify = "Nitrogen:Variety"), NULL)
+#     pred2.asr$pvals$predicted.value[4] <- NA
+#     pred2.asr$sed[4, ] <- NA
+#     pred2.asr$sed[, 4] <- NA
+#     expect_warning(multiple_comparisons(model2.asr, pred2.asr, classify = "Nitrogen"), NULL)
+#     pred2.asr$pvals$predicted.value[3] <- NA
+#     pred2.asr$sed[3, ] <- NA
+#     pred2.asr$sed[, 3] <- NA
+#     expect_warning(multiple_comparisons(model2.asr, pred2.asr, classify = "Nitrogen"), NULL)
+# })
 
 test_that("Significance values that are too high give a warning", {
     # dat.aov <- aov(Petal.Width ~ Species, data = iris)
@@ -204,23 +204,23 @@ test_that("Use of pred argument gives warning", {
                    "Argument `pred` has been deprecated and will be removed in a future version. Please use `classify` instead.")
 })
 
-test_that("Missing pred.obj object causes error", {
-    skip_if_not(requireNamespace("asreml", quietly = TRUE))
-    quiet(library(asreml))
-    model.asr <- readRDS(test_path("data", "model_asr.rds"))
-    dat <- readRDS(test_path("data", "oats_data.rds"))
-    expect_error(suppressWarnings(multiple_comparisons(model.asr, classify = "Nitrogen")),
-                 "You must provide a prediction object in pred.obj")
-})
+# test_that("Missing pred.obj object causes error", {
+#     skip_if_not(requireNamespace("asreml", quietly = TRUE))
+#     quiet(library(asreml))
+#     model.asr <- readRDS(test_path("data", "model_asr.rds"))
+#     dat <- readRDS(test_path("data", "oats_data.rds"))
+#     expect_error(suppressWarnings(multiple_comparisons(model.asr, classify = "Nitrogen")),
+#                  "You must provide a prediction object in pred.obj")
+# })
 
-test_that("Forgetting sed = T in pred.obj object causes error", {
-    skip_if_not(requireNamespace("asreml", quietly = TRUE))
-    quiet(library(asreml))
-    dat.asr <- quiet(asreml(Petal.Width ~ Species, data = iris, trace = FALSE))
-    pred.out <- predict.asreml(dat.asr, classify = "Species")
-    expect_error(multiple_comparisons(dat.asr, pred.out, classify = "Species"),
-                 "Prediction object \\(pred.obj\\) must be created with argument sed = TRUE\\.")
-})
+# test_that("Forgetting sed = T in pred.obj object causes error", {
+#     skip_if_not(requireNamespace("asreml", quietly = TRUE))
+#     quiet(library(asreml))
+#     dat.asr <- quiet(asreml(Petal.Width ~ Species, data = iris, trace = FALSE))
+#     # pred.out <- predict.asreml(dat.asr, classify = "Species")
+#     expect_error(multiple_comparisons(dat.asr, classify = "Species"),
+#                  "Prediction object \\(pred.obj\\) must be created with argument sed = TRUE\\.")
+# })
 
 test_that("lme4 model works", {
     skip_if_not_installed("lme4")

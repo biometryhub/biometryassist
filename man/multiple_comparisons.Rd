@@ -6,7 +6,6 @@
 \usage{
 multiple_comparisons(
   model.obj,
-  pred.obj,
   classify,
   sig = 0.05,
   int.type = "ci",
@@ -20,13 +19,13 @@ multiple_comparisons(
   save = FALSE,
   savename = "predicted_values",
   order,
-  pred
+  pred.obj,
+  pred,
+  ...
 )
 }
 \arguments{
 \item{model.obj}{An ASReml-R or aov model object. Will likely also work with \code{lme} (\code{\link[nlme:lme]{nlme::lme()}}), \code{lmerMod} (\code{\link[lme4:lmer]{lme4::lmer()}}) models as well.}
-
-\item{pred.obj}{An ASReml-R prediction object with \code{sed = TRUE}. Not required for other models, so set to \code{NA}.}
 
 \item{classify}{Name of predictor variable as string.}
 
@@ -54,7 +53,11 @@ multiple_comparisons(
 
 \item{order}{Deprecated. Use \code{descending} instead.}
 
+\item{pred.obj}{Deprecated. Predicted values are calculated within the function from version 1.0.1 onwards.}
+
 \item{pred}{Deprecated. Use \code{classify} instead.}
+
+\item{...}{Other arguments passed through to (\code{\link[asreml:predict.asreml]{asreml::predict.asreml()}}).}
 }
 \value{
 A list containing a data frame with predicted means, standard errors, confidence interval upper and lower bounds, and significant group allocations (named \code{predicted_values}), as well as a plot visually displaying the predicted values (named \code{predicted_plot}). If some of the predicted values are aliased, a warning is printed, and the aliased treatment levels are returned in the output (named \code{aliased}).
@@ -95,12 +98,9 @@ model.asr <- asreml(yield ~ Nitrogen + Variety + Nitrogen:Variety,
 
 wald(model.asr) #Nitrogen main effect significant
 
-#Calculate predicted means
-pred.asr <- predict(model.asr, classify = "Nitrogen", sed = TRUE)
-
 #Determine ranking and groups according to Tukey's Test
-pred.out <- multiple_comparisons(model.obj = model.asr, pred.obj = pred.asr,
-                    classify = "Nitrogen", descending = TRUE, decimals = 5)
+pred.out <- multiple_comparisons(model.obj = model.asr, classify = "Nitrogen",
+                    descending = TRUE, decimals = 5)
 
 pred.out}
 

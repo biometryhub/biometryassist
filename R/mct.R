@@ -3,7 +3,6 @@
 #' A function for comparing and ranking predicted means with Tukey's Honest Significant Difference (HSD) Test.
 #'
 #' @param model.obj An ASReml-R or aov model object. Will likely also work with `lme` ([nlme::lme()]), `lmerMod` ([lme4::lmer()]) models as well.
-#' @param pred.obj An ASReml-R prediction object with `sed = TRUE`. Not required for other models, so set to `NA`.
 #' @param classify Name of predictor variable as string.
 #' @param sig The significance level, numeric between 0 and 1. Default is 0.05.
 #' @param int.type The type of confidence interval to calculate. One of `ci`, `1se` or `2se`. Default is `ci`.
@@ -18,6 +17,8 @@
 #' @param savename A file name for the predicted values to be saved to. Default is `predicted_values`.
 #' @param order Deprecated. Use `descending` instead.
 #' @param pred Deprecated. Use `classify` instead.
+#' @param pred.obj Deprecated. Predicted values are calculated within the function from version 1.0.1 onwards.
+#' @param ... Other arguments passed through to ([asreml::predict.asreml()]).
 #'
 #' @importFrom multcompView multcompLetters
 #' @importFrom predictmeans predictmeans
@@ -61,19 +62,15 @@
 #'
 #' wald(model.asr) #Nitrogen main effect significant
 #'
-#' #Calculate predicted means
-#' pred.asr <- predict(model.asr, classify = "Nitrogen", sed = TRUE)
-#'
 #' #Determine ranking and groups according to Tukey's Test
-#' pred.out <- multiple_comparisons(model.obj = model.asr, pred.obj = pred.asr,
-#'                     classify = "Nitrogen", descending = TRUE, decimals = 5)
+#' pred.out <- multiple_comparisons(model.obj = model.asr, classify = "Nitrogen",
+#'                     descending = TRUE, decimals = 5)
 #'
 #' pred.out}
 #'
 #' @export
 #'
 multiple_comparisons <- function(model.obj,
-                                 pred.obj,
                                  classify,
                                  sig = 0.05,
                                  int.type = "ci",
@@ -87,7 +84,11 @@ multiple_comparisons <- function(model.obj,
                                  save = FALSE,
                                  savename = "predicted_values",
                                  order,
-                                 pred) {
+                                 pred.obj,
+                                 pred,
+                                 ...) {
+
+    rlang::check_dots_used()
 
     if(!missing(pred)) {
         warning("Argument `pred` has been deprecated and will be removed in a future version. Please use `classify` instead.")
@@ -104,10 +105,11 @@ multiple_comparisons <- function(model.obj,
 
     if(inherits(model.obj, "asreml")){
 
-        if(missing(pred.obj)) {
-            stop("You must provide a prediction object in pred.obj")
+        if(!missing(pred.obj)) {
+            warning("Argument `pred.obj` has been deprecated and will be removed in a future version. Predictions are now performed internally in the function.")
         }
 
+        pred.obj <- asreml::predict.asreml(model.obj, classify = classify, sed = TRUE, trace = FALSE, ...)
         # Check if any treatments are aliased, and remove them and print a warning
         if(anyNA(pred.obj$pvals$predicted.value)) {
             aliased <- which(is.na(pred.obj$pvals$predicted.value))
