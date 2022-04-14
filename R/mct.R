@@ -3,25 +3,26 @@
 #' A function for comparing and ranking predicted means with Tukey's Honest Significant Difference (HSD) Test.
 #'
 #' @param model.obj An ASReml-R or aov model object. Will likely also work with `lme` ([nlme::lme()]), `lmerMod` ([lme4::lmer()]) models as well.
-#' @param pred.obj An ASReml-R prediction object with `sed = TRUE`. Not required for other models, so set to `NA`.
 #' @param classify Name of predictor variable as string.
 #' @param sig The significance level, numeric between 0 and 1. Default is 0.05.
 #' @param int.type The type of confidence interval to calculate. One of `ci`, `1se` or `2se`. Default is `ci`.
 #' @param trans Transformation that was applied to the response variable. One of `log`, `sqrt`, `logit` or `inverse`. Default is `NA`.
 #' @param offset Numeric offset applied to response variable prior to transformation. Default is `NA`. Use 0 if no offset was applied to the transformed data. See Details for more information.
 #' @param decimals Controls rounding of decimal places in output. Default is 2 decimal places.
-#' @param order Order of the letters in the groups output. Options are `'default'`, `'ascending'` or `'descending'`. Alternative options that are accepted are `increasing` and `decreasing`. Partial matching of text is performed, allowing entry of `'desc'` for example.
+#' @param descending Logical (default `FALSE`). Order of the output sorted by the predicted value. If `TRUE`, largest will be first, through to smallest last.
 #' @param plot Automatically produce a plot of the output of the multiple comparison test? Default is `FALSE`. This is maintained for backwards compatibility, but the preferred method now is to use `autoplot(<multiple_comparisons output>)`. See [biometryassist::autoplot.mct()] for more details.
 #' @param label_height Height of the text labels above the upper error bar on the plot. Default is 0.1 (10%) of the difference between upper and lower error bars above the top error bar.
 #' @param rotation Rotate the text output as Treatments within the plot. Allows for easier reading of long treatment labels. Number between 0 and 360 (inclusive) - default 0
 #' @param save Logical (default `FALSE`). Save the predicted values to a csv file?
 #' @param savename A file name for the predicted values to be saved to. Default is `predicted_values`.
+#' @param order Deprecated. Use `descending` instead.
 #' @param pred Deprecated. Use `classify` instead.
+#' @param pred.obj Deprecated. Predicted values are calculated within the function from version 1.0.1 onwards.
+#' @param ... Other arguments passed through to `predict.asreml()`.
 #'
 #' @importFrom multcompView multcompLetters
 #' @importFrom predictmeans predictmeans
-#' @importFrom stats predict qtukey qt
-#' @importFrom stringi stri_order
+#' @importFrom stats model.frame predict qtukey qt
 #' @importFrom utils packageVersion
 #' @importFrom ggplot2 ggplot aes_ aes geom_errorbar geom_text geom_point theme_bw labs theme element_text facet_wrap
 #'
@@ -61,48 +62,54 @@
 #'
 #' wald(model.asr) #Nitrogen main effect significant
 #'
-#' #Calculate predicted means
-#' pred.asr <- predict(model.asr, classify = "Nitrogen", sed = TRUE)
-#'
 #' #Determine ranking and groups according to Tukey's Test
-#' pred.out <- multiple_comparisons(model.obj = model.asr, pred.obj = pred.asr,
-#'                     classify = "Nitrogen", order = "descending", decimals = 5)
+#' pred.out <- multiple_comparisons(model.obj = model.asr, classify = "Nitrogen",
+#'                     descending = TRUE, decimals = 5)
 #'
 #' pred.out}
 #'
 #' @export
 #'
 multiple_comparisons <- function(model.obj,
-                    pred.obj,
-                    classify,
-                    sig = 0.05,
-                    int.type = "ci",
-                    trans = NA,
-                    offset = NA,
-                    decimals = 2,
-                    order = "default",
-                    plot = FALSE,
-                    label_height = 0.1,
-                    rotation = 0,
-                    save = FALSE,
-                    savename = "predicted_values",
-                    pred) {
+                                 classify,
+                                 sig = 0.05,
+                                 int.type = "ci",
+                                 trans = NA,
+                                 offset = NA,
+                                 decimals = 2,
+                                 descending = FALSE,
+                                 plot = FALSE,
+                                 label_height = 0.1,
+                                 rotation = 0,
+                                 save = FALSE,
+                                 savename = "predicted_values",
+                                 order,
+                                 pred.obj,
+                                 pred,
+                                 ...) {
+
+    rlang::check_dots_used()
 
     if(!missing(pred)) {
-        warning("Argument pred has been deprecated and will be removed in a future version. Please use classify instead.")
+        warning("Argument `pred` has been deprecated and will be removed in a future version. Please use `classify` instead.")
         classify <- pred
     }
 
+    if(!missing(order)) {
+        warning("Argument `order` has been deprecated and will be removed in a future version. Please use `descending` instead.")
+    }
+
     if(sig > 0.5)  {
-        warning("Significance level given by sig is high. Perhaps you meant ", 1-sig, "?", call. = FALSE)
+        warning("Significance level given by `sig` is high. Perhaps you meant ", 1-sig, "?", call. = FALSE)
     }
 
     if(inherits(model.obj, "asreml")){
 
-        if(missing(pred.obj)) {
-            stop("You must provide a prediction object in pred.obj")
+        if(!missing(pred.obj)) {
+            warning("Argument `pred.obj` has been deprecated and will be removed in a future version. Predictions are now performed internally in the function.")
         }
 
+        pred.obj <- asreml::predict.asreml(model.obj, classify = classify, sed = TRUE, trace = FALSE, ...)
         # Check if any treatments are aliased, and remove them and print a warning
         if(anyNA(pred.obj$pvals$predicted.value)) {
             aliased <- which(is.na(pred.obj$pvals$predicted.value))
@@ -111,18 +118,24 @@ multiple_comparisons <- function(model.obj,
             # If multiple treatments, first need to concatenate columns, then collapse rows
             aliased_names <- pred.obj$pvals[aliased, !names(pred.obj$pvals) %in% c("predicted.value", "std.error", "status")]
 
-            if(grepl(":", classify)) {
-                # aliased_names <- as.data.frame(aliased_names)
-                aliased_names <- paste(apply(aliased_names, 1, paste, collapse = ":"), collapse = ", ")
+            if(is.data.frame(aliased_names) & length(aliased_names)==3) {
+                aliased_names <- paste(aliased_names[,1], aliased_names[,2], aliased_names[,3], sep = ":")
+            }
+            else if(is.data.frame(aliased_names) & length(aliased_names)==2) {
+                aliased_names <- paste(aliased_names[,1], aliased_names[,2], sep = ":")
+            }
+
+            if(length(aliased_names) > 1) {
+                warn_string <- paste0("Some levels of ", classify, " are aliased. They have been removed from predicted output.\n  Aliased levels are: ", paste(aliased_names, collapse = ", "), ".\n  These levels are saved in the output object.")
             }
             else {
-                aliased_names <- paste(aliased_names, collapse = ", ")
+                warn_string <- paste0("A level of ", classify, " is aliased. It has been removed from predicted output.\n  Aliased level is: ", aliased_names, ".\n  This level is saved as an attribute of the output object.")
             }
 
             pred.obj$pvals <- pred.obj$pvals[!is.na(pred.obj$pvals$predicted.value),]
             pred.obj$pvals <- droplevels(pred.obj$pvals)
             pred.obj$sed <- pred.obj$sed[-aliased, -aliased]
-            warning(paste0("Some levels of ", classify, " are aliased. They have been removed from predicted output.\n  Aliased levels are: ", aliased_names, "\n  These levels are saved in the output object."))
+            warning(warn_string, call. = FALSE)
         }
 
         #For use with asreml 4+
@@ -155,8 +168,26 @@ multiple_comparisons <- function(model.obj,
         ylab <- model.obj$formulae$fixed[[2]]
     }
 
-    else if (inherits(model.obj, c("aov", "lm", "lmerMod", "lmerModLmerTest"))) {
-        pred.out <- suppressWarnings(predictmeans::predictmeans(model.obj, classify, mplot = FALSE, ndecimal = decimals))
+    else if(inherits(model.obj, c("aov", "lm", "lmerMod", "lmerModLmerTest"))) {
+        # vars <- unlist(strsplit(classify, "\\:"))
+        #
+        # if(inherits(model.obj, c("aov", "lm"))) {
+        #     mdf <- stats::model.frame(model.obj)
+        #     not_factors <- intersect(vars, names(mdf)[!sapply(mdf, is.factor)])
+        # }
+        # else if(inherits(model.obj, c("lmerMod", "lmerModLmerTest"))) {
+        #     mdf <- get(model.obj@call$data, pos = parent.frame())
+        #     not_factors <- intersect(vars, names(mdf)[!sapply(mdf, is.factor)])
+        # }
+        #
+        # if(length(not_factors) == 1) {
+        #     stop(paste(not_factors, "must be a factor."), call. = F)
+        # }
+        # else if(length(not_factors) > 1) {
+        #     stop(paste(paste(not_factors[-length(not_factors)], collapse = ", "), "and", not_factors[length(not_factors)], "must be factors"), call. = F)
+        # }
+
+        pred.out <- predictmeans::predictmeans(model.obj, classify, mplot = FALSE, ndecimal = decimals)
 
         pred.out$mean_table <- pred.out$mean_table[,!grepl("95", names(pred.out$mean_table))]
         sed <- pred.out$`Standard Error of Differences`[1]
@@ -166,12 +197,10 @@ multiple_comparisons <- function(model.obj,
 
         SED <- matrix(data = sed, nrow = nrow(pp), ncol = nrow(pp))
         diag(SED) <- NA
-        # Mean <- pp$predicted.value
         ifelse(grepl(":", classify),
                pp$Names <- apply(pp[,unlist(strsplit(classify, ":"))], 1, paste, collapse = "_"),
                pp$Names <- pp[[classify]])
 
-        # Names <-  as.character(pp$Names)
         ndf <- pp$Df[1]
         crit.val <- 1/sqrt(2)* stats::qtukey((1-sig), nrow(pp), ndf)*SED
 
@@ -213,29 +242,7 @@ multiple_comparisons <- function(model.obj,
 
     names(diffs) <- m
 
-    # Check ordering of output
-    # Refactor with switch cases?
-    ordering <- grep(order, c('ascending', 'descending', 'increasing', 'decreasing', 'default'), value = TRUE)
-
-    if(length(ordering) == 0) {
-        # No match found, error
-        stop("order must be one of 'ascending', 'increasing', 'descending', 'decreasing' or 'default'")
-    }
-    else if(ordering == "ascending" | ordering == "increasing") {
-        # Set ordering to FALSE to set decreasing = FALSE in order function
-        ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp, reversed = TRUE)
-        ordering <- TRUE
-    }
-
-    else if(ordering == "descending" | ordering == "decreasing") {
-        # Set ordering to TRUE to set decreasing = TRUE in order function
-        ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp, reversed = FALSE)
-        ordering <- FALSE
-    }
-
-    else if(ordering == "default") {
-        ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp)
-    }
+    ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp, reversed = !descending)
 
     rr <- data.frame(groups = ll$Letters)
     rr$Names <- row.names(rr)
@@ -334,17 +341,7 @@ multiple_comparisons <- function(model.obj,
 
     }
 
-    # Change the order of letters and factors if ordering == default
-    if(ordering == "default") {
-        # Change to a factor for use in ordering if needed
-        pp.tab <- pp.tab[stringi::stri_order(pp.tab$Names),]
-        pp.tab$groups <- factor(pp.tab$groups)
-        levs <- unique(pp.tab$groups)
-        levels(pp.tab$groups) <- sort(levs)[order(levs)]
-    }
-    else {
-        pp.tab <- pp.tab[order(pp.tab$predicted.value, decreasing = !ordering),]
-    }
+    pp.tab <- pp.tab[base::order(pp.tab$predicted.value, decreasing = descending),]
 
     pp.tab$Names <- NULL
 
@@ -365,8 +362,6 @@ multiple_comparisons <- function(model.obj,
 
     # rounding to the correct number of decimal places
     pp.tab <- rapply(object = pp.tab, f = round, classes = "numeric", how = "replace", digits = decimals)
-    # pp.tab[[grep("groups", names(pp.tab))-2]] <- round(pp.tab[[grep("groups", names(pp.tab))-2]], decimals)
-    # pp.tab[[grep("groups", names(pp.tab))-1]] <- round(pp.tab[[grep("groups", names(pp.tab))-1]], decimals)
 
     if(save) {
         write.csv(pp.tab, file = paste0(savename, ".csv"), row.names = FALSE)
@@ -377,8 +372,6 @@ multiple_comparisons <- function(model.obj,
         ylab <- as.character(ylab)[2]
     }
     attr(pp.tab, "ylab") <- ylab
-
-    # output <- pp.tab
 
     if(grepl(":", classify)) {
         split_classify <- unlist(strsplit(classify, ":"))
@@ -395,10 +388,8 @@ multiple_comparisons <- function(model.obj,
     }
 
     if(exists("aliased_names")) {
-        attr(pp.tab, 'aliased') <- aliased_names
+        attr(pp.tab, 'aliased') <- as.character(aliased_names)
     }
-
-    # class(output$predicted_values) <- c("mct", class(output$predicted_values))
 
     return(pp.tab)
 }
@@ -407,7 +398,7 @@ multiple_comparisons <- function(model.obj,
 #' Print method for multiple_comparisons
 #'
 #' @param x An mct object to print to the console.
-#' @param ... Other arguments to be passed through.
+#' @inheritParams rlang::args_dots_used
 #'
 #' @return The original object invisibly.
 #' @seealso [multiple_comparisons()]
@@ -419,17 +410,17 @@ multiple_comparisons <- function(model.obj,
 #' print(output)
 print.mct <- function(x, ...) {
     stopifnot(inherits(x, "mct"))
+    print.data.frame(x, ...)
 
     if(!is.null(attr(x, "aliased"))) {
         aliased <- attr(x, "aliased")
         if(length(aliased) > 1) {
-            cat("Aliased levels are:", paste(aliased[1:(length(aliased)-1)], collapse = ", "), "and", aliased[length(aliased)], "\n\n")
+            cat("\nAliased levels are:", paste(aliased[1:(length(aliased)-1)], collapse = ", "), "and", aliased[length(aliased)], "\n")
         }
         else {
-            cat("Aliased level is: ", aliased, "\n\n")
+            cat("\nAliased level is:", aliased, "\n")
         }
     }
-    print.data.frame(x, ...)
     invisible(x)
 }
 

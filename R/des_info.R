@@ -27,7 +27,7 @@
 #' @importFrom graphics plot
 #' @importFrom ggplot2 ggsave
 #' @importFrom utils write.csv
-#' @importFrom ellipsis check_dots_used
+#' @importFrom rlang check_dots_used
 #'
 #' @return A list containing a data frame with the complete design, a ggplot object with plot layout, the seed (if `return.seed = TRUE`), and the `satab` object, allowing repeat output of the `satab` table via `cat(output$satab)`.
 #'
@@ -101,7 +101,7 @@ des_info <- function(design.obj,
                      ...) {
 
     # Error checking of inputs
-    ellipsis::check_dots_used()
+    rlang::check_dots_used()
 
     # Check brows and bcols supplied if necessary
     if(design.obj$parameters$design == "rcbd" & anyNA(c(brows, bcols))) {
@@ -205,7 +205,7 @@ des_info <- function(design.obj,
         fac.sep <- rep(fac.sep, times = 2)
     }
 
-    # if (return.seed) {
+    # if(return.seed) {
     #     des.seed <- design.obj$parameters$seed
     # }
     # else {
@@ -217,7 +217,7 @@ des_info <- function(design.obj,
            design <- design.obj$parameters$design
     )
 
-    if (design == "crd") {
+    if(design == "crd") {
         plan <- expand.grid(row = 1:nrows, col = 1:ncols)
         des <- cbind(plan, design.obj$book)
 
@@ -231,7 +231,7 @@ des_info <- function(design.obj,
         ntrt <- nlevels(as.factor(des$treatments))
     }
 
-    if (design == "rcbd") {
+    if(design == "rcbd") {
         # names(design.obj$book)[names(design.obj$book)=="trt"] <- "treatments"
         # names(design.obj$book)[ncol(design.obj$book)] <- "treatments"
         ntrt <- nlevels(as.factor(design.obj$book[,ncol(design.obj$book)]))
@@ -241,20 +241,20 @@ des_info <- function(design.obj,
         rr <- nrows / brows
         cc <- ncols / bcols
         # Blocking across rows: brows == ntrt in a single column
-        if (brows == ntrt) {
+        if(brows == ntrt) {
             des <- design.obj$book
             plan <- expand.grid(row = 1:nrows, col = 1:ncols) # 2
         }
 
         # Blocking incomplete rows all columns
-        if (rr > 1 & cc == 1) {
+        if(rr > 1 & cc == 1) {
             des <- design.obj$book
             plan <- expand.grid(col = 1:ncols, row = 1:nrows) # 1
         }
 
 
         # Blocking incomplete rows and incomplete columns
-        if (rr > 1 & cc > 1) {
+        if(rr > 1 & cc > 1) {
             des <- design.obj$book
 
             # set up empty columns in the plan data.frame
@@ -280,14 +280,14 @@ des_info <- function(design.obj,
 
 
         # Blocking across columns: bcols == ntrt in a single row
-        if (bcols == ntrt) {
+        if(bcols == ntrt) {
             des <- design.obj$book
             plan <- expand.grid(col = 1:ncols, row = 1:nrows)
         } # 4
 
 
         # Blocking incomplete columns all rows
-        if (cc > 1 & rr == 1) {
+        if(cc > 1 & rr == 1) {
             des <- design.obj$book
 
             # set up empty columns in the plan data.frame
@@ -312,7 +312,7 @@ des_info <- function(design.obj,
         names(des)[ncol(des)] <- "treatments"
     }
 
-    if (design == "lsd") {
+    if(design == "lsd") {
         des <- design.obj$book
         des$row <- as.numeric(des$row)
         des$col <- as.numeric(des$col)
@@ -321,7 +321,7 @@ des_info <- function(design.obj,
         ntrt <- nlevels(as.factor(des$treatments))
     }
 
-    if (design == "factorial_crd") {
+    if(design == "factorial_crd") {
         treatments <- NULL
         plan <- expand.grid(row = 1:nrows, col = 1:ncols)
         des <- cbind(plan, design.obj$book, row.names = NULL)
@@ -340,7 +340,7 @@ des_info <- function(design.obj,
         ntrt <- nlevels(des$treatments)
     }
 
-    if (design == "factorial_rcbd") {
+    if(design == "factorial_rcbd") {
         treatments <- NULL
 
         for (i in 3:ncol(design.obj$book)) {
@@ -354,20 +354,20 @@ des_info <- function(design.obj,
         rr <- nrows / brows
         cc <- ncols / bcols
         # Blocking across rows: brows == ntrt in a single column
-        if (brows == ntrt) {
+        if(brows == ntrt) {
             des <- design.obj$book
             plan <- expand.grid(row = 1:nrows, col = 1:ncols) # 2
         }
 
         # Blocking incomplete rows all columns
-        if (rr > 1 & cc == 1) {
+        if(rr > 1 & cc == 1) {
             des <- design.obj$book
             plan <- expand.grid(col = 1:ncols, row = 1:nrows) # 1
         }
 
 
         # Blocking incomplete rows and incomplete columns
-        if (rr > 1 & cc > 1) {
+        if(rr > 1 & cc > 1) {
             des <- design.obj$book
 
             # set up empty columns in the plan data.frame
@@ -393,14 +393,14 @@ des_info <- function(design.obj,
 
 
         # Blocking across columns: bcols == ntrt in a single row
-        if (bcols == ntrt) {
+        if(bcols == ntrt) {
             des <- design.obj$book
             plan <- expand.grid(col = 1:ncols, row = 1:nrows)
         } # 4
 
 
         # Blocking incomplete columns all rows
-        if (cc > 1 & rr == 1) {
+        if(cc > 1 & rr == 1) {
             des <- design.obj$book
 
             # set up empty columns in the plan data.frame
@@ -431,7 +431,7 @@ des_info <- function(design.obj,
         des <- cbind(plan, des)
     }
 
-    if (design == "factorial_lsd") {
+    if(design == "factorial_lsd") {
         treatments <- NULL
         des <- design.obj$book
 
@@ -451,7 +451,7 @@ des_info <- function(design.obj,
         des$col <- as.numeric(des$col)
     }
 
-    if (design == "split") {
+    if(design == "split") {
         des <- design.obj$book
         spfacs <- c("plots", "splots", "block")
 
@@ -469,17 +469,17 @@ des_info <- function(design.obj,
         rr <- nrows / brows
         cc <- ncols / bcols
         # Blocking across rows: brows == ntrt in a single column
-        if (brows == ntrt) {
+        if(brows == ntrt) {
             plan <- expand.grid(row = 1:nrows, col = 1:ncols) # 2
         }
 
         # Blocking incomplete rows all columns
-        if (rr > 1 & cc == 1) {
+        if(rr > 1 & cc == 1) {
             plan <- expand.grid(col = 1:ncols, row = 1:nrows) # 1
         }
 
         # Blocking incomplete rows and incomplete columns
-        if (rr > 1 & cc > 1) {
+        if(rr > 1 & cc > 1) {
 
             # set up empty columns in the plan data.frame
             plan <- expand.grid(row = 1:nrows, col = 1:ncols)
@@ -504,13 +504,13 @@ des_info <- function(design.obj,
 
 
         # Blocking across columns: bcols == ntrt in a single row
-        if (bcols == ntrt) {
+        if(bcols == ntrt) {
             plan <- expand.grid(col = 1:ncols, row = 1:nrows)
         } # 4
 
 
         # Blocking incomplete columns all rows
-        if (cc > 1 & rr == 1) {
+        if(cc > 1 & rr == 1) {
 
             # set up empty columns in the plan data.frame
             plan <- expand.grid(row = 1:nrows, col = 1:ncols)
@@ -543,7 +543,7 @@ des_info <- function(design.obj,
     class(des) <- c("design", class(des))
 
     if(plot) {
-        info$plot.des = autoplot(des, rotation = rotation, size = size, margin = margin)
+        info$plot.des <- autoplot(des, rotation = rotation, size = size, margin = margin)
     }
     info$satab <- satab(design.obj)
 
@@ -578,7 +578,7 @@ des_info <- function(design.obj,
         write.csv(info$design, file = paste0(savename, ".csv"), row.names = FALSE)
     }
 
-    if (return.seed) {
+    if(return.seed) {
         info$seed <- design.obj$parameters$seed
     }
 

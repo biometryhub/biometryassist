@@ -45,7 +45,7 @@ logl_test <- function(model.obj, rand.terms = NULL, resid.terms = NULL, decimals
     # Find terms on the boundary
 
     n <- rep(0, 6)
-    warns <- character()
+    # warns <- character()
 
     bnd <- rownames(summary(model.obj)$varcomp[summary(model.obj)$varcomp$bound == "B",])
 
@@ -85,27 +85,27 @@ logl_test <- function(model.obj, rand.terms = NULL, resid.terms = NULL, decimals
         if (length(brand.terms > 0)) {
             model.obj <- quiet(update(model.obj, random = as.formula(paste("~ . - ", paste(brand.terms, collapse = " - "), sep = " "))))
             n[1] <- 1
-            while (!model.obj$converge & n[1] < 10) {
+            while (!model.obj$converge & (n[1] < 10)) {
                 model.obj <- quiet(update(model.obj))
                 n[1] <- n[1] + 1
-                if(n[1]==10) {
-                    # warns <- c(warns, 'Model did not converge')
-                }
+                # if(n[1]==10) {
+                #     # warns <- c(warns, 'Model did not converge')
+                # }
             }
 
             n[2] <- 1
             while (any(model.obj$vparameters.pc > 1) & n[2] < 10) {
-                model.obj <- quiet(update(model.obj))
+                model.obj <- quiet(update(model.obj, ))
                 n[2] <- n[2] + 1
-                if(n[2]==10) {
-                    # warns <- c(warns, 'Model did not converge')
-                }
+                # if(n[2]==10) {
+                #     # warns <- c(warns, 'Model did not converge')
+                # }
             }
         }
 
         # Fitting the models
 
-        for (i in 1:length(tt)) {
+        for (i in seq_along(tt)) {
             if (grepl("ar", tt[i])) {
                 tt.new <- paste("id", substring(tt[i], 4), sep = "")
                 old.resid <- substring(toString(model.obj$formulae$residual), 4)
@@ -118,18 +118,18 @@ logl_test <- function(model.obj, rand.terms = NULL, resid.terms = NULL, decimals
                 while (!model.obj1$converge & n[3] < 10) {
                     model.obj1 <- quiet(update(model.obj1))
                     n[3] <- n[3] + 1
-                    if(n[3]==10) {
-                        warns <- c(warns, 'Model did not converge')
-                    }
+                    # if(n[3]==10) {
+                    #     warns <- c(warns, 'Model did not converge')
+                    # }
                 }
 
                 n[4] <- 1
-                while (!model.obj1$converge > 1 & n[4] < 10) {
+                while (!model.obj1$converge & n[4] < 10) {
                     model.obj1 <- quiet(update(model.obj1))
                     n[4] <- n[4] + 1
-                    if(n[4]==10) {
-                        warns <- c(warns, 'Model did not converge')
-                    }
+                    # if(n[4]==10) {
+                    #     warns <- c(warns, 'Model did not converge')
+                    # }
                 }
 
                 # Logl test
@@ -156,18 +156,18 @@ logl_test <- function(model.obj, rand.terms = NULL, resid.terms = NULL, decimals
                 while (!model.obj1$converge & n[5] < 10) {
                     model.obj1 <- quiet(update(model.obj1))
                     n[5] <- n[5] + 1
-                    if(n[5]==10) {
-                        warns <- c(warns, 'Model did not converge')
-                    }
+                    # if(n[5]==10) {
+                    #     warns <- c(warns, 'Model did not converge')
+                    # }
                 }
 
                 n[6] <- 1
                 while (any(model.obj1$vparameters.pc > 1) & n[6] < 10) {
                     model.obj1 <- quiet(update(model.obj1))
                     n[6] <- n[6] + 1
-                    if(n[6]==10) {
-                        warns <- c(warns, 'Model did not converge')
-                    }
+                    # if(n[6]==10) {
+                    #     warns <- c(warns, 'Model did not converge')
+                    # }
                 }
 
                 # Logl test
@@ -198,9 +198,9 @@ logl_test <- function(model.obj, rand.terms = NULL, resid.terms = NULL, decimals
     all.terms <- c(rand.terms, resid.terms)
     test.df <- test.df[is.element(test.df$Term, all.terms),]
 
-    if(length(warns) > 0 & !quiet) {
-        warning(warns[1], call. = FALSE)
-    }
+    # if(length(warns) > 0 & !quiet) {
+    #     warning(warns[1], call. = FALSE)
+    # }
 
     return(test.df)
 }

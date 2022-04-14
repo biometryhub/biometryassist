@@ -57,12 +57,12 @@ test_that("transformations are handled", {
     expect_equal(output.sqrt$predicted.value, c(0.49, 1.15, 1.42))
     expect_equal(output.sqrt2$predicted.value, c(0.49, 1.15, 1.42))
     expect_equal(output.sqrt3$predicted.value, c(0.49, 1.15, 1.42))
-    expect_equal(output.logit$predicted.value, c(-3.07, -4.87, -5.30))
-    expect_equal(output.logit2$predicted.value, c(-3.07, -4.87, -5.30))
-    expect_equal(output.logit3$predicted.value, c(-3.07, -4.87, -5.30))
-    expect_equal(output.inverse$predicted.value, c(4.79, 0.77, 0.50))
-    expect_equal(output.inverse2$predicted.value, c(4.79, 0.77, 0.50))
-    expect_equal(output.inverse3$predicted.value, c(4.79, 0.77, 0.50))
+    expect_equal(output.logit$predicted.value, c(-5.30, -4.87, -3.07))
+    expect_equal(output.logit2$predicted.value, c(-5.30, -4.87, -3.07))
+    expect_equal(output.logit3$predicted.value, c(-5.30, -4.87, -3.07))
+    expect_equal(output.inverse$predicted.value, c(0.50, 0.77, 4.79))
+    expect_equal(output.inverse2$predicted.value, c(0.50, 0.77, 4.79))
+    expect_equal(output.inverse3$predicted.value, c(0.50, 0.77, 4.79))
 
     # skip_if(interactive())
     vdiffr::expect_doppelganger("mct log output", autoplot(output.log))
@@ -77,8 +77,8 @@ test_that("transformations with no offset produces an error", {
 })
 
 test_that("ordering output works", {
-    output1 <- multiple_comparisons(dat.aov, classify = "Species", order = "asc")
-    output2 <- multiple_comparisons(dat.aov, classify = "Species", order = "desc")
+    output1 <- multiple_comparisons(dat.aov, classify = "Species", descending = FALSE)
+    output2 <- multiple_comparisons(dat.aov, classify = "Species", descending = TRUE)
     expect_equal(output1$predicted.value, c(0.25, 1.33, 2.03))
     expect_equal(output2$predicted.value, c(2.03, 1.33, 0.25))
 
@@ -115,22 +115,18 @@ test_that("Interaction terms work", {
     skip_if_not(requireNamespace("asreml", quietly = TRUE))
     quiet(library(asreml))
     load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
-    output <- multiple_comparisons(model.asr, pred.asr, classify = "Nitrogen:Variety")
+    output <- multiple_comparisons(model.asr, classify = "Nitrogen:Variety")
     expect_equal(output$predicted.value,
-                 c(76.58, 85.86, 70.85, 99.91, 108.32, 92.22, 116.63, 113.50, 113.10, 123.75, 127.53, 118.40))
+                 c(70.85, 76.58, 85.86, 92.22, 99.91, 108.32, 113.1, 113.5, 116.63, 118.4, 123.75, 127.53))
 
     # skip_if(interactive())
     vdiffr::expect_doppelganger("Interactions work", autoplot(output))
 })
 
-test_that("invalid order input produces an error", {
+test_that("order argument is deprecated", {
     # dat.aov <- aov(Petal.Width ~ Species, data = iris)
-    expect_error(multiple_comparisons(dat.aov, classify = "Species", order = "xyz"),
-                 "order must be one of 'ascending', 'increasing', 'descending', 'decreasing' or 'default'")
-    expect_error(
-        expect_warning(multiple_comparisons(dat.aov, classify = "Species", order = 1:2),
-                       "argument 'pattern' has length > 1 and only the first element will be used"),
-        "order must be one of 'ascending', 'increasing', 'descending', 'decreasing' or 'default'")
+    expect_warning(multiple_comparisons(dat.aov, classify = "Species", order = "xyz"),
+                   "Argument `order` has been deprecated and will be removed in a future version. Please use `descending` instead.")
 })
 
 test_that("dashes are handled", {
@@ -156,75 +152,70 @@ test_that("dashes are handled", {
 })
 
 test_that("mct removes aliased treatments in aov", {
-    iris1 <- iris
-    iris1$Petal.Length[1:50] <- NA
-    dat.aov1 <- aov(Petal.Length ~ Species, data = iris1)
-    output1 <- multiple_comparisons(dat.aov1, classify = "Species")
-    expect_equal(output1$predicted.value, c(4.26, 5.55))
+    CO_2 <- CO2
+    CO_2$uptake[CO_2$Type=="Quebec" & CO_2$Treatment=="nonchilled"] <- NA
+    model <- aov(uptake~Type*Treatment, data = CO_2)
+    expect_warning(output1 <- multiple_comparisons(model, classify = "Type:Treatment"),
+                   "Missing treatments\\' combination appeared\\, predicted means maybe misleading\\!")
+    expect_snapshot_output(output1$predicted.value)
     # skip_if(interactive())
     vdiffr::expect_doppelganger("aov aliased output", autoplot(output1))
 })
 
 
-test_that("mct handles aliased results in asreml with a warning", {
-    skip_if_not(requireNamespace("asreml", quietly = TRUE))
-    quiet(library(asreml))
-    model.asr <- readRDS(test_path("data", "model_asr.rds"))
-    pred.asr <- readRDS(test_path("data", "pred_asr.rds"))
-    model2.asr <- readRDS(test_path("data", "model_asr2.rds"))
-    pred2.asr <- readRDS(test_path("data", "pred_asr2.rds"))
-    dat <- readRDS(test_path("data", "oats_data.rds"))
-    pred.asr$pvals$predicted.value[12] <- NA
-    pred.asr$sed[12, ] <- NA
-    pred.asr$sed[, 12] <- NA
-    expect_warning(
-        expect_output(
-            print(multiple_comparisons(model.asr, pred.asr, classify = "Nitrogen:Variety")),
-            "Aliased level is:  0.6_cwt:Victory"),
-        NULL)
-    pred.asr$pvals$predicted.value[11] <- NA
-    pred.asr$sed[11, ] <- NA
-    pred.asr$sed[, 11] <- NA
-    expect_warning(multiple_comparisons(model.asr, pred.asr, classify = "Nitrogen:Variety"), NULL)
-    pred2.asr$pvals$predicted.value[4] <- NA
-    pred2.asr$sed[4, ] <- NA
-    pred2.asr$sed[, 4] <- NA
-    expect_warning(multiple_comparisons(model2.asr, pred2.asr, classify = "Nitrogen"), NULL)
-    pred2.asr$pvals$predicted.value[3] <- NA
-    pred2.asr$sed[3, ] <- NA
-    pred2.asr$sed[, 3] <- NA
-    expect_warning(multiple_comparisons(model2.asr, pred2.asr, classify = "Nitrogen"), NULL)
-})
+# test_that("mct handles aliased results in asreml with a warning", {
+#     skip_if_not(requireNamespace("asreml", quietly = TRUE))
+#     quiet(library(asreml))
+#     model.asr <- readRDS(test_path("data", "model_asr.rds"))
+#     model2.asr <- readRDS(test_path("data", "model_asr2.rds"))
+#     dat <- readRDS(test_path("data", "oats_data.rds"))
+#     dat$yield[dat$Nitrogen=="0.2_cwt" & dat$Variety == "Golden_rain"] <- NA
+#     expect_warning(
+#         expect_snapshot_output(
+#             print(multiple_comparisons(model.asr, classify = "Nitrogen:Variety"))
+#         )
+#     )
+#
+#     dat$yield[dat$Nitrogen=="0_cwt" & dat$Variety == "Golden_rain"] <- NA
+#     expect_warning(multiple_comparisons(model.asr, classify = "Nitrogen:Variety"), NULL)
+#                    #"Aliased levels are\\: 0\\_cwt\\:Golden\\_rain\\, 0\\.2\\_cwt\\:Golden\\_rain\\.")
+#
+#     dat$yield[dat$Nitrogen=="0_cwt"] <- NA
+#     expect_warning(multiple_comparisons(model2.asr, classify = "Nitrogen"), NULL)
+#
+#     dat$yield[dat$Nitrogen=="0.2_cwt"] <- NA
+#     expect_warning(multiple_comparisons(model2.asr, classify = "Nitrogen"), NULL)
+# })
 
 test_that("Significance values that are too high give a warning", {
     # dat.aov <- aov(Petal.Width ~ Species, data = iris)
     expect_warning(multiple_comparisons(dat.aov, classify = "Species", sig = 0.95),
-                   "Significance level given by sig is high. Perhaps you meant 0.05?")
+                   "Significance level given by `sig` is high. Perhaps you meant 0.05?")
 })
 
 test_that("Use of pred argument gives warning", {
     # dat.aov <- aov(Petal.Width ~ Species, data = iris)
     expect_warning(multiple_comparisons(dat.aov, pred = "Species"),
-                   "Argument pred has been deprecated and will be removed in a future version. Please use classify instead.")
+                   "Argument `pred` has been deprecated and will be removed in a future version. Please use `classify` instead.")
 })
 
-test_that("Missing pred.obj object causes error", {
-    skip_if_not(requireNamespace("asreml", quietly = TRUE))
-    quiet(library(asreml))
-    model.asr <- readRDS(test_path("data", "model_asr.rds"))
-    dat <- readRDS(test_path("data", "oats_data.rds"))
-    expect_error(suppressWarnings(multiple_comparisons(model.asr, classify = "Nitrogen")),
-                 "You must provide a prediction object in pred.obj")
-})
+# test_that("Missing pred.obj object causes error", {
+#     skip_if_not(requireNamespace("asreml", quietly = TRUE))
+#     quiet(library(asreml))
+#     model.asr <- readRDS(test_path("data", "model_asr.rds"))
+#     dat <- readRDS(test_path("data", "oats_data.rds"))
+#     expect_error(suppressWarnings(multiple_comparisons(model.asr, classify = "Nitrogen")),
+#                  "You must provide a prediction object in pred.obj")
+# })
 
-test_that("Forgetting sed = T in pred.obj object causes error", {
-    skip_if_not(requireNamespace("asreml", quietly = TRUE))
-    quiet(library(asreml))
-    dat.asr <- quiet(asreml(Petal.Width ~ Species, data = iris, trace = FALSE))
-    pred.out <- predict.asreml(dat.asr, classify = "Species")
-    expect_error(multiple_comparisons(dat.asr, pred.out, classify = "Species"),
-                 "Prediction object \\(pred.obj\\) must be created with argument sed = TRUE\\.")
-})
+# test_that("Forgetting sed = T in pred.obj object causes error", {
+#     skip_if_not(requireNamespace("asreml", quietly = TRUE))
+#     quiet(library(asreml))
+#     dat.asr <- quiet(asreml(Petal.Width ~ Species, data = iris, trace = FALSE))
+#     # pred.out <- predict.asreml(dat.asr, classify = "Species")
+#     expect_error(multiple_comparisons(dat.asr, classify = "Species"),
+#                  "Prediction object \\(pred.obj\\) must be created with argument sed = TRUE\\.")
+# })
 
 test_that("lme4 model works", {
     skip_if_not_installed("lme4")
@@ -249,8 +240,7 @@ test_that("3 way interaction works", {
     des$design$C <- factor(des$design$C)
     dat.aov <- aov(response~A*B*C, data = des$design)
     output <- multiple_comparisons(dat.aov, classify = "A:B:C")
-    expect_equal(output$predicted.value[1:10],
-                 c(100.68, 100.46, 99.79, 99.08, 100.48, 99.90, 100.19, 99.26, 100.22, 99.94))
+    expect_snapshot_output(output$predicted.value)
     expect_equal(output$std.error,
                  rep(0.63, 27))
     # skip_if(interactive())
@@ -265,13 +255,13 @@ test_that("plots are produced when requested", {
     des$design$B <- factor(des$design$B)
     des$design$C <- factor(des$design$C)
     dat.aov <- aov(response~A*B*C, data = des$design)
-    output <- multiple_comparisons(dat.aov, classify = "A:B:C")
-    expect_equal(output$predicted.value[1:10],
-                 c(100.68, 100.46, 99.79, 99.08, 100.48, 99.90, 100.19, 99.26, 100.22, 99.94))
+
+    expect_snapshot_output(output <- multiple_comparisons(dat.aov, classify = "A:B:C", plot = TRUE))
+    # expect_snapshot_output(output$predicted.value)
     expect_equal(output$std.error,
                  rep(0.63, 27))
-    # skip_if(interactive())
-    vdiffr::expect_doppelganger("3 way interaction", autoplot(output))
+    skip_if(interactive())
+    vdiffr::expect_doppelganger("3 way interaction internal", output <- multiple_comparisons(dat.aov, classify = "A:B:C", plot = TRUE))
 })
 
 test_that("nlme model produces an error", {
@@ -286,6 +276,17 @@ test_that("multiple_comparisons output has a class of 'mct'", {
     output <- multiple_comparisons(dat.aov, classify = "Species")
     expect_s3_class(output, "mct")
 })
+
+
+
+
+
+
+
+
+
+
+
 
 # test_that("sommer model works", {
 #     skip_if_not_installed("sommer")

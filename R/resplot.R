@@ -1,6 +1,6 @@
 #' Residual plots of linear models.
 #'
-#' Produces plots of residuals for assumption checking of linear (mixed) model.
+#' Produces plots of residuals for assumption checking of linear (mixed) models.
 #'
 #' @param model.obj An `aov`, `lm`, `lme` ([nlme::lme()]), `lmerMod` ([lme4::lmer()]), `asreml` or `mmer` (sommer) model object.
 #' @param shapiro (Logical) Display the Shapiro-Wilks test of normality on the plot?
@@ -16,12 +16,10 @@
 #' @importFrom stats fitted qnorm quantile residuals sd shapiro.test
 #' @importFrom cowplot plot_grid add_sub
 #'
-#' @aliases resplt
-#'
 #' @examples
 #' dat.aov <- aov(Petal.Length ~ Petal.Width, data = iris)
 #' resplot(dat.aov)
-#' resplt(dat.aov, call = TRUE)
+#' resplot(dat.aov, call = TRUE)
 #' @export
 
 resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, axes.size = 10, call.size = 9, mod.obj){
@@ -30,16 +28,24 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
         model.obj <- mod.obj
     }
 
-    if (inherits(model.obj, c("aov", "lm", "lmerMod", "lme", "lmerModLmerTest"))) {
+    if(inherits(model.obj, c("aov", "lm", "lme", "lmerMod", "lmerModLmerTest"))) {
         facet <- 1
         facet_name <- NULL
         resids <- residuals(model.obj)
         k <- length(resids)
         fits <- fitted(model.obj)
+        if(call) {
+            if(inherits(model.obj, c("aov", "lm", "lme"))) {
+                model_call <- paste(trimws(deparse(model.obj$call, width.cutoff = 50)), collapse = "\n")
+            }
+            else if(inherits(model.obj, c("lmerMod", "lmerModLmerTest")))  {
+                model_call <- paste(trimws(deparse(model.obj@call, width.cutoff = 50)), collapse = "\n")
+            }
+        }
     }
-    else if (inherits(model.obj, "asreml")){
+    else if(inherits(model.obj, "asreml")){
         facet <- length(names(model.obj$R.param))
-        if (facet > 1) {
+        if(facet > 1) {
             facet_name <- names(model.obj$R.param)
             k <- unlist(lapply(1:facet, function(i) model.obj$R.param[[i]]$variance$size))
         }
@@ -49,6 +55,11 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
         }
         resids <- residuals(model.obj)
         fits <- fitted(model.obj)
+        if(call) {
+            model_call <- paste(trimws(deparse(model.obj$call, width.cutoff = 50)), collapse = "\n")
+            model_call <- gsub("G\\.param \\= model\\.asr\\$G\\.param, ", "", model_call)
+            model_call <- gsub("R\\.param = model\\.asr\\$R\\.param, \\\n", "", model_call)
+        }
     }
     else if(inherits(model.obj, "mmer")) { # sommer doesn't display residuals the same way
         facet <- model.obj$termsN$rcov
@@ -57,6 +68,8 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
 
         resids <- residuals(model.obj)[,ncol(residuals(model.obj))]
         fits <- fitted(model.obj)$dataWithFitted[,paste0(model.obj$terms$response[[1]], ".fitted")]
+        model_call <- paste(trimws(deparse(model.obj$call[c("fixed", "random", "rcov")], width.cutoff = 50)), collapse = "\n")
+        model_call <- gsub("list", "mmer", model_call)
     }
     else {
         stop("model.obj must be an aov, lm, lmerMod, lmerModLmerTest, asreml or mmer object")
@@ -66,7 +79,7 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
 
     output <- list()
 
-    for (i in 1:facet){
+    for(i in 1:facet){
 
         aa.f <- aa[aa$lvl==i,]
         aa.f$stdres <- aa.f$residuals/(sd(aa.f$residuals, na.rm = TRUE)*sqrt((length(!is.na(aa.f$residuals)-1))/(length(!is.na(aa.f$residuals)))))
@@ -102,7 +115,7 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
             bottom_row <- cowplot::plot_grid(NULL, c, NULL, ncol=3, rel_widths=c(0.25,0.5,0.25), labels = c("", "C", ""), hjust = -1, label_size = label.size)
         }
         if(call) {
-            title <- cowplot::ggdraw() + cowplot::draw_label(paste(deparse(model.obj$call), collapse = "\n"), size = call.size, hjust = 0.5)
+            title <- cowplot::ggdraw() + cowplot::draw_label(model_call, size = call.size, hjust = 0.5)
             call_row <- cowplot::plot_grid(title, ncol=1)
             output[[i]] <- cowplot::plot_grid(call_row, top_row, bottom_row, ncol=1, rel_heights = c(0.1, 0.4, 0.4))
         }
@@ -120,6 +133,34 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
     }
 }
 
-#' @rdname resplot
+# resplt
+#' @title Residual plots of linear models.
+#' @description Produces plots of residuals for assumption checking of linear (mixed) models.
+#' @param model.obj An `aov`, `lm`, `lme` ([nlme::lme()]), `lmerMod` ([lme4::lmer()]), `asreml` or `mmer` (sommer) model object.
+#' @param shapiro (Logical) Display the Shapiro-Wilks test of normality on the plot?
+#' @param call (Logical) Display the model call on the plot?
+#' @param axes.size A numeric value for the size of the axes label font size in points.
+#' @param label.size A numeric value for the size of the label (A,B,C) font point size.
+#' @param call.size A numeric value for the size of the model displayed on the plot.
+#' @param mod.obj Deprecated to be consistent with other functions. Please use `model.obj` instead.
+#'
+#' @return A list containing ggplot2 objects which are diagnostic plots.
+#'
+#' @name resplt-deprecated
+#' @usage resplt(model.obj, shapiro = TRUE, call = FALSE, label.size = 10,
+#' axes.size = 10, call.size = 9, mod.obj)
+#' @seealso \code{\link{biometryassist-deprecated}}
+#' @keywords internal
+NULL
+
+#' @rdname biometryassist-deprecated
+#' @section resplt:
+#' Residual plots of linear models.
+#' @return A list containing ggplot2 objects which are diagnostic plots.
+#' For `resplt`, use [resplot()].
+#'
 #' @export
-resplt <- resplot
+resplt <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, axes.size = 10, call.size = 9, mod.obj) {
+    .Deprecated(msg = "resplt has been deprecated in version 1.0.1 and will be removed in a future version.\nPlease use resplot() instead.")
+    resplot(model.obj, shapiro, call, label.size, axes.size, call.size, mod.obj)
+}

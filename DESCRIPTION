@@ -1,8 +1,7 @@
 Type: Package
 Package: biometryassist
 Title: Functions to Assist Design and Analysis of Agronomic Experiments
-Version: 1.0.0
-Date: 2022-01-25
+Version: 1.1.0
 Authors@R: 
     c(person(given = "Sharon",
              family = "Nielsen",
@@ -35,7 +34,6 @@ Imports:
     agricolae,
     cowplot,
     curl,
-    ellipsis,
     farver,
     ggplot2,
     interp,
@@ -49,6 +47,7 @@ Imports:
 Suggests: 
     covr,
     crayon,
+    getPass,
     mockery,
     testthat,
     vdiffr

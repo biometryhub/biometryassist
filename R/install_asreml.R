@@ -34,6 +34,35 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
         invisible(TRUE)
     }
     else {
+      # macOS Monterey needs a folder created
+      if(Sys.info()["sysname"] == "Darwin" && Sys.info()["release"] >= 21 && !dir.exists("/Library/Application Support/Reprise/")) {
+
+            result <- tryCatch(
+                expr = {
+                    dir.create("/Library/Application Support/Reprise/", recursive = T)
+                },
+                error = function(cond) {
+                    return(FALSE)
+                },
+                warning = function(cond) {
+                    return(FALSE)
+                }
+            )
+
+            if(isFALSE(result) && rlang::is_installed("getPass")) {
+                message("The ASReml-R package uses Reprise license management and will require administrator privilege to create the folder '/Library/Application Support/Reprise' before it can be loaded.")
+                input <- readline("Would you like to create this folder now (Yes/No)? You will be prompted for your password if yes. ")
+
+                if(toupper(input) == "YES") {
+                    system("sudo -S mkdir '/Library/Application Support/Reprise' && sudo -S chmod 777 '/Library/Application Support/Reprise'",
+                           input = getPass::getPass("Please enter your user account password: "))
+                }
+                else {
+                    stop("ASReml-R cannot be installed until the folder '/Library/Application Support/Reprise' is created with appropriate permissions.")
+                }
+            }
+        }
+
         if(!quiet) {
             message("\nDownloading and installing ASReml-R. This may take some time, depending on internet speed...\n")
         }
@@ -88,7 +117,7 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
         pkgs <- rownames(installed.packages(lib.loc = library))
         deps <- setdiff(c("data.table", "ggplot2", "jsonlite"), pkgs)
 
-        if(rlang::is_installed("data.table") && packageVersion("data.table") < "1.9.6") {
+        if(!rlang::is_installed("data.table", version = "1.9.6")) {
             deps <- c(deps, "data.table")
         }
 
