@@ -5,6 +5,10 @@
     2 versicolor            1.33      0.03 147      b 0.05 1.28 1.37
     3  virginica            2.03      0.03 147      c 0.05 1.98 2.07
 
+# mct removes aliased treatments in aov
+
+    [1] 15.81 25.95 31.75
+
 # 3 way interaction works
 
      [1]  99.08  99.26  99.57  99.73  99.73  99.73  99.77  99.79  99.90  99.94

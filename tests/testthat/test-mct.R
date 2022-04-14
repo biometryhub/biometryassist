@@ -152,11 +152,12 @@ test_that("dashes are handled", {
 })
 
 test_that("mct removes aliased treatments in aov", {
-    iris1 <- iris
-    iris1$Petal.Length[1:50] <- NA
-    dat.aov1 <- aov(Petal.Length ~ Species, data = iris1)
-    output1 <- multiple_comparisons(dat.aov1, classify = "Species")
-    expect_equal(output1$predicted.value, c(4.26, 5.55))
+    CO_2 <- CO2
+    CO_2$uptake[CO_2$Type=="Quebec" & CO_2$Treatment=="nonchilled"] <- NA
+    model <- aov(uptake~Type*Treatment, data = CO_2)
+    expect_warning(output1 <- multiple_comparisons(model, classify = "Type:Treatment"),
+                   "Missing treatments\\' combination appeared\\, predicted means maybe misleading\\!")
+    expect_snapshot_output(output1$predicted.value)
     # skip_if(interactive())
     vdiffr::expect_doppelganger("aov aliased output", autoplot(output1))
 })
@@ -166,30 +167,24 @@ test_that("mct removes aliased treatments in aov", {
 #     skip_if_not(requireNamespace("asreml", quietly = TRUE))
 #     quiet(library(asreml))
 #     model.asr <- readRDS(test_path("data", "model_asr.rds"))
-#     pred.asr <- readRDS(test_path("data", "pred_asr.rds"))
 #     model2.asr <- readRDS(test_path("data", "model_asr2.rds"))
-#     pred2.asr <- readRDS(test_path("data", "pred_asr2.rds"))
 #     dat <- readRDS(test_path("data", "oats_data.rds"))
-#     pred.asr$pvals$predicted.value[12] <- NA
-#     pred.asr$sed[12, ] <- NA
-#     pred.asr$sed[, 12] <- NA
+#     dat$yield[dat$Nitrogen=="0.2_cwt" & dat$Variety == "Golden_rain"] <- NA
 #     expect_warning(
 #         expect_snapshot_output(
-#             print(multiple_comparisons(model.asr, pred.asr, classify = "Nitrogen:Variety"))
+#             print(multiple_comparisons(model.asr, classify = "Nitrogen:Variety"))
 #         )
 #     )
-#     pred.asr$pvals$predicted.value[11] <- NA
-#     pred.asr$sed[11, ] <- NA
-#     pred.asr$sed[, 11] <- NA
-#     expect_warning(multiple_comparisons(model.asr, pred.asr, classify = "Nitrogen:Variety"), NULL)
-#     pred2.asr$pvals$predicted.value[4] <- NA
-#     pred2.asr$sed[4, ] <- NA
-#     pred2.asr$sed[, 4] <- NA
-#     expect_warning(multiple_comparisons(model2.asr, pred2.asr, classify = "Nitrogen"), NULL)
-#     pred2.asr$pvals$predicted.value[3] <- NA
-#     pred2.asr$sed[3, ] <- NA
-#     pred2.asr$sed[, 3] <- NA
-#     expect_warning(multiple_comparisons(model2.asr, pred2.asr, classify = "Nitrogen"), NULL)
+#
+#     dat$yield[dat$Nitrogen=="0_cwt" & dat$Variety == "Golden_rain"] <- NA
+#     expect_warning(multiple_comparisons(model.asr, classify = "Nitrogen:Variety"), NULL)
+#                    #"Aliased levels are\\: 0\\_cwt\\:Golden\\_rain\\, 0\\.2\\_cwt\\:Golden\\_rain\\.")
+#
+#     dat$yield[dat$Nitrogen=="0_cwt"] <- NA
+#     expect_warning(multiple_comparisons(model2.asr, classify = "Nitrogen"), NULL)
+#
+#     dat$yield[dat$Nitrogen=="0.2_cwt"] <- NA
+#     expect_warning(multiple_comparisons(model2.asr, classify = "Nitrogen"), NULL)
 # })
 
 test_that("Significance values that are too high give a warning", {
