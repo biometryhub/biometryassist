@@ -1,15 +1,6 @@
-## Resubmission 2
-
-* Removed dependency on akima
-
-## Resubmission
-
-* Fixed error in test under win-builder.
-* Fixed error with apparently broken URL.
-
 ## Test environments
-* Local Windows 10 install, R 4.1.2
-* Ubuntu 20.04 (on Virtual Box), R 4.1.2
+* Local Windows 10 install, R 4.1.3
+* Ubuntu 20.04 (on Virtual Box), R 4.1.3
 * Rhub `check_for_cran()`
 * Github Actions:
     - macOS: r-release
