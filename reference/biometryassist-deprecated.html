@@ -22,7 +22,7 @@ available at help("&amp;lt;function&amp;gt;-deprecated").'><!-- mathjax --><scri
     
     <a class="navbar-brand me-2" href="../index.html">biometryassist</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -53,7 +53,7 @@ available at help("&amp;lt;function&amp;gt;-deprecated").'><!-- mathjax --><scri
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="" class="logo" alt=""><h1>Deprecated functions in package <span class="pkg">biometryassist</span>.</h1>
-      <small class="dont-index">Source: <a href="https://github.com/biometryhub/biometryassist/blob/HEAD/R/biometryassist-deprecated.R" class="external-link"><code>R/biometryassist-deprecated.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/biometryhub/biometryassist/blob/HEAD/R/biometryassist-deprecated.R" class="external-link"><code>R/biometryassist-deprecated.R</code></a>, <a href="https://github.com/biometryhub/biometryassist/blob/HEAD/R/resplot.R" class="external-link"><code>R/resplot.R</code></a></small>
       <div class="d-none name"><code>biometryassist-deprecated.Rd</code></div>
     </div>
 
@@ -64,13 +64,34 @@ functionality are also mentioned. Help pages for deprecated functions are
 available at <code>help("&lt;function&gt;-deprecated")</code>.</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">resplt</span><span class="op">(</span>
+  <span class="va">model.obj</span>,
+  shapiro <span class="op">=</span> <span class="cn">TRUE</span>,
+  call <span class="op">=</span> <span class="cn">FALSE</span>,
+  label.size <span class="op">=</span> <span class="fl">10</span>,
+  axes.size <span class="op">=</span> <span class="fl">10</span>,
+  call.size <span class="op">=</span> <span class="fl">9</span>,
+  <span class="va">mod.obj</span>
+<span class="op">)</span></code></pre></div>
+    </div>
 
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>No return value.</p>
+    <p>No return value.
+A list containing ggplot2 objects which are diagnostic plots.
+For <code>resplt</code>, use <code><a href="resplot.html">resplot()</a></code>.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="resplt">resplt<a class="anchor" aria-label="anchor" href="#resplt"></a></h2>
+    
+
+<p>Residual plots of linear models.</p>
     </div>
 
-  </main></div>
+  </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">

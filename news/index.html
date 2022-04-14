@@ -16,7 +16,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">biometryassist</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -50,6 +50,27 @@
       <small>Source: <a href="https://github.com/biometryhub/biometryassist/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.1.0" id="biometryassist-110">biometryassist 1.1.0<a class="anchor" aria-label="anchor" href="#biometryassist-110"></a></h2><p class="text-muted">CRAN release: 2022-04-14</p>
+<div class="section level3">
+<h3 id="major-changes-1-1-0">Major changes<a class="anchor" aria-label="anchor" href="#major-changes-1-1-0"></a></h3>
+<ul><li>
+<code><a href="../reference/multiple_comparisons.html">multiple_comparisons()</a></code> no longer requires calls to <code>predict.asreml()</code> to be passed into the function, as the predicted values are now calculated internally. Additional arguments can be passed to <code>predict.asreml()</code> via the <code>...</code> argument. (<a href="https://github.com/biometryhub/biometryassist/issues/27" class="external-link">#27</a>)</li>
+</ul></div>
+<div class="section level3">
+<h3 id="minor-changes-1-1-0">Minor changes<a class="anchor" aria-label="anchor" href="#minor-changes-1-1-0"></a></h3>
+<ul><li>The <code>order</code> argument of <code><a href="../reference/multiple_comparisons.html">multiple_comparisons()</a></code> has been deprecated in favour of a new argument <code>descending</code>. This takes logical (<code>TRUE</code> or <code>FALSE</code>) values only, so <code>default</code> is no longer possible as it was producing incorrect results. (<a href="https://github.com/biometryhub/biometryassist/issues/8" class="external-link">#8</a>)</li>
+<li>
+<code><a href="../reference/biometryassist-deprecated.html">resplt()</a></code> has been deprecated in favour of <code><a href="../reference/resplot.html">resplot()</a></code> and will be removed in a future version (<a href="https://github.com/biometryhub/biometryassist/issues/20" class="external-link">#20</a>).</li>
+<li>Warnings about lack of convergence are no longer output in <code><a href="../reference/logl_test.html">logl_test()</a></code>. (<a href="https://github.com/biometryhub/biometryassist/issues/17" class="external-link">#17</a>)</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-1-1-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-1-0"></a></h3>
+<ul><li>Aliased levels are printed properly in <code><a href="../reference/multiple_comparisons.html">multiple_comparisons()</a></code> now. (<a href="https://github.com/biometryhub/biometryassist/issues/14" class="external-link">#14</a>)</li>
+<li>R.param and G.param are removed from the <code>asreml()</code> call on <code><a href="../reference/resplot.html">resplot()</a></code> if not explicitly provided. (<a href="https://github.com/biometryhub/biometryassist/issues/21" class="external-link">#21</a>)</li>
+<li>Fixed a bug where <code><a href="../reference/install_asreml.html">install_asreml()</a></code> would not work on macOS Monterey. (<a href="https://github.com/biometryhub/biometryassist/issues/16" class="external-link">#16</a>)</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.0.0" id="biometryassist-100">biometryassist 1.0.0<a class="anchor" aria-label="anchor" href="#biometryassist-100"></a></h2><p class="text-muted">CRAN release: 2022-01-28</p>
 <div class="section level3">

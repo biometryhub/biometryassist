@@ -38,7 +38,7 @@
     
     <a class="navbar-brand me-2" href="index.html">biometryassist</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -83,34 +83,32 @@
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>Use the following code to install this package:</p>
+<p>As of version 1.0.0 the biometryassist package is now <a href="https://cran.r-project.org/package=biometryassist" class="external-link">on CRAN</a> 🙌. That means that installation is as easy as running:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"biometryassist"</span><span class="op">)</span></code></pre></div>
+<div class="section level3">
+<h3 id="development-version">Development version<a class="anchor" aria-label="anchor" href="#development-version"></a>
+</h3>
+<p>⚠️<strong>Warning</strong>: The development version is unstable and liable to change more often than the CRAN version. It may have bugs fixed, but there may be other currently unknown bugs introduced. ⚠️</p>
+<p>Use the following code to install the latest development version of this package.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw">if</span><span class="op">(</span><span class="op">!</span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">require</a></span><span class="op">(</span><span class="st"><a href="https://remotes.r-lib.org" class="external-link">"remotes"</a></span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span> 
-<span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"biometryhub/biometryassist"</span>, upgrade <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></code></pre></div>
+<span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"biometryhub/biometryassist@dev"</span>, upgrade <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></code></pre></div>
+</div>
 </div>
 <div class="section level2">
 <h2 id="using-the-package">Using the package<a class="anchor" aria-label="anchor" href="#using-the-package"></a>
 </h2>
 <p>Load the package and start using it with:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://biometryhub.github.io/biometryassist/">biometryassist</a></span><span class="op">)</span></code></pre></div>
-<p>If you find this pacakge useful, please cite it! Type <code>citation("biometryassist")</code> on the R console to find out how.</p>
+<p>If you find this package useful, please cite it! Type <code>citation("biometryassist")</code> on the R console to find out how.</p>
 </div>
 <div class="section level2">
 <h2 id="troubleshooting-installation">Troubleshooting Installation<a class="anchor" aria-label="anchor" href="#troubleshooting-installation"></a>
 </h2>
 <ul>
-<li>If you have the latest version already installed, you will get a response like:</li>
-</ul>
-<p><span style="color: red;">Skipping install of ‘biometryassist’ from a github remote, the SHA1 (e034b603) has not changed since last install.<br> Use <code>force = TRUE</code> to force installation</span></p>
-<ul>
-<li>The following warning messages can usually be ignored:</li>
-</ul>
-<p><span style="color: red;">WARNING: Rtools is required to build R packages, but is not currently installed.</span></p>
-<p><span style="color: red;">Please download and install Rtools custom from <a href="https://cran.r-project.org/bin/windows/Rtools/" class="external-link uri">https://cran.r-project.org/bin/windows/Rtools/</a>.</span></p>
-<p><span style="color: red;">Warning messages:<br> 1: In untar2(tarfile, files, list, exdir) :<br> skipping pax global extended headers<br> 2: In untar2(tarfile, files, list, exdir) :<br> skipping pax global extended headers</span></p>
-<ul>
-<li>If you receive an error that the package could not install because <code>rlang</code> or another package could not be upgraded, the easiest way to deal with this is to uninstall the package(s) that could not be updated (<code>remove.packages("rlang")</code>). Then reinstall with <code>install.packages("rlang")</code> and then try installing <code>biometryassist</code> again.</li>
+<li>If you receive an error that the package could not install because <code>rlang</code> or another package could not be upgraded, the easiest way to deal with this is to uninstall the package(s) that could not be updated (<code>remove.packages("rlang")</code>). Then restart R, re-install with <code>install.packages("rlang")</code> and then try installing <code>biometryassist</code> again.</li>
 </ul>
 </div>
 </div>
@@ -158,7 +156,7 @@
 <li><a href="https://app.codecov.io/gh/biometryhub/biometryassist?branch=main" class="external-link"><img src="https://codecov.io/gh/biometryhub/biometryassist/branch/main/graph/badge.svg" alt="Codecov test coverage"></a></li>
 <li><a href="https://github.com/biometryhub/biometryassist/actions" class="external-link"><img src="https://github.com/biometryhub/biometryassist/workflows/R-CMD-check/badge.svg" alt="R build status"></a></li>
 <li><a href="https://cran.r-project.org/" class="external-link"><img src="https://img.shields.io/badge/R%3E%3D-3.6.0-6666ff.svg" alt="minimal R version"></a></li>
-<li><a href="https://github.com/biometryhub/biometryassist/commits/main" class="external-link"><img src="https://img.shields.io/badge/Package%20version-1.0.0-orange.svg?style=flat-square" alt="packageversion"></a></li>
+<li><a href="https://github.com/biometryhub/biometryassist/commits/main" class="external-link"><img src="https://img.shields.io/badge/Package%20version-1.1.0-orange.svg?style=flat-square" alt="packageversion"></a></li>
 <li><a href="https://choosealicense.com/licenses/mit/" class="external-link"><img src="https://img.shields.io/github/license/mashape/apistatus.svg" alt="Licence"></a></li>
 <li><a href="https://hits.seeyoufarm.com" class="external-link"><img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fbiometryhub%2Fbiometryassist&amp;count_bg=%2379C83D&amp;title_bg=%23555555&amp;icon=&amp;icon_color=%23E7E7E7&amp;title=hits&amp;edge_flat=false" alt="Hits"></a></li>
 </ul>
