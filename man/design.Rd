@@ -72,7 +72,7 @@ design(
 \item{...}{Additional parameters passed to \code{\link[ggplot2:ggsave]{ggplot2::ggsave()}} for saving the plot.}
 }
 \value{
-A list containing a data frame with the complete design, a ggplot object with plot layout, the seed (if \code{return.seed = TRUE}), and the \code{satab} object, allowing repeat output of the \code{satab} table via \code{cat(output$satab)}.
+A list containing a data frame with the complete design (\verb{$design}), a ggplot object with plot layout (\verb{$plot.des}), the seed (\verb{$seed}, if \code{return.seed = TRUE}), and the \code{satab} object (\verb{$satab}), allowing repeat output of the \code{satab} table via \code{cat(output$satab)}.
 }
 \description{
 Produces an experimental design with graph of design layout and skeletal ANOVA table
