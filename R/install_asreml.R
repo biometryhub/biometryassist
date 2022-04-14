@@ -122,10 +122,7 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
         }
 
         if(length(deps) > 0) {
-            install.packages(deps, lib = library, repos = "https://cloud.r-project.org",
-                             Ncpus = ifelse(length(deps)>1,
-                                            max(ceiling(parallel::detectCores()/2), # Use multiple CPUs if available
-                                                ceiling(parallel::detectCores()-2)), 1))
+            install.packages(deps, lib = library, repos = "https://cloud.r-project.org")
         }
 
         # Install asreml
