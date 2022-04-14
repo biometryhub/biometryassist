@@ -57,7 +57,7 @@ multiple_comparisons(
 
 \item{pred}{Deprecated. Use \code{classify} instead.}
 
-\item{...}{Other arguments passed through to (\code{\link[asreml:predict.asreml]{asreml::predict.asreml()}}).}
+\item{...}{Other arguments passed through to \code{predict.asreml()}.}
 }
 \value{
 A list containing a data frame with predicted means, standard errors, confidence interval upper and lower bounds, and significant group allocations (named \code{predicted_values}), as well as a plot visually displaying the predicted values (named \code{predicted_plot}). If some of the predicted values are aliased, a warning is printed, and the aliased treatment levels are returned in the output (named \code{aliased}).
