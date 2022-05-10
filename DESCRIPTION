@@ -40,7 +40,7 @@ Imports:
     lattice,
     multcompView,
     predictmeans,
-    rlang,
+    rlang (>= 1.0.0),
     scales, 
     stringi,
     withr
