@@ -2,7 +2,7 @@
 
     Code
       biometryassist:::.onAttach(pkg = "biometryassist")
-    Message <packageStartupMessage>
+    Message
           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
           |  biometryassist version 1.1.0                                     |
           |  Authors: Sharon Nielsen, Sam Rogers, Annie Conway                |
@@ -19,7 +19,7 @@
 
     Code
       biometryassist:::.onAttach(pkg = "biometryassist")
-    Message <packageStartupMessage>
+    Message
           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
           |  biometryassist version 1.1.0                                     |
           |  Authors: Sharon Nielsen, Sam Rogers, Annie Conway                |
