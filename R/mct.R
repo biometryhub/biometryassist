@@ -6,7 +6,7 @@
 #' @param classify Name of predictor variable as string.
 #' @param sig The significance level, numeric between 0 and 1. Default is 0.05.
 #' @param int.type The type of confidence interval to calculate. One of `ci`, `1se` or `2se`. Default is `ci`.
-#' @param trans Transformation that was applied to the response variable. One of `log`, `sqrt`, `logit` or `inverse`. Default is `NA`.
+#' @param trans Transformation that was applied to the response variable. One of `log`, `sqrt`, `logit`, `power` or `inverse`. Default is `NA`.
 #' @param offset Numeric offset applied to response variable prior to transformation. Default is `NA`. Use 0 if no offset was applied to the transformed data. See Details for more information.
 #' @param decimals Controls rounding of decimal places in output. Default is 2 decimal places.
 #' @param descending Logical (default `FALSE`). Order of the output sorted by the predicted value. If `TRUE`, largest will be first, through to smallest last.
@@ -76,6 +76,7 @@ multiple_comparisons <- function(model.obj,
                                  int.type = "ci",
                                  trans = NA,
                                  offset = NA,
+                                 power = NA,
                                  decimals = 2,
                                  descending = FALSE,
                                  plot = FALSE,
@@ -308,6 +309,22 @@ multiple_comparisons <- function(model.obj,
             pp.tab$uu <- NULL
         }
 
+        if(trans == "power"){
+        pp.tab$PredictedValue <- 1/(pp.tab$predicted.value)^power - ifelse(!is.na(offset), offset, 0)
+        pp.tab$ApproxSE <- pp.tab$std.error*1/(power*pp.tab$PredictedValue^(power-1))
+        if(int.type == "ci"){
+          pp.tab$ci <- stats::qt(p = sig, ndf, lower.tail = FALSE) * pp.tab$std.error
+        }
+        if(int.type == "1se"){
+          pp.tab$ci <- pp.tab$std.error
+        }
+        if(int.type == "2se"){
+          pp.tab$ci <- 2*pp.tab$std.error
+        }
+        pp.tab$low <- 1/(pp.tab$predicted.value - pp.tab$ci)^power - ifelse(!is.na(offset), offset, 0)
+        pp.tab$up <- 1/(pp.tab$predicted.value + pp.tab$ci)^power - ifelse(!is.na(offset), offset, 0)
+      }
+      
         if(trans == "inverse"){
             pp.tab$PredictedValue <- 1/pp.tab$predicted.value
             pp.tab$ApproxSE <- abs(pp.tab$std.error)*pp.tab$PredictedValue^2
