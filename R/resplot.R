@@ -71,8 +71,18 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
         model_call <- paste(trimws(deparse(model.obj$call[c("fixed", "random", "rcov")], width.cutoff = 50)), collapse = "\n")
         model_call <- gsub("list", "mmer", model_call)
     }
+    else if(inherits(model.obj, "art")) {
+        facet <- 1
+        facet_name <- NULL
+        resids <- residuals(model.obj)
+        k <- length(resids)
+        fits <- model.obj$cell.means[,ncol(model.obj$cell.means)]
+        if(call) {
+            model_call <- paste(trimws(deparse(model.obj$call, width.cutoff = 50)), collapse = "\n")
+        }
+    }
     else {
-        stop("model.obj must be an aov, lm, lmerMod, lmerModLmerTest, asreml or mmer object")
+        stop("model.obj must be an aov, lm, lmerMod, lmerModLmerTest, asreml, mmer or art object")
     }
 
     aa <- data.frame(residuals = resids, fitted = fits, lvl = rep(1:facet, k))
