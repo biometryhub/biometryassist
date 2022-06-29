@@ -11,6 +11,7 @@ multiple_comparisons(
   int.type = "ci",
   trans = NA,
   offset = NA,
+  power = NA,
   decimals = 2,
   descending = FALSE,
   plot = FALSE,
@@ -33,9 +34,11 @@ multiple_comparisons(
 
 \item{int.type}{The type of confidence interval to calculate. One of \code{ci}, \verb{1se} or \verb{2se}. Default is \code{ci}.}
 
-\item{trans}{Transformation that was applied to the response variable. One of \code{log}, \code{sqrt}, \code{logit} or \code{inverse}. Default is \code{NA}.}
+\item{trans}{Transformation that was applied to the response variable. One of \code{log}, \code{sqrt}, \code{logit}, \code{power} or \code{inverse}. Default is \code{NA}.}
 
 \item{offset}{Numeric offset applied to response variable prior to transformation. Default is \code{NA}. Use 0 if no offset was applied to the transformed data. See Details for more information.}
+
+\item{power}{Numeric power applied to response variable with power transformation. Default is \code{NA}. See Details for more information.}
 
 \item{decimals}{Controls rounding of decimal places in output. Default is 2 decimal places.}
 
@@ -102,7 +105,27 @@ wald(model.asr) #Nitrogen main effect significant
 pred.out <- multiple_comparisons(model.obj = model.asr, classify = "Nitrogen",
                     descending = TRUE, decimals = 5)
 
-pred.out}
+pred.out
+
+# Example using a box-cox transformation
+set.seed(42) # See the seed for reproducibility
+example_data <- data.frame(response = exp(rnorm(50, 10, 1)),
+                           treatment = sample(rep(LETTERS[1:10], 5), 50),
+                           block = rep(1:5, each = 10))
+model.asr <- asreml(response ~ treatment
+                    random = ~ block,
+                    residual = ~ units,
+                    data = example_data)
+
+wald(model.asr) #Nitrogen main effect significant
+
+#Determine ranking and groups according to Tukey's Test
+pred.out <- multiple_comparisons(model.obj = model.asr, classify = "Nitrogen",
+                    descending = TRUE, decimals = 5)
+
+pred.out
+
+}
 
 }
 \references{

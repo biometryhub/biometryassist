@@ -8,6 +8,7 @@
 #' @param int.type The type of confidence interval to calculate. One of `ci`, `1se` or `2se`. Default is `ci`.
 #' @param trans Transformation that was applied to the response variable. One of `log`, `sqrt`, `logit`, `power` or `inverse`. Default is `NA`.
 #' @param offset Numeric offset applied to response variable prior to transformation. Default is `NA`. Use 0 if no offset was applied to the transformed data. See Details for more information.
+#' @param power Numeric power applied to response variable with power transformation. Default is `NA`. See Details for more information.
 #' @param decimals Controls rounding of decimal places in output. Default is 2 decimal places.
 #' @param descending Logical (default `FALSE`). Order of the output sorted by the predicted value. If `TRUE`, largest will be first, through to smallest last.
 #' @param plot Automatically produce a plot of the output of the multiple comparison test? Default is `FALSE`. This is maintained for backwards compatibility, but the preferred method now is to use `autoplot(<multiple_comparisons output>)`. See [biometryassist::autoplot.mct()] for more details.
@@ -66,7 +67,44 @@
 #' pred.out <- multiple_comparisons(model.obj = model.asr, classify = "Nitrogen",
 #'                     descending = TRUE, decimals = 5)
 #'
-#' pred.out}
+#' pred.out
+#'
+#' # Example using a box-cox transformation
+#' set.seed(42) # See the seed for reproducibility
+#' resp <- rnorm(n = 50, 5, 1)^3
+#' trt <- as.factor(sample(rep(LETTERS[1:10], 5), 50))
+#' block <- as.factor(rep(1:5, each = 10))
+#' ex_data <- data.frame(resp, trt, block)
+#'
+#' # Change one treatment random values to get
+#' ex_data$resp[ex_data$trt=="A"] <- rnorm(n = 5, 7, 1)^3
+#'
+#' model.asr <- asreml(resp ~ trt,
+#'                     random = ~ block,
+#'                     residual = ~ units,
+#'                     data = ex_data)
+#'
+#' resplot(model.asr)
+#'
+#' # Perform Box-Cox transformation and get maximum value
+#' out <- MASS::boxcox(ex_data$resp~ex_data$trt)
+#' out$x[which.max(out$y)] # 0.3838
+#'
+#' # Fit cube root to the data
+#' model.asr <- asreml(resp^(1/3) ~ trt,
+#'                     random = ~ block,
+#'                     residual = ~ units,
+#'                     data = ex_data)
+#' resplot(model.asr) # residual plots look much better
+#'
+#' #Determine ranking and groups according to Tukey's Test
+#' pred.out <- multiple_comparisons(model.obj = model.asr,
+#'                                  classify = "trt",
+#'                                  trans = "power", power = (1/3))
+#'
+#' pred.out
+#' autoplot(pred.out)
+#' }
 #'
 #' @export
 #'
@@ -251,9 +289,9 @@ multiple_comparisons <- function(model.obj,
     pp.tab <- merge(pp,rr)
 
     if(!is.na(trans)){
-
         if(is.na(offset)) {
-            stop("Please supply an offset value for the transformation using the 'offset' argument. If an offset was not applied, use a value of 0 for the offset argument.")
+            warning("Offset value assumed to be 0. Change with `offset` argument.")
+            offset <- 0
         }
 
         if(trans == "sqrt"){
@@ -310,21 +348,21 @@ multiple_comparisons <- function(model.obj,
         }
 
         if(trans == "power"){
-        pp.tab$PredictedValue <- 1/(pp.tab$predicted.value)^power - ifelse(!is.na(offset), offset, 0)
-        pp.tab$ApproxSE <- pp.tab$std.error*1/(power*pp.tab$PredictedValue^(power-1))
-        if(int.type == "ci"){
-          pp.tab$ci <- stats::qt(p = sig, ndf, lower.tail = FALSE) * pp.tab$std.error
+            pp.tab$PredictedValue <- (pp.tab$predicted.value)^(1/power) - ifelse(!is.na(offset), offset, 0)
+            pp.tab$ApproxSE <- pp.tab$std.error*(1/(power*pp.tab$PredictedValue^(power-1)))
+            if(int.type == "ci"){
+                pp.tab$ci <- stats::qt(p = sig, ndf, lower.tail = FALSE) * pp.tab$std.error
+            }
+            if(int.type == "1se"){
+                pp.tab$ci <- pp.tab$std.error
+            }
+            if(int.type == "2se"){
+                pp.tab$ci <- 2*pp.tab$std.error
+            }
+            pp.tab$low <- (pp.tab$predicted.value - pp.tab$ci)^(1/power) - ifelse(!is.na(offset), offset, 0)
+            pp.tab$up <- (pp.tab$predicted.value + pp.tab$ci)^(1/power) - ifelse(!is.na(offset), offset, 0)
         }
-        if(int.type == "1se"){
-          pp.tab$ci <- pp.tab$std.error
-        }
-        if(int.type == "2se"){
-          pp.tab$ci <- 2*pp.tab$std.error
-        }
-        pp.tab$low <- 1/(pp.tab$predicted.value - pp.tab$ci)^power - ifelse(!is.na(offset), offset, 0)
-        pp.tab$up <- 1/(pp.tab$predicted.value + pp.tab$ci)^power - ifelse(!is.na(offset), offset, 0)
-      }
-      
+
         if(trans == "inverse"){
             pp.tab$PredictedValue <- 1/pp.tab$predicted.value
             pp.tab$ApproxSE <- abs(pp.tab$std.error)*pp.tab$PredictedValue^2
