@@ -13,8 +13,8 @@ test_that("resplt is deprecated and produces a warning", {
     vdiffr::expect_doppelganger(title = "Resplot for aov", p1)
 })
 
-test_that("resplot produces an error for invalid data types work for aov", {
-    expect_error(resplot(1:10), "model.obj must be an aov, lm, lmerMod, lmerModLmerTest, asreml or mmer object")
+test_that("resplot produces an error for invalid data types", {
+    expect_error(resplot(1:10), "model.obj must be an aov, lm, lmerMod, lmerModLmerTest, asreml, mmer or art object")
 })
 
 test_that("Old mod.obj argument produces a warning", {
