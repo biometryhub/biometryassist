@@ -109,22 +109,39 @@ pred.out
 
 # Example using a box-cox transformation
 set.seed(42) # See the seed for reproducibility
-example_data <- data.frame(response = exp(rnorm(50, 10, 1)),
-                           treatment = sample(rep(LETTERS[1:10], 5), 50),
-                           block = rep(1:5, each = 10))
-model.asr <- asreml(response ~ treatment
+resp <- rnorm(n = 50, 5, 1)^3
+trt <- as.factor(sample(rep(LETTERS[1:10], 5), 50))
+block <- as.factor(rep(1:5, each = 10))
+ex_data <- data.frame(resp, trt, block)
+
+# Change one treatment random values to get
+ex_data$resp[ex_data$trt=="A"] <- rnorm(n = 5, 7, 1)^3
+
+model.asr <- asreml(resp ~ trt,
                     random = ~ block,
                     residual = ~ units,
-                    data = example_data)
+                    data = ex_data)
 
-wald(model.asr) #Nitrogen main effect significant
+resplot(model.asr)
+
+# Perform Box-Cox transformation and get maximum value
+out <- MASS::boxcox(ex_data$resp~ex_data$trt)
+out$x[which.max(out$y)] # 0.3838
+
+# Fit cube root to the data
+model.asr <- asreml(resp^(1/3) ~ trt,
+                    random = ~ block,
+                    residual = ~ units,
+                    data = ex_data)
+resplot(model.asr) # residual plots look much better
 
 #Determine ranking and groups according to Tukey's Test
-pred.out <- multiple_comparisons(model.obj = model.asr, classify = "Nitrogen",
-                    descending = TRUE, decimals = 5)
+pred.out <- multiple_comparisons(model.obj = model.asr,
+                                 classify = "trt",
+                                 trans = "power", power = (1/3))
 
 pred.out
-
+autoplot(pred.out)
 }
 
 }
