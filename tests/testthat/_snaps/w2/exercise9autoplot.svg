@@ -56,11 +56,11 @@
 <polyline points='622.75,56.72 648.97,56.72 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
 <polyline points='635.86,56.72 635.86,158.66 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
 <polyline points='622.75,158.66 648.97,158.66 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
-<text x='111.45' y='409.24' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='6.33px' lengthAdjust='spacingAndGlyphs'>a</text>
-<text x='242.56' y='313.23' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='12.66px' lengthAdjust='spacingAndGlyphs'>ab</text>
-<text x='373.66' y='247.98' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='12.03px' lengthAdjust='spacingAndGlyphs'>bc</text>
-<text x='504.76' y='147.58' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='12.03px' lengthAdjust='spacingAndGlyphs'>cd</text>
-<text x='635.86' y='46.53' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='6.33px' lengthAdjust='spacingAndGlyphs'>d</text>
+<text x='111.45' y='413.16' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='6.33px' lengthAdjust='spacingAndGlyphs'>a</text>
+<text x='242.56' y='317.15' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='12.66px' lengthAdjust='spacingAndGlyphs'>ab</text>
+<text x='373.66' y='251.90' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='12.03px' lengthAdjust='spacingAndGlyphs'>bc</text>
+<text x='504.76' y='151.50' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='12.03px' lengthAdjust='spacingAndGlyphs'>cd</text>
+<text x='635.86' y='50.44' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='6.33px' lengthAdjust='spacingAndGlyphs'>d</text>
 <circle cx='111.45' cy='470.40' r='1.95' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
 <circle cx='242.56' cy='374.40' r='1.95' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
 <circle cx='373.66' cy='309.15' r='1.95' style='stroke-width: 0.71; stroke: none; fill: #000000;' />

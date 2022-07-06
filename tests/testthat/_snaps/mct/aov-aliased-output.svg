@@ -45,8 +45,8 @@
 <polyline points='263.33,73.77 294.07,73.77 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
 <polyline points='278.70,73.77 278.70,187.28 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
 <polyline points='263.33,187.28 294.07,187.28 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
-<text x='125.01' y='397.50' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='6.33px' lengthAdjust='spacingAndGlyphs'>a</text>
-<text x='278.70' y='62.42' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='5.70px' lengthAdjust='spacingAndGlyphs'>c</text>
+<text x='125.01' y='401.42' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='6.33px' lengthAdjust='spacingAndGlyphs'>a</text>
+<text x='278.70' y='66.34' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='5.70px' lengthAdjust='spacingAndGlyphs'>c</text>
 <circle cx='125.01' cy='465.58' r='1.95' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
 <circle cx='278.70' cy='130.52' r='1.95' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
 <rect x='32.79' y='39.43' width='338.12' height='505.68' style='stroke-width: 1.07; stroke: #333333;' />
@@ -75,7 +75,7 @@
 <polyline points='453.24,195.69 483.98,195.69 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
 <polyline points='468.61,195.69 468.61,309.19 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
 <polyline points='453.24,309.19 483.98,309.19 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
-<text x='468.61' y='184.34' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='6.33px' lengthAdjust='spacingAndGlyphs'>b</text>
+<text x='468.61' y='188.25' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='6.33px' lengthAdjust='spacingAndGlyphs'>b</text>
 <circle cx='468.61' cy='252.44' r='1.95' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
 <rect x='376.40' y='39.43' width='338.12' height='505.68' style='stroke-width: 1.07; stroke: #333333;' />
 </g>
