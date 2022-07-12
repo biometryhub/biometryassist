@@ -148,7 +148,7 @@ multiple_comparisons <- function(model.obj,
             warning("Argument `pred.obj` has been deprecated and will be removed in a future version. Predictions are now performed internally in the function.")
         }
 
-        pred.obj <- asreml::predict.asreml(model.obj, classify = classify, sed = TRUE, trace = FALSE, ...)
+        pred.obj <- quiet(asreml::predict.asreml(model.obj, classify = classify, sed = TRUE, trace = FALSE, ...))
         # Check if any treatments are aliased, and remove them and print a warning
         if(anyNA(pred.obj$pvals$predicted.value)) {
             aliased <- which(is.na(pred.obj$pvals$predicted.value))
@@ -192,7 +192,7 @@ multiple_comparisons <- function(model.obj,
         pp <- pp[!is.na(pp$predicted.value),]
         pp$status <- NULL
 
-        dat.ww <- asreml::wald(model.obj, ssType = "conditional", denDF = "default", trace = FALSE)$Wald
+        dat.ww <- quiet(asreml::wald(model.obj, ssType = "conditional", denDF = "default", trace = FALSE)$Wald)
 
         dendf <- data.frame(Source = row.names(dat.ww), denDF = dat.ww$denDF)
 
@@ -399,14 +399,15 @@ multiple_comparisons <- function(model.obj,
     pp.tab <- pp.tab[base::order(pp.tab$predicted.value, decreasing = descending),]
 
     pp.tab$Names <- NULL
-
-    if(class(model.obj)[1] == "asreml"){
-        trtindex <- grep("groups", names(pp.tab)) - 3
-    }
-
-    else {
-        trtindex <- grep("groups", names(pp.tab)) - 4
-    }
+    vars <- unlist(strsplit(classify, "\\:"))
+    trtindex <- max(unlist(lapply(vars, grep, x = names(pp.tab))))
+    # if(inherits(model.obj, "asreml")) {
+    #     trtindex <- grep("groups", names(pp.tab)) - 3
+    # }
+    #
+    # else {
+    #     trtindex <- grep("groups", names(pp.tab)) - 4
+    # }
 
     trtnam <- names(pp.tab)[1:trtindex]
 
