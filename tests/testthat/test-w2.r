@@ -180,8 +180,8 @@ test_that("example 7 works", {
 test_that("exercise 1 works", {
   exercise1.aov <- aov(Yield ~ Variety, data = exercise1)
   expect_snapshot_output(anova(exercise1.aov))
-  pred1e.out <- multiple_comparisons(exercise1.aov, classify = "Variety", decimals = 1)
-  expect_equal(pred1e.out$predicted.value, c(2.0, 2.1, 2.1, 2.1, 2.2, 2.2, 2.3, 2.3, 2.5, 2.5, 2.8, 2.8))
+  pred1e.out <- multiple_comparisons(exercise1.aov, classify = "Variety", decimals = 5)
+  expect_equal(pred1e.out$predicted.value, c(1.97333, 2.13000, 2.13000, 2.14000, 2.19333, 2.24000, 2.27000, 2.28333, 2.52667, 2.54000, 2.75000, 2.75333))
   expect_snapshot_output(pred1e.out)
   skip_on_ci()
   skip_on_covr()
