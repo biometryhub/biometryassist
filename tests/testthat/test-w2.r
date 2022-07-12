@@ -105,17 +105,17 @@ test_that("example 5 works", {
                          random = ~ Block + Block:WholePlot, residual = ~ units,
                          data = example5, trace = FALSE)
   expect_snapshot_output(asreml::wald(example5.asr, denDF = "default")$Wald)
-  pred5.out <- multiple_comparisons(example5.asr, classify = "Genotype")
-  expect_snapshot_output(pred5.out)
-  pred5.out <- multiple_comparisons(example5.asr, classify = "Fungicide")
-  expect_snapshot_output(pred5.out)
+  pred5.out1 <- multiple_comparisons(example5.asr, classify = "Genotype")
+  expect_snapshot_output(pred5.out1)
+  pred5.out2 <- multiple_comparisons(example5.asr, classify = "Fungicide")
+  expect_snapshot_output(pred5.out2)
   skip_on_ci()
   skip_on_covr()
   skip_on_cran()
   skip_if(packageVersion("grid") < "4.2.1")
   vdiffr::expect_doppelganger(title = "example5lmmresplot", resplot(example5.asr))
-  vdiffr::expect_doppelganger(title = "example5lmmautoplot1", autoplot(pred5.out))
-  vdiffr::expect_doppelganger(title = "example5lmmautoplot2", autoplot(pred5.out))
+  vdiffr::expect_doppelganger(title = "example5lmmautoplot1", autoplot(pred5.out1))
+  vdiffr::expect_doppelganger(title = "example5lmmautoplot2", autoplot(pred5.out2))
 })
 
 test_that("example 6 works", {
@@ -128,11 +128,11 @@ test_that("example 6 works", {
                  "Removed 79 rows containing non-finite values \\(stat_contour\\)\\.")
   expect_snapshot_output(summary(example6.asr)$varcomp)
   expect_equal(summary(example6.asr)$varcomp$component, c(0.0000002864157, 0.1790097741606, 0.5407770686889))
-  
+
   expect_warning(logl.tab <- logl_test(example6.asr,
                                        rand.terms = NULL, resid.terms = c("ar1(Row)")),
                  "Some components changed by more than 1% on the last iteration.")
-  
+
   expect_equal(logl.tab$LogLRT.pvalue, '0.003')
   pred6.out <- multiple_comparisons(example6.asr, classify = "Treatment")
   expect_snapshot_output(pred6.out)
@@ -370,7 +370,7 @@ test_that("exercise 13 works", {
                                                     residual = ~ id(Column):ar1(Row),
                                                     data = exercise13, trace = FALSE))
   expect_snapshot_output(asreml::wald(exercise13.asr, denDF = "default")$Wald)
-  
+
   logl.tab <- logl_test(model.obj = exercise13.asr,
                         rand.terms = NULL,
                         resid.terms = "ar1(Row)")
@@ -401,7 +401,7 @@ test_that("exercise 14 works", {
                                                     residual = ~ id(Column):ar1(Row),
                                                     data = exercise14, trace = FALSE))
   expect_snapshot_output(asreml::wald(exercise14.asr, denDF = "default")$Wald)
-  
+
   logl.tab <- logl_test(model.obj = exercise14.asr,
                         rand.terms = NULL,
                         resid.terms = "ar1(Row)")
@@ -434,7 +434,7 @@ test_that("exercise 15 works", {
                                    residual = ~ ar1(col):id(row),
                                    data = exercise15, trace = FALSE)
   expect_snapshot_output(asreml::wald(exercise15.asr, denDF = "default")$Wald)
-  
+
   logl.tab <- logl_test(model.obj = exercise15.asr,
                         rand.terms = NULL,
                         resid.terms = "ar1(col)")
