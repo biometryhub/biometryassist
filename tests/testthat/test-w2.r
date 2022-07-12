@@ -8,6 +8,7 @@ load(test_path("data", "w2_data.Rdata"), envir = .GlobalEnv)
 
 test_that("example 1 works", {
   example1.aov <- aov(RL ~ trt, data = example1)
+  withr::local_options(scipen = 100)
   expect_snapshot_output(anova(example1.aov))
   pred1.out <- multiple_comparisons(example1.aov, classify = "trt")
   expect_equal(pred1.out$predicted.value, c(9.96, 12.26, 16.14, 17.77))
@@ -68,7 +69,7 @@ test_that("example 3 LMM works", {
   library(asreml, quietly = T)
   example3.asr <- asreml(Yield ~ Variety, random = ~ Block, residual = ~ id(Plot),
                          data = example3, trace = FALSE)
-  expect_snapshot_output(asreml::wald(example3.asr, denDF = "default")$Wald)
+  expect_snapshot_output(print.data.frame(asreml::wald(example3.asr, denDF = "default")$Wald))
   pred3asr.out <- multiple_comparisons(example3.asr, classify = "Variety")
   expect_equal(pred3asr.out$predicted.value, c(1.68, 2.68, 4.72, 4.85))
   expect_snapshot_output(pred3asr.out)
@@ -87,7 +88,7 @@ test_that("example 4 LMM works", {
                                         trace = FALSE),
                  "Some components changed by more than 1% on the last iteration.")
   example4.asr <- update(example4.asr)
-  expect_snapshot_output(asreml::wald(example4.asr, denDF = "default")$Wald)
+  expect_snapshot_output(print.data.frame(asreml::wald(example4.asr, denDF = "default")$Wald))
   pred4lmm.out <- multiple_comparisons(example4.asr, classify = "trt")
   expect_equal(pred4lmm.out$predicted.value, c(1707.94, 1802.7, 2053.73, 2200.08))
   expect_snapshot_output(pred4lmm.out)
@@ -104,7 +105,7 @@ test_that("example 5 works", {
   example5.asr <- asreml(Yield ~ Genotype + Fungicide + Genotype:Fungicide,
                          random = ~ Block + Block:WholePlot, residual = ~ units,
                          data = example5, trace = FALSE)
-  expect_snapshot_output(asreml::wald(example5.asr, denDF = "default")$Wald)
+  expect_snapshot_output(print.data.frame(asreml::wald(example5.asr, denDF = "default")$Wald))
   pred5.out <- multiple_comparisons(example5.asr, classify = "Genotype")
   expect_snapshot_output(pred5.out)
   pred5.out <- multiple_comparisons(example5.asr, classify = "Fungicide")
@@ -123,7 +124,7 @@ test_that("example 6 works", {
   example6.asr <- asreml(Yield ~ Treatment, random = ~ Block,
                          residual = ~ id(Column):ar1(Row),
                          data = example6, trace = FALSE)
-  expect_snapshot_output(asreml::wald(example6.asr, denDF = "default")$Wald)
+  expect_snapshot_output(print.data.frame(asreml::wald(example6.asr, denDF = "default")$Wald))
   expect_warning(vg6 <- variogram(example6.asr),
                  "Removed 79 rows containing non-finite values \\(stat_contour\\)\\.")
   expect_snapshot_output(summary(example6.asr)$varcomp)
@@ -150,7 +151,7 @@ test_that("example 7 works", {
   example7.asr <- asreml(Yield ~ Control + Herbicide + Rate + Herbicide:Rate,
                          random = ~ Block,  residual = ~ id(Column):ar1(Row),
                          data = example7, trace = FALSE)
-  expect_snapshot_output(asreml::wald(example7.asr, denDF = "default")$Wald)
+  expect_snapshot_output(print.data.frame(asreml::wald(example7.asr, denDF = "default")$Wald))
   expect_warning(vg7 <- variogram(example7.asr),
                  "Removed 79 rows containing non-finite values \\(stat_contour\\)\\.")
   expect_snapshot_output(summary(example7.asr)$varcomp)
@@ -261,7 +262,7 @@ test_that("exercise 7 works", {
   skip_if_not_installed("asreml")
   exercise7.asr <- asreml::asreml(AverageFruitSize ~ Variety, random = ~ Replicate,
                                   residual = ~ id(Plot), data = exercise3, trace = FALSE)
-  expect_snapshot_output(asreml::wald(exercise7.asr, denDF = "default")$Wald)
+  expect_snapshot_output(print.data.frame(asreml::wald(exercise7.asr, denDF = "default")$Wald))
   pred7e.out <- multiple_comparisons(exercise7.asr, classify = "Variety")
   expect_equal(pred7e.out$predicted.value, c(2.84, 2.86, 3.08, 4.70, 4.78, 4.96, 8.88))
   expect_snapshot_output(pred7e.out)
@@ -277,8 +278,8 @@ test_that("exercise 8 works", {
   skip_if_not_installed("asreml")
   exercise8.asr <- asreml::asreml(Yield ~ SeedingRate, random = ~ Block,
                                   residual = ~ id(Plot), data = exercise4, trace = FALSE)
-  expect_equal(asreml::wald(exercise8.asr, denDF = "default")$Wald$Pr[2], 0.30758014)
-  expect_snapshot_output(asreml::wald(exercise8.asr, denDF = "default")$Wald)
+  expect_equal(print.data.frame(asreml::wald(exercise8.asr, denDF = "default")$Wald$Pr[2]), 0.30758014)
+  expect_snapshot_output(print.data.frame(asreml::wald(exercise8.asr, denDF = "default")$Wald))
   skip_on_ci()
   skip_on_covr()
   skip_on_cran()
@@ -292,7 +293,7 @@ test_that("exercise 9 works", {
                                                    random = ~ row + col,
                                                    residual = ~ id(plots),
                                                    data = exercise5, trace = FALSE))
-  expect_snapshot_output(asreml::wald(exercise9.asr, denDF = "default")$Wald)
+  expect_snapshot_output(print.data.frame(asreml::wald(exercise9.asr, denDF = "default")$Wald))
   pred9e.out <- multiple_comparisons(exercise9.asr, classify = "Treatment")
   expect_equal(pred9e.out$predicted.value, c(31.61, 35.98, 38.95, 43.52, 48.12))
   expect_snapshot_output(pred9e.out)
@@ -310,7 +311,7 @@ test_that("exercise 10 works", {
                                                     random = ~ row + col,
                                                     residual = ~ plots,
                                                     data = exercise6, trace = FALSE))
-  expect_snapshot_output(asreml::wald(exercise10.asr, denDF = "default")$Wald)
+  expect_snapshot_output(print.data.frame(asreml::wald(exercise10.asr, denDF = "default")$Wald))
   pred10e.out <- multiple_comparisons(exercise10.asr, classify = "Treatment")
   expect_equal(pred10e.out$predicted.value, c(16.01, 17.51, 21.40, 24.39))
   expect_snapshot_output(pred10e.out)
@@ -328,7 +329,7 @@ test_that("exercise 11 works", {
                                    random = ~ Block + Block:WholePlot,
                                    residual= ~ units,
                                    data = exercise11, trace = FALSE)
-  expect_snapshot_output(asreml::wald(exercise11.asr, denDF = "default")$Wald)
+  expect_snapshot_output(print.data.frame(asreml::wald(exercise11.asr, denDF = "default")$Wald))
   pred11e.out1 <- multiple_comparisons(exercise11.asr, classify = "Genotype")
   expect_equal(pred11e.out1$predicted.value, c(97.68, 104.89, 109.35))
   pred11e.out2 <- multiple_comparisons(exercise11.asr, classify = "Nitrogen")
@@ -350,7 +351,7 @@ test_that("exercise 12 works", {
                                    random = ~ Block + Block:WholePlot,
                                    residual = ~ units,
                                    data = exercise12, trace = FALSE)
-  expect_snapshot_output(asreml::wald(exercise12.asr, denDF = "default")$Wald)
+  expect_snapshot_output(print.data.frame(asreml::wald(exercise12.asr, denDF = "default")$Wald))
   pred12e.out <- multiple_comparisons(exercise12.asr, classify = "Variety:Irrigation")
   expect_equal(pred12e.out$predicted.value,
                c(4.61, 5.47, 5.91, 6.19, 6.43, 6.92, 7.02, 7.68, 7.7, 7.75))
@@ -369,7 +370,7 @@ test_that("exercise 13 works", {
                                                     random = ~ Block + Block:WholePlot,
                                                     residual = ~ id(Column):ar1(Row),
                                                     data = exercise13, trace = FALSE))
-  expect_snapshot_output(asreml::wald(exercise13.asr, denDF = "default")$Wald)
+  expect_snapshot_output(print.data.frame(asreml::wald(exercise13.asr, denDF = "default")$Wald))
   
   logl.tab <- logl_test(model.obj = exercise13.asr,
                         rand.terms = NULL,
@@ -400,7 +401,7 @@ test_that("exercise 14 works", {
                                                     random = ~ Block,
                                                     residual = ~ id(Column):ar1(Row),
                                                     data = exercise14, trace = FALSE))
-  expect_snapshot_output(asreml::wald(exercise14.asr, denDF = "default")$Wald)
+  expect_snapshot_output(print.data.frame(asreml::wald(exercise14.asr, denDF = "default")$Wald))
   
   logl.tab <- logl_test(model.obj = exercise14.asr,
                         rand.terms = NULL,
@@ -433,7 +434,7 @@ test_that("exercise 15 works", {
   exercise15.asr <- asreml::asreml(loginf ~ Control + Season + Rate + Season:Rate,
                                    residual = ~ ar1(col):id(row),
                                    data = exercise15, trace = FALSE)
-  expect_snapshot_output(asreml::wald(exercise15.asr, denDF = "default")$Wald)
+  expect_snapshot_output(print.data.frame(asreml::wald(exercise15.asr, denDF = "default")$Wald))
   
   logl.tab <- logl_test(model.obj = exercise15.asr,
                         rand.terms = NULL,
