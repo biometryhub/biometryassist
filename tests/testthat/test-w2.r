@@ -154,7 +154,7 @@ test_that("example 7 works", {
   expect_snapshot_output(print.data.frame(asreml::wald(example7.asr, denDF = "default")$Wald))
   expect_warning(vg7 <- variogram(example7.asr),
                  "Removed 79 rows containing non-finite values \\(stat_contour\\)\\.")
-  expect_snapshot_output(summary(example7.asr)$varcomp)
+  expect_snapshot_output(print(summary(example7.asr)$varcomp, digits = 2))
   expect_warning(logl.tab <- logl_test(example7.asr,
                                        rand.terms = NULL, resid.terms = c("ar1(Row)")),
                  "Some components changed by more than 1% on the last iteration.")
