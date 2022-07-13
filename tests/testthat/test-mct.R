@@ -287,6 +287,23 @@ test_that("multiple_comparisons output has a class of 'mct'", {
 })
 
 
+test_that("autoplot can rotate axis and labels independently", {
+    output <- multiple_comparisons(dat.aov, classify = "Species")
+    vdiffr::expect_doppelganger("label rotation",
+                                autoplot(output, label_rotation = 90))
+    vdiffr::expect_doppelganger("axis rotation",
+                                autoplot(output, axis_rotation = 90))
+    vdiffr::expect_doppelganger("axis and label rotation",
+                                autoplot(output, axis_rotation = 45, label_rotation = 90))
+    vdiffr::expect_doppelganger("rotation and axis rotation",
+                                autoplot(output, rotation = 45, axis_rotation = 90))
+    vdiffr::expect_doppelganger("rotation and label rotation",
+                                autoplot(output, rotation = 45, label_rotation = 90))
+    vdiffr::expect_doppelganger("rotation with hjust and vjust",
+                                autoplot(output, rotation = 45, label_rotation = 90, hjust = 0, vjust = 0.5))
+})
+
+
 
 
 

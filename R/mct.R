@@ -142,6 +142,10 @@ multiple_comparisons <- function(model.obj,
         warning("Significance level given by `sig` is high. Perhaps you meant ", 1-sig, "?", call. = FALSE)
     }
 
+    # if(grepl(":", classify)) {
+    vars <- unlist(strsplit(classify, "\\:"))
+    # }
+
     if(inherits(model.obj, "asreml")){
 
         if(!missing(pred.obj)) {
@@ -197,7 +201,7 @@ multiple_comparisons <- function(model.obj,
         dendf <- data.frame(Source = row.names(dat.ww), denDF = dat.ww$denDF)
 
         ifelse(grepl(":", classify),
-               pp$Names <- apply(pp[,unlist(strsplit(classify, ":"))], 1, paste, collapse = "_"),
+               pp$Names <- apply(pp[,vars], 1, paste, collapse = "_"),
                pp$Names <- pp[[classify]])
 
         ndf <- dendf$denDF[grepl(classify, dendf$Source) & nchar(classify) == nchar(as.character(dendf$Source))]
@@ -237,7 +241,7 @@ multiple_comparisons <- function(model.obj,
         SED <- matrix(data = sed, nrow = nrow(pp), ncol = nrow(pp))
         diag(SED) <- NA
         ifelse(grepl(":", classify),
-               pp$Names <- apply(pp[,unlist(strsplit(classify, ":"))], 1, paste, collapse = "_"),
+               pp$Names <- apply(pp[,vars], 1, paste, collapse = "_"),
                pp$Names <- pp[[classify]])
 
         ndf <- pp$Df[1]
@@ -399,15 +403,7 @@ multiple_comparisons <- function(model.obj,
     pp.tab <- pp.tab[base::order(pp.tab$predicted.value, decreasing = descending),]
 
     pp.tab$Names <- NULL
-    vars <- unlist(strsplit(classify, "\\:"))
     trtindex <- max(unlist(lapply(vars, grep, x = names(pp.tab))))
-    # if(inherits(model.obj, "asreml")) {
-    #     trtindex <- grep("groups", names(pp.tab)) - 3
-    # }
-    #
-    # else {
-    #     trtindex <- grep("groups", names(pp.tab)) - 4
-    # }
 
     trtnam <- names(pp.tab)[1:trtindex]
 
@@ -429,13 +425,12 @@ multiple_comparisons <- function(model.obj,
     }
     attr(pp.tab, "ylab") <- ylab
 
-    if(grepl(":", classify)) {
-        split_classify <- unlist(strsplit(classify, ":"))
-        if(length(split_classify)>2) {
-            classify3 <- split_classify[3]
-        }
-        classify2 <- split_classify[2]
-        classify <- split_classify[1]
+    if(length(vars)>2) {
+        classify3 <- vars[3]
+    }
+    else if(length(vars) > 1) {
+        classify2 <- vars[2]
+        classify <- vars[1]
     }
 
     class(pp.tab) <- c("mct", class(pp.tab))
