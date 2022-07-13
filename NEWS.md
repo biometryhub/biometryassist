@@ -1,3 +1,16 @@
+# biometryassist 1.1.1
+
+## Minor changes
+
+- `multiple_comparisons()` now accepts power transformations and automatically back-transforms. It gains a new argument `power` to provide the transformation power applied in the model to undo. This enables more general Box-Cox transformations. (#36)
+- `multiple_comparisons()` no longer produces an error when the `trans` argument is supplied and `offset` is not. It now produces a warning and sets `offset` to 0 when not provided. (#37)
+
+## Bug fixes
+
+- Fixed a bug that didn't allow labels and the x axis to be rotated indepentently for `autoplot.mct()` (#35)
+- Fixed an issue where treatment columns were not determined correctly in `multiple_comparisons()` (#33)
+
+
 # biometryassist 1.1.0
 
 ## Major changes
