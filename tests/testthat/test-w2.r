@@ -182,7 +182,7 @@ test_that("exercise 1 works", {
   expect_snapshot_output(anova(exercise1.aov))
   pred1e.out <- multiple_comparisons(exercise1.aov, classify = "Variety", decimals = 5)
   expect_equal(pred1e.out$predicted.value, c(1.97333, 2.13000, 2.13000, 2.14000, 2.19333, 2.24000, 2.27000, 2.28333, 2.52667, 2.54000, 2.75000, 2.75333))
-  expect_snapshot_output(pred1e.out)
+  expect_snapshot_output(pred1e.out[order(pred1e.out$predicted.value, as.character(pred1e.out$Variety)),])
   skip_on_ci()
   skip_on_covr()
   skip_on_cran()
