@@ -172,29 +172,32 @@ test_that("mct removes aliased treatments in aov", {
 })
 
 
-# test_that("mct handles aliased results in asreml with a warning", {
-#     skip_if_not(requireNamespace("asreml", quietly = TRUE))
-#     quiet(library(asreml))
-#     model.asr <- readRDS(test_path("data", "model_asr.rds"))
-#     model2.asr <- readRDS(test_path("data", "model_asr2.rds"))
-#     dat <- readRDS(test_path("data", "oats_data.rds"))
-#     dat$yield[dat$Nitrogen=="0.2_cwt" & dat$Variety == "Golden_rain"] <- NA
-#     expect_warning(
-#         expect_snapshot_output(
-#             print(multiple_comparisons(model.asr, classify = "Nitrogen:Variety"))
-#         )
-#     )
-#
-#     dat$yield[dat$Nitrogen=="0_cwt" & dat$Variety == "Golden_rain"] <- NA
-#     expect_warning(multiple_comparisons(model.asr, classify = "Nitrogen:Variety"), NULL)
-#                    #"Aliased levels are\\: 0\\_cwt\\:Golden\\_rain\\, 0\\.2\\_cwt\\:Golden\\_rain\\.")
-#
-#     dat$yield[dat$Nitrogen=="0_cwt"] <- NA
-#     expect_warning(multiple_comparisons(model2.asr, classify = "Nitrogen"), NULL)
-#
-#     dat$yield[dat$Nitrogen=="0.2_cwt"] <- NA
-#     expect_warning(multiple_comparisons(model2.asr, classify = "Nitrogen"), NULL)
-# })
+test_that("mct handles aliased results in asreml with a warning", {
+    skip_if_not(requireNamespace("asreml", quietly = TRUE))
+    quiet(library(asreml))
+    model.asr <- readRDS(test_path("data", "model_asr.rds"))
+    load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
+    expect_warning(
+        expect_snapshot_output(
+            multiple_comparisons(model.asr, classify = "Nitrogen:Variety")
+        ),
+        "Aliased level is: 0\\.2_cwt:Golden_rain\\."
+    )
+    model2.asr <- readRDS(test_path("data", "model_asr2.rds"))
+    load(test_path("data", "oats_data2.Rdata"), envir = .GlobalEnv)
+    # expect_snapshot_output(suppressWarnings(print.mct(multiple_comparisons(model2.asr, classify = "Nitrogen:Variety"))))
+    expect_warning(print.mct(multiple_comparisons(model2.asr, classify = "Nitrogen:Variety")),
+                   "Aliased levels are: 0\\.2_cwt:Golden_rain, 0\\.2_cwt:Victory\\.")
+
+    # expect_snapshot_output(print.mct(multiple_comparisons(model2.asr, classify = "Nitrogen:Variety")))
+
+    # dat$yield[dat$Nitrogen=="0_cwt"] <- NA
+    # expect_warning(multiple_comparisons(model2.asr, classify = "Nitrogen"),
+    #                "Some levels of Nitrogen are aliased\\. They have been removed from predicted output\\.")
+    #
+    # dat$yield[dat$Nitrogen=="0.2_cwt"] <- NA
+    # expect_warning(multiple_comparisons(model2.asr, classify = "Nitrogen"), NULL)
+})
 
 test_that("Significance values that are too high give a warning", {
     # dat.aov <- aov(Petal.Width ~ Species, data = iris)
@@ -208,23 +211,16 @@ test_that("Use of pred argument gives warning", {
                    "Argument `pred` has been deprecated and will be removed in a future version. Please use `classify` instead.")
 })
 
-# test_that("Missing pred.obj object causes error", {
-#     skip_if_not(requireNamespace("asreml", quietly = TRUE))
-#     quiet(library(asreml))
-#     model.asr <- readRDS(test_path("data", "model_asr.rds"))
-#     dat <- readRDS(test_path("data", "oats_data.rds"))
-#     expect_error(suppressWarnings(multiple_comparisons(model.asr, classify = "Nitrogen")),
-#                  "You must provide a prediction object in pred.obj")
-# })
+test_that("Including pred.obj object causes warning", {
+    skip_if_not(requireNamespace("asreml", quietly = TRUE))
+    quiet(library(asreml))
+    # model.asr <- readRDS(test_path("data", "model_asr.rds"))
+    # dat <- readRDS(test_path("data", "oats_data.rds"))
+    load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
+    expect_warning(multiple_comparisons(model.asr, pred.obj = pred.asr, classify = "Nitrogen"),
+                   "Argument \\`pred.obj\\` has been deprecated and will be removed in a future version\\. Predictions are now performed internally in the function\\.")
+})
 
-# test_that("Forgetting sed = T in pred.obj object causes error", {
-#     skip_if_not(requireNamespace("asreml", quietly = TRUE))
-#     quiet(library(asreml))
-#     dat.asr <- quiet(asreml(Petal.Width ~ Species, data = iris, trace = FALSE))
-#     # pred.out <- predict.asreml(dat.asr, classify = "Species")
-#     expect_error(multiple_comparisons(dat.asr, classify = "Species"),
-#                  "Prediction object \\(pred.obj\\) must be created with argument sed = TRUE\\.")
-# })
 
 test_that("lme4 model works", {
     skip_if_not_installed("lme4")

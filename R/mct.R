@@ -161,11 +161,9 @@ multiple_comparisons <- function(model.obj,
             # If multiple treatments, first need to concatenate columns, then collapse rows
             aliased_names <- pred.obj$pvals[aliased, !names(pred.obj$pvals) %in% c("predicted.value", "std.error", "status")]
 
-            if(is.data.frame(aliased_names) & length(aliased_names)==3) {
-                aliased_names <- paste(aliased_names[,1], aliased_names[,2], aliased_names[,3], sep = ":")
-            }
-            else if(is.data.frame(aliased_names) & length(aliased_names)==2) {
-                aliased_names <- paste(aliased_names[,1], aliased_names[,2], sep = ":")
+            # This pastes rows of the dataframe together across the columns, and turns into a vector
+            if(is.data.frame(aliased_names)) {
+                aliased_names <- apply(aliased_names, 1, paste, collapse = ":")
             }
 
             if(length(aliased_names) > 1) {
@@ -186,9 +184,9 @@ multiple_comparisons <- function(model.obj,
             pp <- pred.obj$pvals
 
             # Check that the prediction object was created with the sed matrix
-            if(is.null(pred.obj$sed)) {
-                stop("Prediction object (pred.obj) must be created with argument sed = TRUE.")
-            }
+            # if(is.null(pred.obj$sed)) {
+            #     stop("Prediction object (pred.obj) must be created with argument sed = TRUE.")
+            # }
 
             sed <- pred.obj$sed
         }
