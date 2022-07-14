@@ -124,6 +124,8 @@ test_that("Interaction terms work", {
     skip_if_not(requireNamespace("asreml", quietly = TRUE))
     quiet(library(asreml))
     load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
+    # model.asr <- readRDS(test_path("data", "model_asr.rds"))
+    # load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
     output <- multiple_comparisons(model.asr, classify = "Nitrogen:Variety")
     expect_equal(output$predicted.value,
                  c(70.85, 76.58, 85.86, 92.22, 99.91, 108.32, 113.1, 113.5, 116.63, 118.4, 123.75, 127.53))
@@ -175,7 +177,7 @@ test_that("mct removes aliased treatments in aov", {
 test_that("mct handles aliased results in asreml with a warning", {
     skip_if_not(requireNamespace("asreml", quietly = TRUE))
     quiet(library(asreml))
-    model.asr <- readRDS(test_path("data", "model_asr.rds"))
+    # model.asr <- readRDS(test_path("data", "model_asr.rds"))
     load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
     expect_warning(
         expect_snapshot_output(
@@ -183,7 +185,7 @@ test_that("mct handles aliased results in asreml with a warning", {
         ),
         "Aliased level is: 0\\.2_cwt:Golden_rain\\."
     )
-    model2.asr <- readRDS(test_path("data", "model_asr2.rds"))
+    # model2.asr <- readRDS(test_path("data", "model_asr2.rds"))
     load(test_path("data", "oats_data2.Rdata"), envir = .GlobalEnv)
     # expect_snapshot_output(suppressWarnings(print.mct(multiple_comparisons(model2.asr, classify = "Nitrogen:Variety"))))
     expect_warning(print.mct(multiple_comparisons(model2.asr, classify = "Nitrogen:Variety")),
@@ -214,9 +216,9 @@ test_that("Use of pred argument gives warning", {
 test_that("Including pred.obj object causes warning", {
     skip_if_not(requireNamespace("asreml", quietly = TRUE))
     quiet(library(asreml))
-    # model.asr <- readRDS(test_path("data", "model_asr.rds"))
-    # dat <- readRDS(test_path("data", "oats_data.rds"))
     load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
+    # load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
+    # model.asr <- readRDS(test_path("data", "model_asr.rds"))
     expect_warning(multiple_comparisons(model.asr, pred.obj = pred.asr, classify = "Nitrogen"),
                    "Argument \\`pred.obj\\` has been deprecated and will be removed in a future version\\. Predictions are now performed internally in the function\\.")
 })
@@ -225,7 +227,7 @@ test_that("Including pred.obj object causes warning", {
 test_that("lme4 model works", {
     skip_if_not_installed("lme4")
     quiet(library(lme4))
-    dat <- readRDS(test_path("data", "oats_data.rds"))
+    # load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
     dat.lmer <- lmer(yield ~ Nitrogen*Variety + (1|Blocks), data = dat)
     output <- multiple_comparisons(dat.lmer, classify = "Nitrogen")
     expect_equal(output$std.error, rep(7.4, 4))

@@ -73,7 +73,7 @@ test_that("Residual plots work for nlme", {
 
 test_that("Residual plots work for sommer", {
     skip_if_not_installed("sommer")
-    dat <- readRDS(test_path("data", "oats_data.rds"))
+    load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
     dat.som <- sommer::mmer(yield ~ Nitrogen + Variety + Nitrogen:Variety,
                             random = ~ Blocks + Blocks:Wplots,
                             rcov = ~ units,

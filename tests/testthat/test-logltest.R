@@ -1,11 +1,8 @@
-# model.asr <- readRDS(test_path("data", "model_asr.rds"))
-# dat <- readRDS(test_path("data", "oats_data.rds"))
 load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
 
 test_that("function works", {
     skip_if_not(requireNamespace("asreml", quietly = TRUE))
     quiet(library(asreml))
-
     oats.logl <- logl_test(model.obj = model.asr, rand.terms = c("Blocks", "Blocks:Wplots"),
                            resid.terms = c("ar1(Row)", "ar1(Column)"), decimals = 5, quiet = TRUE)
     oats.logl2 <- logl_test(model.obj = model.asr, rand.terms = c("Blocks", "Blocks:Wplots"),
@@ -28,6 +25,5 @@ test_that("logltest gives an error on different model type", {
 test_that("logltest gives an error on different model type", {
     skip_if_not(requireNamespace("asreml", quietly = TRUE))
     quiet(library(asreml))
-
     expect_error(logl_test(model.asr), "One of rand.terms or resid.terms must be provided")
 })

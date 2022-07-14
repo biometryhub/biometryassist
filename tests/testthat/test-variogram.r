@@ -1,4 +1,6 @@
-model.asr <- readRDS(test_path("data", "model_asr.rds"))
+# load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
+# model.asr <- readRDS(test_path("data", "model_asr.rds"))
+load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
 
 test_that("vario_df produces a dataframe", {
     vg <- vario_df(model.asr)
