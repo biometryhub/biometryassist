@@ -6,3 +6,4 @@
 docs/
 biometryassist.Rproj
 *.pdf
+.RDataTmp
