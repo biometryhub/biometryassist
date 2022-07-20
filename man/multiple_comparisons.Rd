@@ -11,6 +11,7 @@ multiple_comparisons(
   int.type = "ci",
   trans = NA,
   offset = NA,
+  power = NA,
   decimals = 2,
   descending = FALSE,
   plot = FALSE,
@@ -33,9 +34,11 @@ multiple_comparisons(
 
 \item{int.type}{The type of confidence interval to calculate. One of \code{ci}, \verb{1se} or \verb{2se}. Default is \code{ci}.}
 
-\item{trans}{Transformation that was applied to the response variable. One of \code{log}, \code{sqrt}, \code{logit} or \code{inverse}. Default is \code{NA}.}
+\item{trans}{Transformation that was applied to the response variable. One of \code{log}, \code{sqrt}, \code{logit}, \code{power} or \code{inverse}. Default is \code{NA}.}
 
 \item{offset}{Numeric offset applied to response variable prior to transformation. Default is \code{NA}. Use 0 if no offset was applied to the transformed data. See Details for more information.}
+
+\item{power}{Numeric power applied to response variable with power transformation. Default is \code{NA}. See Details for more information.}
 
 \item{decimals}{Controls rounding of decimal places in output. Default is 2 decimal places.}
 
@@ -102,7 +105,44 @@ wald(model.asr) #Nitrogen main effect significant
 pred.out <- multiple_comparisons(model.obj = model.asr, classify = "Nitrogen",
                     descending = TRUE, decimals = 5)
 
-pred.out}
+pred.out
+
+# Example using a box-cox transformation
+set.seed(42) # See the seed for reproducibility
+resp <- rnorm(n = 50, 5, 1)^3
+trt <- as.factor(sample(rep(LETTERS[1:10], 5), 50))
+block <- as.factor(rep(1:5, each = 10))
+ex_data <- data.frame(resp, trt, block)
+
+# Change one treatment random values to get
+ex_data$resp[ex_data$trt=="A"] <- rnorm(n = 5, 7, 1)^3
+
+model.asr <- asreml(resp ~ trt,
+                    random = ~ block,
+                    residual = ~ units,
+                    data = ex_data)
+
+resplot(model.asr)
+
+# Perform Box-Cox transformation and get maximum value
+out <- MASS::boxcox(ex_data$resp~ex_data$trt)
+out$x[which.max(out$y)] # 0.3838
+
+# Fit cube root to the data
+model.asr <- asreml(resp^(1/3) ~ trt,
+                    random = ~ block,
+                    residual = ~ units,
+                    data = ex_data)
+resplot(model.asr) # residual plots look much better
+
+#Determine ranking and groups according to Tukey's Test
+pred.out <- multiple_comparisons(model.obj = model.asr,
+                                 classify = "trt",
+                                 trans = "power", power = (1/3))
+
+pred.out
+autoplot(pred.out)
+}
 
 }
 \references{

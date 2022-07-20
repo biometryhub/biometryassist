@@ -53,7 +53,7 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
                 message("The ASReml-R package uses Reprise license management and will require administrator privilege to create the folder '/Library/Application Support/Reprise' before it can be loaded.")
                 input <- readline("Would you like to create this folder now (Yes/No)? You will be prompted for your password if yes. ")
 
-                if(toupper(input) == "YES") {
+                if(toupper(input) %in% c("YES", "Y")) {
                     system("sudo -S mkdir '/Library/Application Support/Reprise' && sudo -S chmod 777 '/Library/Application Support/Reprise'",
                            input = getPass::getPass("Please enter your user account password: "))
                 }
@@ -109,7 +109,9 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
 
         # If forcing installation, remove existing version to avoid errors on installation
         if(force && rlang::is_installed("asreml") && Sys.info()[["sysname"]] == "Windows") {
-            detach("package:asreml", unload = TRUE, force = TRUE)
+            if("asreml" %in% .packages()) {
+                detach("package:asreml", unload = TRUE, force = TRUE)
+            }
             suppressMessages(remove.packages("asreml", ))
         }
 
