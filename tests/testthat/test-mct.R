@@ -178,6 +178,7 @@ test_that("mct handles aliased results in asreml with a warning", {
     skip_if_not(requireNamespace("asreml", quietly = TRUE))
     quiet(library(asreml))
     # model.asr <- readRDS(test_path("data", "model_asr.rds"))
+    load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
     load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
     expect_warning(
         expect_snapshot_output(
@@ -188,10 +189,14 @@ test_that("mct handles aliased results in asreml with a warning", {
     # model2.asr <- readRDS(test_path("data", "model_asr2.rds"))
     load(test_path("data", "oats_data2.Rdata"), envir = .GlobalEnv)
     # expect_snapshot_output(suppressWarnings(print.mct(multiple_comparisons(model2.asr, classify = "Nitrogen:Variety"))))
+    expect_warning(
+        expect_snapshot_output(
+            multiple_comparisons(model2.asr, classify = "Nitrogen:Variety")
+        ),
+        "Some levels of Nitrogen:Variety are aliased\\. They have been removed from predicted output\\."
+    )
     expect_warning(print.mct(multiple_comparisons(model2.asr, classify = "Nitrogen:Variety")),
                    "Aliased levels are: 0\\.2_cwt:Golden_rain, 0\\.2_cwt:Victory\\.")
-
-    # expect_snapshot_output(print.mct(multiple_comparisons(model2.asr, classify = "Nitrogen:Variety")))
 
     # dat$yield[dat$Nitrogen=="0_cwt"] <- NA
     # expect_warning(multiple_comparisons(model2.asr, classify = "Nitrogen"),
