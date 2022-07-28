@@ -95,3 +95,15 @@ test_that("Residual plots display call for aov and lm", {
     vdiffr::expect_doppelganger(title = "Resplot with smaller call", p2)
     # vdiffr::expect_doppelganger(title = "Resplot for aov without shapiro", p2)
 })
+
+test_that("Residual plots work for ARTool models", {
+    load(test_path("data", "art_dat.Rdata"))
+    skip_if_not_installed("ARTool")
+    model.art <- ARTool::art(medmolarity ~ name + (1|rep), data = dat.art)
+    p1 <- resplot(model.art)
+    p2 <- resplot(model.art, call = TRUE)
+
+    vdiffr::expect_doppelganger(title = "ARTool resplot", p1)
+    vdiffr::expect_doppelganger(title = "ARTool resplot with call", p2)
+    # vdiffr::expect_doppelganger(title = "Resplot for aov without shapiro", p2)
+})

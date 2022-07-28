@@ -125,8 +125,7 @@ test_that("example 6 works", {
                          residual = ~ id(Column):ar1(Row),
                          data = example6, trace = FALSE)
   expect_snapshot_output(print.data.frame(asreml::wald(example6.asr, denDF = "default")$Wald))
-  expect_warning(vg6 <- variogram(example6.asr),
-                 "Removed 79 rows containing non-finite values \\(stat_contour\\)\\.")
+  vg6 <- variogram(example6.asr)
   expect_snapshot_output(summary(example6.asr)$varcomp)
   expect_equal(summary(example6.asr)$varcomp$component, c(0.0000002864157, 0.1790097741606, 0.5407770686889))
 
@@ -152,8 +151,7 @@ test_that("example 7 works", {
                          random = ~ Block,  residual = ~ id(Column):ar1(Row),
                          data = example7, trace = FALSE)
   expect_snapshot_output(print.data.frame(asreml::wald(example7.asr, denDF = "default")$Wald))
-  expect_warning(vg7 <- variogram(example7.asr),
-                 "Removed 79 rows containing non-finite values \\(stat_contour\\)\\.")
+  vg7 <- variogram(example7.asr)
   expect_snapshot_output(print(summary(example7.asr)$varcomp, digits = 2))
   expect_warning(logl.tab <- logl_test(example7.asr,
                                        rand.terms = NULL, resid.terms = c("ar1(Row)")),
@@ -390,10 +388,7 @@ test_that("exercise 13 works", {
   skip_on_cran()
   skip_if(packageVersion("grid") < "4.2.1")
   vdiffr::expect_doppelganger(title = "exercise13resplot", resplot(exercise13.asr))
-  vdiffr::expect_doppelganger(title = "exercise13varigram",
-                              expect_warning(variogram(exercise13.asr),
-                                             "Removed 79 rows containing non-finite values")
-  )
+  vdiffr::expect_doppelganger(title = "exercise13varigram", variogram(exercise13.asr))
   vdiffr::expect_doppelganger(title = "exercise13autoplot1", autoplot(pred13e.out1))
   vdiffr::expect_doppelganger(title = "exercise13autoplot2", autoplot(pred13e.out2))
 })
@@ -426,10 +421,7 @@ test_that("exercise 14 works", {
   skip_on_cran()
   skip_if(packageVersion("grid") < "4.2.1")
   vdiffr::expect_doppelganger(title = "exercise14resplot", resplot(exercise14.asr))
-  vdiffr::expect_doppelganger(title = "exercise14varigram",
-                              expect_warning(variogram(exercise14.asr),
-                                             "Removed 79 rows containing non-finite values")
-  )
+  vdiffr::expect_doppelganger(title = "exercise14varigram", variogram(exercise14.asr))
   vdiffr::expect_doppelganger(title = "exercise14autoplot", autoplot(pred14e.out))
 })
 
@@ -462,10 +454,7 @@ test_that("exercise 15 works", {
   skip_on_cran()
   skip_if(packageVersion("grid") < "4.2.1")
   vdiffr::expect_doppelganger(title = "exercise15resplot", resplot(exercise15.asr))
-  vdiffr::expect_doppelganger(title = "exercise15varigram",
-                              expect_warning(variogram(exercise15.asr),
-                                             "Removed 81 rows containing non-finite values")
-  )
+  vdiffr::expect_doppelganger(title = "exercise15varigram", variogram(exercise15.asr))
   vdiffr::expect_doppelganger(title = "exercise15autoplot1", autoplot(pred15e.out1))
   vdiffr::expect_doppelganger(title = "exercise15autoplot2", autoplot(pred15e.out2))
   vdiffr::expect_doppelganger(title = "exercise15autoplot3", autoplot(pred15e.out3))

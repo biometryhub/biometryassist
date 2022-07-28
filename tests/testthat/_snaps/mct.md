@@ -26,6 +26,22 @@
     
     Aliased level is: 0.2_cwt:Golden_rain 
 
+---
+
+       Nitrogen     Variety predicted.value std.error groups    ci    low     up
+    10    0_cwt     Victory           70.17      9.28      a 15.72  54.46  85.89
+    8     0_cwt Golden_rain           72.86      9.22      a 15.62  57.24  88.48
+    9     0_cwt  Marvellous           88.36      9.25     ab 15.68  72.68 104.03
+    1   0.2_cwt  Marvellous          108.91      9.13     bc 15.46  93.44 124.37
+    4   0.4_cwt     Victory          109.53      9.31     bc 15.77  93.76 125.30
+    2   0.4_cwt Golden_rain          112.61      9.40     bc 15.92  96.70 128.53
+    5   0.6_cwt Golden_rain          115.99      9.20      c 15.59 100.40 131.58
+    3   0.4_cwt  Marvellous          116.22      9.37      c 15.87 100.35 132.08
+    7   0.6_cwt     Victory          116.85      9.34      c 15.83 101.02 132.67
+    6   0.6_cwt  Marvellous          128.99      9.20      c 15.59 113.40 144.58
+    
+    Aliased levels are: 0.2_cwt:Golden_rain and 0.2_cwt:Victory 
+
 # 3 way interaction works
 
      [1]  99.08  99.26  99.57  99.73  99.73  99.73  99.77  99.79  99.90  99.94
