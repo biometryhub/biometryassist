@@ -144,7 +144,7 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
 #'
 #' @param model.obj An asreml model
 #'
-#' @return A data frame with the variogram for a model. The data frame contains the spatial coordinates (typically row and column), the $gamma$ for that position and the number of points with the separation.
+#' @return A data frame with the variogram for a model. The data frame contains the spatial coordinates (typically row and column), the `gamma` for that position and the number of points with the separation.
 #' @keywords internal
 #'
 #'
@@ -160,13 +160,18 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
 #' vario_df(model.asr)
 #' }
 #'
-vario_df <- function(model.obj, Row, Col) {
+vario_df <- function(model.obj, Row = NA, Column = NA) {
     # The 'z' value for the variogram is the residuals
     # Need to be able to pull out the x/y from the model object
 
     dims <- unlist(strsplit(names(model.obj$R.param[1]), ":"))
-    Row <- as.numeric(model.obj$mf[[dims[1]]])
-    Column <- as.numeric(model.obj$mf[[dims[2]]])
+
+    if(missing(Row) | is.na(Row) | is.null(Row)) {
+        Row <- as.numeric(model.obj$mf[[dims[1]]])
+    }
+    if(missing(Column) | is.na(Column) | is.null(Column)) {
+        Column <- as.numeric(model.obj$mf[[dims[2]]])
+    }
     Resid <- residuals(model.obj)
 
     nrows <- max(Row)
@@ -195,7 +200,9 @@ vario_df <- function(model.obj, Row, Col) {
                 col <- Column[val_index] + offset[2]
 
                 if (0 < row && row <= nrows && 0 < col && col <= ncols) {
-                    other <- Resid[Row == row & Column == col]
+                    other <- ifelse(!is.na(Resid[Row == row & Column == col]),
+                                    Resid[Row == row & Column == col],
+                                    0)
                     gamma <- gamma + (Resid[val_index]-other)^2
                     np <- np + 1
                 }
