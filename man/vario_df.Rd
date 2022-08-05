@@ -4,13 +4,13 @@
 \alias{vario_df}
 \title{Calculate the variogram data frame for a model}
 \usage{
-vario_df(model.obj, Row, Col)
+vario_df(model.obj, Row = NA, Column = NA)
 }
 \arguments{
 \item{model.obj}{An asreml model}
 }
 \value{
-A data frame with the variogram for a model. The data frame contains the spatial coordinates (typically row and column), the $gamma$ for that position and the number of points with the separation.
+A data frame with the variogram for a model. The data frame contains the spatial coordinates (typically row and column), the \code{gamma} for that position and the number of points with the separation.
 }
 \description{
 Calculate the variogram data frame for a model
