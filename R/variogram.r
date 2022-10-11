@@ -187,7 +187,7 @@ vario_df <- function(model.obj, Row = NA, Column = NA) {
 
         gamma <- 0
         np <- 0
-        for (val_index in 1:nrows) {
+        for (val_index in 1:nrow(vario)) {
             # val <- vals[val_index, ]
 
             # Deliberate double-counting so that offset handling is easy
