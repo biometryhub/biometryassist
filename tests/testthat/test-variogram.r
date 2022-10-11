@@ -5,7 +5,7 @@ load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
 test_that("vario_df produces a dataframe", {
     vg <- vario_df(model.asr)
     expect_equal(nrow(vg), 72)
-    expect_equal(round(vg[1:6, "gamma"], 3), c(0.000, 50.171, 54.679, 91.463, 101.107, 96.750))
+    expect_equal(round(vg[1:6, "gamma"], 3), c(0.000, 74.746, 109.053, 110.875, 99.564, 101.389))
     expect_s3_class(vg, c("variogram", "data.frame"))
     expect_type(vg, "list")
 })
