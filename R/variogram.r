@@ -58,8 +58,8 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
     pr <- matrix(pr, nrow = length(interp_rows), byrow = F)
     gdat <- cbind(gdat, z = as.vector(pr))
 
-    a <- ggplot2::ggplot(gdat, ggplot2::aes(x = y, y = x, z = z, fill = z)) +
-        ggplot2::geom_tile(alpha = 0.6) +
+    a <- ggplot2::ggplot(gdat, ggplot2::aes(x = y, y = x, z = z)) +
+        ggplot2::geom_tile(alpha = 0.6, ggplot2::aes(fill = z)) +
         ggplot2::coord_equal() +
         ggplot2::geom_contour(color = "white", alpha = 0.5) +
         ggplot2::theme_bw(base_size = 8) +
