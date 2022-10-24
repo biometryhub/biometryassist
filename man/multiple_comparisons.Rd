@@ -114,7 +114,7 @@ trt <- as.factor(sample(rep(LETTERS[1:10], 5), 50))
 block <- as.factor(rep(1:5, each = 10))
 ex_data <- data.frame(resp, trt, block)
 
-# Change one treatment random values to get
+# Change one treatment random values to get significant difference
 ex_data$resp[ex_data$trt=="A"] <- rnorm(n = 5, 7, 1)^3
 
 model.asr <- asreml(resp ~ trt,

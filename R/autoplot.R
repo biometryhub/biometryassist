@@ -17,14 +17,15 @@
 #'
 NULL
 
-#' @importFrom ggplot2 autoplot
 #' @rdname autoplot
+#' @importFrom ggplot2 autoplot
 #' @export
 ggplot2::autoplot
 
 
 #' @rdname autoplot
-#' @importFrom ggplot2 autoplot ggplot aes_ aes geom_errorbar geom_text geom_point theme_bw labs theme element_text facet_wrap
+#' @importFrom ggplot2 autoplot ggplot aes geom_errorbar geom_text geom_point theme_bw labs theme element_text facet_wrap
+#' @importFrom rlang ensym
 #' @export
 #' @examples
 #' dat.aov <- aov(Petal.Width ~ Species, data = iris)
@@ -35,6 +36,7 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1, rotation = 0, axi
 
     # classify is just the first n columns (before predicted.value)
     classify <- colnames(object)[1]
+    classify <- rlang::ensym(classify)
     if(colnames(object)[2] != "predicted.value") {
         classify2 <- colnames(object)[2]
     }
@@ -46,16 +48,17 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1, rotation = 0, axi
     ylab <- attributes(object)$ylab
 
     yval <- ifelse("PredictedValue" %in% colnames(object), "PredictedValue", "predicted.value")
+    yval <- rlang::ensym(yval)
 
-    plot <- ggplot2::ggplot(data = object, ggplot2::aes_(x = as.name(classify))) +
+    plot <- ggplot2::ggplot(data = object, ggplot2::aes(x = {{ classify }})) +
         ggplot2::geom_errorbar(aes(ymin = low, ymax = up), width = 0.2) +
-        ggplot2::geom_text(ggplot2::aes_(x = as.name(classify), y = ifelse(object$up > object$low, object$up, object$low),
+        ggplot2::geom_text(ggplot2::aes(x = {{ classify }}, y = ifelse(object$up > object$low, object$up, object$low),
                                          label = object$groups),
                            nudge_y = ifelse(abs(label_height) <= 1,
                                             abs(object$up-object$low)*label_height, # invert for cases with inverse transform
                                             label_height),
                            size = size, angle = label_rotation, ...) +
-        ggplot2::geom_point(ggplot2::aes_(y = as.name(yval)), color = "black", shape = 16) + ggplot2::theme_bw() +
+        ggplot2::geom_point(ggplot2::aes(y = {{ yval }}), color = "black", shape = 16) + ggplot2::theme_bw() +
         ggplot2::theme(axis.text.x = ggplot2::element_text(angle = axis_rotation, ...)) +
         ggplot2::labs(x = "", y = paste0("Predicted ", ylab))
 
@@ -86,7 +89,7 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1, rotation = 0, axi
 #'
 #' # Alternative colour scheme
 #' autoplot(des.out, palette = "plasma")
-autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, palette = "default", ...) {
+autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, palette = "default", row = NULL, col = NULL, ...) {
     stopifnot(inherits(object, "design"))
 
     if(inherits(object, "list")) {
@@ -113,7 +116,7 @@ autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, pale
                            text_col = ifelse(hcl[, "l"] > 50, "black", "white"))
         object <- merge(object, cols)
     }
-    else if(tolower(trimws(palette)) %in% c("magma", "inferno", "cividis", "plasma")) {
+    else if(tolower(trimws(palette)) %in% c("magma", "inferno", "cividis", "plasma", "rocket", "mako", "turbo")) {
         colour_palette <- scales::viridis_pal(option = palette)(ntrt)
         # Set text colour to be light on dark colours
         hcl <- farver::decode_colour(colour_palette, "rgb", "hcl")

@@ -25,7 +25,6 @@
 #' @importFrom predictmeans predictmeans
 #' @importFrom stats model.frame predict qtukey qt
 #' @importFrom utils packageVersion
-#' @importFrom ggplot2 ggplot aes_ aes geom_errorbar geom_text geom_point theme_bw labs theme element_text facet_wrap
 #'
 #' @details Some transformations require that data has a small offset applied, otherwise it will cause errors (for example taking a log of 0, or square root of negative values). In order to correctly reverse this offset, if the `trans` argument is supplied, an offset value must also be supplied. If there was no offset required for a transformation, then use a value of 0 for the `offset` argument.
 #'
@@ -76,7 +75,7 @@
 #' block <- as.factor(rep(1:5, each = 10))
 #' ex_data <- data.frame(resp, trt, block)
 #'
-#' # Change one treatment random values to get
+#' # Change one treatment random values to get significant difference
 #' ex_data$resp[ex_data$trt=="A"] <- rnorm(n = 5, 7, 1)^3
 #'
 #' model.asr <- asreml(resp ~ trt,
@@ -203,7 +202,7 @@ multiple_comparisons <- function(model.obj,
                pp$Names <- pp[[classify]])
 
         ndf <- dendf$denDF[grepl(classify, dendf$Source) & nchar(classify) == nchar(as.character(dendf$Source))]
-        crit.val <- 1/sqrt(2)* stats::qtukey((1-sig), nrow(pp), ndf)*sed
+        crit.val <- 1/sqrt(2)*stats::qtukey((1-sig), nrow(pp), ndf)*sed
 
         # Grab the response from the formula to create plot Y label
         ylab <- model.obj$formulae$fixed[[2]]
@@ -275,6 +274,7 @@ multiple_comparisons <- function(model.obj,
 
     # Determine pairs that are significantly different
     diffs <- abs(outer(pp$predicted.value, pp$predicted.value, "-")) > crit.val
+    # (diffs*sqrt(2))/sed # check against ptukey (use top/bottom triangle)
     diffs <- diffs[lower.tri(diffs)]
 
     # Create a vector of treatment comparison names
