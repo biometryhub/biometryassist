@@ -187,6 +187,7 @@ test_that("exercise 1 works", {
   skip_on_cran()
   skip_if(packageVersion("grid") < "4.2.1")
   vdiffr::expect_doppelganger(title = "exercise1resplot", resplot(exercise1.aov))
+  skip_on_os("linux")
   vdiffr::expect_doppelganger(title = "exercise1autoplot", autoplot(pred1e.out))
 })
 
