@@ -4,15 +4,27 @@
 \alias{variogram}
 \title{Variogram plots for spatial models.}
 \usage{
-variogram(model.obj, palette = "default")
+variogram(
+  model.obj,
+  row = NA,
+  column = NA,
+  horizontal = TRUE,
+  palette = "default"
+)
 }
 \arguments{
 \item{model.obj}{An \code{asreml} model object.}
 
-\item{palette}{A string specifying the colour scheme to use for plotting. The default value (\code{"default"}) is equivalent to \code{"rainbow"}. Colour blind friendly palettes can also be provided via options \code{"colour blind"} (or \code{"color blind"}, both equivalent to \code{"viridis"}), \code{"magma"}, \code{"inferno"}, \code{"plasma"} or \code{"cividis"}. The \code{"Spectral"} palette from \code{\link[scales:brewer_pal]{scales::brewer_pal()}} is also possible.}
+\item{row}{A row variable.}
+
+\item{column}{A column variable.}
+
+\item{horizontal}{Logical (default \code{TRUE}). The direction the plots are arranged. The default \code{TRUE} places the plots above and below, while \code{FALSE} will place them side by side.}
+
+\item{palette}{A string specifying the colour scheme to use for plotting. The default value (\code{"default"}) is equivalent to \code{"rainbow"}. Colour blind friendly palettes can also be provided via options \code{"colo(u)r blind"} (both equivalent to \code{"viridis"}), \code{"magma"}, \code{"inferno"}, \code{"plasma"}, \code{"cividis"}, \code{"rocket"}, \code{"mako"} or \code{"turbo"}. The \code{"Spectral"} palette from \code{\link[scales:brewer_pal]{scales::brewer_pal()}} is also possible.}
 }
 \value{
-A ggplot2 object.
+A \code{ggplot2} object.
 }
 \description{
 Produces variogram plots for checking spatial trends.

@@ -13,8 +13,8 @@ test_that("resplt is deprecated and produces a warning", {
     vdiffr::expect_doppelganger(title = "Resplot for aov", p1)
 })
 
-test_that("resplot produces an error for invalid data types work for aov", {
-    expect_error(resplot(1:10), "model.obj must be an aov, lm, lmerMod, lmerModLmerTest, asreml or mmer object")
+test_that("resplot produces an error for invalid data types", {
+    expect_error(resplot(1:10), "model.obj must be an aov, lm, lmerMod, lmerModLmerTest, asreml, mmer or art object")
 })
 
 test_that("Old mod.obj argument produces a warning", {
@@ -73,7 +73,7 @@ test_that("Residual plots work for nlme", {
 
 test_that("Residual plots work for sommer", {
     skip_if_not_installed("sommer")
-    dat <- readRDS(test_path("data", "oats_data.rds"))
+    load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
     dat.som <- sommer::mmer(yield ~ Nitrogen + Variety + Nitrogen:Variety,
                             random = ~ Blocks + Blocks:Wplots,
                             rcov = ~ units,
@@ -93,5 +93,17 @@ test_that("Residual plots display call for aov and lm", {
 
     vdiffr::expect_doppelganger(title = "Resplot with call", p1)
     vdiffr::expect_doppelganger(title = "Resplot with smaller call", p2)
+    # vdiffr::expect_doppelganger(title = "Resplot for aov without shapiro", p2)
+})
+
+test_that("Residual plots work for ARTool models", {
+    load(test_path("data", "art_dat.Rdata"))
+    skip_if_not_installed("ARTool")
+    model.art <- ARTool::art(medmolarity ~ name + (1|rep), data = dat.art)
+    p1 <- resplot(model.art)
+    p2 <- resplot(model.art, call = TRUE)
+
+    vdiffr::expect_doppelganger(title = "ARTool resplot", p1)
+    vdiffr::expect_doppelganger(title = "ARTool resplot with call", p2)
     # vdiffr::expect_doppelganger(title = "Resplot for aov without shapiro", p2)
 })

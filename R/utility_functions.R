@@ -27,7 +27,7 @@ quiet <- function(x) {
 {
   installed_version <- utils::packageVersion('biometryassist')
 
-  if(rlang::is_interactive()) {# && Sys.time() > (last_load + 1)) {
+  if(rlang::is_interactive() && !isFALSE(rlang::peek_option("biometryassist.check"))) {# && Sys.time() > (last_load + 1)) {
     output <- paste("    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
                     paste("    |  ", pkg, " version ", installed_version, "                                     |",sep=""),
                     "    |  Authors: Sharon Nielsen, Sam Rogers, Annie Conway                |",

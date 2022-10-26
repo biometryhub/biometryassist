@@ -6,8 +6,9 @@
 #' @param classify Name of predictor variable as string.
 #' @param sig The significance level, numeric between 0 and 1. Default is 0.05.
 #' @param int.type The type of confidence interval to calculate. One of `ci`, `1se` or `2se`. Default is `ci`.
-#' @param trans Transformation that was applied to the response variable. One of `log`, `sqrt`, `logit` or `inverse`. Default is `NA`.
+#' @param trans Transformation that was applied to the response variable. One of `log`, `sqrt`, `logit`, `power` or `inverse`. Default is `NA`.
 #' @param offset Numeric offset applied to response variable prior to transformation. Default is `NA`. Use 0 if no offset was applied to the transformed data. See Details for more information.
+#' @param power Numeric power applied to response variable with power transformation. Default is `NA`. See Details for more information.
 #' @param decimals Controls rounding of decimal places in output. Default is 2 decimal places.
 #' @param descending Logical (default `FALSE`). Order of the output sorted by the predicted value. If `TRUE`, largest will be first, through to smallest last.
 #' @param plot Automatically produce a plot of the output of the multiple comparison test? Default is `FALSE`. This is maintained for backwards compatibility, but the preferred method now is to use `autoplot(<multiple_comparisons output>)`. See [biometryassist::autoplot.mct()] for more details.
@@ -24,13 +25,12 @@
 #' @importFrom predictmeans predictmeans
 #' @importFrom stats model.frame predict qtukey qt
 #' @importFrom utils packageVersion
-#' @importFrom ggplot2 ggplot aes_ aes geom_errorbar geom_text geom_point theme_bw labs theme element_text facet_wrap
 #'
 #' @details Some transformations require that data has a small offset applied, otherwise it will cause errors (for example taking a log of 0, or square root of negative values). In order to correctly reverse this offset, if the `trans` argument is supplied, an offset value must also be supplied. If there was no offset required for a transformation, then use a value of 0 for the `offset` argument.
 #'
 #' @return A list containing a data frame with predicted means, standard errors, confidence interval upper and lower bounds, and significant group allocations (named `predicted_values`), as well as a plot visually displaying the predicted values (named `predicted_plot`). If some of the predicted values are aliased, a warning is printed, and the aliased treatment levels are returned in the output (named `aliased`).
 #'
-#' @references Jørgensen, E. & Pedersen, A. R. How to Obtain Those Nasty Standard Errors From Transformed Data - and Why They Should Not Be Used. [https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.47.9023&rep=rep1&type=pdf](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.47.9023&rep=rep1&type=pdf)
+#' @references Jørgensen, E. & Pedersen, A. R. How to Obtain Those Nasty Standard Errors From Transformed Data - and Why They Should Not Be Used.
 #'
 #' @examples
 #' # Fit aov model
@@ -66,7 +66,44 @@
 #' pred.out <- multiple_comparisons(model.obj = model.asr, classify = "Nitrogen",
 #'                     descending = TRUE, decimals = 5)
 #'
-#' pred.out}
+#' pred.out
+#'
+#' # Example using a box-cox transformation
+#' set.seed(42) # See the seed for reproducibility
+#' resp <- rnorm(n = 50, 5, 1)^3
+#' trt <- as.factor(sample(rep(LETTERS[1:10], 5), 50))
+#' block <- as.factor(rep(1:5, each = 10))
+#' ex_data <- data.frame(resp, trt, block)
+#'
+#' # Change one treatment random values to get significant difference
+#' ex_data$resp[ex_data$trt=="A"] <- rnorm(n = 5, 7, 1)^3
+#'
+#' model.asr <- asreml(resp ~ trt,
+#'                     random = ~ block,
+#'                     residual = ~ units,
+#'                     data = ex_data)
+#'
+#' resplot(model.asr)
+#'
+#' # Perform Box-Cox transformation and get maximum value
+#' out <- MASS::boxcox(ex_data$resp~ex_data$trt)
+#' out$x[which.max(out$y)] # 0.3838
+#'
+#' # Fit cube root to the data
+#' model.asr <- asreml(resp^(1/3) ~ trt,
+#'                     random = ~ block,
+#'                     residual = ~ units,
+#'                     data = ex_data)
+#' resplot(model.asr) # residual plots look much better
+#'
+#' #Determine ranking and groups according to Tukey's Test
+#' pred.out <- multiple_comparisons(model.obj = model.asr,
+#'                                  classify = "trt",
+#'                                  trans = "power", power = (1/3))
+#'
+#' pred.out
+#' autoplot(pred.out)
+#' }
 #'
 #' @export
 #'
@@ -76,6 +113,7 @@ multiple_comparisons <- function(model.obj,
                                  int.type = "ci",
                                  trans = NA,
                                  offset = NA,
+                                 power = NA,
                                  decimals = 2,
                                  descending = FALSE,
                                  plot = FALSE,
@@ -103,13 +141,17 @@ multiple_comparisons <- function(model.obj,
         warning("Significance level given by `sig` is high. Perhaps you meant ", 1-sig, "?", call. = FALSE)
     }
 
+    # if(grepl(":", classify)) {
+    vars <- unlist(strsplit(classify, "\\:"))
+    # }
+
     if(inherits(model.obj, "asreml")){
 
         if(!missing(pred.obj)) {
             warning("Argument `pred.obj` has been deprecated and will be removed in a future version. Predictions are now performed internally in the function.")
         }
 
-        pred.obj <- asreml::predict.asreml(model.obj, classify = classify, sed = TRUE, trace = FALSE, ...)
+        pred.obj <- quiet(asreml::predict.asreml(model.obj, classify = classify, sed = TRUE, trace = FALSE, ...))
         # Check if any treatments are aliased, and remove them and print a warning
         if(anyNA(pred.obj$pvals$predicted.value)) {
             aliased <- which(is.na(pred.obj$pvals$predicted.value))
@@ -118,11 +160,9 @@ multiple_comparisons <- function(model.obj,
             # If multiple treatments, first need to concatenate columns, then collapse rows
             aliased_names <- pred.obj$pvals[aliased, !names(pred.obj$pvals) %in% c("predicted.value", "std.error", "status")]
 
-            if(is.data.frame(aliased_names) & length(aliased_names)==3) {
-                aliased_names <- paste(aliased_names[,1], aliased_names[,2], aliased_names[,3], sep = ":")
-            }
-            else if(is.data.frame(aliased_names) & length(aliased_names)==2) {
-                aliased_names <- paste(aliased_names[,1], aliased_names[,2], sep = ":")
+            # This pastes rows of the dataframe together across the columns, and turns into a vector
+            if(is.data.frame(aliased_names)) {
+                aliased_names <- apply(aliased_names, 1, paste, collapse = ":")
             }
 
             if(length(aliased_names) > 1) {
@@ -143,9 +183,9 @@ multiple_comparisons <- function(model.obj,
             pp <- pred.obj$pvals
 
             # Check that the prediction object was created with the sed matrix
-            if(is.null(pred.obj$sed)) {
-                stop("Prediction object (pred.obj) must be created with argument sed = TRUE.")
-            }
+            # if(is.null(pred.obj$sed)) {
+            #     stop("Prediction object (pred.obj) must be created with argument sed = TRUE.")
+            # }
 
             sed <- pred.obj$sed
         }
@@ -153,16 +193,16 @@ multiple_comparisons <- function(model.obj,
         pp <- pp[!is.na(pp$predicted.value),]
         pp$status <- NULL
 
-        dat.ww <- asreml::wald(model.obj, ssType = "conditional", denDF = "default", trace = FALSE)$Wald
+        dat.ww <- quiet(asreml::wald(model.obj, ssType = "conditional", denDF = "default", trace = FALSE)$Wald)
 
         dendf <- data.frame(Source = row.names(dat.ww), denDF = dat.ww$denDF)
 
         ifelse(grepl(":", classify),
-               pp$Names <- apply(pp[,unlist(strsplit(classify, ":"))], 1, paste, collapse = "_"),
+               pp$Names <- apply(pp[,vars], 1, paste, collapse = "_"),
                pp$Names <- pp[[classify]])
 
         ndf <- dendf$denDF[grepl(classify, dendf$Source) & nchar(classify) == nchar(as.character(dendf$Source))]
-        crit.val <- 1/sqrt(2)* stats::qtukey((1-sig), nrow(pp), ndf)*sed
+        crit.val <- 1/sqrt(2)*stats::qtukey((1-sig), nrow(pp), ndf)*sed
 
         # Grab the response from the formula to create plot Y label
         ylab <- model.obj$formulae$fixed[[2]]
@@ -198,7 +238,7 @@ multiple_comparisons <- function(model.obj,
         SED <- matrix(data = sed, nrow = nrow(pp), ncol = nrow(pp))
         diag(SED) <- NA
         ifelse(grepl(":", classify),
-               pp$Names <- apply(pp[,unlist(strsplit(classify, ":"))], 1, paste, collapse = "_"),
+               pp$Names <- apply(pp[,vars], 1, paste, collapse = "_"),
                pp$Names <- pp[[classify]])
 
         ndf <- pp$Df[1]
@@ -234,6 +274,7 @@ multiple_comparisons <- function(model.obj,
 
     # Determine pairs that are significantly different
     diffs <- abs(outer(pp$predicted.value, pp$predicted.value, "-")) > crit.val
+    # (diffs*sqrt(2))/sed # check against ptukey (use top/bottom triangle)
     diffs <- diffs[lower.tri(diffs)]
 
     # Create a vector of treatment comparison names
@@ -250,9 +291,9 @@ multiple_comparisons <- function(model.obj,
     pp.tab <- merge(pp,rr)
 
     if(!is.na(trans)){
-
         if(is.na(offset)) {
-            stop("Please supply an offset value for the transformation using the 'offset' argument. If an offset was not applied, use a value of 0 for the offset argument.")
+            warning("Offset value assumed to be 0. Change with `offset` argument.")
+            offset <- 0
         }
 
         if(trans == "sqrt"){
@@ -308,6 +349,22 @@ multiple_comparisons <- function(model.obj,
             pp.tab$uu <- NULL
         }
 
+        if(trans == "power"){
+            pp.tab$PredictedValue <- (pp.tab$predicted.value)^(1/power) - ifelse(!is.na(offset), offset, 0)
+            pp.tab$ApproxSE <- pp.tab$std.error*(1/(power*pp.tab$PredictedValue^(power-1)))
+            if(int.type == "ci"){
+                pp.tab$ci <- stats::qt(p = sig, ndf, lower.tail = FALSE) * pp.tab$std.error
+            }
+            if(int.type == "1se"){
+                pp.tab$ci <- pp.tab$std.error
+            }
+            if(int.type == "2se"){
+                pp.tab$ci <- 2*pp.tab$std.error
+            }
+            pp.tab$low <- (pp.tab$predicted.value - pp.tab$ci)^(1/power) - ifelse(!is.na(offset), offset, 0)
+            pp.tab$up <- (pp.tab$predicted.value + pp.tab$ci)^(1/power) - ifelse(!is.na(offset), offset, 0)
+        }
+
         if(trans == "inverse"){
             pp.tab$PredictedValue <- 1/pp.tab$predicted.value
             pp.tab$ApproxSE <- abs(pp.tab$std.error)*pp.tab$PredictedValue^2
@@ -344,14 +401,7 @@ multiple_comparisons <- function(model.obj,
     pp.tab <- pp.tab[base::order(pp.tab$predicted.value, decreasing = descending),]
 
     pp.tab$Names <- NULL
-
-    if(class(model.obj)[1] == "asreml"){
-        trtindex <- grep("groups", names(pp.tab)) - 3
-    }
-
-    else {
-        trtindex <- grep("groups", names(pp.tab)) - 4
-    }
+    trtindex <- max(unlist(lapply(vars, grep, x = names(pp.tab))))
 
     trtnam <- names(pp.tab)[1:trtindex]
 
@@ -373,13 +423,12 @@ multiple_comparisons <- function(model.obj,
     }
     attr(pp.tab, "ylab") <- ylab
 
-    if(grepl(":", classify)) {
-        split_classify <- unlist(strsplit(classify, ":"))
-        if(length(split_classify)>2) {
-            classify3 <- split_classify[3]
-        }
-        classify2 <- split_classify[2]
-        classify <- split_classify[1]
+    if(length(vars)>2) {
+        classify3 <- vars[3]
+    }
+    else if(length(vars) > 1) {
+        classify2 <- vars[2]
+        classify <- vars[1]
     }
 
     class(pp.tab) <- c("mct", class(pp.tab))

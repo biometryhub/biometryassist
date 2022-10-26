@@ -50,30 +50,39 @@ test_that("transformations are handled", {
     output.inverse <- multiple_comparisons(dat.aov.inverse, classify = "Species", trans = "inverse", offset = 0)
     output.inverse2 <- multiple_comparisons(dat.aov.inverse, classify = "Species", trans = "inverse", offset = 0, int.type = "1se")
     output.inverse3 <- multiple_comparisons(dat.aov.inverse, classify = "Species", trans = "inverse", offset = 0, int.type = "2se")
+    dat.aov.power <- aov((Petal.Width+1)^3 ~ Species, data = iris)
+    output.power <- multiple_comparisons(dat.aov.power, classify = "Species", trans = "power", offset = 1, power = 3)
+    output.power2 <- multiple_comparisons(dat.aov.power, classify = "Species", trans = "power", offset = 1, power = 3, int.type = "1se")
+    output.power3 <- multiple_comparisons(dat.aov.power, classify = "Species", trans = "power", offset = 1, power = 3, int.type = "2se")
 
     expect_equal(output.log$predicted.value, c(-1.48, 0.27, 0.70))
-    expect_equal(output.log2$predicted.value, c(-1.48, 0.27, 0.70))
-    expect_equal(output.log3$predicted.value, c(-1.48, 0.27, 0.70))
+    expect_equal(output.log2$low, c(0.22, 1.26, 1.93))
+    expect_equal(output.log3$up, c(0.24, 1.41, 2.16))
     expect_equal(output.sqrt$predicted.value, c(0.49, 1.15, 1.42))
-    expect_equal(output.sqrt2$predicted.value, c(0.49, 1.15, 1.42))
-    expect_equal(output.sqrt3$predicted.value, c(0.49, 1.15, 1.42))
+    expect_equal(output.sqrt2$low, c(0.22, 1.29, 1.98))
+    expect_equal(output.sqrt3$up, c(0.26, 1.38, 2.09))
     expect_equal(output.logit$predicted.value, c(-5.30, -4.87, -3.07))
-    expect_equal(output.logit2$predicted.value, c(-5.30, -4.87, -3.07))
-    expect_equal(output.logit3$predicted.value, c(-5.30, -4.87, -3.07))
+    expect_equal(output.logit2$low, c(0.00, 0.01, 0.04))
+    expect_equal(output.logit3$up, c(0.01, 0.01, 0.05))
     expect_equal(output.inverse$predicted.value, c(0.50, 0.77, 4.79))
-    expect_equal(output.inverse2$predicted.value, c(0.50, 0.77, 4.79))
-    expect_equal(output.inverse3$predicted.value, c(0.50, 0.77, 4.79))
+    expect_equal(output.inverse2$low, c(2.98, 1.66, 0.22))
+    expect_equal(output.inverse3$up, c(1.19, 0.90, 0.20))
+    expect_equal(output.power$predicted.value, c(1.98, 12.85, 28.38))
+    expect_equal(output.power2$low, c(0.09, 1.30, 2.03))
+    expect_equal(output.power3$up, c(0.49, 1.42, 2.10))
 
     # skip_if(interactive())
     vdiffr::expect_doppelganger("mct log output", autoplot(output.log))
     vdiffr::expect_doppelganger("mct sqrt output", autoplot(output.sqrt))
     vdiffr::expect_doppelganger("mct logit output", autoplot(output.logit))
     vdiffr::expect_doppelganger("mct inverse output", autoplot(output.inverse))
+    vdiffr::expect_doppelganger("mct power output", autoplot(output.power))
 })
 
-test_that("transformations with no offset produces an error", {
+test_that("transformations with no offset produces a warning", {
     dat.aov <- aov(log(Petal.Width) ~ Species, data = iris)
-    expect_error(multiple_comparisons(dat.aov, classify = "Species", trans = "log"))
+    expect_warning(multiple_comparisons(dat.aov, classify = "Species", trans = "log"),
+                   "Offset value assumed to be 0. Change with `offset` argument.")
 })
 
 test_that("ordering output works", {
@@ -115,6 +124,8 @@ test_that("Interaction terms work", {
     skip_if_not(requireNamespace("asreml", quietly = TRUE))
     quiet(library(asreml))
     load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
+    # model.asr <- readRDS(test_path("data", "model_asr.rds"))
+    # load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
     output <- multiple_comparisons(model.asr, classify = "Nitrogen:Variety")
     expect_equal(output$predicted.value,
                  c(70.85, 76.58, 85.86, 92.22, 99.91, 108.32, 113.1, 113.5, 116.63, 118.4, 123.75, 127.53))
@@ -163,29 +174,37 @@ test_that("mct removes aliased treatments in aov", {
 })
 
 
-# test_that("mct handles aliased results in asreml with a warning", {
-#     skip_if_not(requireNamespace("asreml", quietly = TRUE))
-#     quiet(library(asreml))
-#     model.asr <- readRDS(test_path("data", "model_asr.rds"))
-#     model2.asr <- readRDS(test_path("data", "model_asr2.rds"))
-#     dat <- readRDS(test_path("data", "oats_data.rds"))
-#     dat$yield[dat$Nitrogen=="0.2_cwt" & dat$Variety == "Golden_rain"] <- NA
-#     expect_warning(
-#         expect_snapshot_output(
-#             print(multiple_comparisons(model.asr, classify = "Nitrogen:Variety"))
-#         )
-#     )
-#
-#     dat$yield[dat$Nitrogen=="0_cwt" & dat$Variety == "Golden_rain"] <- NA
-#     expect_warning(multiple_comparisons(model.asr, classify = "Nitrogen:Variety"), NULL)
-#                    #"Aliased levels are\\: 0\\_cwt\\:Golden\\_rain\\, 0\\.2\\_cwt\\:Golden\\_rain\\.")
-#
-#     dat$yield[dat$Nitrogen=="0_cwt"] <- NA
-#     expect_warning(multiple_comparisons(model2.asr, classify = "Nitrogen"), NULL)
-#
-#     dat$yield[dat$Nitrogen=="0.2_cwt"] <- NA
-#     expect_warning(multiple_comparisons(model2.asr, classify = "Nitrogen"), NULL)
-# })
+test_that("mct handles aliased results in asreml with a warning", {
+    skip_if_not(requireNamespace("asreml", quietly = TRUE))
+    quiet(library(asreml))
+    # model.asr <- readRDS(test_path("data", "model_asr.rds"))
+    load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
+    load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
+    expect_warning(
+        expect_snapshot_output(
+            multiple_comparisons(model.asr, classify = "Nitrogen:Variety")
+        ),
+        "Aliased level is: 0\\.2_cwt:Golden_rain\\."
+    )
+    # model2.asr <- readRDS(test_path("data", "model_asr2.rds"))
+    load(test_path("data", "oats_data2.Rdata"), envir = .GlobalEnv)
+    # expect_snapshot_output(suppressWarnings(print.mct(multiple_comparisons(model2.asr, classify = "Nitrogen:Variety"))))
+    expect_warning(
+        expect_snapshot_output(
+            multiple_comparisons(model2.asr, classify = "Nitrogen:Variety")
+        ),
+        "Some levels of Nitrogen:Variety are aliased\\. They have been removed from predicted output\\."
+    )
+    expect_warning(print.mct(multiple_comparisons(model2.asr, classify = "Nitrogen:Variety")),
+                   "Aliased levels are: 0\\.2_cwt:Golden_rain, 0\\.2_cwt:Victory\\.")
+
+    # dat$yield[dat$Nitrogen=="0_cwt"] <- NA
+    # expect_warning(multiple_comparisons(model2.asr, classify = "Nitrogen"),
+    #                "Some levels of Nitrogen are aliased\\. They have been removed from predicted output\\.")
+    #
+    # dat$yield[dat$Nitrogen=="0.2_cwt"] <- NA
+    # expect_warning(multiple_comparisons(model2.asr, classify = "Nitrogen"), NULL)
+})
 
 test_that("Significance values that are too high give a warning", {
     # dat.aov <- aov(Petal.Width ~ Species, data = iris)
@@ -199,28 +218,21 @@ test_that("Use of pred argument gives warning", {
                    "Argument `pred` has been deprecated and will be removed in a future version. Please use `classify` instead.")
 })
 
-# test_that("Missing pred.obj object causes error", {
-#     skip_if_not(requireNamespace("asreml", quietly = TRUE))
-#     quiet(library(asreml))
-#     model.asr <- readRDS(test_path("data", "model_asr.rds"))
-#     dat <- readRDS(test_path("data", "oats_data.rds"))
-#     expect_error(suppressWarnings(multiple_comparisons(model.asr, classify = "Nitrogen")),
-#                  "You must provide a prediction object in pred.obj")
-# })
+test_that("Including pred.obj object causes warning", {
+    skip_if_not(requireNamespace("asreml", quietly = TRUE))
+    quiet(library(asreml))
+    load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
+    # load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
+    # model.asr <- readRDS(test_path("data", "model_asr.rds"))
+    expect_warning(multiple_comparisons(model.asr, pred.obj = pred.asr, classify = "Nitrogen"),
+                   "Argument \\`pred.obj\\` has been deprecated and will be removed in a future version\\. Predictions are now performed internally in the function\\.")
+})
 
-# test_that("Forgetting sed = T in pred.obj object causes error", {
-#     skip_if_not(requireNamespace("asreml", quietly = TRUE))
-#     quiet(library(asreml))
-#     dat.asr <- quiet(asreml(Petal.Width ~ Species, data = iris, trace = FALSE))
-#     # pred.out <- predict.asreml(dat.asr, classify = "Species")
-#     expect_error(multiple_comparisons(dat.asr, classify = "Species"),
-#                  "Prediction object \\(pred.obj\\) must be created with argument sed = TRUE\\.")
-# })
 
 test_that("lme4 model works", {
     skip_if_not_installed("lme4")
     quiet(library(lme4))
-    dat <- readRDS(test_path("data", "oats_data.rds"))
+    # load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
     dat.lmer <- lmer(yield ~ Nitrogen*Variety + (1|Blocks), data = dat)
     output <- multiple_comparisons(dat.lmer, classify = "Nitrogen")
     expect_equal(output$std.error, rep(7.4, 4))
@@ -275,6 +287,23 @@ test_that("nlme model produces an error", {
 test_that("multiple_comparisons output has a class of 'mct'", {
     output <- multiple_comparisons(dat.aov, classify = "Species")
     expect_s3_class(output, "mct")
+})
+
+
+test_that("autoplot can rotate axis and labels independently", {
+    output <- multiple_comparisons(dat.aov, classify = "Species")
+    vdiffr::expect_doppelganger("label rotation",
+                                autoplot(output, label_rotation = 90))
+    vdiffr::expect_doppelganger("axis rotation",
+                                autoplot(output, axis_rotation = 90))
+    vdiffr::expect_doppelganger("axis and label rotation",
+                                autoplot(output, axis_rotation = 45, label_rotation = 90))
+    vdiffr::expect_doppelganger("rotation and axis rotation",
+                                autoplot(output, rotation = 45, axis_rotation = 90))
+    vdiffr::expect_doppelganger("rotation and label rotation",
+                                autoplot(output, rotation = 45, label_rotation = 90))
+    vdiffr::expect_doppelganger("rotation with hjust and vjust",
+                                autoplot(output, rotation = 45, label_rotation = 90, hjust = 0, vjust = 0.5))
 })
 
 

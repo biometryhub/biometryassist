@@ -1,14 +1,11 @@
-#' @importFrom ggplot2 autoplot
-#' @rdname autoplot
-#' @export
-ggplot2::autoplot
-
 #' Automatic plots for objects generated in biometryassist
 #'
 #' @param object An object to create a plot for. Currently objects from the [multiple_comparisons()] or [design()] functions with class "mct" or "design" respectively are supported.
-#' @param label_height Height of the text labels above the upper error bar on the plot. Default is 0.1 (10%) of the difference between upper and lower error bars above the top error bar.
-#' @param rotation Rotate the text output as Treatments within the plot. Allows for easier reading of long treatment labels. Number between 0 and 360 (inclusive) - default 0
+#' @param label_height Height of the text labels above the upper error bar on the plot. Default is 0.1 (10%) of the difference between upper and lower error bars above the top error bar. Values > 1 are interpreted as the actual value above the upper error bar.
 #' @param size Increase or decrease the text size within the plot for treatment labels. Numeric with default value of 4.
+#' @param rotation Rotate the x axis labels and the treatment group labels within the plot. Allows for easier reading of long axis or treatment labels. Number between 0 and 360 (inclusive) - default 0
+#' @param axis_rotation Enables rotation of the x axis independently of the group labels within the plot.
+#' @param label_rotation Enables rotation of the treatment group labels independently of the x axis labels within the plot.
 #' @param margin Logical (default `FALSE`). A value of `FALSE` will expand the plot to the edges of the plotting area i.e. remove white space between plot and axes.
 #' @param palette A string specifying the colour scheme to use for plotting. Default is equivalent to "Spectral". Colour blind friendly palettes can also be provided via options `"colour blind"` (or `"color blind"`, both equivalent to `"viridis"`), `"magma"`, `"inferno"`, `"plasma"` or `"cividis"`. Other palettes from [scales::brewer_pal()] are also possible.
 #' @inheritParams rlang::args_dots_used
@@ -20,19 +17,26 @@ ggplot2::autoplot
 #'
 NULL
 
+#' @rdname autoplot
+#' @importFrom ggplot2 autoplot
+#' @export
+ggplot2::autoplot
+
 
 #' @rdname autoplot
-#' @importFrom ggplot2 autoplot ggplot aes_ aes geom_errorbar geom_text geom_point theme_bw labs theme element_text facet_wrap
+#' @importFrom ggplot2 autoplot ggplot aes geom_errorbar geom_text geom_point theme_bw labs theme element_text facet_wrap
+#' @importFrom rlang ensym
 #' @export
 #' @examples
 #' dat.aov <- aov(Petal.Width ~ Species, data = iris)
 #' output <- multiple_comparisons(dat.aov, classify = "Species")
 #' autoplot(output, label_height = 0.5)
-autoplot.mct <- function(object, rotation = 0, size = 4, label_height = 0.1, ...) {
+autoplot.mct <- function(object, size = 4, label_height = 0.1, rotation = 0, axis_rotation = rotation, label_rotation = rotation, ...) {
     stopifnot(inherits(object, "mct"))
 
     # classify is just the first n columns (before predicted.value)
     classify <- colnames(object)[1]
+    classify <- rlang::ensym(classify)
     if(colnames(object)[2] != "predicted.value") {
         classify2 <- colnames(object)[2]
     }
@@ -44,12 +48,18 @@ autoplot.mct <- function(object, rotation = 0, size = 4, label_height = 0.1, ...
     ylab <- attributes(object)$ylab
 
     yval <- ifelse("PredictedValue" %in% colnames(object), "PredictedValue", "predicted.value")
+    yval <- rlang::ensym(yval)
 
-    plot <- ggplot2::ggplot(data = object, ggplot2::aes_(x = as.name(classify))) +
+    plot <- ggplot2::ggplot(data = object, ggplot2::aes(x = {{ classify }})) +
         ggplot2::geom_errorbar(aes(ymin = low, ymax = up), width = 0.2) +
-        ggplot2::geom_text(ggplot2::aes_(x = as.name(classify), y = object$up, label = object$groups), vjust = 0, nudge_y = (object$up-object$low)*label_height, size = size) +
-        ggplot2::geom_point(ggplot2::aes_(y = as.name(yval)), color = "black", shape = 16) + ggplot2::theme_bw() +
-        ggplot2::theme(axis.text.x = ggplot2::element_text(angle = rotation)) +
+        ggplot2::geom_text(ggplot2::aes(x = {{ classify }}, y = ifelse(object$up > object$low, object$up, object$low),
+                                         label = object$groups),
+                           nudge_y = ifelse(abs(label_height) <= 1,
+                                            abs(object$up-object$low)*label_height, # invert for cases with inverse transform
+                                            label_height),
+                           size = size, angle = label_rotation, ...) +
+        ggplot2::geom_point(ggplot2::aes(y = {{ yval }}), color = "black", shape = 16) + ggplot2::theme_bw() +
+        ggplot2::theme(axis.text.x = ggplot2::element_text(angle = axis_rotation, ...)) +
         ggplot2::labs(x = "", y = paste0("Predicted ", ylab))
 
     if(exists("classify3")) {
@@ -79,7 +89,7 @@ autoplot.mct <- function(object, rotation = 0, size = 4, label_height = 0.1, ...
 #'
 #' # Alternative colour scheme
 #' autoplot(des.out, palette = "plasma")
-autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, palette = "default", ...) {
+autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, palette = "default", row = NULL, col = NULL, ...) {
     stopifnot(inherits(object, "design"))
 
     if(inherits(object, "list")) {
@@ -106,7 +116,7 @@ autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, pale
                            text_col = ifelse(hcl[, "l"] > 50, "black", "white"))
         object <- merge(object, cols)
     }
-    else if(tolower(trimws(palette)) %in% c("magma", "inferno", "cividis", "plasma")) {
+    else if(tolower(trimws(palette)) %in% c("magma", "inferno", "cividis", "plasma", "rocket", "mako", "turbo")) {
         colour_palette <- scales::viridis_pal(option = palette)(ntrt)
         # Set text colour to be light on dark colours
         hcl <- farver::decode_colour(colour_palette, "rgb", "hcl")
@@ -118,7 +128,7 @@ autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, pale
         stop("Invalid value for palette.")
     }
 
-    if (!any(grepl("block", names(object)))) {
+    if(!any(grepl("block", names(object)))) {
         # create the graph
         plt <- ggplot2::ggplot() +
             ggplot2::geom_tile(data = object, mapping = ggplot2::aes(x = col, y = row, fill = treatments), colour = "black") +
@@ -158,7 +168,7 @@ autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, pale
 
     plt <- plt + scale_fill_manual(values = colour_palette, name = "Treatment")
 
-    if (!margin) {
+    if(!margin) {
         plt <- plt + ggplot2::scale_x_continuous(expand = c(0, 0), breaks = seq(1, max(object$col), 1)) + ggplot2::scale_y_continuous(expand = c(0, 0), trans = scales::reverse_trans(), breaks = seq(1, max(object$row), 1))
     }
     else {
@@ -167,4 +177,6 @@ autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, pale
 
     return(plt)
 }
+
+
 

@@ -1,7 +1,7 @@
 Type: Package
 Package: biometryassist
 Title: Functions to Assist Design and Analysis of Agronomic Experiments
-Version: 1.1.0
+Version: 1.1.1
 Authors@R: 
     c(person(given = "Sharon",
              family = "Nielsen",
@@ -29,18 +29,18 @@ License: MIT + file LICENSE
 URL: https://biometryhub.github.io/biometryassist/
 BugReports: https://github.com/biometryhub/biometryassist/issues
 Depends: 
-    R (>= 3.6.0)
+    R (>= 4.0.0)
 Imports: 
     agricolae,
     cowplot,
     curl,
     farver,
     ggplot2,
-    interp,
     lattice,
     multcompView,
+    pracma,
     predictmeans,
-    rlang,
+    rlang (>= 1.0.0),
     scales, 
     stringi,
     withr
@@ -53,6 +53,7 @@ Suggests:
     vdiffr
 Enhances: 
     asreml,
+    ARTool,
     lme4,
     nlme,
     sommer
@@ -60,4 +61,4 @@ Config/testthat/edition: 3
 Config/testthat/parallel: true
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.1
