@@ -218,7 +218,7 @@ vario_df <- function(model.obj, Row = NA, Column = NA) {
         gammas[index] <- gamma
         nps[index] <- np
     }
-    nps[1] <- nps[1]-sum(is.na(resid(model.obj)))
+    nps[1] <- nps[1]-sum(is.na(Resid))
     vario <- cbind(vario, data.frame(gamma = gammas, np = nps))
     colnames(vario) <- c(dims, "gamma", "np")
     class(vario) <- c("variogram", "data.frame")
