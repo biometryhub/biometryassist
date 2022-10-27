@@ -8,7 +8,13 @@
 <meta name="description" content="Provides functions to aid in the design and analysis of
     agronomic and agricultural experiments through easy access to
     documentation and helper functions, especially for users who are
-    learning these concepts.">
+    learning these concepts. While not required for most functionality,
+    this package enhances the `asreml` package which provides a 
+    computationally efficient algorithm for fitting mixed models 
+    using Residual Maximum Likelihood. It is a commercial package 
+    that can be purchased as asreml-R from VSNi 
+    &lt;https://vsni.co.uk/&gt;, who will supply a zip file for local 
+    installation/updating (see &lt;https://asreml.kb.vsni.co.uk/&gt;). ">
 <title>Functions to Assist Design and Analysis of Agronomic Experiments • biometryassist</title>
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.1.3/bootstrap.min.css" rel="stylesheet">
@@ -18,7 +24,13 @@
 <meta property="og:description" content="Provides functions to aid in the design and analysis of
     agronomic and agricultural experiments through easy access to
     documentation and helper functions, especially for users who are
-    learning these concepts.">
+    learning these concepts. While not required for most functionality,
+    this package enhances the `asreml` package which provides a 
+    computationally efficient algorithm for fitting mixed models 
+    using Residual Maximum Likelihood. It is a commercial package 
+    that can be purchased as asreml-R from VSNi 
+    &lt;https://vsni.co.uk/&gt;, who will supply a zip file for local 
+    installation/updating (see &lt;https://asreml.kb.vsni.co.uk/&gt;). ">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
@@ -76,6 +88,7 @@
 <div class="page-header"><h1 id="biometryassist">biometryassist<a class="anchor" aria-label="anchor" href="#biometryassist"></a>
 </h1></div>
 <!-- badges: start -->
+
 <p>The goal of biometryassist is to provide functions to aid in the Design and Analysis of Agronomic-style experiments through easy access to documentation and helper functions, especially while teaching these concepts.</p>
 <p><em>This package is a renamed version of BiometryTraining which is no longer maintained, but can still be found at <a href="https://biometryhub.github.io/BiometryTraining/" class="external-link uri">https://biometryhub.github.io/BiometryTraining/</a></em></p>
 <hr>
@@ -106,7 +119,9 @@
 <div class="section level2">
 <h2 id="troubleshooting-installation">Troubleshooting Installation<a class="anchor" aria-label="anchor" href="#troubleshooting-installation"></a>
 </h2>
-<ul><li>If you receive an error that the package could not install because <code>rlang</code> or another package could not be upgraded, the easiest way to deal with this is to uninstall the package(s) that could not be updated (<code>remove.packages("rlang")</code>). Then restart R, re-install with <code>install.packages("rlang")</code> and then try installing <code>biometryassist</code> again.</li></ul>
+<ul>
+<li>If you receive an error that the package could not install because <code>rlang</code> or another package could not be upgraded, the easiest way to deal with this is to uninstall the package(s) that could not be updated (<code>remove.packages("rlang")</code>). Then restart R, re-install with <code>install.packages("rlang")</code> and then try installing <code>biometryassist</code> again.</li>
+</ul>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">
