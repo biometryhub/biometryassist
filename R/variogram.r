@@ -197,12 +197,13 @@ vario_df <- function(model.obj, Row = NA, Column = NA) {
                 row <- Row[val_index] + offset[1]
                 col <- Column[val_index] + offset[2]
 
-                if (0 < row && row <= nrows && 0 < col && col <= ncols) {
-                    other <- ifelse(!is.na(Resid[Row == row & Column == col]),
-                                    Resid[Row == row & Column == col],
-                                    0)
-                    gamma <- gamma + (Resid[val_index]-other)^2
-                    np <- np + 1
+                if (0 < row && row <= nrows && 0 < col && col <= ncols && !is.na(Resid[val_index])) {
+                    other <- Resid[Row == row & Column == col]
+
+                    if (!is.na(other)) {
+                        gamma <- gamma + (Resid[val_index] - other)^2
+                        np <- np + 1
+                    }
                 }
             }
         }
@@ -217,6 +218,7 @@ vario_df <- function(model.obj, Row = NA, Column = NA) {
         gammas[index] <- gamma
         nps[index] <- np
     }
+    nps[1] <- nps[1]-sum(is.na(resid(model.obj)))
     vario <- cbind(vario, data.frame(gamma = gammas, np = nps))
     colnames(vario) <- c(dims, "gamma", "np")
     class(vario) <- c("variogram", "data.frame")
