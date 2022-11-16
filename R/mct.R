@@ -23,7 +23,7 @@
 #'
 #' @importFrom multcompView multcompLetters
 #' @importFrom predictmeans predictmeans
-#' @importFrom stats model.frame predict qtukey qt
+#' @importFrom stats model.frame predict qtukey qt terms
 #' @importFrom utils packageVersion
 #'
 #' @details Some transformations require that data has a small offset applied, otherwise it will cause errors (for example taking a log of 0, or square root of negative values). In order to correctly reverse this offset, if the `trans` argument is supplied, an offset value must also be supplied. If there was no offset required for a transformation, then use a value of 0 for the `offset` argument.
@@ -147,6 +147,10 @@ multiple_comparisons <- function(model.obj,
 
     if(inherits(model.obj, "asreml")){
 
+        if(classify %!in% attr(stats::terms(model.obj$formulae$fixed), 'term.labels')) {
+            stop(classify, " is not a term in the model. Please check model specification.", call. = FALSE)
+        }
+
         if(!missing(pred.obj)) {
             warning("Argument `pred.obj` has been deprecated and will be removed in a future version. Predictions are now performed internally in the function.")
         }
@@ -209,6 +213,10 @@ multiple_comparisons <- function(model.obj,
     }
 
     else if(inherits(model.obj, c("aov", "lm", "lmerMod", "lmerModLmerTest"))) {
+        if(classify %!in% attr(stats::terms(model.obj), 'term.labels')) {
+            stop(classify, " is not a term in the model. Please check model specification.", call. = FALSE)
+        }
+
         # vars <- unlist(strsplit(classify, "\\:"))
         #
         # if(inherits(model.obj, c("aov", "lm"))) {
