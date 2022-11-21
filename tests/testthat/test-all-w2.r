@@ -444,13 +444,13 @@ test_that("exercise 15 works", {
                                          present = c("Control", "Rate", "Season"))
     expect_equal(pred15e.out1$predicted.value, c(2.37, 3.06))
     expect_snapshot_output(pred15e.out1)
-    pred15e.out2 <- multiple_comparisons(exercise15.asr, classify = "Control",
+    pred15e.out2 <- multiple_comparisons(exercise15.asr, classify = "Rate",
                                          present = c("Control", "Rate", "Season"))
-    expect_equal(pred15e.out2$predicted.value, c(2.37, 3.06))
+    expect_equal(pred15e.out2$predicted.value, c(1.99, 2.48, 2.62, 3.06))
     expect_snapshot_output(pred15e.out2)
-    pred15e.out3 <- multiple_comparisons(exercise15.asr, classify = "Control",
+    pred15e.out3 <- multiple_comparisons(exercise15.asr, classify = "Season",
                                          present = c("Control", "Rate", "Season"))
-    expect_equal(pred15e.out3$predicted.value, c(2.37, 3.06))
+    expect_equal(pred15e.out3$predicted.value, c(2.14, 2.59, 3.06))
     expect_snapshot_output(pred15e.out3)
     skip_on_ci()
     skip_on_covr()

@@ -156,6 +156,11 @@ multiple_comparisons <- function(model.obj,
         }
 
         pred.obj <- quiet(asreml::predict.asreml(model.obj, classify = classify, sed = TRUE, trace = FALSE, ...))
+        # Check if all the predicted values are NA. If so, suggests the need of the `present` argument
+        if(all(is.na(pred.obj$pvals$predicted.value)) & all(is.na(pred.obj$pvals$std.error))) {
+            stop("Something")
+        }
+
         # Check if any treatments are aliased, and remove them and print a warning
         if(anyNA(pred.obj$pvals$predicted.value)) {
             aliased <- which(is.na(pred.obj$pvals$predicted.value))
