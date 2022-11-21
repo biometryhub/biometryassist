@@ -28,7 +28,7 @@ dat.aov <- aov(Petal.Width ~ Species, data = iris)
 test_that("mct produces output", {
     # dat.aov <- aov(Petal.Width ~ Species, data = iris)
     output <- multiple_comparisons(dat.aov, classify = "Species", plot = TRUE)
-    expect_equal(output$predicted.value, c(0.25, 1.33, 2.03), tolerance=1e-1)
+    expect_equal(output$predicted.value, c(0.25, 1.33, 2.03), tolerance = 5e-2)
     # skip_if(interactive())
     vdiffr::expect_doppelganger("mct output", autoplot(output))
 })
@@ -55,21 +55,21 @@ test_that("transformations are handled", {
     output.power2 <- multiple_comparisons(dat.aov.power, classify = "Species", trans = "power", offset = 1, power = 3, int.type = "1se")
     output.power3 <- multiple_comparisons(dat.aov.power, classify = "Species", trans = "power", offset = 1, power = 3, int.type = "2se")
 
-    expect_equal(output.log$predicted.value, c(-1.48, 0.27, 0.70), tolerance=1e-1)
-    expect_equal(output.log2$low, c(0.22, 1.26, 1.94), tolerance=1e-1)
-    expect_equal(output.log3$up, c(0.25, 1.41, 2.17), tolerance=1e-1)
-    expect_equal(output.sqrt$predicted.value, c(0.49, 1.15, 1.42), tolerance=1e-1)
-    expect_equal(output.sqrt2$low, c(0.23, 1.29, 1.98), tolerance=1e-1)
-    expect_equal(output.sqrt3$up, c(0.27, 1.38, 2.09), tolerance=1e-1)
-    expect_equal(output.logit$predicted.value, c(-5.30, -4.87, -3.07), tolerance=1e-1)
-    expect_equal(output.logit2$low, c(0.00, 0.01, 0.04), tolerance=1e-1)
-    expect_equal(output.logit3$up, c(0.01, 0.01, 0.05), tolerance=1e-1)
-    expect_equal(output.inverse$predicted.value, c(0.50, 0.77, 4.79), tolerance=1e-1)
-    expect_equal(output.inverse2$low, c(3.01, 1.66, 0.22), tolerance=1e-1)
-    expect_equal(output.inverse3$up, c(1.20, 0.90, 0.20), tolerance=1e-1)
-    expect_equal(output.power$predicted.value, c(1.98, 12.85, 28.38), tolerance=1e-1)
-    expect_equal(output.power2$low, c(0.09, 1.30, 2.03), tolerance=1e-1)
-    expect_equal(output.power3$up, c(0.49, 1.42, 2.10), tolerance=1e-1)
+    expect_equal(output.log$predicted.value, c(-1.48, 0.27, 0.70), tolerance = 5e-2)
+    expect_equal(output.log2$low, c(0.22, 1.26, 1.94), tolerance = 5e-2)
+    expect_equal(output.log3$up, c(0.25, 1.41, 2.17), tolerance = 5e-2)
+    expect_equal(output.sqrt$predicted.value, c(0.49, 1.15, 1.42), tolerance = 5e-2)
+    expect_equal(output.sqrt2$low, c(0.23, 1.29, 1.98), tolerance = 5e-2)
+    expect_equal(output.sqrt3$up, c(0.27, 1.38, 2.09), tolerance = 5e-2)
+    expect_equal(output.logit$predicted.value, c(-5.30, -4.87, -3.07), tolerance = 5e-2)
+    expect_equal(output.logit2$low, c(0.00, 0.01, 0.04), tolerance = 5e-2)
+    expect_equal(output.logit3$up, c(0.01, 0.01, 0.05), tolerance = 5e-2)
+    expect_equal(output.inverse$predicted.value, c(0.50, 0.77, 4.79), tolerance = 5e-2)
+    expect_equal(output.inverse2$low, c(3.01, 1.66, 0.22), tolerance = 5e-2)
+    expect_equal(output.inverse3$up, c(1.20, 0.90, 0.20), tolerance = 5e-2)
+    expect_equal(output.power$predicted.value, c(1.98, 12.85, 28.38), tolerance = 5e-2)
+    expect_equal(output.power2$low, c(0.09, 1.30, 2.03), tolerance = 5e-2)
+    expect_equal(output.power3$up, c(0.49, 1.42, 2.10), tolerance = 5e-2)
 
     # skip_if(interactive())
     vdiffr::expect_doppelganger("mct log output", autoplot(output.log))
@@ -88,8 +88,8 @@ test_that("transformations with no offset produces a warning", {
 test_that("ordering output works", {
     output1 <- multiple_comparisons(dat.aov, classify = "Species", descending = FALSE)
     output2 <- multiple_comparisons(dat.aov, classify = "Species", descending = TRUE)
-    expect_equal(output1$predicted.value, c(0.25, 1.33, 2.03), tolerance=1e-1)
-    expect_equal(output2$predicted.value, c(2.03, 1.33, 0.25), tolerance=1e-1)
+    expect_equal(output1$predicted.value, c(0.25, 1.33, 2.03), tolerance = 5e-2)
+    expect_equal(output2$predicted.value, c(2.03, 1.33, 0.25), tolerance = 5e-2)
 
     vdiffr::expect_doppelganger("mct ascending order", autoplot(output1))
     vdiffr::expect_doppelganger("mct descending output", autoplot(output2))
@@ -99,10 +99,10 @@ test_that("different interval types work", {
     # dat.aov <- aov(Petal.Width ~ Species, data = iris)
     output1 <- multiple_comparisons(dat.aov, classify = "Species", int.type = "1se")
     output2 <- multiple_comparisons(dat.aov, classify = "Species", int.type = "2se")
-    expect_equal(output1$low, c(0.22, 1.30, 2.00), tolerance=1e-1)
-    expect_equal(output1$up, c(0.28, 1.36, 2.06), tolerance=1e-1)
-    expect_equal(output2$low, c(0.19, 1.27, 1.97), tolerance=1e-1)
-    expect_equal(output2$up, c(0.31, 1.39, 2.09), tolerance=1e-1)
+    expect_equal(output1$low, c(0.22, 1.30, 2.00), tolerance = 5e-2)
+    expect_equal(output1$up, c(0.28, 1.36, 2.06), tolerance = 5e-2)
+    expect_equal(output2$low, c(0.19, 1.27, 1.97), tolerance = 5e-2)
+    expect_equal(output2$up, c(0.31, 1.39, 2.09), tolerance = 5e-2)
 
     vdiffr::expect_doppelganger("mct output 1se", autoplot(output1))
     vdiffr::expect_doppelganger("mct output 2se", autoplot(output2))
@@ -121,15 +121,15 @@ test_that("save produces output", {
 })
 
 test_that("Interaction terms work", {
+    load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
     skip_if_not(requireNamespace("asreml", quietly = TRUE))
     quiet(library(asreml))
-    load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
     # model.asr <- readRDS(test_path("data", "model_asr.rds"))
     # load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
     output <- multiple_comparisons(model.asr, classify = "Nitrogen:Variety")
     expect_equal(output$predicted.value,
                  c(70.85, 76.58, 85.86, 92.22, 99.91, 108.32, 113.1, 113.5, 116.63, 118.4, 123.75, 127.53),
-                 tolerance=1e-1)
+                 tolerance = 5e-2)
 
     # skip_if(interactive())
     vdiffr::expect_doppelganger("Interactions work", autoplot(output))
@@ -149,7 +149,7 @@ test_that("dashes are handled", {
     output2 <- suppressWarnings(multiple_comparisons(dat.aov2, classify = "Species"))
     expect_warning(multiple_comparisons(dat.aov2, classify = "Species"),
                    "The treatment level se-sa contained '-', which has been replaced in the final output with '_'")
-    expect_equal(output2$predicted.value, c(0.25, 1.33, 2.03), tolerance=1e-1)
+    expect_equal(output2$predicted.value, c(0.25, 1.33, 2.03), tolerance = 5e-2)
 
     # Replace 'gin' in virginica with '-' as well
     iris2$Species <- as.factor(gsub("gin", "-", iris2$Species))
@@ -157,7 +157,7 @@ test_that("dashes are handled", {
 
     expect_warning(multiple_comparisons(dat.aov2, classify = "Species"),
                    "The treatment levels se-sa, vir-ica contained '-', which has been replaced in the final output with '_'")
-    expect_equal(output2$predicted.value, c(0.25, 1.33, 2.03), tolerance=1e-1)
+    expect_equal(output2$predicted.value, c(0.25, 1.33, 2.03), tolerance = 5e-2)
 
     # skip_if(interactive())
     vdiffr::expect_doppelganger("mct dashes output", autoplot(output2))
@@ -236,11 +236,11 @@ test_that("lme4 model works", {
     # load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
     dat.lmer <- lmer(yield ~ Nitrogen*Variety + (1|Blocks), data = dat)
     output <- multiple_comparisons(dat.lmer, classify = "Nitrogen")
-    expect_equal(output$std.error, rep(7.39, 4), tolerance=1e-1)
-    expect_equal(min(output$predicted.value), 79.39, tolerance=1e-1)
-    expect_equal(max(output$predicted.value), 123.39, tolerance=1e-1)
+    expect_equal(output$std.error, rep(7.39, 4), tolerance = 5e-2)
+    expect_equal(min(output$predicted.value), 79.39, tolerance = 5e-2)
+    expect_equal(max(output$predicted.value), 123.39, tolerance = 5e-2)
     skip_on_os("linux")
-    expect_equal(output$predicted.value, c(79.39, 98.89, 114.22, 123.39), tolerance=1e-1)
+    expect_equal(output$predicted.value, c(79.39, 98.89, 114.22, 123.39), tolerance = 5e-2)
     vdiffr::expect_doppelganger("lme4 output", autoplot(output))
 })
 
