@@ -239,7 +239,7 @@ test_that("lme4 model works", {
     expect_equal(output$std.error, rep(7.39, 4), tolerance = 5e-2)
     expect_equal(min(output$predicted.value), 79.39, tolerance = 5e-2)
     expect_equal(max(output$predicted.value), 123.39, tolerance = 5e-2)
-    skip_on_os("linux")
+    # skip_on_os("linux")
     expect_equal(output$predicted.value, c(79.39, 98.89, 114.22, 123.39), tolerance = 5e-2)
     vdiffr::expect_doppelganger("lme4 output", autoplot(output))
 })
