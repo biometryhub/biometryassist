@@ -185,12 +185,6 @@ multiple_comparisons <- function(model.obj,
         #For use with asreml 4+
         if(utils::packageVersion("asreml") > 4) {
             pp <- pred.obj$pvals
-
-            # Check that the prediction object was created with the sed matrix
-            # if(is.null(pred.obj$sed)) {
-            #     stop("Prediction object (pred.obj) must be created with argument sed = TRUE.")
-            # }
-
             sed <- pred.obj$sed
         }
 
@@ -220,11 +214,11 @@ multiple_comparisons <- function(model.obj,
         # vars <- unlist(strsplit(classify, "\\:"))
         #
         # if(inherits(model.obj, c("aov", "lm"))) {
-        #     mdf <- stats::model.frame(model.obj)
-        #     not_factors <- intersect(vars, names(mdf)[!sapply(mdf, is.factor)])
+        #     terms <- attr(terms(model.obj), 'dataClasses')[-1]
+        #     not_factors <- intersect(vars, names(terms[terms!="factor"]))
         # }
         # else if(inherits(model.obj, c("lmerMod", "lmerModLmerTest"))) {
-        #     mdf <- get(model.obj@call$data, pos = parent.frame())
+        #     mdf <- model.obj@frame[,-1]
         #     not_factors <- intersect(vars, names(mdf)[!sapply(mdf, is.factor)])
         # }
         #
@@ -235,13 +229,20 @@ multiple_comparisons <- function(model.obj,
         #     stop(paste(paste(not_factors[-length(not_factors)], collapse = ", "), "and", not_factors[length(not_factors)], "must be factors"), call. = F)
         # }
 
-        pred.out <- predictmeans::predictmeans(model.obj, classify, mplot = FALSE, ndecimal = decimals)
+        pred.out <- predictmeans::predictmeans(model.obj, classify, plot = FALSE, ndecimal = decimals)
 
         pred.out$mean_table <- pred.out$mean_table[,!grepl("95", names(pred.out$mean_table))]
         sed <- pred.out$`Standard Error of Differences`[1]
         pp <- pred.out$mean_table
-        names(pp)[names(pp) == "Predicted means"] <- "predicted.value"
-        names(pp)[names(pp) == "Standard error"] <- "std.error"
+        # The column names changed in predictmeans v1.0.8, so check for them
+        if(utils::packageVersion("predictmeans") >= "1.0.8") {
+            names(pp)[names(pp) == "Mean"] <- "predicted.value"
+            names(pp)[names(pp) == "SE"] <- "std.error"
+        }
+        else {
+            names(pp)[names(pp) == "Predicted means"] <- "predicted.value"
+            names(pp)[names(pp) == "Standard error"] <- "std.error"
+        }
 
         SED <- matrix(data = sed, nrow = nrow(pp), ncol = nrow(pp))
         diag(SED) <- NA

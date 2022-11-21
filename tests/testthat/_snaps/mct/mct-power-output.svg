@@ -52,7 +52,7 @@
 <text x='162.60' y='403.70' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='6.33px' lengthAdjust='spacingAndGlyphs'>a</text>
 <text x='374.88' y='197.81' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='6.33px' lengthAdjust='spacingAndGlyphs'>b</text>
 <text x='587.16' y='50.44' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='5.70px' lengthAdjust='spacingAndGlyphs'>c</text>
-<circle cx='162.60' cy='456.35' r='1.95' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
+<circle cx='162.60' cy='454.19' r='1.95' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
 <circle cx='374.88' cy='220.12' r='1.95' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
 <circle cx='587.16' cy='66.25' r='1.95' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
 <rect x='35.24' y='22.78' width='679.28' height='522.33' style='stroke-width: 1.07; stroke: #333333;' />
