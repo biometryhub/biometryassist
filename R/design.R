@@ -59,21 +59,23 @@
 #'                   fac.names = list(N = c(50, 100, 150),
 #'                                    Water = c("Irrigated", "Rain-fed")))
 #'
-#' # Factorial Design (Crossed, Randomised Complete Block Design), changing separation between factors
+#' # Factorial Design (Crossed, Randomised Complete Block Design),
+#' # changing separation between factors
 #' des.out <- design(type = "crossed:rcbd", treatments = c(3, 2),
 #'                   reps = 3, nrows = 6, ncols = 3,
 #'                   brows = 6, bcols = 1,
 #'                   seed = 42, fac.sep = c(":", "_"))
 #'
 #' # Factorial Design (Nested, Latin Square)
-#' des.out <- design(type = "lsd", treatments = c("A1", "A2", "A3", "A4", "B1", "B2", "B3"),
+#' trt <- c("A1", "A2", "A3", "A4", "B1", "B2", "B3")
+#' des.out <- design(type = "lsd", treatments = trt,
 #'                   nrows = 7, ncols = 7, seed = 42)
 #'
 #' # Split plot design
 #' des.out <- design(type = "split", treatments = c("A", "B"), sub_treatments = 1:4,
 #'                   reps = 4, nrows = 8, ncols = 4, brows = 4, bcols = 2, seed = 42)
 #'
-#' # Alternative arangement of the same design as above
+#' # Alternative arrangement of the same design as above
 #' des.out <- design(type = "split", treatments = c("A", "B"), sub_treatments = 1:4,
 #'                   reps = 4, nrows = 8, ncols = 4, brows = 4, bcols = 2,
 #'                   byrow = FALSE, seed = 42)

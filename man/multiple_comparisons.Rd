@@ -114,7 +114,7 @@ trt <- as.factor(sample(rep(LETTERS[1:10], 5), 50))
 block <- as.factor(rep(1:5, each = 10))
 ex_data <- data.frame(resp, trt, block)
 
-# Change one treatment random values to get
+# Change one treatment random values to get significant difference
 ex_data$resp[ex_data$trt=="A"] <- rnorm(n = 5, 7, 1)^3
 
 model.asr <- asreml(resp ~ trt,
@@ -146,5 +146,5 @@ autoplot(pred.out)
 
 }
 \references{
-Jørgensen, E. & Pedersen, A. R. How to Obtain Those Nasty Standard Errors From Transformed Data - and Why They Should Not Be Used. \url{https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.47.9023&rep=rep1&type=pdf}
+Jørgensen, E. & Pedersen, A. R. (1997). How to Obtain Those Nasty Standard Errors From Transformed Data - and Why They Should Not Be Used. \url{https://pure.au.dk/portal/en/publications/how-to-obtain-those-nasty-standard-errors-from-transformed-data--and-why-they-should-not-be-used(d649ca20-d15f-11db-8e26-000ea68e967b).html}
 }

@@ -1,7 +1,7 @@
 Type: Package
 Package: biometryassist
 Title: Functions to Assist Design and Analysis of Agronomic Experiments
-Version: 1.1.1
+Version: 1.1.2
 Authors@R: 
     c(person(given = "Sharon",
              family = "Nielsen",
@@ -24,7 +24,13 @@ Authors@R:
 Description: Provides functions to aid in the design and analysis of
     agronomic and agricultural experiments through easy access to
     documentation and helper functions, especially for users who are
-    learning these concepts.
+    learning these concepts. While not required for most functionality,
+    this package enhances the `asreml` package which provides a 
+    computationally efficient algorithm for fitting mixed models 
+    using Residual Maximum Likelihood. It is a commercial package 
+    that can be purchased as 'asreml-R' from 'VSNi' 
+    <https://vsni.co.uk/>, who will supply a zip file for local 
+    installation/updating (see <https://asreml.kb.vsni.co.uk/>). 
 License: MIT + file LICENSE
 URL: https://biometryhub.github.io/biometryassist/
 BugReports: https://github.com/biometryhub/biometryassist/issues
@@ -61,4 +67,4 @@ Config/testthat/edition: 3
 Config/testthat/parallel: true
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.1
+RoxygenNote: 7.2.2

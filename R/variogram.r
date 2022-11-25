@@ -6,7 +6,7 @@
 #' @param row A row variable.
 #' @param column A column variable.
 #' @param horizontal Logical (default `TRUE`). The direction the plots are arranged. The default `TRUE` places the plots above and below, while `FALSE` will place them side by side.
-#' @param palette A string specifying the colour scheme to use for plotting. The default value (`"default"`) is equivalent to `"rainbow"`. Colour blind friendly palettes can also be provided via options `"colour blind"` (or `"color blind"`, both equivalent to `"viridis"`), `"magma"`, `"inferno"`, `"plasma"` or `"cividis"`. The `"Spectral"` palette from [scales::brewer_pal()] is also possible.
+#' @param palette A string specifying the colour scheme to use for plotting. The default value (`"default"`) is equivalent to `"rainbow"`. Colour blind friendly palettes can also be provided via options `"colo(u)r blind"` (both equivalent to `"viridis"`), `"magma"`, `"inferno"`, `"plasma"`, `"cividis"`, `"rocket"`, `"mako"` or `"turbo"`. The `"Spectral"` palette from [scales::brewer_pal()] is also possible.
 #'
 #' @return A `ggplot2` object.
 #'
@@ -38,7 +38,11 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
         stop("model.obj must be an asreml model object")
     }
 
-    aa <- vario_df(model.obj)
+    if(attr(model.obj$formulae$residual,"term.labels") == "units") {
+        stop("Residual term must include spatial component.")
+    }
+
+    aa <- vario_df(model.obj, row, column)
 
     if(missing(row) | is.na(row) | is.null(row)) {
         row <- names(aa)[2]
@@ -50,20 +54,16 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
     col_vals <- unique(aa[,1]) # y
     z <- matrix(aa$gamma, nrow = length(row_vals), byrow = TRUE)
 
-    # fld <- interp::interp(y = aa[,1], x = aa[,2], z = aa$gamma)
-    # gdat1 <- cbind(expand.grid(x = fld$x, y = fld$y), z = as.vector(fld$z))
-
     interp_rows <- seq(min(row_vals), max(row_vals), length = 40)
     interp_cols <- seq(min(col_vals), max(col_vals), length = 40)
     gdat <- expand.grid(x = interp_rows, y = interp_cols)
-    # grid_x <- grid$x
-    # grid_y <- grid$y
+
     pr <- pracma::interp2(x = col_vals, y = row_vals, Z = z, xp = gdat$y, yp = gdat$x)
     pr <- matrix(pr, nrow = length(interp_rows), byrow = F)
     gdat <- cbind(gdat, z = as.vector(pr))
 
-    a <- ggplot2::ggplot(gdat, ggplot2::aes(x = y, y = x, z = z, fill = z)) +
-        ggplot2::geom_tile(alpha = 0.6) +
+    a <- ggplot2::ggplot(gdat, ggplot2::aes(x = y, y = x, z = z)) +
+        ggplot2::geom_tile(alpha = 0.6, ggplot2::aes(fill = z)) +
         ggplot2::coord_equal() +
         ggplot2::geom_contour(color = "white", alpha = 0.5) +
         ggplot2::theme_bw(base_size = 8) +
@@ -96,7 +96,7 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
                                 zlab = list(label = NULL, cex.axis = 0.5),
                                 col.regions = scales::viridis_pal(option = "viridis")(100))
     }
-    else if(tolower(palette) %in% c("magma", "inferno", "cividis", "plasma")) {
+    else if(tolower(trimws(palette)) %in% c("magma", "inferno", "cividis", "plasma", "rocket", "mako", "turbo")) {
         a <- a + ggplot2::scale_fill_gradientn(colours = scales::viridis_pal(option = palette)(50))
 
         # Create the lattice plot
@@ -110,7 +110,7 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
                                 col.regions = scales::viridis_pal(option = palette)(100))
     }
 
-    else if(tolower(palette) %in% c("spectral")) {
+    else if(tolower(trimws(palette)) %in% c("spectral")) {
         a <- a + ggplot2::scale_fill_gradientn(colours = scales::brewer_pal(palette = palette)(11))
 
         # Create the lattice plot
@@ -172,10 +172,12 @@ vario_df <- function(model.obj, Row = NA, Column = NA) {
     if(missing(Column) | is.na(Column) | is.null(Column)) {
         Column <- as.numeric(model.obj$mf[[dims[2]]])
     }
-    Resid <- residuals(model.obj)
 
     nrows <- max(Row)
     ncols <- max(Column)
+
+    Resid <- residuals(model.obj)#[order(Column, Row)], nrow = nrows)
+    # Resid <- matrix(residuals(model.obj)[order(Column, Row)], nrow = nrows)
 
     vario <- expand.grid(Row = 0:(nrows-1), Column = 0:(ncols-1))
 
@@ -189,7 +191,7 @@ vario_df <- function(model.obj, Row = NA, Column = NA) {
 
         gamma <- 0
         np <- 0
-        for (val_index in 1:nrows) {
+        for (val_index in 1:nrow(vario)) {
             # val <- vals[val_index, ]
 
             # Deliberate double-counting so that offset handling is easy
@@ -199,12 +201,13 @@ vario_df <- function(model.obj, Row = NA, Column = NA) {
                 row <- Row[val_index] + offset[1]
                 col <- Column[val_index] + offset[2]
 
-                if (0 < row && row <= nrows && 0 < col && col <= ncols) {
-                    other <- ifelse(!is.na(Resid[Row == row & Column == col]),
-                                    Resid[Row == row & Column == col],
-                                    0)
-                    gamma <- gamma + (Resid[val_index]-other)^2
-                    np <- np + 1
+                if (0 < row && row <= nrows && 0 < col && col <= ncols && !is.na(Resid[val_index])) {
+                    other <- Resid[Row == row & Column == col]
+
+                    if (!is.na(other)) {
+                        gamma <- gamma + (Resid[val_index] - other)^2
+                        np <- np + 1
+                    }
                 }
             }
         }
@@ -219,6 +222,7 @@ vario_df <- function(model.obj, Row = NA, Column = NA) {
         gammas[index] <- gamma
         nps[index] <- np
     }
+    nps[1] <- nps[1]-sum(is.na(Resid))
     vario <- cbind(vario, data.frame(gamma = gammas, np = nps))
     colnames(vario) <- c(dims, "gamma", "np")
     class(vario) <- c("variogram", "data.frame")

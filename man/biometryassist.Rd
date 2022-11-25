@@ -7,7 +7,7 @@
 \alias{biometryassist-package}
 \title{biometryassist: Functions to Assist Design and Analysis of Agronomic Experiments}
 \description{
-Provides functions to aid in the design and analysis of agronomic and agricultural experiments through easy access to documentation and helper functions, especially for users who are learning these concepts.
+Provides functions to aid in the design and analysis of agronomic and agricultural experiments through easy access to documentation and helper functions, especially for users who are learning these concepts. While not required for most functionality, this package enhances the `asreml` package which provides a computationally efficient algorithm for fitting mixed models using Residual Maximum Likelihood. It is a commercial package that can be purchased as 'asreml-R' from 'VSNi' \url{https://vsni.co.uk/}, who will supply a zip file for local installation/updating (see \url{https://asreml.kb.vsni.co.uk/}).
 }
 \seealso{
 Useful links:

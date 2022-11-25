@@ -24,6 +24,8 @@
   size = 4,
   margin = FALSE,
   palette = "default",
+  row = NULL,
+  col = NULL,
   ...
 )
 }
