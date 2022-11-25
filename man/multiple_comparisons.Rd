@@ -11,6 +11,7 @@ multiple_comparisons(
   int.type = "ci",
   trans = NA,
   offset = NA,
+  power = NA,
   decimals = 2,
   descending = FALSE,
   plot = FALSE,
@@ -37,6 +38,8 @@ multiple_comparisons(
 
 \item{offset}{Numeric offset applied to response variable prior to transformation. Default is \code{NA}. Use 0 if no offset was applied to the transformed data. See Details for more information.}
 
+\item{power}{Numeric power applied to response variable with power transformation. Default is \code{NA}. See Details for more information.}
+
 \item{decimals}{Controls rounding of decimal places in output. Default is 2 decimal places.}
 
 \item{descending}{Logical (default \code{FALSE}). Order of the output sorted by the predicted value. If \code{TRUE}, largest will be first, through to smallest last.}
@@ -58,8 +61,6 @@ multiple_comparisons(
 \item{pred}{Deprecated. Use \code{classify} instead.}
 
 \item{...}{Other arguments passed through to \code{predict.asreml()}.}
-
-\item{power}{Numeric power applied to response variable with power transformation. Default is \code{NA}. See Details for more information.}
 }
 \value{
 A list containing a data frame with predicted means, standard errors, confidence interval upper and lower bounds, and significant group allocations (named \code{predicted_values}), as well as a plot visually displaying the predicted values (named \code{predicted_plot}). If some of the predicted values are aliased, a warning is printed, and the aliased treatment levels are returned in the output (named \code{aliased}).
