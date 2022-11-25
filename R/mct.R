@@ -9,6 +9,7 @@
 #' @param trans Transformation that was applied to the response variable. One of `log`, `sqrt`, `logit`, `power` or `inverse`. Default is `NA`.
 #' @param offset Numeric offset applied to response variable prior to transformation. Default is `NA`. Use 0 if no offset was applied to the transformed data. See Details for more information.
 #' @param power Numeric power applied to response variable with power transformation. Default is `NA`. See Details for more information.
+#' @param pvals Logical (default `FALSE`). Output the p-values of the comparisons as an attribute?
 #' @param decimals Controls rounding of decimal places in output. Default is 2 decimal places.
 #' @param descending Logical (default `FALSE`). Order of the output sorted by the predicted value. If `TRUE`, largest will be first, through to smallest last.
 #' @param plot Automatically produce a plot of the output of the multiple comparison test? Default is `FALSE`. This is maintained for backwards compatibility, but the preferred method now is to use `autoplot(<multiple_comparisons output>)`. See [biometryassist::autoplot.mct()] for more details.
@@ -23,7 +24,7 @@
 #'
 #' @importFrom multcompView multcompLetters
 #' @importFrom predictmeans predictmeans
-#' @importFrom stats model.frame predict qtukey qt terms
+#' @importFrom stats model.frame predict qtukey ptukey qt terms
 #' @importFrom utils packageVersion
 #'
 #' @details Some transformations require that data has a small offset applied, otherwise it will cause errors (for example taking a log of 0, or square root of negative values). In order to correctly reverse this offset, if the `trans` argument is supplied, an offset value must also be supplied. If there was no offset required for a transformation, then use a value of 0 for the `offset` argument.
@@ -114,6 +115,7 @@ multiple_comparisons <- function(model.obj,
                                  trans = NA,
                                  offset = NA,
                                  power = NA,
+                                 pvals = FALSE,
                                  decimals = 2,
                                  descending = FALSE,
                                  plot = FALSE,
@@ -287,17 +289,19 @@ multiple_comparisons <- function(model.obj,
     Names <-  as.character(pp$Names)
 
     # Determine pairs that are significantly different
-    diffs <- abs(outer(pp$predicted.value, pp$predicted.value, "-")) > crit.val
-    # (diffs*sqrt(2))/sed # check against ptukey (use top/bottom triangle)
-    diffs <- diffs[lower.tri(diffs)]
+    diffs <- abs(outer(pp$predicted.value, pp$predicted.value, "-"))
+    if(pvals) {
+        # pval_matrix <- stats::ptukey(diffs/(sqrt((sed/2)* outer(1/n, 1/n, "+"))), nlevels(pp[,1]), pp$Df, lower.tail = FALSE)
+    }
+    comps <- diffs[lower.tri(diffs > crit.val)]
 
     # Create a vector of treatment comparison names
     m <- outer(pp$Names, pp$Names, paste, sep="-")
     m <- m[lower.tri(m)]
 
-    names(diffs) <- m
+    names(comps) <- m
 
-    ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp, reversed = !descending)
+    ll <- multcompView::multcompLetters3("Names", "predicted.value", comps, pp, reversed = !descending)
 
     rr <- data.frame(groups = ll$Letters)
     rr$Names <- row.names(rr)
@@ -452,6 +456,9 @@ multiple_comparisons <- function(model.obj,
 
     if(exists("aliased_names")) {
         attr(pp.tab, 'aliased') <- as.character(aliased_names)
+    }
+    if(exists("pval_matrix")) {
+        attr(pp.tab, 'pvalues') <- pval_matrix
     }
 
     return(pp.tab)

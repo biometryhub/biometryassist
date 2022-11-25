@@ -16,6 +16,24 @@ quiet <- function(x) {
 }
 
 
+# group_sizes
+#' Function to extract group sizes for calcluating Tukey's p-values.
+#'
+#' @param data A data frame
+#' @param groups A vector to extract group sizes from
+#'
+#' @return A vector with the number of observations for each group
+#'
+#' @keywords internal
+#'
+group_sizes <- function(data, groups) {
+    cols <- data[,groups]
+    # cols <- lapply(cols, as.character)
+    # obs <- do.call(paste, c(cols, sep="-"))
+    return(as.numeric(table(cols)))
+}
+
+
 ######################################################
 # Start up function
 # this function is executed once the package is loaded

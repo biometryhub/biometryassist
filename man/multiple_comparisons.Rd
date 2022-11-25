@@ -12,6 +12,7 @@ multiple_comparisons(
   trans = NA,
   offset = NA,
   power = NA,
+  pvals = FALSE,
   decimals = 2,
   descending = FALSE,
   plot = FALSE,
@@ -39,6 +40,8 @@ multiple_comparisons(
 \item{offset}{Numeric offset applied to response variable prior to transformation. Default is \code{NA}. Use 0 if no offset was applied to the transformed data. See Details for more information.}
 
 \item{power}{Numeric power applied to response variable with power transformation. Default is \code{NA}. See Details for more information.}
+
+\item{pvals}{Logical (default \code{FALSE}). Output the p-values of the comparisons as an attribute?}
 
 \item{decimals}{Controls rounding of decimal places in output. Default is 2 decimal places.}
 
