@@ -113,7 +113,7 @@ multiple_comparisons <- function(model.obj,
                                  int.type = "ci",
                                  trans = NA,
                                  offset = NA,
-                                 s
+                                 power = NA,
                                  decimals = 2,
                                  descending = FALSE,
                                  plot = FALSE,
