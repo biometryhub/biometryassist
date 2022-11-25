@@ -53,7 +53,8 @@ test_that("example 4 works", {
     skip_on_cran()
     example4.aov <- aov(DM ~ row + col + trt, data = example4)
     expect_snapshot_output(anova(example4.aov))
-    pred4.out <- multiple_comparisons(example4.aov, classify = "trt")
+    expect_warning(pred4.out <- multiple_comparisons(example4.aov, classify = "trt"),
+                   "Missing treatments' combination appeared, predicted means maybe misleading!")
     expect_equal(pred4.out$predicted.value, c(1707.94, 1802.7, 2053.73, 2200.08))
     expect_snapshot_output(pred4.out)
     skip_on_ci()
