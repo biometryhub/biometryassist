@@ -1,5 +1,15 @@
 # biometryassist 1.1.1
 
+## Bug fixes
+
+- Fixed a bug introduced due to a change in names by `predictmeans()`. (#50)
+- Added a check for missing `ar1()` component in `variogram()`. (#49)
+- Added an error check for terms provided in the wrong order to `multiple_comparisons()` via `classify`. (#48)
+- Checked if model needs the `present` argument passed to `predict.asreml()`. (#41)
+
+
+# biometryassist 1.1.1
+
 ## Minor changes
 
 - `multiple_comparisons()` now accepts power transformations and automatically back-transforms. It gains a new argument `power` to provide the transformation power applied in the model to undo. This enables more general Box-Cox transformations. (#36)

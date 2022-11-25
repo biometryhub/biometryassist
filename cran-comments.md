@@ -1,14 +1,8 @@
-## Resubmission
-This is a resubmission. In this version I have:
-
-* Explained in the DESCRIPTION where the enhanced package asreml can be obtained.
-
-* I have also added a URL to the reference in the `multiple_comparisons()` function documentation.
-
+This submission is to fix bugs which would be introduced by version 1.0.8 of predictmeans, to be submitted to CRAN shortly.
 
 ## Test environments
-* Local Windows 10 install, R 4.2.1
-* Ubuntu 22.04 (Virtual Machine), R 4.2.1
+* Local Windows 10 install, R 4.2.2
+* Ubuntu 22.04 (Virtual Machine), R 4.2.2
 * Rhub `check_for_cran()`
 * Github Actions:
     - macOS: r-release
