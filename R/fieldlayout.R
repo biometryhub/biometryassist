@@ -29,4 +29,3 @@ ggplot(data = newtt, aes(y = row, x = col,
 }
 
 
-field_layout(data = dat, row_var = "Row", col_var = "Column", other_var = "Mainplot")
