@@ -1,4 +1,4 @@
-# biometryassist 1.1.1
+# biometryassist 1.1.2
 
 ## Bug fixes
 

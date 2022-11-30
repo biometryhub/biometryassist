@@ -126,7 +126,7 @@ test_that("Interaction terms work", {
     quiet(library(asreml))
     # model.asr <- readRDS(test_path("data", "model_asr.rds"))
     # load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
-    output <- multiple_comparisons(model.asr, classify = "Nitrogen:Variety")
+    output <- multiple_comparisons(model.asr, classify = "Nitrogen:Variety", pvals = T)
     expect_equal(output$predicted.value,
                  c(70.85, 76.58, 85.86, 92.22, 99.91, 108.32, 113.1, 113.5, 116.63, 118.4, 123.75, 127.53),
                  tolerance = 5e-2)
