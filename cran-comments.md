@@ -1,4 +1,7 @@
-This submission is to fix bugs which would be introduced by version 1.0.8 of predictmeans, to be submitted to CRAN shortly.
+## Resubmission
+
+This resubmission is  because the previous version was uploaded with the incorrect comments.
+This version fixes breaking changes introduced by version 1.0.8 of predictmeans, to be submitted to CRAN shortly.
 
 ## Test environments
 * Local Windows 10 install, R 4.2.2
