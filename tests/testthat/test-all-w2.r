@@ -197,7 +197,7 @@ test_that("exercise 2 works", {
     pred2e.out <- multiple_comparisons(exercise2.aov, classify = "Treatment")
     pred2e.out$predicted.value <- round(pred2e.out$predicted.value, 1)
     expect_equal(pred2e.out$predicted.value, c(2.1, 2.2, 2.6, 2.8, 2.8, 3.4))
-    expect_snapshot(pred2e.out)
+    expect_snapshot(data.frame(lapply(pred2e.out, function(y) if(is.numeric(y)) round(y, 1) else y)))
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
