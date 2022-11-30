@@ -53,8 +53,7 @@ test_that("example 4 works", {
     skip_on_cran()
     example4.aov <- aov(DM ~ row + col + trt, data = example4)
     expect_snapshot_output(anova(example4.aov))
-    expect_warning(pred4.out <- multiple_comparisons(example4.aov, classify = "trt"),
-                   "Missing treatments' combination appeared, predicted means maybe misleading!")
+    pred4.out <- multiple_comparisons(example4.aov, classify = "trt")
     expect_equal(pred4.out$predicted.value, c(1707.94, 1802.7, 2053.73, 2200.08))
     expect_snapshot_output(pred4.out)
     skip_on_ci()
@@ -198,7 +197,7 @@ test_that("exercise 2 works", {
     pred2e.out <- multiple_comparisons(exercise2.aov, classify = "Treatment")
     pred2e.out$predicted.value <- round(pred2e.out$predicted.value, 1)
     expect_equal(pred2e.out$predicted.value, c(2.1, 2.2, 2.6, 2.8, 2.8, 3.4))
-    expect_snapshot_output(pred2e.out)
+    expect_snapshot(data.frame(lapply(pred2e.out, function(y) if(is.numeric(y)) round(y, 1) else y)))
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
