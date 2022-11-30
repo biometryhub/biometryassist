@@ -16,7 +16,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">biometryassist</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.2</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -250,7 +250,8 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>  Total                                   17</span>
 <span class="r-plt img"><img src="design-5.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Factorial Design (Crossed, Randomised Complete Block Design), changing separation between factors</span></span></span>
+<span class="r-in"><span><span class="co"># Factorial Design (Crossed, Randomised Complete Block Design),</span></span></span>
+<span class="r-in"><span><span class="co"># changing separation between factors</span></span></span>
 <span class="r-in"><span><span class="va">des.out</span> <span class="op">&lt;-</span> <span class="fu">design</span><span class="op">(</span>type <span class="op">=</span> <span class="st">"crossed:rcbd"</span>, treatments <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">2</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                  reps <span class="op">=</span> <span class="fl">3</span>, nrows <span class="op">=</span> <span class="fl">6</span>, ncols <span class="op">=</span> <span class="fl">3</span>,</span></span>
 <span class="r-in"><span>                  brows <span class="op">=</span> <span class="fl">6</span>, bcols <span class="op">=</span> <span class="fl">1</span>,</span></span>
@@ -268,7 +269,8 @@
 <span class="r-plt img"><img src="design-6.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Factorial Design (Nested, Latin Square)</span></span></span>
-<span class="r-in"><span><span class="va">des.out</span> <span class="op">&lt;-</span> <span class="fu">design</span><span class="op">(</span>type <span class="op">=</span> <span class="st">"lsd"</span>, treatments <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A1"</span>, <span class="st">"A2"</span>, <span class="st">"A3"</span>, <span class="st">"A4"</span>, <span class="st">"B1"</span>, <span class="st">"B2"</span>, <span class="st">"B3"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span><span class="va">trt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A1"</span>, <span class="st">"A2"</span>, <span class="st">"A3"</span>, <span class="st">"A4"</span>, <span class="st">"B1"</span>, <span class="st">"B2"</span>, <span class="st">"B3"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">des.out</span> <span class="op">&lt;-</span> <span class="fu">design</span><span class="op">(</span>type <span class="op">=</span> <span class="st">"lsd"</span>, treatments <span class="op">=</span> <span class="va">trt</span>,</span></span>
 <span class="r-in"><span>                  nrows <span class="op">=</span> <span class="fl">7</span>, ncols <span class="op">=</span> <span class="fl">7</span>, seed <span class="op">=</span> <span class="fl">42</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Source of Variation                     df</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  =============================================</span>
@@ -299,7 +301,7 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>  Total                                       31</span>
 <span class="r-plt img"><img src="design-8.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Alternative arangement of the same design as above</span></span></span>
+<span class="r-in"><span><span class="co"># Alternative arrangement of the same design as above</span></span></span>
 <span class="r-in"><span><span class="va">des.out</span> <span class="op">&lt;-</span> <span class="fu">design</span><span class="op">(</span>type <span class="op">=</span> <span class="st">"split"</span>, treatments <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span><span class="op">)</span>, sub_treatments <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">4</span>,</span></span>
 <span class="r-in"><span>                  reps <span class="op">=</span> <span class="fl">4</span>, nrows <span class="op">=</span> <span class="fl">8</span>, ncols <span class="op">=</span> <span class="fl">4</span>, brows <span class="op">=</span> <span class="fl">4</span>, bcols <span class="op">=</span> <span class="fl">2</span>,</span></span>
 <span class="r-in"><span>                  byrow <span class="op">=</span> <span class="cn">FALSE</span>, seed <span class="op">=</span> <span class="fl">42</span><span class="op">)</span></span></span>

@@ -16,7 +16,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">biometryassist</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.2</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -53,6 +53,16 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.1.1" id="biometryassist-111">biometryassist 1.1.1<a class="anchor" aria-label="anchor" href="#biometryassist-111"></a></h2><p class="text-muted">CRAN release: 2022-10-27</p>
 <div class="section level3">
+<h3 id="bug-fixes-1-1-1">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-1-1"></a></h3>
+<ul><li>Fixed a bug introduced due to a change in names by <code>predictmeans()</code>. (<a href="https://github.com/biometryhub/biometryassist/issues/50" class="external-link">#50</a>)</li>
+<li>Added a check for missing <code>ar1()</code> component in <code><a href="../reference/variogram.html">variogram()</a></code>. (<a href="https://github.com/biometryhub/biometryassist/issues/49" class="external-link">#49</a>)</li>
+<li>Added an error check for terms provided in the wrong order to <code><a href="../reference/multiple_comparisons.html">multiple_comparisons()</a></code> via <code>classify</code>. (<a href="https://github.com/biometryhub/biometryassist/issues/48" class="external-link">#48</a>)</li>
+<li>Checked if model needs the <code>present</code> argument passed to <code>predict.asreml()</code>. (<a href="https://github.com/biometryhub/biometryassist/issues/41" class="external-link">#41</a>)</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.1.1" id="biometryassist-111-1">biometryassist 1.1.1<a class="anchor" aria-label="anchor" href="#biometryassist-111-1"></a></h2><p class="text-muted">CRAN release: 2022-10-27</p>
+<div class="section level3">
 <h3 id="minor-changes-1-1-1">Minor changes<a class="anchor" aria-label="anchor" href="#minor-changes-1-1-1"></a></h3>
 <ul><li>
 <code><a href="../reference/multiple_comparisons.html">multiple_comparisons()</a></code> now accepts power transformations and automatically back-transforms. It gains a new argument <code>power</code> to provide the transformation power applied in the model to undo. This enables more general Box-Cox transformations. (<a href="https://github.com/biometryhub/biometryassist/issues/36" class="external-link">#36</a>)</li>
@@ -62,7 +72,7 @@
 <li>Enabled new colour-blind friendly palettes (<a href="https://github.com/biometryhub/biometryassist/issues/39" class="external-link">#39</a>)</li>
 </ul></div>
 <div class="section level3">
-<h3 id="bug-fixes-1-1-1">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-1-1"></a></h3>
+<h3 id="bug-fixes-1-1-1-1">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-1-1-1"></a></h3>
 <ul><li>Updated the required version of rlang (&gt;=1.0.0)</li>
 <li>Fixed a bug that didn’t allow labels and the x axis to be rotated independently for <code><a href="../reference/autoplot.html">autoplot.mct()</a></code> (<a href="https://github.com/biometryhub/biometryassist/issues/35" class="external-link">#35</a>)</li>
 <li>Fixed an issue where treatment columns were not determined correctly in <code><a href="../reference/multiple_comparisons.html">multiple_comparisons()</a></code> (<a href="https://github.com/biometryhub/biometryassist/issues/33" class="external-link">#33</a>)</li>
