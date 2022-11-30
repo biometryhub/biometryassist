@@ -318,7 +318,7 @@
 ---
 
       Treatment predicted.value std.error Df groups   ci  low   up
-    5        KC             2.1      0.18 18      a 0.31 1.81 2.43
+    5        KC             2.1      0.18 18      a 0.31 1.82 2.44
     6        PE             2.2      0.18 18      a 0.31 1.86 2.48
     4        HL             2.6      0.18 18     ab 0.31 2.31 2.93
     1        CN             2.8      0.18 18     ab 0.31 2.46 3.08
