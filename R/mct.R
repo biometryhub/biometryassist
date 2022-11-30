@@ -23,7 +23,7 @@
 #'
 #' @importFrom multcompView multcompLetters
 #' @importFrom predictmeans predictmeans
-#' @importFrom stats model.frame predict qtukey qt
+#' @importFrom stats model.frame predict qtukey qt terms
 #' @importFrom utils packageVersion
 #'
 #' @details Some transformations require that data has a small offset applied, otherwise it will cause errors (for example taking a log of 0, or square root of negative values). In order to correctly reverse this offset, if the `trans` argument is supplied, an offset value must also be supplied. If there was no offset required for a transformation, then use a value of 0 for the `offset` argument.
@@ -147,11 +147,20 @@ multiple_comparisons <- function(model.obj,
 
     if(inherits(model.obj, "asreml")){
 
+        if(classify %!in% attr(stats::terms(model.obj$formulae$fixed), 'term.labels')) {
+            stop(classify, " is not a term in the model. Please check model specification.", call. = FALSE)
+        }
+
         if(!missing(pred.obj)) {
             warning("Argument `pred.obj` has been deprecated and will be removed in a future version. Predictions are now performed internally in the function.")
         }
 
         pred.obj <- quiet(asreml::predict.asreml(model.obj, classify = classify, sed = TRUE, trace = FALSE, ...))
+        # Check if all the predicted values are NA. If so, suggests the need of the `present` argument
+        if(all(is.na(pred.obj$pvals$predicted.value)) & all(is.na(pred.obj$pvals$std.error))) {
+            stop("All predicted values are aliased. Perhaps you need the `present` argument?")
+        }
+
         # Check if any treatments are aliased, and remove them and print a warning
         if(anyNA(pred.obj$pvals$predicted.value)) {
             aliased <- which(is.na(pred.obj$pvals$predicted.value))
@@ -181,12 +190,6 @@ multiple_comparisons <- function(model.obj,
         #For use with asreml 4+
         if(utils::packageVersion("asreml") > 4) {
             pp <- pred.obj$pvals
-
-            # Check that the prediction object was created with the sed matrix
-            # if(is.null(pred.obj$sed)) {
-            #     stop("Prediction object (pred.obj) must be created with argument sed = TRUE.")
-            # }
-
             sed <- pred.obj$sed
         }
 
@@ -209,14 +212,18 @@ multiple_comparisons <- function(model.obj,
     }
 
     else if(inherits(model.obj, c("aov", "lm", "lmerMod", "lmerModLmerTest"))) {
+        if(classify %!in% attr(stats::terms(model.obj), 'term.labels')) {
+            stop(classify, " is not a term in the model. Please check model specification.", call. = FALSE)
+        }
+
         # vars <- unlist(strsplit(classify, "\\:"))
         #
         # if(inherits(model.obj, c("aov", "lm"))) {
-        #     mdf <- stats::model.frame(model.obj)
-        #     not_factors <- intersect(vars, names(mdf)[!sapply(mdf, is.factor)])
+        #     terms <- attr(terms(model.obj), 'dataClasses')[-1]
+        #     not_factors <- intersect(vars, names(terms[terms!="factor"]))
         # }
         # else if(inherits(model.obj, c("lmerMod", "lmerModLmerTest"))) {
-        #     mdf <- get(model.obj@call$data, pos = parent.frame())
+        #     mdf <- model.obj@frame[,-1]
         #     not_factors <- intersect(vars, names(mdf)[!sapply(mdf, is.factor)])
         # }
         #
@@ -227,13 +234,20 @@ multiple_comparisons <- function(model.obj,
         #     stop(paste(paste(not_factors[-length(not_factors)], collapse = ", "), "and", not_factors[length(not_factors)], "must be factors"), call. = F)
         # }
 
-        pred.out <- predictmeans::predictmeans(model.obj, classify, mplot = FALSE, ndecimal = decimals)
+        pred.out <- predictmeans::predictmeans(model.obj, classify, plot = FALSE, ndecimal = decimals)
 
         pred.out$mean_table <- pred.out$mean_table[,!grepl("95", names(pred.out$mean_table))]
         sed <- pred.out$`Standard Error of Differences`[1]
         pp <- pred.out$mean_table
-        names(pp)[names(pp) == "Predicted means"] <- "predicted.value"
-        names(pp)[names(pp) == "Standard error"] <- "std.error"
+        # The column names changed in predictmeans v1.0.8, so check for them
+        if(utils::packageVersion("predictmeans") >= "1.0.8") {
+            names(pp)[names(pp) == "Mean"] <- "predicted.value"
+            names(pp)[names(pp) == "SE"] <- "std.error"
+        }
+        else {
+            names(pp)[names(pp) == "Predicted means"] <- "predicted.value"
+            names(pp)[names(pp) == "Standard error"] <- "std.error"
+        }
 
         SED <- matrix(data = sed, nrow = nrow(pp), ncol = nrow(pp))
         diag(SED) <- NA

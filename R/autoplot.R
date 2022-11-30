@@ -128,7 +128,7 @@ autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, pale
         stop("Invalid value for palette.")
     }
 
-    if(!any(grepl("block", names(object)))) {
+    if(!any(grepl("block", tolower(names(object))))) {
         # create the graph
         plt <- ggplot2::ggplot() +
             ggplot2::geom_tile(data = object, mapping = ggplot2::aes(x = col, y = row, fill = treatments), colour = "black") +
@@ -156,12 +156,12 @@ autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, pale
             ggplot2::geom_rect(
                 data = blkdf,
                 mapping = ggplot2::aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
-                size = 1.8, colour = "black", fill = NA
+                linewidth = 1.8, colour = "black", fill = NA
             ) +
             ggplot2::geom_rect(
                 data = blkdf,
                 mapping = ggplot2::aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
-                size = 0.6, colour = "white", fill = NA
+                linewidth = 0.6, colour = "white", fill = NA
             ) +
             ggplot2::theme_bw()
     }

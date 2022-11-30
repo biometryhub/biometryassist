@@ -38,6 +38,10 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
         stop("model.obj must be an asreml model object")
     }
 
+    if(attr(model.obj$formulae$residual,"term.labels") == "units") {
+        stop("Residual term must include spatial component.")
+    }
+
     aa <- vario_df(model.obj, row, column)
 
     if(missing(row) | is.na(row) | is.null(row)) {
