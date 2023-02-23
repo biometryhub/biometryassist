@@ -141,9 +141,13 @@ multiple_comparisons <- function(model.obj,
         warning("Significance level given by `sig` is high. Perhaps you meant ", 1-sig, "?", call. = FALSE)
     }
 
-    # if(grepl(":", classify)) {
+    # Get the individual names provided in classify
     vars <- unlist(strsplit(classify, "\\:"))
-    # }
+    reserved_col_names <- c("predicted.value", "std.error", "Df",
+                            "groups", "PredictedValue", "ApproxSE", "ci", "low", "up")
+    if(any(vars %in% reserved_col_names)) {
+        stop("Invalid column name. Please change the name of column(s): ", vars[vars %in% reserved_col_names])
+    }
 
     if(inherits(model.obj, "asreml")){
 
@@ -415,12 +419,14 @@ multiple_comparisons <- function(model.obj,
     pp.tab <- pp.tab[base::order(pp.tab$predicted.value, decreasing = descending),]
 
     pp.tab$Names <- NULL
-    trtindex <- max(unlist(lapply(vars, grep, x = names(pp.tab))))
+    trtindex <- max(unlist(lapply(paste0("^", vars, "$"), grep, x = names(pp.tab))))
 
     trtnam <- names(pp.tab)[1:trtindex]
+    # Exclude reserved column names
+    trtnam <- trtnam[trtnam %!in% c("predicted.value", "std.error", "Df",
+                             "groups", "PredictedValue", "ApproxSE", "ci", "low", "up")]
 
-    i <- 1
-    for(i in 1:trtindex){
+    for(i in seq_along(trtnam)){
         pp.tab[[trtnam[i]]] <- factor(pp.tab[[trtnam[i]]], levels = unique(pp.tab[[trtnam[i]]]))
     }
 
