@@ -219,6 +219,15 @@ test_that("Use of pred argument gives warning", {
                    "Argument `pred` has been deprecated and will be removed in a future version. Please use `classify` instead.")
 })
 
+test_that("Invalid column name causes an error", {
+    dat <- design("crd", LETTERS[1:4], 4, nrow = 4, ncols = 4, quiet = TRUE)$design
+    names(dat)[5] <- "groups"
+    dat.aov <- aov(rnorm(16, 10)~groups, data = dat)
+
+    expect_error(multiple_comparisons(dat.aov, classify = "groups"),
+                   "Invalid column name. Please change the name of column\\(s\\): groups")
+})
+
 test_that("Including pred.obj object causes warning", {
     skip_if_not(requireNamespace("asreml", quietly = TRUE))
     quiet(library(asreml))
