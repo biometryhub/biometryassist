@@ -151,7 +151,8 @@ multiple_comparisons <- function(model.obj,
 
     if(inherits(model.obj, "asreml")){
 
-        if(classify %!in% attr(stats::terms(model.obj$formulae$fixed), 'term.labels')) {
+        if(classify %!in% c(attr(stats::terms(model.obj$formulae$fixed), 'term.labels'),
+                            attr(stats::terms(model.obj$formulae$random), 'term.labels'))) {
             stop(classify, " is not a term in the model. Please check model specification.", call. = FALSE)
         }
 
@@ -209,6 +210,11 @@ multiple_comparisons <- function(model.obj,
                pp$Names <- pp[[classify]])
 
         ndf <- dendf$denDF[grepl(classify, dendf$Source) & nchar(classify) == nchar(as.character(dendf$Source))]
+        if(rlang::is_empty(ndf)) {
+            ndf <- model.obj$nedf
+            rand_terms <- vars[vars %in% attr(stats::terms(model.obj$formulae$random), 'term.labels')]
+            warning(rand_terms, " is not a fixed term in the model. The denominator degrees of freedom are estimated using the residual degrees of freedom. This may be inaccurate.", call. = FALSE)
+        }
         crit.val <- 1/sqrt(2)*stats::qtukey((1-sig), nrow(pp), ndf)*sed
 
         # Grab the response from the formula to create plot Y label
