@@ -34,32 +34,40 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
         invisible(TRUE)
     }
     else {
-      # macOS Monterey needs a folder created
-      if(Sys.info()["sysname"] == "Darwin" && Sys.info()["release"] >= 21 && !dir.exists("/Library/Application Support/Reprise/")) {
+        # macOS needs some special set up
+        arm <- FALSE
+        if(Sys.info()["sysname"] == "Darwin") {
+            # Monterey needs a folder created
+            if (Sys.info()["release"] >= 21 && !dir.exists("/Library/Application Support/Reprise/")) {
 
-            result <- tryCatch(
-                expr = {
-                    dir.create("/Library/Application Support/Reprise/", recursive = T)
-                },
-                error = function(cond) {
-                    return(FALSE)
-                },
-                warning = function(cond) {
-                    return(FALSE)
-                }
-            )
+                result <- tryCatch(
+                    expr = {
+                        dir.create("/Library/Application Support/Reprise/", recursive = T)
+                    },
+                    error = function(cond) {
+                        return(FALSE)
+                    },
+                    warning = function(cond) {
+                        return(FALSE)
+                    }
+                )
 
-            if(isFALSE(result) && rlang::is_installed("getPass")) {
-                message("The ASReml-R package uses Reprise license management and will require administrator privilege to create the folder '/Library/Application Support/Reprise' before it can be loaded.")
-                input <- readline("Would you like to create this folder now (Yes/No)? You will be prompted for your password if yes. ")
+                if(isFALSE(result) && rlang::is_installed("getPass")) {
+                    message("The ASReml-R package uses Reprise license management and will require administrator privilege to create the folder '/Library/Application Support/Reprise' before it can be loaded.")
+                    input <- readline("Would you like to create this folder now (Yes/No)? You will be prompted for your password if yes. ")
 
-                if(toupper(input) %in% c("YES", "Y")) {
-                    system("sudo -S mkdir '/Library/Application Support/Reprise' && sudo -S chmod 777 '/Library/Application Support/Reprise'",
-                           input = getPass::getPass("Please enter your user account password: "))
+                    if(toupper(input) %in% c("YES", "Y")) {
+                        system("sudo -S mkdir '/Library/Application Support/Reprise' && sudo -S chmod 777 '/Library/Application Support/Reprise'",
+                               input = getPass::getPass("Please enter your user account password: "))
+                    }
+                    else {
+                        stop("ASReml-R cannot be installed until the folder '/Library/Application Support/Reprise' is created with appropriate permissions.")
+                    }
                 }
-                else {
-                    stop("ASReml-R cannot be installed until the folder '/Library/Application Support/Reprise' is created with appropriate permissions.")
-                }
+            }
+            # arm Macs need a different package
+            if(Sys.info()[["machine"]] == "arm64") {
+                arm <- TRUE
             }
         }
 
@@ -77,7 +85,7 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
         )
 
         ver <- gsub("\\.", "", substr(getRversion(), 1, 3))
-        url <- paste0("https://link.biometryhubwaite.com/", os, "-", ver)
+        url <- paste0("https://link.biometryhubwaite.com/", os, "-", ifelse(arm, "arm-", ""), ver)
 
         # First check if file already exists, both in the current directory and temp folder
         # Need to create a regex to check it's the correct file extension, so tests ignore .R files
