@@ -282,8 +282,8 @@ multiple_comparisons <- function(model.obj,
     }
 
     # Check that the predicted levels don't contain a dash -, if they do replace and display warning
-    if(any(grepl("-", pp[,1]))) {
-        levs <- grep("-", pp[,1], value = TRUE)
+    if(any(any(grepl("-", pp$Names) | grepl("-", pp[,1])))) {
+        levs <- unique(c(grep("-", pp[,1], value = TRUE), grep("-", pp$Names, value = TRUE)))
         if(length(levs)>1) {
             warning("The treatment levels ", paste(levs, collapse = ", "), " contained '-', which has been replaced in the final output with '_'")
         }
