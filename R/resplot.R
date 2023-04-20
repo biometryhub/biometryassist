@@ -82,7 +82,7 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
         }
     }
     else {
-        stop("model.obj must be an aov, lm, lmerMod, lmerModLmerTest, asreml, mmer or art object")
+        stop("model.obj must be a linear (mixed) model object. Currently supported model types are: aov, lm, lmerMod, lmerModLmerTest, asreml, mmer or art")
     }
 
     aa <- data.frame(residuals = resids, fitted = fits, lvl = rep(1:facet, k))
@@ -96,50 +96,68 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
 
         a <- ggplot2::ggplot(data = aa.f, mapping = ggplot2::aes(x = stdres)) +
             ggplot2::geom_histogram(bins = ifelse(nrow(aa) < 31, 7, 11), fill = "aquamarine3", colour = "black") +
-            ggplot2::theme_bw(base_size = axes.size) + ggplot2::labs(y = "Frequency", x = "Standardised Residual")
+            ggplot2::theme_bw(base_size = axes.size) + ggplot2::labs(y = "Frequency", x = "Standardised Residual", tag = "A")
+        # Change tag size with plot.tag = element_text(size = rel(1)) in theme()
 
         b <- ggplot2::ggplot(aa.f, ggplot2::aes(sample = stdres)) + ggplot2::geom_qq(colour = "black", fill = "aquamarine3", size = 2 , shape = 21) +
             ggplot2::geom_qq_line() + ggplot2::theme_bw(base_size = axes.size) +
-            ggplot2::labs(y = "Standardised Residual", x = "Theoretical")
+            ggplot2::labs(y = "Standardised Residual", x = "Theoretical", tag = "B")
 
         c <- ggplot2::ggplot(data = aa.f, mapping = ggplot2::aes(x = fitted, y = stdres)) +
             ggplot2::geom_point(colour = "black", fill = "aquamarine3", size = 2 , shape = 21) + ggplot2::theme_bw(base_size = axes.size) +
-            ggplot2::labs(y = "Standardised Residual", x = "Fitted Value")
+            ggplot2::labs(y = "Standardised Residual", x = "Fitted Value", tag = "C")
 
-        top_row <- cowplot::plot_grid(a, b, ncol=2, labels = c("A", "B"), label_size = label.size)
+        main_plots <- gridExtra::arrangeGrob(a, b, c, layout_matrix = matrix(c(1, 1, 2, 2, NA, 3, 3, NA), byrow = T, ncol = 4))
 
         if(shapiro) {
             shap <- shapiro.test(aa.f$residuals)
 
             shapiro_text <- c(paste(shap$method, "p-value:", round(shap$p.value, 4)),
                               ifelse(shap$p.value>0.05,
-                                     paste0("The residuals appear to be normally distributed. (n = ", length(aa.f$residuals), ")"),
-                                     paste0("The residuals do not appear to be normally distributed. (n = ", length(aa.f$residuals), ")")))
-
-            bottom_row <- cowplot::plot_grid(NULL, cowplot::add_sub(cowplot::add_sub(c, shapiro_text[1], size = 11, vjust = 1.2),
-                                                                    shapiro_text[2], size = 9, vjust = 0.2), NULL,
-                                             ncol=3, rel_widths=c(0.25,0.5,0.25), labels = c("", "C", ""),
-                                             label_size = label.size, hjust = 1)
+                                     paste0("The residuals appear to be normally distributed (n = ", length(aa.f$residuals), ")."),
+                                     paste0("The residuals do not appear to be normally distributed (n = ", length(aa.f$residuals), ").")))
+            shapiro_text <- paste(shapiro_text, collapse = "\n")
+            # bottom_row <- cowplot::plot_grid(NULL, cowplot::add_sub(cowplot::add_sub(c, shapiro_text[1], size = 11, vjust = 1.2),
+            #                                                         shapiro_text[2], size = 9, vjust = 0.2), NULL,
+            #                                  ncol=3, rel_widths=c(0.25,0.5,0.25), labels = c("", "C", ""),
+            #                                  label_size = label.size, hjust = 1)
+            # bottom_text1 <- grid::textGrob(shapiro_text[1], gp = gpar(fontsize = label.size))
+            # bottom_text2 <- grid::textGrob(shapiro_text[2], gp = gpar(fontsize = label.size*0.8))
         }
         else{
-            bottom_row <- cowplot::plot_grid(NULL, c, NULL, ncol=3, rel_widths=c(0.25,0.5,0.25), labels = c("", "C", ""), hjust = -1, label_size = label.size)
+            # bottom_row <- cowplot::plot_grid(NULL, c, NULL, ncol=3, rel_widths=c(0.25,0.5,0.25), labels = c("", "C", ""), hjust = -1, label_size = label.size)
+            shapiro_text <- NULL
         }
         if(call) {
-            title <- cowplot::ggdraw() + cowplot::draw_label(model_call, size = call.size, hjust = 0.5)
-            call_row <- cowplot::plot_grid(title, ncol=1)
-            output[[i]] <- cowplot::plot_grid(call_row, top_row, bottom_row, ncol=1, rel_heights = c(0.1, 0.4, 0.4))
+            title <- grid::textGrob(model_call, gp = grid::gpar(fontsize = call.size))
+            title_grob <- gridExtra::arrangeGrob(title)
+            # call_row <- cowplot::plot_grid(title, ncol=1)
+            output[[i]] <- gridExtra::grid.arrange(title_grob, main_plots, heights = c(1, 15), bottom = shapiro_text)
         }
         else{
-            output[[i]] <- cowplot::plot_grid(top_row, bottom_row, ncol=1, rel_heights = c(0.4, 0.4))
+            # output[[i]] <- cowplot::plot_grid(top_row, bottom_row, ncol=1, rel_heights = c(0.4, 0.4))
+            output[[i]] <- gridExtra::grid.arrange(main_plots, bottom = shapiro_text)
         }
     }
+
+    # title <- grid::textGrob(model_call, gp = gpar(fontsize = call.size))
+    # title_grob <- arrangeGrob(title)
+
+    # g3 <- arrangeGrob(bottom_text1)
+    # g4 <- arrangeGrob(bottom_text2, )
+    # g <- grid.arrange(title_grob, main_plots, heights = c(1, 15), bottom = paste(shapiro_text, collapse = "\n"))
+    # grid.arrange(a, b, c, t1, t2,  layout_matrix = matrix(c(rep(c(1, 1, 2, 2), times = 6), rep(c(NA, 3, 3, NA), times = 6), rep(4, times = 4), rep(5, times = 4)), byrow = TRUE, ncol = 4))
+    # grid.text("Abc")
+    # grid.text("Abc", gp = gpar(cex = 0.75))
+    # grid.text("Abc", x = 1, gp = gpar(cex = 0.75))
+    # grid.text("Abc", y = 0.1, gp = gpar(cex = 0.75))
 
     if(facet>1) {
         names(output) <- facet_name
-        return(output)
+        invisible(output)
     }
     else {
-        return(output[[1]])
+        invisible(output[[1]])
     }
 }
 
