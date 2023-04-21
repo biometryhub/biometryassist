@@ -42,6 +42,7 @@ Imports:
     curl,
     farver,
     ggplot2,
+    gridExtra,
     lattice,
     multcompView,
     pracma,
