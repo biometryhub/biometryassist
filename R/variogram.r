@@ -77,11 +77,29 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
 
         b <- lattice::wireframe(z ~ y * x, data = gdat, aspect = c(61/87, 0.4),
                                 scales = list(cex = 0.5, arrows = FALSE),
-                                shade = TRUE, colorkey = FALSE,
-                                par.settings = list(axis.line = list(col = 'transparent')),
+                                drape = TRUE, colorkey = FALSE,
+                                par.settings = list(axis.line = list(col = 'transparent'),
+                                                    layout.heights = list(
+                                                        top.padding = -5,
+                                                        main.key.padding = -5,
+                                                        key.axis.padding = -2,
+                                                        axis.xlab.padding = -2,
+                                                        xlab.key.padding = -2,
+                                                        key.sub.padding = -2,
+                                                        bottom.padding = -2
+                                                    ),
+                                                    layout.widths = list(
+                                                        left.padding = -2,
+                                                        key.ylab.padding = -2,
+                                                        ylab.axis.padding = -2,
+                                                        axis.key.padding = -2,
+                                                        right.padding = -2
+                                                    )),
                                 xlab = list(label = paste(column, "Lag", sep = " "), cex = .8, rot = 20),
                                 ylab = list(label = paste(row, "Lag", sep = " "), cex = .8, rot = -18),
-                                zlab = list(label = NULL, cex.axis = 0.5))
+                                zlab = list(label = NULL, cex.axis = 0.5),
+                                col.regions = grDevices::rainbow(100))
+        b <- as_grob(b)
     }
     else if(any(grepl("(colou?r([[:punct:]]|[[:space:]]?)blind)|cb|viridis", palette, ignore.case = T))) {
         a <- a + ggplot2::scale_fill_gradientn(colours = scales::viridis_pal(option = "viridis")(50))
@@ -90,11 +108,28 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
         b <- lattice::wireframe(z ~ y * x, data = gdat, aspect = c(61/87, 0.4),
                                 scales = list(cex = 0.5, arrows = FALSE),
                                 drape = TRUE, colorkey = FALSE,
-                                par.settings = list(axis.line = list(col = 'transparent')),
+                                par.settings = list(axis.line = list(col = 'transparent'),
+                                                    layout.heights = list(
+                                                        top.padding = -8,
+                                                        main.key.padding = -8,
+                                                        key.axis.padding = -3,
+                                                        axis.xlab.padding = -3,
+                                                        xlab.key.padding = -3,
+                                                        key.sub.padding = -3,
+                                                        bottom.padding = -3
+                                                    ),
+                                                    layout.widths = list(
+                                                        left.padding = -3,
+                                                        key.ylab.padding = -3,
+                                                        ylab.axis.padding = -3,
+                                                        axis.key.padding = -3,
+                                                        right.padding = -3
+                                                    )),
                                 xlab = list(label = paste(column, "Lag", sep = " "), cex = .8, rot = 20),
                                 ylab = list(label = paste(row, "Lag", sep = " "), cex = .8, rot = -18),
                                 zlab = list(label = NULL, cex.axis = 0.5),
                                 col.regions = scales::viridis_pal(option = "viridis")(100))
+        b <- as_grob(b)
     }
     else if(tolower(trimws(palette)) %in% c("magma", "inferno", "cividis", "plasma", "rocket", "mako", "turbo")) {
         a <- a + ggplot2::scale_fill_gradientn(colours = scales::viridis_pal(option = palette)(50))
@@ -103,11 +138,28 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
         b <- lattice::wireframe(z ~ y * x, data = gdat, aspect = c(61/87, 0.4),
                                 scales = list(cex = 0.5, arrows = FALSE),
                                 drape = TRUE, colorkey = FALSE,
-                                par.settings = list(axis.line = list(col = 'transparent')),
+                                par.settings = list(axis.line = list(col = 'transparent'),
+                                                    layout.heights = list(
+                                                        top.padding = -8,
+                                                        main.key.padding = -8,
+                                                        key.axis.padding = -3,
+                                                        axis.xlab.padding = -3,
+                                                        xlab.key.padding = -3,
+                                                        key.sub.padding = -3,
+                                                        bottom.padding = -3
+                                                    ),
+                                                    layout.widths = list(
+                                                        left.padding = -3,
+                                                        key.ylab.padding = -3,
+                                                        ylab.axis.padding = -3,
+                                                        axis.key.padding = -3,
+                                                        right.padding = -3
+                                                    )),
                                 xlab = list(label = paste(column, "Lag", sep = " "), cex = .8, rot = 20),
                                 ylab = list(label = paste(row, "Lag", sep = " "), cex = .8, rot = -18),
                                 zlab = list(label = NULL, cex.axis = 0.5),
                                 col.regions = scales::viridis_pal(option = palette)(100))
+        b <- as_grob(b)
     }
 
     else if(tolower(trimws(palette)) %in% c("spectral")) {
@@ -117,18 +169,35 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
         b <- lattice::wireframe(z ~ y * x, data = gdat, aspect = c(61/87, 0.4),
                                 scales = list(cex = 0.5, arrows = FALSE),
                                 drape = TRUE, colorkey = FALSE,
-                                par.settings = list(axis.line = list(col = 'transparent')),
+                                par.settings = list(axis.line = list(col = 'transparent'),
+                                                    layout.heights = list(
+                                                        top.padding = -8,
+                                                        main.key.padding = -8,
+                                                        key.axis.padding = -3,
+                                                        axis.xlab.padding = -3,
+                                                        xlab.key.padding = -3,
+                                                        key.sub.padding = -3,
+                                                        bottom.padding = -3
+                                                    ),
+                                                    layout.widths = list(
+                                                        left.padding = -3,
+                                                        key.ylab.padding = -3,
+                                                        ylab.axis.padding = -3,
+                                                        axis.key.padding = -3,
+                                                        right.padding = -3
+                                                    )),
                                 xlab = list(label = paste(column, "Lag", sep = " "), cex = .8, rot = 20),
                                 ylab = list(label = paste(row, "Lag", sep = " "), cex = .8, rot = -18),
                                 zlab = list(label = NULL, cex.axis = 0.5),
                                 col.regions = scales::brewer_pal(palette = palette)(11))
+        b <- as_grob(b)
     }
     else {
         stop("Invalid value for palette.")
     }
 
     # if(isTRUE(horizontal)) {
-        output <- cowplot::plot_grid(b, a, nrow = 2, scale = c(2, 1))
+    output <- gridExtra::grid.arrange(b, a, nrow = 2)
     # }
     # else if(isFALSE(horizontal)) {
     #     output <- cowplot::plot_grid(b, a, ncol = 2, nrow = 1, scale = c(1, 1))
@@ -137,7 +206,7 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
     #     stop("horizontal must be either TRUE or FALSE")
     # }
 
-    return(output)
+    invisible(output)
 }
 
 #' Calculate the variogram data frame for a model
