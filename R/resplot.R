@@ -140,18 +140,6 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
         }
     }
 
-    # title <- grid::textGrob(model_call, gp = gpar(fontsize = call.size))
-    # title_grob <- arrangeGrob(title)
-
-    # g3 <- arrangeGrob(bottom_text1)
-    # g4 <- arrangeGrob(bottom_text2, )
-    # g <- grid.arrange(title_grob, main_plots, heights = c(1, 15), bottom = paste(shapiro_text, collapse = "\n"))
-    # grid.arrange(a, b, c, t1, t2,  layout_matrix = matrix(c(rep(c(1, 1, 2, 2), times = 6), rep(c(NA, 3, 3, NA), times = 6), rep(4, times = 4), rep(5, times = 4)), byrow = TRUE, ncol = 4))
-    # grid.text("Abc")
-    # grid.text("Abc", gp = gpar(cex = 0.75))
-    # grid.text("Abc", x = 1, gp = gpar(cex = 0.75))
-    # grid.text("Abc", y = 0.1, gp = gpar(cex = 0.75))
-
     if(facet>1) {
         names(output) <- facet_name
         invisible(output)
