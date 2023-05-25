@@ -61,6 +61,7 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
     pr <- pracma::interp2(x = col_vals, y = row_vals, Z = z, xp = gdat$y, yp = gdat$x)
     pr <- matrix(pr, nrow = length(interp_rows), byrow = F)
     gdat <- cbind(gdat, z = as.vector(pr))
+    padding <- -2
 
     a <- ggplot2::ggplot(gdat, ggplot2::aes(x = y, y = x, z = z)) +
         ggplot2::geom_tile(alpha = 0.6, ggplot2::aes(fill = z)) +
@@ -80,20 +81,20 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
                                 drape = TRUE, colorkey = FALSE,
                                 par.settings = list(axis.line = list(col = 'transparent'),
                                                     layout.heights = list(
-                                                        top.padding = -5,
-                                                        main.key.padding = -5,
-                                                        key.axis.padding = -2,
-                                                        axis.xlab.padding = -2,
-                                                        xlab.key.padding = -2,
-                                                        key.sub.padding = -2,
-                                                        bottom.padding = -2
+                                                        top.padding = padding - 1,
+                                                        main.key.padding = padding,
+                                                        key.axis.padding = padding,
+                                                        axis.xlab.padding = padding,
+                                                        xlab.key.padding = padding,
+                                                        key.sub.padding = padding,
+                                                        bottom.padding = padding
                                                     ),
                                                     layout.widths = list(
-                                                        left.padding = -2,
-                                                        key.ylab.padding = -2,
-                                                        ylab.axis.padding = -2,
-                                                        axis.key.padding = -2,
-                                                        right.padding = -2
+                                                        left.padding = padding,
+                                                        key.ylab.padding = padding,
+                                                        ylab.axis.padding = padding,
+                                                        axis.key.padding = padding,
+                                                        right.padding = padding
                                                     )),
                                 xlab = list(label = paste(column, "Lag", sep = " "), cex = .8, rot = 20),
                                 ylab = list(label = paste(row, "Lag", sep = " "), cex = .8, rot = -18),
@@ -110,20 +111,20 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
                                 drape = TRUE, colorkey = FALSE,
                                 par.settings = list(axis.line = list(col = 'transparent'),
                                                     layout.heights = list(
-                                                        top.padding = -8,
-                                                        main.key.padding = -8,
-                                                        key.axis.padding = -3,
-                                                        axis.xlab.padding = -3,
-                                                        xlab.key.padding = -3,
-                                                        key.sub.padding = -3,
-                                                        bottom.padding = -3
+                                                        top.padding = padding - 1,
+                                                        main.key.padding = padding,
+                                                        key.axis.padding = padding,
+                                                        axis.xlab.padding = padding,
+                                                        xlab.key.padding = padding,
+                                                        key.sub.padding = padding,
+                                                        bottom.padding = padding
                                                     ),
                                                     layout.widths = list(
-                                                        left.padding = -3,
-                                                        key.ylab.padding = -3,
-                                                        ylab.axis.padding = -3,
-                                                        axis.key.padding = -3,
-                                                        right.padding = -3
+                                                        left.padding = padding,
+                                                        key.ylab.padding = padding,
+                                                        ylab.axis.padding = padding,
+                                                        axis.key.padding = padding,
+                                                        right.padding = padding
                                                     )),
                                 xlab = list(label = paste(column, "Lag", sep = " "), cex = .8, rot = 20),
                                 ylab = list(label = paste(row, "Lag", sep = " "), cex = .8, rot = -18),
@@ -140,20 +141,20 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
                                 drape = TRUE, colorkey = FALSE,
                                 par.settings = list(axis.line = list(col = 'transparent'),
                                                     layout.heights = list(
-                                                        top.padding = -8,
-                                                        main.key.padding = -8,
-                                                        key.axis.padding = -3,
-                                                        axis.xlab.padding = -3,
-                                                        xlab.key.padding = -3,
-                                                        key.sub.padding = -3,
-                                                        bottom.padding = -3
+                                                        top.padding = padding - 1,
+                                                        main.key.padding = padding,
+                                                        key.axis.padding = padding,
+                                                        axis.xlab.padding = padding,
+                                                        xlab.key.padding = padding,
+                                                        key.sub.padding = padding,
+                                                        bottom.padding = padding
                                                     ),
                                                     layout.widths = list(
-                                                        left.padding = -3,
-                                                        key.ylab.padding = -3,
-                                                        ylab.axis.padding = -3,
-                                                        axis.key.padding = -3,
-                                                        right.padding = -3
+                                                        left.padding = padding,
+                                                        key.ylab.padding = padding,
+                                                        ylab.axis.padding = padding,
+                                                        axis.key.padding = padding,
+                                                        right.padding = padding
                                                     )),
                                 xlab = list(label = paste(column, "Lag", sep = " "), cex = .8, rot = 20),
                                 ylab = list(label = paste(row, "Lag", sep = " "), cex = .8, rot = -18),
@@ -171,20 +172,20 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
                                 drape = TRUE, colorkey = FALSE,
                                 par.settings = list(axis.line = list(col = 'transparent'),
                                                     layout.heights = list(
-                                                        top.padding = -8,
-                                                        main.key.padding = -8,
-                                                        key.axis.padding = -3,
-                                                        axis.xlab.padding = -3,
-                                                        xlab.key.padding = -3,
-                                                        key.sub.padding = -3,
-                                                        bottom.padding = -3
+                                                        top.padding = padding - 1,
+                                                        main.key.padding = padding,
+                                                        key.axis.padding = padding,
+                                                        axis.xlab.padding = padding,
+                                                        xlab.key.padding = padding,
+                                                        key.sub.padding = padding,
+                                                        bottom.padding = padding
                                                     ),
                                                     layout.widths = list(
-                                                        left.padding = -3,
-                                                        key.ylab.padding = -3,
-                                                        ylab.axis.padding = -3,
-                                                        axis.key.padding = -3,
-                                                        right.padding = -3
+                                                        left.padding = padding,
+                                                        key.ylab.padding = padding,
+                                                        ylab.axis.padding = padding,
+                                                        axis.key.padding = padding,
+                                                        right.padding = padding
                                                     )),
                                 xlab = list(label = paste(column, "Lag", sep = " "), cex = .8, rot = 20),
                                 ylab = list(label = paste(row, "Lag", sep = " "), cex = .8, rot = -18),
@@ -205,6 +206,7 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
     # else {
     #     stop("horizontal must be either TRUE or FALSE")
     # }
+    class(output) <- c("vario_plot", class(output))
 
     invisible(output)
 }
@@ -297,3 +299,26 @@ vario_df <- function(model.obj, Row = NA, Column = NA) {
     class(vario) <- c("variogram", "data.frame")
     return(vario)
 }
+
+#' Print method for variogram plots
+#'
+#' @param object The variogram object to plot
+#' @param ... Other arguments
+#'
+#' @return The original object invisibly. Also plots the object as a side effect.
+#' @seealso [variogram()]
+#' @method print vario_plot
+#' @export
+#' @examples
+#' dat.aov <- aov(Petal.Width ~ Species, data = iris)
+#' output <- multiple_comparisons(dat.aov, classify = "Species")
+#' print(output)
+
+plot.vario_plot <- function(object, ...) {
+    stopifnot(inherits(object, "vario_plot"))
+    class(object) <- c(class(object), "gtable", "gTree", "grob", "gDesc")
+    grid::grid.newpage()
+    grid::grid.draw(object, ...)
+    invisible(object)
+}
+
