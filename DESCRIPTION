@@ -47,7 +47,6 @@ Imports:
     lattice,
     multcompView,
     pracma,
-    predictmeans,
     rlang (>= 1.0.0),
     scales, 
     stringi,
