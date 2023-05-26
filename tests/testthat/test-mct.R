@@ -168,7 +168,7 @@ test_that("mct removes aliased treatments in aov", {
     CO_2$uptake[CO_2$Type=="Quebec" & CO_2$Treatment=="nonchilled"] <- NA
     model <- aov(uptake~Type+Treatment+Type:Treatment, data = CO_2)
     expect_warning(output1 <- multiple_comparisons(model, classify = "Type:Treatment"),
-                   "Missing treatments\\' combination appeared\\, predicted means maybe misleading\\!")
+                   "A level of Type\\:Treatment is aliased\\. It has been removed from predicted output\\.\n  Aliased level is\\: Quebec:nonchilled\\.\n  This level is saved as an attribute of the output object\\.")
     expect_snapshot_output(output1$predicted.value)
     # skip_if(interactive())
     vdiffr::expect_doppelganger("aov aliased output", autoplot(output1))
@@ -189,7 +189,7 @@ test_that("mct handles aliased results in asreml with a warning", {
     )
     # model2.asr <- readRDS(test_path("data", "model_asr2.rds"))
     load(test_path("data", "oats_data2.Rdata"), envir = .GlobalEnv)
-    # expect_snapshot_output(suppressWarnings(print.mct(multiple_comparisons(model2.asr, classify = "Nitrogen:Variety"))))
+
     expect_warning(
         expect_snapshot_output(
             multiple_comparisons(model2.asr, classify = "Nitrogen:Variety")
@@ -198,13 +198,6 @@ test_that("mct handles aliased results in asreml with a warning", {
     )
     expect_warning(print.mct(multiple_comparisons(model2.asr, classify = "Nitrogen:Variety")),
                    "Aliased levels are: 0\\.2_cwt:Golden_rain, 0\\.2_cwt:Victory\\.")
-
-    # dat$yield[dat$Nitrogen=="0_cwt"] <- NA
-    # expect_warning(multiple_comparisons(model2.asr, classify = "Nitrogen"),
-    #                "Some levels of Nitrogen are aliased\\. They have been removed from predicted output\\.")
-    #
-    # dat$yield[dat$Nitrogen=="0.2_cwt"] <- NA
-    # expect_warning(multiple_comparisons(model2.asr, classify = "Nitrogen"), NULL)
 })
 
 test_that("Significance values that are too high give a warning", {

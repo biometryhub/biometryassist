@@ -226,27 +226,9 @@ multiple_comparisons <- function(model.obj,
             stop(classify, " is not a term in the model. Please check model specification.", call. = FALSE)
         }
 
-        # vars <- unlist(strsplit(classify, "\\:"))
-        #
-        # if(inherits(model.obj, c("aov", "lm"))) {
-        #     terms <- attr(terms(model.obj), 'dataClasses')[-1]
-        #     not_factors <- intersect(vars, names(terms[terms!="factor"]))
-        # }
-        # else if(inherits(model.obj, c("lmerMod", "lmerModLmerTest"))) {
-        #     mdf <- model.obj@frame[,-1]
-        #     not_factors <- intersect(vars, names(mdf)[!sapply(mdf, is.factor)])
-        # }
-        #
-        # if(length(not_factors) == 1) {
-        #     stop(paste(not_factors, "must be a factor."), call. = F)
-        # }
-        # else if(length(not_factors) > 1) {
-        #     stop(paste(paste(not_factors[-length(not_factors)], collapse = ", "), "and", not_factors[length(not_factors)], "must be factors"), call. = F)
-        # }
-
         pred.out <- suppressMessages(quiet(emmeans::emmeans(model.obj, as.formula(paste("~", classify)))))
 
-        sed <- pred.out@misc$sigma*sqrt(1/pred.out@grid$.wgt.[1]+1/pred.out@grid$.wgt.[2])
+        sed <- pred.out@misc$sigma*sqrt(outer(1/pred.out@grid$.wgt., 1/pred.out@grid$.wgt., "+"))
         pred.out <- as.data.frame(pred.out)
         pred.out <- pred.out[,!grepl("CL", names(pred.out))]
         pp <- pred.out
@@ -254,14 +236,39 @@ multiple_comparisons <- function(model.obj,
         names(pp)[names(pp) == "SE"] <- "std.error"
 
 
-        SED <- matrix(data = sed, nrow = nrow(pp), ncol = nrow(pp))
-        diag(SED) <- NA
+        # SED <- matrix(data = sed, nrow = nrow(pp), ncol = nrow(pp))
+        diag(sed) <- NA
         ifelse(grepl(":", classify),
                pp$Names <- apply(pp[,vars], 1, paste, collapse = "_"),
                pp$Names <- pp[[classify]])
 
+        if(anyNA(pp$predicted.value)) {
+            aliased <- which(is.na(pp$predicted.value))
+            # Get the level values of the aliased treatments
+            # If only one treatment (classify does not contain :) all levels printed separated with ,
+            # If multiple treatments, first need to concatenate columns, then collapse rows
+            aliased_names <- pp[aliased, !names(pp) %in% c("predicted.value", "std.error", "df", "Names")]
+
+            # This pastes rows of the dataframe together across the columns, and turns into a vector
+            if(is.data.frame(aliased_names)) {
+                aliased_names <- apply(aliased_names, 1, paste, collapse = ":")
+            }
+
+            if(length(aliased_names) > 1) {
+                warn_string <- paste0("Some levels of ", classify, " are aliased. They have been removed from predicted output.\n  Aliased levels are: ", paste(aliased_names, collapse = ", "), ".\n  These levels are saved in the output object.")
+            }
+            else {
+                warn_string <- paste0("A level of ", classify, " is aliased. It has been removed from predicted output.\n  Aliased level is: ", aliased_names, ".\n  This level is saved as an attribute of the output object.")
+            }
+
+            pp <- pp[!is.na(pp$predicted.value),]
+            pp <- droplevels(pp)
+            sed <- sed[-aliased, -aliased]
+            warning(warn_string, call. = FALSE)
+        }
+
         ndf <- pp$df[1]
-        crit.val <- 1/sqrt(2)* stats::qtukey((1-sig), nrow(pp), ndf)*SED
+        crit.val <- 1/sqrt(2)*stats::qtukey((1-sig), nrow(pp), ndf)*sed
 
         # Grab the response from the formula to create plot Y label
         if(inherits(model.obj, c("lmerMod", "lmerModLmerTest"))) {
