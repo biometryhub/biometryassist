@@ -11,11 +11,11 @@
 
 ---
 
-      trt predicted.value std.error Df groups   ci   low    up
-    3  20            9.96      0.41 16      a 0.71  9.25 10.67
-    1   1           12.26      0.41 16      b 0.71 11.55 12.97
-    4   5           16.14      0.41 16      c 0.71 15.43 16.85
-    2  10           17.77      0.41 16      c 0.71 17.06 18.48
+      trt predicted.value std.error df groups   ci   low    up
+    3  20            9.96       0.4 16      a 0.71  9.26 10.67
+    1   1           12.26       0.4 16      b 0.71 11.55 12.96
+    4   5           16.14       0.4 16      c 0.71 15.44 16.85
+    2  10           17.77       0.4 16      c 0.71 17.07 18.48
 
 # example 2 works
 
@@ -30,10 +30,10 @@
 
 ---
 
-      trt predicted.value std.error Df groups   ci   low    up
+      trt predicted.value std.error df groups   ci   low    up
     3  T3           11.15      0.33 77      a 0.55 10.60 11.70
-    5  T5           12.45      0.33 77      a 0.55 11.90 13.00
-    6  T6           14.02      0.33 77      b 0.55 13.47 14.57
+    5  T5           12.45      0.33 77      a 0.55 11.90 13.01
+    6  T6           14.02      0.33 77      b 0.55 13.47 14.58
     4  T4           15.10      0.33 77     bc 0.55 14.55 15.65
     2  T2           16.11      0.33 77     cd 0.55 15.56 16.66
     7  T7           17.24      0.33 77     de 0.55 16.69 17.79
@@ -53,10 +53,10 @@
 
 ---
 
-        Variety predicted.value std.error Df groups   ci  low   up
+        Variety predicted.value std.error df groups   ci  low   up
     3 Parafield            1.68      0.63 12      a 1.12 0.56 2.80
-    2     Kaspa            2.68      0.63 12     ab 1.12 1.56 3.80
-    4    Yarrum            4.72      0.63 12      b 1.12 3.60 5.84
+    2     Kaspa            2.68      0.63 12     ab 1.12 1.56 3.79
+    4    Yarrum            4.72      0.63 12      b 1.12 3.61 5.84
     1    Excell            4.85      0.63 12      b 1.12 3.73 5.97
 
 # example 4 works
@@ -74,11 +74,11 @@
 
 ---
 
-      trt predicted.value std.error Df groups     ci     low      up
+      trt predicted.value std.error df groups     ci     low      up
     4  S4         1707.94     61.98  6      a 120.43 1587.51 1828.37
     2  S2         1802.70     61.98  6     ab 120.43 1682.27 1923.13
     1  S1         2053.73     61.98  6     bc 120.43 1933.30 2174.16
-    3  S3         2200.08     61.98  6      c 120.43 2079.65 2320.51
+    3  S3         2200.08     61.98  6      c 120.43 2079.66 2320.51
 
 # example 3 LMM works
 
@@ -96,9 +96,9 @@
 
 # example 4 LMM works
 
-                Df denDF   F.inc            Pr
-    (Intercept)  1     3 3053.00 0.00001305451
-    trt          3     9   13.33 0.00116277796
+                Df denDF   F.inc           Pr
+    (Intercept)  1     3 3053.00 1.305451e-05
+    trt          3     9   13.33 1.162778e-03
 
 ---
 
@@ -198,16 +198,16 @@
 
 # example 6 works
 
-                Df denDF   F.inc             Pr
-    (Intercept)  1   6.9 188.100 0.000002807176
-    Treatment   20  27.6   2.963 0.004353193950
+                Df denDF   F.inc           Pr
+    (Intercept)  1   6.9 188.100 2.807176e-06
+    Treatment   20  27.6   2.963 4.353194e-03
 
 ---
 
-                             component  std.error  z.ratio bound %ch
-    Block              0.0000002864157         NA       NA     B 0.0
-    Column:Row!R       0.1790097741606 0.04842597 3.696565     P 0.0
-    Column:Row!Row!cor 0.5407770686889 0.13654557 3.960414     U 0.1
+                          component  std.error  z.ratio bound %ch
+    Block              2.864157e-07         NA       NA     B 0.0
+    Column:Row!R       1.790098e-01 0.04842597 3.696565     P 0.0
+    Column:Row!Row!cor 5.407771e-01 0.13654557 3.960414     U 0.1
 
 ---
 
@@ -236,19 +236,19 @@
 
 # example 7 works
 
-                   Df denDF     F.inc             Pr
-    (Intercept)     1   6.9 188.10000 0.000002807176
-    Control         1  30.1   3.40000 0.075045565408
-    Herbicide       7  27.5   3.41500 0.009356668709
-    Rate            2  29.6   0.03766 0.963087454638
-    Herbicide:Rate 10  29.4   3.18000 0.007021822168
+                   Df denDF     F.inc           Pr
+    (Intercept)     1   6.9 188.10000 2.807176e-06
+    Control         1  30.1   3.40000 7.504557e-02
+    Herbicide       7  27.5   3.41500 9.356669e-03
+    Rate            2  29.6   0.03766 9.630875e-01
+    Herbicide:Rate 10  29.4   3.18000 7.021822e-03
 
 ---
 
-                        component std.error z.ratio bound %ch
-    Block              0.00000029        NA      NA     B 0.0
-    Column:Row!R       0.17900977     0.048     3.7     P 0.0
-    Column:Row!Row!cor 0.54077707     0.137     4.0     U 0.1
+                       component std.error z.ratio bound %ch
+    Block                2.9e-07        NA      NA     B 0.0
+    Column:Row!R         1.8e-01     0.048     3.7     P 0.0
+    Column:Row!Row!cor   5.4e-01     0.137     4.0     U 0.1
 
 ---
 
@@ -290,19 +290,19 @@
 
 ---
 
-        Variety predicted.value std.error Df groups      ci     low      up
-    8      Lang         1.97333   0.11779 24      a 0.20152 1.77181 2.17485
+        Variety predicted.value std.error df groups      ci     low      up
+    8      Lang         1.97333   0.11779 24      a 0.20152 1.77181 2.17486
     4  Drysdale         2.13000   0.11779 24      a 0.20152 1.92848 2.33152
     11    Wylah         2.13000   0.11779 24      a 0.20152 1.92848 2.33152
     2    Baxter         2.14000   0.11779 24      a 0.20152 1.93848 2.34152
-    7      Janz         2.19333   0.11779 24     ab 0.20152 1.99181 2.39485
+    7      Janz         2.19333   0.11779 24     ab 0.20152 1.99181 2.39486
     5    Endure         2.24000   0.11779 24     ab 0.20152 2.03848 2.44152
     9     Orion         2.27000   0.11779 24     ab 0.20152 2.06848 2.47152
-    12    Zippy         2.28333   0.11779 24     ab 0.20152 2.08181 2.48485
-    6   Fortune         2.52667   0.11779 24     ab 0.20152 2.32515 2.72819
+    12    Zippy         2.28333   0.11779 24     ab 0.20152 2.08181 2.48486
+    6   Fortune         2.52667   0.11779 24     ab 0.20152 2.32514 2.72819
     3   Caryina         2.54000   0.11779 24     ab 0.20152 2.33848 2.74152
     10  Pugsley         2.75000   0.11779 24      b 0.20152 2.54848 2.95152
-    1    Arrino         2.75333   0.11779 24      b 0.20152 2.55181 2.95485
+    1    Arrino         2.75333   0.11779 24      b 0.20152 2.55181 2.95486
 
 # exercise 2 works
 
@@ -320,29 +320,29 @@
     Code
       data.frame(lapply(pred2e.out, function(y) if (is.numeric(y)) round(y, 1) else y))
     Output
-        Treatment predicted.value std.error Df groups  ci low  up
+        Treatment predicted.value std.error df groups  ci low  up
       1        KC             2.1       0.2 18      a 0.3 1.8 2.4
       2        PE             2.2       0.2 18      a 0.3 1.9 2.5
       3        HL             2.6       0.2 18     ab 0.3 2.3 2.9
       4        CN             2.8       0.2 18     ab 0.3 2.5 3.1
       5        HE             2.8       0.2 18     ab 0.3 2.5 3.1
-      6        CP             3.4       0.2 18      b 0.3 3.1 3.7
+      6        CP             3.4       0.2 18      b 0.3 3.0 3.7
 
 # exercise 3 works
 
     Analysis of Variance Table
     
     Response: AverageFruitSize
-              Df  Sum Sq Mean Sq F value         Pr(>F)    
-    Replicate  4  44.969 11.2421  12.696 0.000010918381 ***
-    Variety    6 134.623 22.4371  25.339 0.000000002868 ***
-    Residuals 24  21.251  0.8855                           
+              Df  Sum Sq Mean Sq F value    Pr(>F)    
+    Replicate  4  44.969 11.2421  12.696 1.092e-05 ***
+    Variety    6 134.623 22.4371  25.339 2.868e-09 ***
+    Residuals 24  21.251  0.8855                      
     ---
     Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 ---
 
-            Variety predicted.value std.error Df groups   ci  low   up
+            Variety predicted.value std.error df groups   ci  low   up
     1 CarolinaCross            2.84      0.42 24      a 0.72 2.12 3.56
     6       Pharoah            2.86      0.42 24      a 0.72 2.14 3.58
     5       Phantom            3.08      0.42 24     ab 0.72 2.36 3.80
@@ -368,22 +368,22 @@
     Analysis of Variance Table
     
     Response: EarInfect
-              Df Sum Sq Mean Sq F value      Pr(>F)    
-    row        1   2.71   2.710  0.2773      0.6049    
-    col        1   2.67   2.668  0.2730      0.6077    
-    Treatment  4 826.56 206.640 21.1476 0.000001327 ***
-    Residuals 18 175.88   9.771                        
+              Df Sum Sq Mean Sq F value    Pr(>F)    
+    row        1   2.71   2.710  0.2773    0.6049    
+    col        1   2.67   2.668  0.2730    0.6077    
+    Treatment  4 826.56 206.640 21.1476 1.327e-06 ***
+    Residuals 18 175.88   9.771                      
     ---
     Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 ---
 
-      Treatment predicted.value std.error Df groups   ci   low    up
-    2      Root           31.61       1.4 18      a 2.42 29.19 34.03
-    3      Seed           35.98       1.4 18     ab 2.42 33.56 38.40
-    5     Stalk           38.95       1.4 18     bc 2.42 36.53 41.37
-    1    Damage           43.52       1.4 18     cd 2.42 41.10 45.94
-    4      Silk           48.12       1.4 18      d 2.42 45.70 50.54
+      Treatment predicted.value std.error df groups   ci   low    up
+    2      Root           31.61       1.4 18      a 2.42 29.18 34.03
+    3      Seed           35.98       1.4 18     ab 2.42 33.55 38.40
+    5     Stalk           38.95       1.4 18     bc 2.42 36.53 41.38
+    1    Damage           43.52       1.4 18     cd 2.42 41.09 45.94
+    4      Silk           48.12       1.4 18      d 2.42 45.69 50.54
 
 # exercise 6 works
 
@@ -400,7 +400,7 @@
 
 ---
 
-      Treatment predicted.value std.error Df groups   ci   low    up
+      Treatment predicted.value std.error df groups   ci   low    up
     3        T4           16.01       1.6 10      a 2.89 13.12 18.90
     4        T8           17.51       1.6 10     ab 2.89 14.62 20.40
     2       T12           21.40       1.6 10     ab 2.89 18.51 24.29
@@ -408,9 +408,9 @@
 
 # exercise 7 works
 
-                Df denDF F.inc                Pr
-    (Intercept)  1     4 65.47 0.001267962431543
-    Variety      6    24 25.34 0.000000002868344
+                Df denDF F.inc           Pr
+    (Intercept)  1     4 65.47 1.267962e-03
+    Variety      6    24 25.34 2.868344e-09
 
 ---
 
@@ -425,9 +425,9 @@
 
 # exercise 8 works
 
-                Df denDF   F.inc            Pr
-    (Intercept)  1     3 910.800 0.00007990756
-    SeedingRate  5    15   1.321 0.30758013857
+                Df denDF   F.inc           Pr
+    (Intercept)  1     3 910.800 7.990756e-05
+    SeedingRate  5    15   1.321 3.075801e-01
 
 # exercise 9 works
 
@@ -460,11 +460,11 @@
 
 # exercise 11 works
 
-                      Df denDF    F.inc                 Pr
-    (Intercept)        1   5.0 245.1000 0.0000193182469861
-    Genotype           2  54.3   3.2210 0.0476585294170855
-    Nitrogen           3  43.2  27.0500 0.0000000005270025
-    Genotype:Nitrogen  6  50.1   0.2233 0.9674091222941902
+                      Df denDF    F.inc           Pr
+    (Intercept)        1   5.0 245.1000 1.931825e-05
+    Genotype           2  54.3   3.2210 4.765853e-02
+    Nitrogen           3  43.2  27.0500 5.270025e-10
+    Genotype:Nitrogen  6  50.1   0.2233 9.674091e-01
 
 ---
 
@@ -505,11 +505,11 @@
 
 # exercise 13 works
 
-                      Df denDF  F.inc           Pr
-    (Intercept)        1   5.0 254.40 0.0000183405
-    Genotype           2  53.6   4.63 0.0139037871
-    Nitrogen           3  21.3  33.70 0.0000000286
-    Genotype:Nitrogen  6  50.3   0.30 0.9340508686
+                      Df denDF  F.inc       Pr
+    (Intercept)        1   5.0 254.40 1.83e-05
+    Genotype           2  53.6   4.63 1.39e-02
+    Nitrogen           3  21.3  33.70 2.86e-08
+    Genotype:Nitrogen  6  50.3   0.30 9.34e-01
 
 ---
 
@@ -588,12 +588,12 @@
 
 # exercise 15 works
 
-                Df denDF   F.inc             Pr
-    (Intercept)  1   4.7 433.300 0.000008380984
-    Control      1  15.2  17.600 0.000757263651
-    Season       1  16.1   7.289 0.015704713388
-    Rate         2  15.0   6.489 0.009355453199
-    Season:Rate  2  20.8   1.352 0.280489680863
+                Df denDF   F.inc           Pr
+    (Intercept)  1   4.7 433.300 8.380984e-06
+    Control      1  15.2  17.600 7.572637e-04
+    Season       1  16.1   7.289 1.570471e-02
+    Rate         2  15.0   6.489 9.355453e-03
+    Season:Rate  2  20.8   1.352 2.804897e-01
 
 ---
 
