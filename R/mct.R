@@ -22,7 +22,7 @@
 #' @param ... Other arguments passed through to `predict.asreml()`.
 #'
 #' @importFrom multcompView multcompLetters
-#' @importFrom predictmeans predictmeans
+#' @importFrom emmeans emmeans
 #' @importFrom stats model.frame predict qtukey qt terms
 #' @importFrom utils packageVersion
 #'
@@ -244,20 +244,15 @@ multiple_comparisons <- function(model.obj,
         #     stop(paste(paste(not_factors[-length(not_factors)], collapse = ", "), "and", not_factors[length(not_factors)], "must be factors"), call. = F)
         # }
 
-        pred.out <- predictmeans::predictmeans(model.obj, classify, plot = FALSE, ndecimal = decimals)
+        pred.out <- suppressMessages(quiet(emmeans::emmeans(model.obj, as.formula(paste("~", classify)))))
 
-        pred.out$mean_table <- pred.out$mean_table[,!grepl("95", names(pred.out$mean_table))]
-        sed <- pred.out$`Standard Error of Differences`[1]
-        pp <- pred.out$mean_table
-        # The column names changed in predictmeans v1.0.8, so check for them
-        if(utils::packageVersion("predictmeans") >= "1.0.8") {
-            names(pp)[names(pp) == "Mean"] <- "predicted.value"
-            names(pp)[names(pp) == "SE"] <- "std.error"
-        }
-        else {
-            names(pp)[names(pp) == "Predicted means"] <- "predicted.value"
-            names(pp)[names(pp) == "Standard error"] <- "std.error"
-        }
+        sed <- pred.out@misc$sigma*sqrt(1/pred.out@grid$.wgt.[1]+1/pred.out@grid$.wgt.[2])
+        pred.out <- as.data.frame(pred.out)
+        pred.out <- pred.out[,!grepl("CL", names(pred.out))]
+        pp <- pred.out
+        names(pp)[names(pp) == "emmean"] <- "predicted.value"
+        names(pp)[names(pp) == "SE"] <- "std.error"
+
 
         SED <- matrix(data = sed, nrow = nrow(pp), ncol = nrow(pp))
         diag(SED) <- NA
@@ -265,7 +260,7 @@ multiple_comparisons <- function(model.obj,
                pp$Names <- apply(pp[,vars], 1, paste, collapse = "_"),
                pp$Names <- pp[[classify]])
 
-        ndf <- pp$Df[1]
+        ndf <- pp$df[1]
         crit.val <- 1/sqrt(2)* stats::qtukey((1-sig), nrow(pp), ndf)*SED
 
         # Grab the response from the formula to create plot Y label

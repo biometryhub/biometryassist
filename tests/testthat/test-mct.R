@@ -166,7 +166,7 @@ test_that("dashes are handled", {
 test_that("mct removes aliased treatments in aov", {
     CO_2 <- CO2
     CO_2$uptake[CO_2$Type=="Quebec" & CO_2$Treatment=="nonchilled"] <- NA
-    model <- aov(uptake~Type*Treatment, data = CO_2)
+    model <- aov(uptake~Type+Treatment+Type:Treatment, data = CO_2)
     expect_warning(output1 <- multiple_comparisons(model, classify = "Type:Treatment"),
                    "Missing treatments\\' combination appeared\\, predicted means maybe misleading\\!")
     expect_snapshot_output(output1$predicted.value)
