@@ -27,8 +27,6 @@
   row = NULL,
   col = NULL,
   block = NULL,
-  text_x = 0,
-  text_y = 0,
   ...
 )
 }
