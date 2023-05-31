@@ -74,10 +74,7 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
         if(!quiet) {
             message("\nDownloading and installing ASReml-R. This may take some time, depending on internet speed...\n")
         }
-        if(force && isNamespaceLoaded("asreml")) {
-            unloadNamespace("asreml")
-        }
-
+        
         os <- switch(Sys.info()[['sysname']],
                      Windows = "win",
                      Linux   = "linux",
@@ -115,8 +112,12 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
             save_file <- paste0(tempdir(), "/", filename)
         }
 
+        if(force && isNamespaceLoaded("asreml") && os != "linux") {
+          unloadNamespace("asreml")
+        }
+        
         # If forcing installation, remove existing version to avoid errors on installation
-        if(force && rlang::is_installed("asreml") && Sys.info()[["sysname"]] == "Windows") {
+        if(force && rlang::is_installed("asreml") && os == "win") {
             if("asreml" %in% .packages()) {
                 detach("package:asreml", unload = TRUE, force = TRUE)
             }
@@ -202,4 +203,16 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
 #' @export
 update_asreml <- function(...) {
     install_asreml(force = TRUE, ...)
+}
+
+
+
+#' Download asreml package for installation
+#'
+#' @param path The location to download to.
+#'
+#' @return The path of the downloaded file, invisibly.
+#' @keywords internal
+download_asreml <- function(path) {
+
 }
