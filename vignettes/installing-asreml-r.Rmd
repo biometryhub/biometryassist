@@ -63,7 +63,7 @@ This will enable use of the function within the current R session. If you close 
 
 ## Installing ASReml-R
 
-Simply run the install function and wait for it to finish:
+Once the install function is available, simply run it and wait for it to finish:
 
 ```{r}
 install_asreml()
