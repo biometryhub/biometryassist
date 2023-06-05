@@ -43,7 +43,6 @@ Imports:
     emmeans,
     farver,
     ggplot2,
-    gridExtra,
     lattice,
     multcompView,
     pracma,

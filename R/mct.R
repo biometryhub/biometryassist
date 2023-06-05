@@ -226,7 +226,7 @@ multiple_comparisons <- function(model.obj,
             stop(classify, " is not a term in the model. Please check model specification.", call. = FALSE)
         }
 
-        pred.out <- suppressMessages(quiet(emmeans::emmeans(model.obj, as.formula(paste("~", classify)))))
+        pred.out <- suppressMessages(suppressWarnings(quiet(emmeans::emmeans(model.obj, as.formula(paste("~", classify))))))
 
         sed <- pred.out@misc$sigma*sqrt(outer(1/pred.out@grid$.wgt., 1/pred.out@grid$.wgt., "+"))
         pred.out <- as.data.frame(pred.out)
