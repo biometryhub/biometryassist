@@ -50,7 +50,9 @@ test_that("transformations are handled", {
     output.inverse <- multiple_comparisons(dat.aov.inverse, classify = "Species", trans = "inverse", offset = 0)
     output.inverse2 <- multiple_comparisons(dat.aov.inverse, classify = "Species", trans = "inverse", offset = 0, int.type = "1se")
     output.inverse3 <- multiple_comparisons(dat.aov.inverse, classify = "Species", trans = "inverse", offset = 0, int.type = "2se")
-    dat.aov.power <- aov((Petal.Width+1)^3 ~ Species, data = iris)
+    iris_new <- iris
+    iris_new$Petal.Width <- (iris_new$Petal.Width+1)^3
+    dat.aov.power <- aov(Petal.Width ~ Species, data = iris_new)
     output.power <- multiple_comparisons(dat.aov.power, classify = "Species", trans = "power", offset = 1, power = 3)
     output.power2 <- multiple_comparisons(dat.aov.power, classify = "Species", trans = "power", offset = 1, power = 3, int.type = "1se")
     output.power3 <- multiple_comparisons(dat.aov.power, classify = "Species", trans = "power", offset = 1, power = 3, int.type = "2se")
