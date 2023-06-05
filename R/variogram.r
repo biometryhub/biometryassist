@@ -77,11 +77,12 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
 
         b <- lattice::wireframe(z ~ y * x, data = gdat, aspect = c(61/87, 0.4),
                                 scales = list(cex = 0.5, arrows = FALSE),
-                                shade = TRUE, colorkey = FALSE,
+                                drape = TRUE, colorkey = FALSE,
                                 par.settings = list(axis.line = list(col = 'transparent')),
                                 xlab = list(label = paste(column, "Lag", sep = " "), cex = .8, rot = 20),
                                 ylab = list(label = paste(row, "Lag", sep = " "), cex = .8, rot = -18),
-                                zlab = list(label = NULL, cex.axis = 0.5))
+                                zlab = list(label = NULL, cex.axis = 0.5),
+                                col.regions = grDevices::rainbow(100))
     }
     else if(any(grepl("(colou?r([[:punct:]]|[[:space:]]?)blind)|cb|viridis", palette, ignore.case = T))) {
         a <- a + ggplot2::scale_fill_gradientn(colours = scales::viridis_pal(option = "viridis")(50))
