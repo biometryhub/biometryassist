@@ -103,7 +103,7 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
             #Create a temporary file to save the package
             save_file <- withr::local_file(tempfile("asreml_"))
 
-            # Use httr to GET the file which also gives the expanded URL
+            # Use curl to download the file which also gives the expanded URL
             response <- curl::curl_fetch_disk(url = url, path = save_file)
 
             # Extract everything after the last / as the filename
