@@ -112,16 +112,12 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
             save_file <- paste0(tempdir(), "/", filename)
         }
 
-        if(force && isNamespaceLoaded("asreml") && os != "linux") {
-          unloadNamespace("asreml")
-        }
-        
         # If forcing installation, remove existing version to avoid errors on installation
-        if(force && rlang::is_installed("asreml") && os == "win") {
+        if(force && rlang::is_installed("asreml") && os != "linux") {
             if("asreml" %in% .packages()) {
                 detach("package:asreml", unload = TRUE, force = TRUE)
             }
-            suppressMessages(remove.packages("asreml", ))
+            suppressMessages(remove.packages("asreml"))
         }
 
         # Check dependencies are installed first
