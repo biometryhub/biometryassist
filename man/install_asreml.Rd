@@ -32,7 +32,7 @@ Silently returns \code{TRUE} if \code{asreml} installed successfully or already 
 Helper functions for installing or updating the ASReml-R package, intended to reduce the difficulty of finding the correct version for your operating system and R version.
 }
 \details{
-The ASReml-R package file is downloaded from a shortlink, and if \code{keep_file} is \code{TRUE}, the package archive file will be saved in the current directory. If a valid path is provided in \code{keep_file}, the file will be saved to that path, but directory is assumed to exist and will not be created. If \code{keep_file} does not specify an existing, valid path, an error will be shown.
+The ASReml-R package file is downloaded from a shortlink, and if \code{keep_file} is \code{TRUE}, the package archive file will be saved in the current directory. If a valid path is provided in \code{keep_file}, the file will be saved to that path, but all directories are assumed to exist and will not be created. If \code{keep_file} does not specify an existing, valid path, an error will be shown after package installation.
 }
 \examples{
 \dontrun{
