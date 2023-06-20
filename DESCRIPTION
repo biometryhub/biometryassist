@@ -48,8 +48,7 @@ Imports:
     pracma,
     rlang (>= 1.0.0),
     scales, 
-    stringi,
-    withr
+    stringi
 Suggests: 
     covr,
     crayon,
@@ -58,7 +57,8 @@ Suggests:
     mockery,
     rmarkdown,
     testthat,
-    vdiffr
+    vdiffr,
+    withr
 Enhances: 
     asreml,
     ARTool,

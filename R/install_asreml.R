@@ -7,11 +7,10 @@
 #' @param force Logical (default `FALSE`). Force ASReml-R to install. Useful for upgrading if it is already installed.
 #' @param keep_file Should the downloaded asreml package file be kept? Default is `FALSE`. `TRUE` downloads to current directory. A file path can also be provided to save to another directory. See `Details` for more information.
 #'
-#' @details The ASReml-R package file is downloaded from a shortlink, and if `keep_file` is `TRUE`, the package archive file will be saved in the current directory. If a valid path is provided in `keep_file`, the file will be saved to that path, but directory is assumed to exist and will not be created. If `keep_file` does not specify an existing, valid path, an error will be shown.
+#' @details The ASReml-R package file is downloaded from a shortlink, and if `keep_file` is `TRUE`, the package archive file will be saved in the current directory. If a valid path is provided in `keep_file`, the file will be saved to that path, but all directories are assumed to exist and will not be created. If `keep_file` does not specify an existing, valid path, an error will be shown after package installation.
 #'
 #' @importFrom utils install.packages installed.packages download.file remove.packages
 #' @importFrom curl curl_fetch_disk
-#' @importFrom withr local_file
 #' @importFrom rlang is_installed
 #'
 #' @export
@@ -52,11 +51,11 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
                     }
                 )
 
-                if(isFALSE(result) && rlang::is_installed("getPass")) {
+                if(isFALSE(result)) {
                     message("The ASReml-R package uses Reprise license management and will require administrator privilege to create the folder '/Library/Application Support/Reprise' before it can be loaded.")
                     input <- readline("Would you like to create this folder now (Yes/No)? You will be prompted for your password if yes. ")
 
-                    if(toupper(input) %in% c("YES", "Y")) {
+                    if(toupper(input) %in% c("YES", "Y") && rlang::is_installed("getPass")) {
                         system("sudo -S mkdir '/Library/Application Support/Reprise' && sudo -S chmod 777 '/Library/Application Support/Reprise'",
                                input = getPass::getPass("Please enter your user account password: "))
                     }
@@ -71,10 +70,6 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
             }
         }
 
-        if(!quiet) {
-            message("\nDownloading and installing ASReml-R. This may take some time, depending on internet speed...\n")
-        }
-        
         os <- switch(Sys.info()[['sysname']],
                      Windows = "win",
                      Linux   = "linux",
@@ -86,22 +81,25 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
 
         # First check if file already exists, both in the current directory and temp folder
         # Need to create a regex to check it's the correct file extension, so tests ignore .R files
-        temp_files <- list.files(tempdir(), pattern = "asreml+(([a-zA-Z0-9_.\\-])*)+(.zip|.tar.gz|.tgz)")
+        # temp_files <- list.files(tempdir(), pattern = "asreml+(([a-zA-Z0-9_.\\-])*)+(.zip|.tar.gz|.tgz)")
         dir_files <- list.files(pattern = "asreml+(([a-zA-Z0-9_.\\-])*)+(.zip|.tar.gz|.tgz)")
 
-        if(length(temp_files) > 0) {  # I don't think this will ever trigger, as I will clean up downloads from Temp
-            filename <- temp_files[length(temp_files)] #Get the alphabetically last file. Theoretically should be the latest version?
-            save_file <- paste0(tempdir(), "/", filename)
-        }
-        else if(length(dir_files) > 0) {
+        # if(length(temp_files) > 0) {  # I don't think this will ever trigger, as I will clean up downloads from Temp
+        #     filename <- temp_files[length(temp_files)] #Get the alphabetically last file. Theoretically should be the latest version?
+        #     save_file <- paste0(tempdir(), "/", filename)
+        # }
+        if(length(dir_files) > 0) {
             filename <- dir_files[length(dir_files)] # Get the alphabetically last one. Theoretically this should be the highest version number.
             save_file <- filename
         }
 
         # Can't find file, download
         else {
+            if(!quiet) {
+                message("\nDownloading and installing ASReml-R. This may take some time, depending on internet speed...\n")
+            }
             #Create a temporary file to save the package
-            save_file <- withr::local_file(tempfile("asreml_"))
+            save_file <- tempfile("asreml_")
 
             # Use httr to GET the file which also gives the expanded URL
             response <- curl::curl_fetch_disk(url = url, path = save_file)
@@ -109,13 +107,13 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
             # Extract everything after the last / as the filename
             filename <- basename(response$url)#, pos+1, nchar(response$url))
             file.rename(save_file, paste0(tempdir(), "/", filename))
-            save_file <- paste0(tempdir(), "/", filename)
+            save_file <- normalizePath(paste0(tempdir(), "/", filename))
         }
 
         if(force && isNamespaceLoaded("asreml") && os != "linux") {
           unloadNamespace("asreml")
         }
-        
+
         # If forcing installation, remove existing version to avoid errors on installation
         if(force && rlang::is_installed("asreml") && os == "win") {
             if("asreml" %in% .packages()) {
@@ -188,12 +186,12 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
 
         if(rlang::is_installed("asreml")) {
             if(!quiet) message("ASReml-R successfully installed!")
+            invisible(TRUE)
         }
         else {
             if(!quiet) warning("There was a problem with installation and ASReml-R was not successfully installed.")
             invisible(FALSE)
         }
-        invisible(TRUE)
     }
 }
 
