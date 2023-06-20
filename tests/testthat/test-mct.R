@@ -198,8 +198,16 @@ test_that("mct handles aliased results in asreml with a warning", {
         ),
         "Some levels of Nitrogen:Variety are aliased\\. They have been removed from predicted output\\."
     )
-    expect_warning(print.mct(multiple_comparisons(model2.asr, classify = "Nitrogen:Variety")),
+    expect_warning(multiple_comparisons(model2.asr, classify = "Nitrogen:Variety"),
                    "Aliased levels are: 0\\.2_cwt:Golden_rain, 0\\.2_cwt:Victory\\.")
+})
+
+test_that("Invalid classify argument causes an error", {
+  dat.aov <- aov(Petal.Width ~ Species, data = iris)
+  expect_error(multiple_comparisons(dat.aov, classify = "ABC"),
+               "ABC is not a term in the model\\. Please check model specification\\.")
+  expect_error(multiple_comparisons(model.asr, classify = "ABC"),
+               "ABC is not a term in the model\\. Please check model specification\\.")
 })
 
 test_that("Significance values that are too high give a warning", {
@@ -233,6 +241,11 @@ test_that("Including pred.obj object causes warning", {
                    "Argument \\`pred.obj\\` has been deprecated and will be removed in a future version\\. Predictions are now performed internally in the function\\.")
 })
 
+test_that("Providing a random term in classify produces an error.", {
+  skip_if_not(requireNamespace("asreml", quietly = TRUE))
+  expect_error(multiple_comparisons(model2.asr, classify = "Blocks"), 
+               "All predicted values are aliased\\. Perhaps you need the `present` argument\\?")
+})
 
 test_that("lme4 model works", {
     skip_if_not_installed("lme4")
