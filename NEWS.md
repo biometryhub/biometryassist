@@ -1,3 +1,12 @@
+# biometryassist 1.1.3
+
+## Bug fixes
+
+- Better checking of column names in data provided to `multiple_comparisons()` to prevent breaking. (#53)
+- Updated install_asreml() to work with ARM chip macOS devices. (#54)
+- Wrote a vignette with instructions for installing ASReml-R. (#55)
+
+
 # biometryassist 1.1.2
 
 ## Bug fixes
