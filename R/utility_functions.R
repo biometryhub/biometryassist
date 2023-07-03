@@ -16,27 +16,6 @@ quiet <- function(x) {
 }
 
 
-#' Create a grob from a plot to work with grid graphics
-#'
-#' @param plot The plot to coerce to a grob.
-#' @param device The device type to use.
-#'
-#' @return A recordedGrob object (invisibly) which can be plotted with grid graphics.
-#' @keywords internal
-as_grob <- function(plot, device = ifelse("ragg" %in% rownames(installed.packages()), "agg", "pdf")) {
-    if (is.null(device)) {
-        device <- null_dev_env$current
-    }
-    grid::recordGrob(
-        tryCatch(
-            print(plot, newpage=FALSE),
-            error = function(e) {
-                grid::grid.text(e$message)
-            }
-        ), list(plot = plot, device = device))
-}
-
-
 ######################################################
 # Start up function
 # this function is executed once the package is loaded
