@@ -35,7 +35,7 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
     else {
         # macOS needs some special set up
         arm <- FALSE
-        if(Sys.info()["sysname"] == "Darwin") {
+        if(Sys.info()[["sysname"]] == "Darwin") {
             # Monterey needs a folder created
             if (Sys.info()["release"] >= 21 && !dir.exists("/Library/Application Support/Reprise/")) {
 

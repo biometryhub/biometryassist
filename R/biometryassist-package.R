@@ -11,4 +11,4 @@ NULL
 
 utils::globalVariables(c("PredictedValue", "low", "predicted.value", "up",
                          "x", "y", "z", "color_blind","xmin", "xmax", "ymin",
-                         "ymax", "Row", "treatments", "stdres"))
+                         "ymax", "Row", "treatments", "stdres", "groups"))
