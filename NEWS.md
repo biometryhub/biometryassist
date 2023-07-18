@@ -5,6 +5,7 @@
 - Better checking of column names in data provided to `multiple_comparisons()` to prevent breaking. (#53)
 - Updated install_asreml() to work with ARM chip macOS devices. (#54)
 - Wrote a vignette with instructions for installing ASReml-R. (#55)
+- Fixed variogram to enable it to work with dsum models (i.e. MET models). (#61)
 
 
 # biometryassist 1.1.2
