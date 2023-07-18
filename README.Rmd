@@ -56,7 +56,7 @@ Use the following code to install the latest development version of this package
 
 ```{r eval=F}
 if(!require("remotes")) install.packages("remotes") 
-remotes::install_github("biometryhub/biometryassist@dev", upgrade = FALSE)
+remotes::install_github("biometryhub/biometryassist@dev")
 ```
 
 
