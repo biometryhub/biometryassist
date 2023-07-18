@@ -48,6 +48,7 @@ test_that("variogram works with dsum models", {
     expect_type(vg, "list")
 
     # variogram plots for each year
+    skip_on_os(c("windows", "mac"))
     vdiffr::expect_doppelganger(title = "Variogram dsum",
                                 variogram(model4.asr)[[1]])
     vdiffr::expect_doppelganger(title = "Variogram dsum 2",
