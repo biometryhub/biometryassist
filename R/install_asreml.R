@@ -7,11 +7,10 @@
 #' @param force Logical (default `FALSE`). Force ASReml-R to install. Useful for upgrading if it is already installed.
 #' @param keep_file Should the downloaded asreml package file be kept? Default is `FALSE`. `TRUE` downloads to current directory. A file path can also be provided to save to another directory. See `Details` for more information.
 #'
-#' @details The ASReml-R package file is downloaded from a shortlink, and if `keep_file` is `TRUE`, the package archive file will be saved in the current directory. If a valid path is provided in `keep_file`, the file will be saved to that path, but directory is assumed to exist and will not be created. If `keep_file` does not specify an existing, valid path, an error will be shown.
+#' @details The ASReml-R package file is downloaded from a shortlink, and if `keep_file` is `TRUE`, the package archive file will be saved in the current directory. If a valid path is provided in `keep_file`, the file will be saved to that path, but all directories are assumed to exist and will not be created. If `keep_file` does not specify an existing, valid path, an error will be shown after package installation.
 #'
 #' @importFrom utils install.packages installed.packages download.file remove.packages
 #' @importFrom curl curl_fetch_disk
-#' @importFrom withr local_file
 #' @importFrom rlang is_installed
 #'
 #' @export
@@ -34,40 +33,41 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
         invisible(TRUE)
     }
     else {
-      # macOS Monterey needs a folder created
-      if(Sys.info()["sysname"] == "Darwin" && Sys.info()["release"] >= 21 && !dir.exists("/Library/Application Support/Reprise/")) {
+        # macOS needs some special set up
+        arm <- FALSE
+        if(Sys.info()[["sysname"]] == "Darwin") {
+            # Monterey needs a folder created
+            if (Sys.info()["release"] >= 21 && !dir.exists("/Library/Application Support/Reprise/")) {
 
-            result <- tryCatch(
-                expr = {
-                    dir.create("/Library/Application Support/Reprise/", recursive = T)
-                },
-                error = function(cond) {
-                    return(FALSE)
-                },
-                warning = function(cond) {
-                    return(FALSE)
-                }
-            )
+                result <- tryCatch(
+                    expr = {
+                        dir.create("/Library/Application Support/Reprise/", recursive = T)
+                    },
+                    error = function(cond) {
+                        return(FALSE)
+                    },
+                    warning = function(cond) {
+                        return(FALSE)
+                    }
+                )
 
-            if(isFALSE(result) && rlang::is_installed("getPass")) {
-                message("The ASReml-R package uses Reprise license management and will require administrator privilege to create the folder '/Library/Application Support/Reprise' before it can be loaded.")
-                input <- readline("Would you like to create this folder now (Yes/No)? You will be prompted for your password if yes. ")
+                if(isFALSE(result)) {
+                    message("The ASReml-R package uses Reprise license management and will require administrator privilege to create the folder '/Library/Application Support/Reprise' before it can be loaded.")
+                    input <- readline("Would you like to create this folder now (Yes/No)? You will be prompted for your password if yes. ")
 
-                if(toupper(input) %in% c("YES", "Y")) {
-                    system("sudo -S mkdir '/Library/Application Support/Reprise' && sudo -S chmod 777 '/Library/Application Support/Reprise'",
-                           input = getPass::getPass("Please enter your user account password: "))
-                }
-                else {
-                    stop("ASReml-R cannot be installed until the folder '/Library/Application Support/Reprise' is created with appropriate permissions.")
+                    if(toupper(input) %in% c("YES", "Y") && rlang::is_installed("getPass")) {
+                        system("sudo -S mkdir '/Library/Application Support/Reprise' && sudo -S chmod 777 '/Library/Application Support/Reprise'",
+                               input = getPass::getPass("Please enter your user account password: "))
+                    }
+                    else {
+                        stop("ASReml-R cannot be installed until the folder '/Library/Application Support/Reprise' is created with appropriate permissions.")
+                    }
                 }
             }
-        }
-
-        if(!quiet) {
-            message("\nDownloading and installing ASReml-R. This may take some time, depending on internet speed...\n")
-        }
-        if(force && isNamespaceLoaded("asreml")) {
-            unloadNamespace("asreml")
+            # arm Macs need a different package
+            if(Sys.info()[["machine"]] == "arm64") {
+                arm <- TRUE
+            }
         }
 
         os <- switch(Sys.info()[['sysname']],
@@ -77,42 +77,45 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
         )
 
         ver <- gsub("\\.", "", substr(getRversion(), 1, 3))
-        url <- paste0("https://link.biometryhubwaite.com/", os, "-", ver)
+        url <- paste0("https://link.biometryhubwaite.com/", os, "-", ifelse(arm, "arm-", ""), ver)
 
         # First check if file already exists, both in the current directory and temp folder
         # Need to create a regex to check it's the correct file extension, so tests ignore .R files
-        temp_files <- list.files(tempdir(), pattern = "asreml+(([a-zA-Z0-9_.\\-])*)+(.zip|.tar.gz|.tgz)")
+        # temp_files <- list.files(tempdir(), pattern = "asreml+(([a-zA-Z0-9_.\\-])*)+(.zip|.tar.gz|.tgz)")
         dir_files <- list.files(pattern = "asreml+(([a-zA-Z0-9_.\\-])*)+(.zip|.tar.gz|.tgz)")
 
-        if(length(temp_files) > 0) {  # I don't think this will ever trigger, as I will clean up downloads from Temp
-            filename <- temp_files[length(temp_files)] #Get the alphabetically last file. Theoretically should be the latest version?
-            save_file <- paste0(tempdir(), "/", filename)
-        }
-        else if(length(dir_files) > 0) {
+        # if(length(temp_files) > 0) {  # I don't think this will ever trigger, as I will clean up downloads from Temp
+        #     filename <- temp_files[length(temp_files)] #Get the alphabetically last file. Theoretically should be the latest version?
+        #     save_file <- paste0(tempdir(), "/", filename)
+        # }
+        if(length(dir_files) > 0) {
             filename <- dir_files[length(dir_files)] # Get the alphabetically last one. Theoretically this should be the highest version number.
             save_file <- filename
         }
 
         # Can't find file, download
         else {
+            if(!quiet) {
+                message("\nDownloading and installing ASReml-R. This may take some time, depending on internet speed...\n")
+            }
             #Create a temporary file to save the package
-            save_file <- withr::local_file(tempfile("asreml_"))
+            save_file <- tempfile("asreml_")
 
-            # Use httr to GET the file which also gives the expanded URL
+            # Use curl to download the file which also gives the expanded URL
             response <- curl::curl_fetch_disk(url = url, path = save_file)
 
             # Extract everything after the last / as the filename
             filename <- basename(response$url)#, pos+1, nchar(response$url))
             file.rename(save_file, paste0(tempdir(), "/", filename))
-            save_file <- paste0(tempdir(), "/", filename)
+            save_file <- normalizePath(paste0(tempdir(), "/", filename))
         }
 
         # If forcing installation, remove existing version to avoid errors on installation
-        if(force && rlang::is_installed("asreml") && Sys.info()[["sysname"]] == "Windows") {
+        if(force && rlang::is_installed("asreml") && os != "linux") {
             if("asreml" %in% .packages()) {
                 detach("package:asreml", unload = TRUE, force = TRUE)
             }
-            suppressMessages(remove.packages("asreml", ))
+            suppressMessages(remove.packages("asreml"))
         }
 
         # Check dependencies are installed first
@@ -179,12 +182,12 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
 
         if(rlang::is_installed("asreml")) {
             if(!quiet) message("ASReml-R successfully installed!")
+            invisible(TRUE)
         }
         else {
             if(!quiet) warning("There was a problem with installation and ASReml-R was not successfully installed.")
             invisible(FALSE)
         }
-        invisible(TRUE)
     }
 }
 

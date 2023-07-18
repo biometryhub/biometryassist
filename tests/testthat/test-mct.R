@@ -50,7 +50,9 @@ test_that("transformations are handled", {
     output.inverse <- multiple_comparisons(dat.aov.inverse, classify = "Species", trans = "inverse", offset = 0)
     output.inverse2 <- multiple_comparisons(dat.aov.inverse, classify = "Species", trans = "inverse", offset = 0, int.type = "1se")
     output.inverse3 <- multiple_comparisons(dat.aov.inverse, classify = "Species", trans = "inverse", offset = 0, int.type = "2se")
-    dat.aov.power <- aov((Petal.Width+1)^3 ~ Species, data = iris)
+    iris_new <- iris
+    iris_new$Petal.Width <- (iris_new$Petal.Width+1)^3
+    dat.aov.power <- aov(Petal.Width ~ Species, data = iris_new)
     output.power <- multiple_comparisons(dat.aov.power, classify = "Species", trans = "power", offset = 1, power = 3)
     output.power2 <- multiple_comparisons(dat.aov.power, classify = "Species", trans = "power", offset = 1, power = 3, int.type = "1se")
     output.power3 <- multiple_comparisons(dat.aov.power, classify = "Species", trans = "power", offset = 1, power = 3, int.type = "2se")
@@ -166,9 +168,9 @@ test_that("dashes are handled", {
 test_that("mct removes aliased treatments in aov", {
     CO_2 <- CO2
     CO_2$uptake[CO_2$Type=="Quebec" & CO_2$Treatment=="nonchilled"] <- NA
-    model <- aov(uptake~Type*Treatment, data = CO_2)
+    model <- aov(uptake~Type+Treatment+Type:Treatment, data = CO_2)
     expect_warning(output1 <- multiple_comparisons(model, classify = "Type:Treatment"),
-                   "Missing treatments\\' combination appeared\\, predicted means maybe misleading\\!")
+                   "A level of Type\\:Treatment is aliased\\. It has been removed from predicted output\\.\n  Aliased level is\\: Quebec:nonchilled\\.\n  This level is saved as an attribute of the output object\\.")
     expect_snapshot_output(output1$predicted.value)
     # skip_if(interactive())
     vdiffr::expect_doppelganger("aov aliased output", autoplot(output1))
@@ -189,22 +191,23 @@ test_that("mct handles aliased results in asreml with a warning", {
     )
     # model2.asr <- readRDS(test_path("data", "model_asr2.rds"))
     load(test_path("data", "oats_data2.Rdata"), envir = .GlobalEnv)
-    # expect_snapshot_output(suppressWarnings(print.mct(multiple_comparisons(model2.asr, classify = "Nitrogen:Variety"))))
+
     expect_warning(
         expect_snapshot_output(
             multiple_comparisons(model2.asr, classify = "Nitrogen:Variety")
         ),
         "Some levels of Nitrogen:Variety are aliased\\. They have been removed from predicted output\\."
     )
-    expect_warning(print.mct(multiple_comparisons(model2.asr, classify = "Nitrogen:Variety")),
+    expect_warning(multiple_comparisons(model2.asr, classify = "Nitrogen:Variety"),
                    "Aliased levels are: 0\\.2_cwt:Golden_rain, 0\\.2_cwt:Victory\\.")
+})
 
-    # dat$yield[dat$Nitrogen=="0_cwt"] <- NA
-    # expect_warning(multiple_comparisons(model2.asr, classify = "Nitrogen"),
-    #                "Some levels of Nitrogen are aliased\\. They have been removed from predicted output\\.")
-    #
-    # dat$yield[dat$Nitrogen=="0.2_cwt"] <- NA
-    # expect_warning(multiple_comparisons(model2.asr, classify = "Nitrogen"), NULL)
+test_that("Invalid classify argument causes an error", {
+  dat.aov <- aov(Petal.Width ~ Species, data = iris)
+  expect_error(multiple_comparisons(dat.aov, classify = "ABC"),
+               "ABC is not a term in the model\\. Please check model specification\\.")
+  expect_error(multiple_comparisons(model.asr, classify = "ABC"),
+               "ABC is not a term in the model\\. Please check model specification\\.")
 })
 
 test_that("Significance values that are too high give a warning", {
@@ -219,6 +222,15 @@ test_that("Use of pred argument gives warning", {
                    "Argument `pred` has been deprecated and will be removed in a future version. Please use `classify` instead.")
 })
 
+test_that("Invalid column name causes an error", {
+    dat <- design("crd", LETTERS[1:4], 4, nrow = 4, ncols = 4, quiet = TRUE)$design
+    names(dat)[5] <- "groups"
+    dat.aov <- aov(rnorm(16, 10)~groups, data = dat)
+
+    expect_error(multiple_comparisons(dat.aov, classify = "groups"),
+                   "Invalid column name. Please change the name of column\\(s\\): groups")
+})
+
 test_that("Including pred.obj object causes warning", {
     skip_if_not(requireNamespace("asreml", quietly = TRUE))
     quiet(library(asreml))
@@ -229,6 +241,11 @@ test_that("Including pred.obj object causes warning", {
                    "Argument \\`pred.obj\\` has been deprecated and will be removed in a future version\\. Predictions are now performed internally in the function\\.")
 })
 
+test_that("Providing a random term in classify produces an error.", {
+  skip_if_not(requireNamespace("asreml", quietly = TRUE))
+  expect_error(multiple_comparisons(model2.asr, classify = "Blocks"), 
+               "All predicted values are aliased\\. Perhaps you need the `present` argument\\?")
+})
 
 test_that("lme4 model works", {
     skip_if_not_installed("lme4")

@@ -1,7 +1,7 @@
 Type: Package
 Package: biometryassist
 Title: Functions to Assist Design and Analysis of Agronomic Experiments
-Version: 1.1.2
+Version: 1.1.3
 Authors@R: 
     c(person(given = "Sharon",
              family = "Nielsen",
@@ -40,23 +40,25 @@ Imports:
     agricolae,
     cowplot,
     curl,
+    emmeans,
     farver,
     ggplot2,
     lattice,
     multcompView,
     pracma,
-    predictmeans,
     rlang (>= 1.0.0),
     scales, 
-    stringi,
-    withr
+    stringi
 Suggests: 
     covr,
     crayon,
     getPass,
+    knitr,
     mockery,
+    rmarkdown,
     testthat,
-    vdiffr
+    vdiffr,
+    withr
 Enhances: 
     asreml,
     ARTool,
@@ -67,4 +69,5 @@ Config/testthat/edition: 3
 Config/testthat/parallel: true
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.2
+RoxygenNote: 7.2.3
+VignetteBuilder: knitr

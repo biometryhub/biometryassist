@@ -22,7 +22,7 @@
 #' @param ... Other arguments passed through to `predict.asreml()`.
 #'
 #' @importFrom multcompView multcompLetters
-#' @importFrom predictmeans predictmeans
+#' @importFrom emmeans emmeans
 #' @importFrom stats model.frame predict qtukey qt terms
 #' @importFrom utils packageVersion
 #'
@@ -141,13 +141,18 @@ multiple_comparisons <- function(model.obj,
         warning("Significance level given by `sig` is high. Perhaps you meant ", 1-sig, "?", call. = FALSE)
     }
 
-    # if(grepl(":", classify)) {
+    # Get the individual names provided in classify
     vars <- unlist(strsplit(classify, "\\:"))
-    # }
+    reserved_col_names <- c("predicted.value", "std.error", "Df",
+                            "groups", "PredictedValue", "ApproxSE", "ci", "low", "up")
+    if(any(vars %in% reserved_col_names)) {
+        stop("Invalid column name. Please change the name of column(s): ", vars[vars %in% reserved_col_names])
+    }
 
     if(inherits(model.obj, "asreml")){
 
-        if(classify %!in% attr(stats::terms(model.obj$formulae$fixed), 'term.labels')) {
+        if(classify %!in% c(attr(stats::terms(model.obj$formulae$fixed), 'term.labels'),
+                            attr(stats::terms(model.obj$formulae$random), 'term.labels'))) {
             stop(classify, " is not a term in the model. Please check model specification.", call. = FALSE)
         }
 
@@ -205,6 +210,11 @@ multiple_comparisons <- function(model.obj,
                pp$Names <- pp[[classify]])
 
         ndf <- dendf$denDF[grepl(classify, dendf$Source) & nchar(classify) == nchar(as.character(dendf$Source))]
+        if(rlang::is_empty(ndf)) {
+            ndf <- model.obj$nedf
+            rand_terms <- vars[vars %in% attr(stats::terms(model.obj$formulae$random), 'term.labels')]
+            warning(rand_terms, " is not a fixed term in the model. The denominator degrees of freedom are estimated using the residual degrees of freedom. This may be inaccurate.", call. = FALSE)
+        }
         crit.val <- 1/sqrt(2)*stats::qtukey((1-sig), nrow(pp), ndf)*sed
 
         # Grab the response from the formula to create plot Y label
@@ -216,47 +226,51 @@ multiple_comparisons <- function(model.obj,
             stop(classify, " is not a term in the model. Please check model specification.", call. = FALSE)
         }
 
-        # vars <- unlist(strsplit(classify, "\\:"))
-        #
-        # if(inherits(model.obj, c("aov", "lm"))) {
-        #     terms <- attr(terms(model.obj), 'dataClasses')[-1]
-        #     not_factors <- intersect(vars, names(terms[terms!="factor"]))
-        # }
-        # else if(inherits(model.obj, c("lmerMod", "lmerModLmerTest"))) {
-        #     mdf <- model.obj@frame[,-1]
-        #     not_factors <- intersect(vars, names(mdf)[!sapply(mdf, is.factor)])
-        # }
-        #
-        # if(length(not_factors) == 1) {
-        #     stop(paste(not_factors, "must be a factor."), call. = F)
-        # }
-        # else if(length(not_factors) > 1) {
-        #     stop(paste(paste(not_factors[-length(not_factors)], collapse = ", "), "and", not_factors[length(not_factors)], "must be factors"), call. = F)
-        # }
+        on.exit(options(emmeans = emmeans::emm_defaults))
+        emmeans::emm_options("msg.interaction" = FALSE, "msg.nesting" = FALSE)
+        pred.out <- emmeans::emmeans(model.obj, as.formula(paste("~", classify)))
 
-        pred.out <- predictmeans::predictmeans(model.obj, classify, plot = FALSE, ndecimal = decimals)
+        sed <- pred.out@misc$sigma*sqrt(outer(1/pred.out@grid$.wgt., 1/pred.out@grid$.wgt., "+"))
+        pred.out <- as.data.frame(pred.out)
+        pred.out <- pred.out[,!grepl("CL", names(pred.out))]
+        pp <- pred.out
+        names(pp)[names(pp) == "emmean"] <- "predicted.value"
+        names(pp)[names(pp) == "SE"] <- "std.error"
 
-        pred.out$mean_table <- pred.out$mean_table[,!grepl("95", names(pred.out$mean_table))]
-        sed <- pred.out$`Standard Error of Differences`[1]
-        pp <- pred.out$mean_table
-        # The column names changed in predictmeans v1.0.8, so check for them
-        if(utils::packageVersion("predictmeans") >= "1.0.8") {
-            names(pp)[names(pp) == "Mean"] <- "predicted.value"
-            names(pp)[names(pp) == "SE"] <- "std.error"
-        }
-        else {
-            names(pp)[names(pp) == "Predicted means"] <- "predicted.value"
-            names(pp)[names(pp) == "Standard error"] <- "std.error"
-        }
 
-        SED <- matrix(data = sed, nrow = nrow(pp), ncol = nrow(pp))
-        diag(SED) <- NA
+        # SED <- matrix(data = sed, nrow = nrow(pp), ncol = nrow(pp))
+        diag(sed) <- NA
         ifelse(grepl(":", classify),
                pp$Names <- apply(pp[,vars], 1, paste, collapse = "_"),
                pp$Names <- pp[[classify]])
 
-        ndf <- pp$Df[1]
-        crit.val <- 1/sqrt(2)* stats::qtukey((1-sig), nrow(pp), ndf)*SED
+        if(anyNA(pp$predicted.value)) {
+            aliased <- which(is.na(pp$predicted.value))
+            # Get the level values of the aliased treatments
+            # If only one treatment (classify does not contain :) all levels printed separated with ,
+            # If multiple treatments, first need to concatenate columns, then collapse rows
+            aliased_names <- pp[aliased, !names(pp) %in% c("predicted.value", "std.error", "df", "Names")]
+
+            # This pastes rows of the dataframe together across the columns, and turns into a vector
+            if(is.data.frame(aliased_names)) {
+                aliased_names <- apply(aliased_names, 1, paste, collapse = ":")
+            }
+
+            if(length(aliased_names) > 1) {
+                warn_string <- paste0("Some levels of ", classify, " are aliased. They have been removed from predicted output.\n  Aliased levels are: ", paste(aliased_names, collapse = ", "), ".\n  These levels are saved in the output object.")
+            }
+            else {
+                warn_string <- paste0("A level of ", classify, " is aliased. It has been removed from predicted output.\n  Aliased level is: ", aliased_names, ".\n  This level is saved as an attribute of the output object.")
+            }
+
+            pp <- pp[!is.na(pp$predicted.value),]
+            pp <- droplevels(pp)
+            sed <- sed[-aliased, -aliased]
+            warning(warn_string, call. = FALSE)
+        }
+
+        ndf <- pp$df[1]
+        crit.val <- 1/sqrt(2)*stats::qtukey((1-sig), nrow(pp), ndf)*sed
 
         # Grab the response from the formula to create plot Y label
         if(inherits(model.obj, c("lmerMod", "lmerModLmerTest"))) {
@@ -272,8 +286,8 @@ multiple_comparisons <- function(model.obj,
     }
 
     # Check that the predicted levels don't contain a dash -, if they do replace and display warning
-    if(any(grepl("-", pp[,1]))) {
-        levs <- grep("-", pp[,1], value = TRUE)
+    if(any(any(grepl("-", pp$Names) | grepl("-", pp[,1])))) {
+        levs <- unique(c(grep("-", pp[,1], value = TRUE), grep("-", pp$Names, value = TRUE)))
         if(length(levs)>1) {
             warning("The treatment levels ", paste(levs, collapse = ", "), " contained '-', which has been replaced in the final output with '_'")
         }
@@ -415,12 +429,14 @@ multiple_comparisons <- function(model.obj,
     pp.tab <- pp.tab[base::order(pp.tab$predicted.value, decreasing = descending),]
 
     pp.tab$Names <- NULL
-    trtindex <- max(unlist(lapply(vars, grep, x = names(pp.tab))))
+    trtindex <- max(unlist(lapply(paste0("^", vars, "$"), grep, x = names(pp.tab))))
 
     trtnam <- names(pp.tab)[1:trtindex]
+    # Exclude reserved column names
+    trtnam <- trtnam[trtnam %!in% c("predicted.value", "std.error", "Df",
+                             "groups", "PredictedValue", "ApproxSE", "ci", "low", "up")]
 
-    i <- 1
-    for(i in 1:trtindex){
+    for(i in seq_along(trtnam)){
         pp.tab[[trtnam[i]]] <- factor(pp.tab[[trtnam[i]]], levels = unique(pp.tab[[trtnam[i]]]))
     }
 
@@ -461,7 +477,7 @@ multiple_comparisons <- function(model.obj,
 #' Print method for multiple_comparisons
 #'
 #' @param x An mct object to print to the console.
-#' @inheritParams rlang::args_dots_used
+#' @param ... Other arguments
 #'
 #' @return The original object invisibly.
 #' @seealso [multiple_comparisons()]

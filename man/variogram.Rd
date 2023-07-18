@@ -42,7 +42,7 @@ variogram(model.asr)
 }
 }
 \references{
-S. P. Kaluzny, S. C. Vega, T. P. Cardoso, A. A. Shelly, "S+SpatialStats: User’s Manual for Windows® and UNIX®" \emph{Springer New York}, 2013, p. 68, https://books.google.com.au/books?id=iADkBwAAQBAJ.
+S. P. Kaluzny, S. C. Vega, T. P. Cardoso, A. A. Shelly, "S+SpatialStats: User’s Manual for Windows® and UNIX®" \emph{Springer New York}, 2013, p. 68, https://books.google.com.au/books?id=iADkBwvario_pointsQBAJ.
 
 A. R. Gilmour, B. R. Cullis, A. P. Verbyla, "Accounting for Natural and Extraneous Variation in the Analysis of Field Experiments." \emph{Journal of Agricultural, Biological, and Environmental Statistics 2, no. 3}, 1997, pp. 269–93, https://doi.org/10.2307/1400446.
 }

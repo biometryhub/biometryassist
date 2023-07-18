@@ -1,0 +1,155 @@
+---
+title: "Installing ASReml-R"
+output: 
+    rmarkdown::html_vignette:
+        toc: yes
+vignette: >
+  %\VignetteIndexEntry{Installing ASReml-R}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+<details>
+<summary style="font-size: 125%; font-weight: 700;">
+Quick Version
+</summary>
+Run the following code to install and licence ASReml-R:
+
+```{r}
+install.packages("biometryassist")
+biometryassist::install_asreml()
+asreml::asreml.license.activate()
+```
+
+Then paste your [licence code](#licence) at the prompt.
+
+</details>
+
+## Note: Licencing ASReml-R
+
+ASReml-R is a proprietary R package which is sold and supported by [VSN International](https://vsni.co.uk/), and requires a licence code to activate and run. This licence code is checked for validity via the internet, and may require opening some network ports on your computer to successfully activate. Further information about the licence requirements can be obtained from [VSNi directly](https://vsni.co.uk/licensing).
+
+The developers of biometryassist do not provide support for `ASReml-R` via way of bug reports or software patches, and any problems with the ASReml-R software should be directed to [VSN International](https://vsni.co.uk/). These installation instructions are provided on a best-effort basis and any problems with the steps in this _installation guide_ should be reported to the [developers of biometryassist](https://github.com/biometryhub/biometryassist/issues/new).
+
+### Licence key for University of Adelaide Staff and Students {#licence}
+
+As of June 2023, the University of Adelaide has unlimited licence codes until June 2026 for university staff, students and affiliates, thanks to funding provided by the Grains Research and Development Corporation, via the Analytics for the Australian Grains Industry (AAGI) project.
+
+To access the University of Adelaide licence key, please complete this form:
+https://forms.office.com/r/gBva4iL3FU
+
+You will receive an email with a licence key if you hold a valid University of Adelaide account.
+
+## Package method
+
+The easiest way to install ASReml-R is to use the `biometryassist` package, which includes an automated `install_asreml()` function. This function will detect the appropriate version of R and your operating system, and download the matching version of asreml. If you'd rather not install the full package for this one function, you can simply source the function from the public GitHub repository instead, and run the function. See [Function Only Method].
+
+The `biometryassist` package is on CRAN, so can be installed using the regular method:
+
+```{r}
+install.packages("biometryassist")
+```
+
+Once installed, load the package ready for use with:
+
+```{r}
+library(biometryassist)
+```
+
+This package will stay installed between R sessions, but will need to be loaded with the library command any time you want to use the functions within it.
+
+## Function Only Method
+
+To use only the function, without the additional overhead of the biometryassist package, source it with the following command:
+
+```{r}
+if(!require(rlang) | !require(curl)) install.packages(c("rlang", "curl"))
+source("https://raw.githubusercontent.com/biometryhub/biometryassist/main/R/install_asreml.R")
+```
+
+This will enable use of the function within the current R session. If you close R, you will need to run the line above again to enable use of the function. Note this requires the packages `rlang` and `curl` to be installed, which is accomplished in the first line above if necessary. 
+
+## Installing ASReml-R
+
+Once the install function is available, simply run it and wait for it to finish:
+
+```{r}
+install_asreml()
+```
+
+The following output is typical:
+
+```r
+> install_asreml()
+
+Downloading and installing ASReml-R. This may take some time, depending on internet speed...
+
+* installing *source* package ‘asreml’ ...
+** using staged installation
+** R
+** data
+*** moving datasets to lazyload DB
+** inst
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** testing if installed package can be loaded from temporary location
+** checking absolute paths in shared objects and dynamic libraries
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (asreml)
+ASReml-R successfully installed!
+```
+
+## Activating ASReml-R
+
+To activate the licence code once asreml is installed, run the following commands (noting the spelling of licen**s**e):
+
+```{r}
+library(asreml)
+asreml.license.activate()
+```
+
+You will then be prompted to provide a licence code, which is a 16 character alpha-numeric code:
+
+```r
+> asreml.license.activate()
+Please enter your activation code (RET or 0 to exit): AAA1-BBB2-CCC3-DDD4
+```
+
+A valid licence code will produce the following output:
+
+```
+License activation successful
+Licensed to <Orginisation or name> - <reference code(s)>
+Ref: <reference code> Expires: <expiry date>, <n> days.
+```
+
+## Additional Installation Options
+
+The `install_asreml()` function has a number of additional arguments, which you can read about [on the documentation site](https://biometryhub.github.io/biometryassist/reference/install_asreml.html).
+
+If you already have ASReml-R installed, and want to update it or reinstall it, you can use the `update_asreml()` function, or `install_asreml(force = TRUE)`.
+
+```{r}
+update_asreml()
+install_asreml(force = TRUE) # Equivalent to the above
+```
+
+## Where To Get Help
+
+- For errors or problems encountered following these instructions, or problems using [functions in biometryassist](https://biometryhub.github.io/biometryassist/reference/index.html) with ASReml-R, contact the [developers of biometryassist](https://github.com/biometryhub/biometryassist/issues/new)
+- For problems with licence activation, or for errors encountered using a successfully installed and licenced ASReml-R package, or for questions about how to use the ASReml-R package, [contact VSNi](https://vsni.co.uk/contact-us).
+
+---
+
+This vignette was last updated on 2023-07-03.

@@ -26,6 +26,7 @@
   palette = "default",
   row = NULL,
   col = NULL,
+  block = NULL,
   ...
 )
 }

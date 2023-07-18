@@ -10,3 +10,4 @@ biometryassist.Rproj
 *.xlsx
 *.Rdata
 *.Rds
+inst/doc

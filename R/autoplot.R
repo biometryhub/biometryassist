@@ -25,7 +25,7 @@ ggplot2::autoplot
 
 #' @rdname autoplot
 #' @importFrom ggplot2 autoplot ggplot aes geom_errorbar geom_text geom_point theme_bw labs theme element_text facet_wrap
-#' @importFrom rlang ensym
+#' @importFrom rlang ensym check_dots_used
 #' @export
 #' @examples
 #' dat.aov <- aov(Petal.Width ~ Species, data = iris)
@@ -34,6 +34,7 @@ ggplot2::autoplot
 autoplot.mct <- function(object, size = 4, label_height = 0.1, rotation = 0, axis_rotation = rotation, label_rotation = rotation, ...) {
     stopifnot(inherits(object, "mct"))
 
+    rlang::check_dots_used()
     # classify is just the first n columns (before predicted.value)
     classify <- colnames(object)[1]
     classify <- rlang::ensym(classify)
@@ -78,6 +79,7 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1, rotation = 0, axi
 #' @importFrom ggplot2 ggplot geom_tile aes geom_text theme_bw scale_fill_manual scale_x_continuous scale_y_continuous scale_y_reverse
 #' @importFrom scales brewer_pal reverse_trans viridis_pal
 #' @importFrom stringi stri_sort
+#' @importFrom rlang check_dots_used
 #' @export
 #' @examples
 #' des.out <- design(type = "crd", treatments = c(1, 5, 10, 20),
@@ -89,50 +91,52 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1, rotation = 0, axi
 #'
 #' # Alternative colour scheme
 #' autoplot(des.out, palette = "plasma")
-autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, palette = "default", row = NULL, col = NULL, ...) {
+autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, palette = "default", row = NULL, col = NULL, block = NULL, ...) {
     stopifnot(inherits(object, "design"))
 
     if(inherits(object, "list")) {
         object <- object$design
     }
-
+    rlang::check_dots_used()
     ntrt <- nlevels(as.factor(object$treatments))
 
     # create the colours for the graph
     if(palette == "default") {
         colour_palette <- grDevices::colorRampPalette(scales::brewer_pal(palette = "Spectral")(11))(ntrt)
-        object$text_col <- "black"
     }
     else if(palette %in% c("BrBG", "PiYG", "PRGn", "PuOr", "RdBu", "RdGy",
                            "RdYlBu", "RdYlGn", "Spectral", "Set3", "Paired")) {
         colour_palette <- grDevices::colorRampPalette(scales::brewer_pal(palette = palette)(11))(ntrt)
-        object$text_col <- "black"
     }
     else if(any(grepl("(colou?r([[:punct:]]|[[:space:]]?)blind)|cb|viridis", palette, ignore.case = T))) {
         colour_palette <- scales::viridis_pal(option = "viridis")(ntrt)
         # Set text colour to be light on dark colours
-        hcl <- farver::decode_colour(colour_palette, "rgb", "hcl")
-        cols <- data.frame(treatments = levels(as.factor(object$treatments)),
-                           text_col = ifelse(hcl[, "l"] > 50, "black", "white"))
-        object <- merge(object, cols)
+        # hcl <- farver::decode_colour(colour_palette, "rgb", "hcl")
+        # cols <- data.frame(treatments = levels(as.factor(object$treatments)),
+        #                    text_col = ifelse(hcl[, "l"] > 50, "black", "white"))
+        # object <- merge(object, cols)
     }
     else if(tolower(trimws(palette)) %in% c("magma", "inferno", "cividis", "plasma", "rocket", "mako", "turbo")) {
         colour_palette <- scales::viridis_pal(option = palette)(ntrt)
         # Set text colour to be light on dark colours
-        hcl <- farver::decode_colour(colour_palette, "rgb", "hcl")
-        cols <- data.frame(treatments = levels(as.factor(object$treatments)),
-                           text_col = ifelse(hcl[, "l"] > 50, "black", "white"))
-        object <- merge(object, cols)
+        # hcl <- farver::decode_colour(colour_palette, "rgb", "hcl")
+        # cols <- data.frame(treatments = levels(as.factor(object$treatments)),
+        #                    text_col = ifelse(hcl[, "l"] > 50, "black", "white"))
+        # object <- merge(object, cols)
     }
     else {
         stop("Invalid value for palette.")
     }
+    hcl <- farver::decode_colour(colour_palette, "rgb", "hcl")
+    cols <- data.frame(treatments = levels(as.factor(object$treatments)),
+                       text_col = ifelse(hcl[, "l"] > 50, "black", "white"))
+    object <- merge(object, cols)
 
     if(!any(grepl("block", tolower(names(object))))) {
         # create the graph
         plt <- ggplot2::ggplot() +
             ggplot2::geom_tile(data = object, mapping = ggplot2::aes(x = col, y = row, fill = treatments), colour = "black") +
-            ggplot2::geom_text(data = object, mapping = ggplot2::aes(x = col, y = row, label = treatments), colour = object$text_col, angle = rotation, size = size) +
+            ggplot2::geom_text(data = object, mapping = ggplot2::aes(x = col, y = row, label = treatments), colour = object$text_col, angle = rotation, size = size, ...) +
             ggplot2::theme_bw()
     }
     else {
@@ -150,9 +154,9 @@ autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, pale
             blkdf[i, "xmax"] <- (max(tmp$col) + 0.5)
         }
 
-        plt <- ggplot2::ggplot() +
-            ggplot2::geom_tile(data = object, mapping = ggplot2::aes(x = col, y = row, fill = treatments), colour = "black") +
-            ggplot2::geom_text(data = object, mapping = ggplot2::aes(x = col, y = row, label = treatments), colour = object$text_col, angle = rotation, size = size) +
+        plt <- ggplot2::ggplot(...) +
+            ggplot2::geom_tile(data = object, mapping = ggplot2::aes(x = col, y = row, fill = treatments), colour = "black", ...) +
+            ggplot2::geom_text(data = object, mapping = ggplot2::aes(x = col, y = row, label = treatments), colour = object$text_col, angle = rotation, size = size, ...) +
             ggplot2::geom_rect(
                 data = blkdf,
                 mapping = ggplot2::aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
