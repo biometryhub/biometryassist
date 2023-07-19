@@ -193,7 +193,7 @@ multiple_comparisons <- function(model.obj,
         }
 
         #For use with asreml 4+
-        if(utils::packageVersion("asreml") > 4) {
+        if(utils::packageVersion("asreml") > "4") {
             pp <- pred.obj$pvals
             sed <- pred.obj$sed
         }
