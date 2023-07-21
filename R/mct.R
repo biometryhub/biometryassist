@@ -470,6 +470,8 @@ multiple_comparisons <- function(model.obj,
         attr(pp.tab, 'aliased') <- as.character(aliased_names)
     }
 
+    rownames(pp.tab) <- NULL
+  
     return(pp.tab)
 }
 
