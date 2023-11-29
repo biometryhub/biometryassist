@@ -33,50 +33,11 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
         invisible(TRUE)
     }
     else {
-        # macOS needs some special set up
-        arm <- FALSE
-        if(Sys.info()[["sysname"]] == "Darwin") {
-            # Monterey needs a folder created
-            if (Sys.info()["release"] >= 21 && !dir.exists("/Library/Application Support/Reprise/")) {
+        # First check last downloaded
 
-                result <- tryCatch(
-                    expr = {
-                        dir.create("/Library/Application Support/Reprise/", recursive = T)
-                    },
-                    error = function(cond) {
-                        return(FALSE)
-                    },
-                    warning = function(cond) {
-                        return(FALSE)
-                    }
-                )
 
-                if(isFALSE(result)) {
-                    message("The ASReml-R package uses Reprise license management and will require administrator privilege to create the folder '/Library/Application Support/Reprise' before it can be loaded.")
-                    input <- readline("Would you like to create this folder now (Yes/No)? You will be prompted for your password if yes. ")
-
-                    if(toupper(input) %in% c("YES", "Y") && rlang::is_installed("getPass")) {
-                        system("sudo -S mkdir '/Library/Application Support/Reprise' && sudo -S chmod 777 '/Library/Application Support/Reprise'",
-                               input = getPass::getPass("Please enter your user account password: "))
-                    }
-                    else {
-                        stop("ASReml-R cannot be installed until the folder '/Library/Application Support/Reprise' is created with appropriate permissions.")
-                    }
-                }
-            }
-            # arm Macs need a different package
-            if(Sys.info()[["machine"]] == "arm64") {
-                arm <- TRUE
-            }
-        }
-
-        os <- switch(Sys.info()[['sysname']],
-                     Windows = "win",
-                     Linux   = "linux",
-                     Darwin  = "mac"
-        )
-
-        ver <- gsub("\\.", "", substr(getRversion(), 1, 3))
+        # Get OS and R version
+        os_ver <- build_version()
         url <- paste0("https://link.biometryhubwaite.com/", os, "-", ifelse(arm, "arm-", ""), ver)
 
         # First check if file already exists, both in the current directory and temp folder
@@ -105,7 +66,7 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
             response <- curl::curl_fetch_disk(url = url, path = save_file)
 
             # Extract everything after the last / as the filename
-            filename <- basename(response$url)#, pos+1, nchar(response$url))
+            filename <- basename(response$url)
             file.rename(save_file, paste0(tempdir(), "/", filename))
             save_file <- normalizePath(paste0(tempdir(), "/", filename))
         }
@@ -198,3 +159,94 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
 update_asreml <- function(...) {
     install_asreml(force = TRUE, ...)
 }
+
+
+#' Build the version of R and OS
+#'
+#' @return A string with the version of R and the OS in a standard format
+#' @keywords internal
+build_version <- function() {
+    # macOS needs some special set up
+    arm <- FALSE
+    if(Sys.info()[["sysname"]] == "Darwin") {
+        # Monterey needs a folder created
+        if (Sys.info()["release"] >= 21 && !dir.exists("/Library/Application Support/Reprise/")) {
+
+            result <- tryCatch(
+                expr = {
+                    dir.create("/Library/Application Support/Reprise/", recursive = T)
+                },
+                error = function(cond) {
+                    return(FALSE)
+                },
+                warning = function(cond) {
+                    return(FALSE)
+                }
+            )
+
+            if(isFALSE(result)) {
+                message("The ASReml-R package uses Reprise license management and will require administrator privilege to create the folder '/Library/Application Support/Reprise' before it can be loaded.")
+                input <- readline("Would you like to create this folder now (Yes/No)? You will be prompted for your password if yes. ")
+
+                if(toupper(input) %in% c("YES", "Y") && rlang::is_installed("getPass")) {
+                    system("sudo -S mkdir '/Library/Application Support/Reprise' && sudo -S chmod 777 '/Library/Application Support/Reprise'",
+                           input = getPass::getPass("Please enter your user account password: "))
+                }
+                else {
+                    stop("ASReml-R cannot be installed until the folder '/Library/Application Support/Reprise' is created with appropriate permissions.
+                         Please run the following command on your terminal:
+                         sudo -S mkdir '/Library/Application Support/Reprise' && sudo -S chmod 777 '/Library/Application Support/Reprise'")
+                }
+            }
+        }
+        # arm Macs need a different package
+        if(Sys.info()[["machine"]] == "arm64") {
+            arm <- TRUE
+        }
+    }
+
+    os <- switch(Sys.info()[['sysname']],
+                 Windows = "win",
+                 Linux   = "linux",
+                 Darwin  = "mac"
+    )
+
+    ver <- gsub("\\.", "", substr(getRversion(), 1, 3))
+
+    os_ver <- paste0(os, "-", ifelse(arm, "arm-", ""), ver)
+    return(os_ver)
+}
+
+
+#' Check for a new version of ASReml-R
+#'
+#' @return The version number and release date of latest released ASReml-R version for comparison
+#' @keywords internal
+check_available_version <- function() {
+    url <- "https://asreml.kb.vsni.co.uk/asreml-r-4-download-success/?site_reference=VS9AF20"
+    res <- xml2::read_html(url)
+
+    tables <- list()
+    done <- FALSE
+    i <- 1
+    while(!done) {
+        header <- xml2::xml_text(xml2::xml_find_first(res, "//h3"))
+        tab <- xml2::xml_text(xml2::xml_find_first(res, xpath = "//table"))
+
+        # Do some checking here to break on old versions
+
+
+        tab <- strsplit(tab, "\n")
+        cols <- tab[[1]][1:4]
+        tab <- as.data.frame(matrix(tab[[1]], ncol = 4, byrow = TRUE)[-1,])
+        colnames(tab) <- cols
+        tables[[i]] <- tab
+        names(tables)[i] <- header
+
+
+        i <- i+1
+    }
+}
+
+
+
