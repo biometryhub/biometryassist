@@ -38,6 +38,7 @@ Depends:
     R (>= 4.0.0)
 Imports: 
     agricolae,
+    askpass,
     cowplot,
     xml2,
     emmeans,
@@ -52,7 +53,6 @@ Imports:
 Suggests: 
     covr,
     crayon,
-    getPass,
     knitr,
     mockery,
     rmarkdown,
