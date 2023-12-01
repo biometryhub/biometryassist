@@ -471,7 +471,7 @@ multiple_comparisons <- function(model.obj,
     }
 
     # Add the critical value as an attribute
-    if(var(as.vector(HSD), na.rm = TRUE) < 1e-10) {
+    if(var(as.vector(crit.val), na.rm = TRUE) < 1e-10) {
         attr(pp.tab, 'HSD') <- crit.val[1,2]
     }
     else {
