@@ -40,7 +40,7 @@ Imports:
     agricolae,
     askpass,
     cowplot,
-    xml2,
+    curl,
     emmeans,
     farver,
     ggplot2,
@@ -49,7 +49,8 @@ Imports:
     pracma,
     rlang (>= 1.0.0),
     scales, 
-    stringi
+    stringi,
+    xml2
 Suggests: 
     covr,
     crayon,
