@@ -470,6 +470,14 @@ multiple_comparisons <- function(model.obj,
         attr(pp.tab, 'aliased') <- as.character(aliased_names)
     }
 
+    # Add the critical value as an attribute
+    if(var(as.vector(HSD), na.rm = TRUE) < 1e-10) {
+        attr(pp.tab, 'HSD') <- crit.val[1,2]
+    }
+    else {
+        attr(pp.tab, 'HSD') <- crit.val
+    }
+
     rownames(pp.tab) <- NULL
 
     return(pp.tab)
