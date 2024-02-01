@@ -38,6 +38,10 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
 
         # Get OS and R version
         os_ver <- get_r_os()
+        if(os_ver$os=="mac") {
+          create_mac_folder()
+        }
+        
         url <- paste0("https://link.biometryhubwaite.com/", os_ver$os_ver)
 
         # First check if file already exists, both in the current directory and temp folder
@@ -269,6 +273,7 @@ compare_versions <- function() {
 #'
 #' @return logical; TRUE if folder successfully created, otherwise it will error
 #' @keywords internal
+#' @importFrom askpass askpass
 create_mac_folder <- function() {
     # macOS needs some special set up
     if(Sys.info()[["sysname"]] == "Darwin" &&
@@ -290,9 +295,10 @@ create_mac_folder <- function() {
             message("The ASReml-R package uses Reprise license management and will require administrator privilege to create the folder '/Library/Application Support/Reprise' before it can be installed.")
             input <- readline("Would you like to create this folder now (Yes/No)? You will be prompted for your password if yes. ")
 
-            if(toupper(input) %in% c("YES", "Y") && rlang::is_installed("getPass")) {
+            if(toupper(input) %in% c("YES", "Y")) {
                 system("sudo -S mkdir '/Library/Application Support/Reprise' && sudo -S chmod 777 '/Library/Application Support/Reprise'",
-                       input = getPass::getPass("Please enter your user account password: "))
+                       input = askpass::askpass("Please enter your user account password: "))
+              cat("\n")
             }
             else {
                 stop("ASReml-R cannot be installed until the folder '/Library/Application Support/Reprise' is created with appropriate permissions.

@@ -38,8 +38,9 @@ Depends:
     R (>= 4.0.0)
 Imports: 
     agricolae,
+    askpass,
     cowplot,
-    xml2,
+    curl,
     emmeans,
     farver,
     ggplot2,
@@ -48,11 +49,11 @@ Imports:
     pracma,
     rlang (>= 1.0.0),
     scales, 
-    stringi
+    stringi,
+    xml2
 Suggests: 
     covr,
     crayon,
-    getPass,
     knitr,
     mockery,
     rmarkdown,
@@ -69,5 +70,5 @@ Config/testthat/edition: 3
 Config/testthat/parallel: true
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.0
 VignetteBuilder: knitr
