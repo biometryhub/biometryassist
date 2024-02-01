@@ -16,7 +16,6 @@ jobs:
       contents: write
 
     steps:
-      steps:
       - uses: actions/checkout@v4
 
       - uses: r-lib/actions/setup-pandoc@v2
