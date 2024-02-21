@@ -8,6 +8,7 @@
 #' @param label_rotation Enables rotation of the treatment group labels independently of the x axis labels within the plot.
 #' @param margin Logical (default `FALSE`). A value of `FALSE` will expand the plot to the edges of the plotting area i.e. remove white space between plot and axes.
 #' @param palette A string specifying the colour scheme to use for plotting. Default is equivalent to "Spectral". Colour blind friendly palettes can also be provided via options `"colour blind"` (or `"color blind"`, both equivalent to `"viridis"`), `"magma"`, `"inferno"`, `"plasma"` or `"cividis"`. Other palettes from [scales::brewer_pal()] are also possible.
+#' @param buffer A string specifying the buffer plots to include for plotting. Default is `NULL` (no buffers plotted). Other options are "edge" (outside of trial area), "plots" (around each plot), "rows" (between rows), "columns" (between columns), "double row" (a buffer row each side of a treatment row), "double column" (a buffer row each side of a treatment column), or "blocks" (a buffer around each treatment block).
 #' @inheritParams rlang::args_dots_used
 #'
 #' @name autoplot
@@ -91,7 +92,7 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1, rotation = 0, axi
 #'
 #' # Alternative colour scheme
 #' autoplot(des.out, palette = "plasma")
-autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, palette = "default", row = NULL, col = NULL, block = NULL, ...) {
+autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, palette = "default", buffer = NULL, row = NULL, col = NULL, block = NULL, ...) {
     stopifnot(inherits(object, "design"))
 
     if(inherits(object, "list")) {
@@ -133,6 +134,13 @@ autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, pale
     object <- merge(object, cols)
 
     if(!any(grepl("block", tolower(names(object))))) {
+        if(!missing(buffer)) {
+            object <- create_buffers(object, type = buffer)
+            if("buffer" %in% levels(object$treatments)) {
+               colour_palette <- c(colour_palette, "white")
+            }
+        }
+
         # create the graph
         plt <- ggplot2::ggplot() +
             ggplot2::geom_tile(data = object, mapping = ggplot2::aes(x = col, y = row, fill = treatments), colour = "black") +
@@ -153,7 +161,9 @@ autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, pale
             blkdf[i, "xmin"] <- (min(tmp$col) - 0.5)
             blkdf[i, "xmax"] <- (max(tmp$col) + 0.5)
         }
+        if(!missing(buffer)) {
 
+        }
         plt <- ggplot2::ggplot(...) +
             ggplot2::geom_tile(data = object, mapping = ggplot2::aes(x = col, y = row, fill = treatments), colour = "black", ...) +
             ggplot2::geom_text(data = object, mapping = ggplot2::aes(x = col, y = row, label = treatments), colour = object$text_col, angle = rotation, size = size, ...) +
