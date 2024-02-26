@@ -153,19 +153,22 @@ autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, pale
             block = sort(unique(object$block)),
             xmin = 0, xmax = 0, ymin = 0, ymax = 0
         )
+        if(!missing(buffer)) {
+            object <- create_buffers(object, type = buffer, blocks = TRUE)
+            if("buffer" %in% levels(object$treatments)) {
+                colour_palette <- c(colour_palette, "white")
+            }
+        }
         for (i in 1:nrow(blkdf)) {
-            item <- blkdf$block[i]
-            tmp <- object[object$block == item, ]
+            tmp <- object[object$block == blkdf$block[i], ]
             blkdf[i, "ymin"] <- (min(tmp$row) - 0.5)
             blkdf[i, "ymax"] <- (max(tmp$row) + 0.5)
             blkdf[i, "xmin"] <- (min(tmp$col) - 0.5)
             blkdf[i, "xmax"] <- (max(tmp$col) + 0.5)
         }
-        if(!missing(buffer)) {
 
-        }
         plt <- ggplot2::ggplot(...) +
-            ggplot2::geom_tile(data = object, mapping = ggplot2::aes(x = col, y = row, fill = treatments), colour = "black", ...) +
+            ggplot2::geom_tile(data = object, mapping = ggplot2::aes(x = col, y = row, fill = treatments), colour = "black") +
             ggplot2::geom_text(data = object, mapping = ggplot2::aes(x = col, y = row, label = treatments), colour = object$text_col, angle = rotation, size = size, ...) +
             ggplot2::geom_rect(
                 data = blkdf,
