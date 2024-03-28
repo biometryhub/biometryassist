@@ -1,3 +1,16 @@
+# biometryassist 1.1.4
+
+## Minor changes
+
+- Implemented the ability to plot designs with buffer plots 
+
+## Bug fixes
+
+- 
+
+
+
+
 # biometryassist 1.1.3
 
 ## Bug fixes

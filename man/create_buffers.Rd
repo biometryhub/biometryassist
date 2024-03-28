@@ -4,12 +4,14 @@
 \alias{create_buffers}
 \title{Title}
 \usage{
-create_buffers(design, type)
+create_buffers(design, type, blocks = FALSE)
 }
 \arguments{
 \item{design}{The data frame of the design.}
 
 \item{type}{The type of buffer. One of edge, row, column, double row, double column, or block (coming soon).}
+
+\item{blocks}{Does the design data frame contain blocks?}
 }
 \value{
 The original data frame, updated to include buffers

@@ -99,7 +99,7 @@ autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, pale
         object <- object$design
     }
     rlang::check_dots_used()
-    ntrt <- nlevels(as.factor(object$treatments))
+    ntrt <- nlevels(as.factor(as.character(object$treatments)))
 
     # create the colours for the graph
     if(palette == "default") {
@@ -128,8 +128,11 @@ autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, pale
     else {
         stop("Invalid value for palette.")
     }
+
+    # object$treatments <- as.factor(as.character(object$treatments))
+
     hcl <- farver::decode_colour(colour_palette, "rgb", "hcl")
-    cols <- data.frame(treatments = levels(as.factor(object$treatments)),
+    cols <- data.frame(treatments = levels(object$treatments),
                        text_col = ifelse(hcl[, "l"] > 50, "black", "white"))
     object <- merge(object, cols)
 

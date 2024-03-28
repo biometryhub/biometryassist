@@ -1,4 +1,4 @@
-#' Title
+#' Create buffers for design plots
 #'
 #' @param design The data frame of the design.
 #' @param type The type of buffer. One of edge, row, column, double row, double column, or block (coming soon).
@@ -30,7 +30,7 @@ create_buffers <- function(design, type, blocks = FALSE) {
         min_row <- min(design$row)
         min_col <- min(design$col)
 
-        row <- rep(seq(min_row, (2*nrow)+1, by = 2), each = ncol)
+        row <- rep(seq(min_row-1, (2*nrow)+1, by = 2), each = ncol)
         col <- rep(seq(1, ncol),times = nrow+1)
         n_brow <- length(row)  # Number of buffer rows
         treatments <- rep("buffer", n_brow)
