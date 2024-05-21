@@ -55,7 +55,6 @@ Suggests:
     covr,
     crayon,
     knitr,
-    mockery,
     rmarkdown,
     testthat,
     vdiffr,
