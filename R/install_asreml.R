@@ -41,7 +41,7 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
         if(os_ver$os=="mac") {
           create_mac_folder()
         }
-        
+
         url <- paste0("https://link.biometryhubwaite.com/", os_ver$os_ver)
 
         # First check if file already exists, both in the current directory and temp folder
@@ -238,6 +238,8 @@ get_version_table <- function() {
 
 #' Compare installed version of ASReml-R with available versions
 #'
+#' @importFrom utils packageDescription
+#'
 #' @return TRUE if a newer version is available online, FALSE otherwise
 #' @keywords internal
 compare_versions <- function() {
@@ -251,7 +253,7 @@ compare_versions <- function() {
                          numeric_version(online_versions$asr_ver)==max(numeric_version(online_versions$asr_ver)))
 
     if(rlang::is_installed("asreml")) {
-        asr_desc <- packageDescription("asreml")
+        asr_desc <- utils::packageDescription("asreml")
         asr_date <- as.Date(substr(asr_desc$Packaged, 1, 10))
         asr_ver <- asr_desc$Version
     }

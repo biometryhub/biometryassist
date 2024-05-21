@@ -4,6 +4,8 @@
 #' @param type The type of buffer. One of edge, row, column, double row, double column, or block (coming soon).
 #' @param blocks Does the design data frame contain blocks?
 #'
+#' @importFrom stats setNames aggregate
+#'
 #' @return The original data frame, updated to include buffers
 #' @keywords internal
 create_buffers <- function(design, type, blocks = FALSE) {
@@ -87,13 +89,13 @@ create_buffers <- function(design, type, blocks = FALSE) {
 
 
     buffers <- data.frame(matrix(NA, nrow = n_brow, ncol = ncol(design)))
-    buffers <- setNames(buffers, names(design))
+    buffers <- stats::setNames(buffers, names(design))
     buffers$row <- row
     buffers$col <- col
     buffers$treatments <- factor(treatments)
 
     if(blocks) {
-        blocks_df <- aggregate(cbind(row, col) ~ block, data = design, FUN = max)
+        blocks_df <- stats::aggregate(cbind(row, col) ~ block, data = design, FUN = max)
         blocks_df$row[blocks_df$row==max(blocks_df$row)] <- max(blocks_df$row)+1
         blocks_df$col[blocks_df$col==max(blocks_df$col)] <- max(blocks_df$col)+1
         for(i in max(blocks_df$block):1) {

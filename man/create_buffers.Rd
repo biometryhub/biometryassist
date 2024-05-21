@@ -2,7 +2,7 @@
 % Please edit documentation in R/create_buffers.R
 \name{create_buffers}
 \alias{create_buffers}
-\title{Title}
+\title{Create buffers for design plots}
 \usage{
 create_buffers(design, type, blocks = FALSE)
 }
@@ -17,6 +17,6 @@ create_buffers(design, type, blocks = FALSE)
 The original data frame, updated to include buffers
 }
 \description{
-Title
+Create buffers for design plots
 }
 \keyword{internal}
