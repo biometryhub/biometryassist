@@ -12,6 +12,8 @@ todo.md
 variogram_2d.R
 ^.*pdf$
 ^.*csv$
+^.*xls$
+^.*xlsx$
 ^.*docx$
 check_rhub.R
 cran-comments.md
@@ -25,3 +27,4 @@ sommer_vs_asreml.R
 Data2020.Rdata
 ^CRAN-SUBMISSION$
 .RDataTmp
+summary_graph

@@ -51,6 +51,12 @@ autoplot(object, ...)
 \item{palette}{A string specifying the colour scheme to use for plotting. Default is equivalent to "Spectral". Colour blind friendly palettes can also be provided via options \code{"colour blind"} (or \code{"color blind"}, both equivalent to \code{"viridis"}), \code{"magma"}, \code{"inferno"}, \code{"plasma"} or \code{"cividis"}. Other palettes from \code{\link[scales:pal_brewer]{scales::brewer_pal()}} are also possible.}
 
 \item{buffer}{A string specifying the buffer plots to include for plotting. Default is \code{NULL} (no buffers plotted). Other options are "edge" (outside of trial area), "plots" (around each plot), "rows" (between rows), "columns" (between columns), "double row" (a buffer row each side of a treatment row), "double column" (a buffer row each side of a treatment column), or "blocks" (a buffer around each treatment block).}
+
+\item{row}{A variable to plot a column from \code{object} as rows.}
+
+\item{col}{A variable to plot a column from \code{object} as columns.}
+
+\item{block}{A variable to plot a column from \code{object} as blocks.}
 }
 \value{
 A \code{ggplot2} object.
