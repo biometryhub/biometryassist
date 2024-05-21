@@ -23,7 +23,7 @@
 #'
 #' @importFrom multcompView multcompLetters
 #' @importFrom emmeans emmeans
-#' @importFrom stats model.frame predict qtukey qt terms
+#' @importFrom stats model.frame predict qtukey qt terms var
 #' @importFrom utils packageVersion
 #'
 #' @details Some transformations require that data has a small offset applied, otherwise it will cause errors (for example taking a log of 0, or square root of negative values). In order to correctly reverse this offset, if the `trans` argument is supplied, an offset value must also be supplied. If there was no offset required for a transformation, then use a value of 0 for the `offset` argument.
@@ -471,7 +471,7 @@ multiple_comparisons <- function(model.obj,
     }
 
     # Add the critical value as an attribute
-    if(var(as.vector(crit.val), na.rm = TRUE) < 1e-10) {
+    if(stats::var(as.vector(crit.val), na.rm = TRUE) < 1e-10) {
         attr(pp.tab, 'HSD') <- crit.val[1,2]
     }
     else {
