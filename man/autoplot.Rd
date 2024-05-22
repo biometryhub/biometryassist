@@ -26,8 +26,9 @@ autoplot(object, ...)
   palette = "default",
   buffer = NULL,
   row = NULL,
-  col = NULL,
+  column = NULL,
   block = NULL,
+  treatments = NULL,
   ...
 )
 }
@@ -54,9 +55,11 @@ autoplot(object, ...)
 
 \item{row}{A variable to plot a column from \code{object} as rows.}
 
-\item{col}{A variable to plot a column from \code{object} as columns.}
+\item{column}{A variable to plot a column from \code{object} as columns.}
 
 \item{block}{A variable to plot a column from \code{object} as blocks.}
+
+\item{treatments}{A variable to plot a column from \code{object} as treatments.}
 }
 \value{
 A \code{ggplot2} object.

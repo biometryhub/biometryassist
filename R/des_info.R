@@ -205,13 +205,6 @@ des_info <- function(design.obj,
         fac.sep <- rep(fac.sep, times = 2)
     }
 
-    # if(return.seed) {
-    #     des.seed <- design.obj$parameters$seed
-    # }
-    # else {
-    #     des.seed <- NULL
-    # }
-
     ifelse(design.obj$parameters$design == "factorial",
            design <- paste("factorial", design.obj$parameters$applied, sep = "_"),
            design <- design.obj$parameters$design
@@ -222,18 +215,11 @@ des_info <- function(design.obj,
         des <- cbind(plan, design.obj$book)
 
         names(des)[names(des)=="r"] <- "rep"
-        # if(any(grepl("trt", names(des)))) {
-            # names(des)[names(des)=="trt"] <- "treatments"
-        # }
-        # else {
         names(des)[ncol(des)] <- "treatments"
-        # }
         ntrt <- nlevels(as.factor(des$treatments))
     }
 
     if(design == "rcbd") {
-        # names(design.obj$book)[names(design.obj$book)=="trt"] <- "treatments"
-        # names(design.obj$book)[ncol(design.obj$book)] <- "treatments"
         ntrt <- nlevels(as.factor(design.obj$book[,ncol(design.obj$book)]))
 
         # Calculate direction of blocking

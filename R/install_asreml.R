@@ -46,13 +46,8 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
 
         # First check if file already exists, both in the current directory and temp folder
         # Need to create a regex to check it's the correct file extension, so tests ignore .R files
-        # temp_files <- list.files(tempdir(), pattern = "asreml+(([a-zA-Z0-9_.\\-])*)+(.zip|.tar.gz|.tgz)")
         dir_files <- list.files(pattern = "asreml+(([a-zA-Z0-9_.\\-])*)+(.zip|.tar.gz|.tgz)")
 
-        # if(length(temp_files) > 0) {  # I don't think this will ever trigger, as I will clean up downloads from Temp
-        #     filename <- temp_files[length(temp_files)] #Get the alphabetically last file. Theoretically should be the latest version?
-        #     save_file <- paste0(tempdir(), "/", filename)
-        # }
         if(length(dir_files) > 0) {
             filename <- dir_files[length(dir_files)] # Get the alphabetically last one. Theoretically this should be the highest version number.
             save_file <- filename
