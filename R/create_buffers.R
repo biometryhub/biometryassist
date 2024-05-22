@@ -22,7 +22,7 @@ create_buffers <- function(design, type, blocks = FALSE) {
 
         row <- c(rep(1, ncol+2), rep(nrow+2, ncol+2), rep(2:(nrow+1), 2))
         col <- c(rep(1:(ncol+2), 2), rep(1, nrow), rep(ncol+2, nrow))
-        n_brow <- length(row)  # Number of buffer rows
+        n_brow <- length(row)  # Number of rows to create in the buffer dataframe
         treatments <- rep("buffer", n_brow)
     }
     # Match row, rows, r
@@ -34,7 +34,7 @@ create_buffers <- function(design, type, blocks = FALSE) {
 
         row <- rep(seq(min_row-1, (2*nrow)+1, by = 2), each = ncol)
         col <- rep(seq(1, ncol),times = nrow+1)
-        n_brow <- length(row)  # Number of buffer rows
+        n_brow <- length(row)  # Number of rows to create in the buffer dataframe
         treatments <- rep("buffer", n_brow)
     }
     # Match col, cols, column, columns or c
@@ -45,8 +45,8 @@ create_buffers <- function(design, type, blocks = FALSE) {
         min_col <- min(design$col)
 
         row <- rep(seq(1, nrow), times = ncol+1)
-        col <- rep(seq(min_col, (2*ncol)+1, by = 2), each = nrow)
-        n_brow <- length(row)  # Number of buffer rows
+        col <- rep(seq(min_col-1, (2*ncol)+1, by = 2), each = nrow)
+        n_brow <- length(row)  # Number of rows to create in the buffer dataframe
         treatments <- rep("buffer", n_brow)
     }
     # Match double row, double rows, or dr
@@ -61,7 +61,7 @@ create_buffers <- function(design, type, blocks = FALSE) {
                  rep(seq(min_row+1, (3*nrow), by = 3),
                      each = ncol))
         col <- seq(min_col, ncol)
-        n_brow <- length(row)  # Number of buffer rows
+        n_brow <- length(row)  # Number of rows to create in the buffer dataframe
         treatments <- rep("buffer", n_brow)
     }
     # Match double col, double cols, double column, double columns, dc
@@ -76,7 +76,7 @@ create_buffers <- function(design, type, blocks = FALSE) {
                      each = nrow),
                  rep(seq(min_col+1, (3*ncol), by = 3),
                      each = nrow))
-        n_brow <- length(row)  # Number of buffer rows
+        n_brow <- length(col)  # Number of rows to create in the buffer dataframe
         treatments <- rep("buffer", n_brow)
     }
     # Match block, blocks, or b
@@ -98,7 +98,7 @@ create_buffers <- function(design, type, blocks = FALSE) {
         blocks_df <- stats::aggregate(cbind(row, col) ~ block, data = design, FUN = max)
         blocks_df$row[blocks_df$row==max(blocks_df$row)] <- max(blocks_df$row)+1
         blocks_df$col[blocks_df$col==max(blocks_df$col)] <- max(blocks_df$col)+1
-        for(i in max(blocks_df$block):1) {
+        for(i in max(as.numeric(blocks_df$block)):1) {
             buffers[buffers$row <= blocks_df$row[i]&buffers$col <= blocks_df$col[i],"block"] <- blocks_df$block[i]
         }
     }
