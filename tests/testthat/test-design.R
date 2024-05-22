@@ -714,4 +714,28 @@ test_that("Invalid palette option produces error", {
     expect_error(autoplot(d1, palette = "spectral"), "Invalid value for palette.")
 })
 
-#
+
+test_that("Ability to provide arbitrary column names for plotting works", {
+    des <- expand.grid(ro = 1:4, co = 1:5)
+    des$bl <- des$co
+    set.seed(42)
+    des$treat <- sample(rep(LETTERS[1:4], times = 5))
+    class(des) <- c("design", class(des))
+    vdiffr::expect_doppelganger(title = "Quoted column names without blocks",
+                                autoplot(des, row = "ro", column = "co", treatments = "treat"))
+    vdiffr::expect_doppelganger(title = "Quoted column names with blocks",
+                                autoplot(des, row = "ro", column = "co", treatments = "treat"))
+})
+
+test_that("Arbitrary unquoted column names for plotting works", {
+    des <- expand.grid(ro = 1:4, co = 1:5)
+    des$bl <- des$ro
+    set.seed(42)
+    des$treat <- sample(rep(LETTERS[1:5], times = 4))
+    class(des) <- c("design", class(des))
+    vdiffr::expect_doppelganger(title = "NSE of column names without blocks",
+                                autoplot(des, row = ro, column = co, treatments = treat))
+    vdiffr::expect_doppelganger(title = "NSE of column names with blocks",
+                                autoplot(des, row = ro, column = co, block = bl, treatments = treat))
+})
+
