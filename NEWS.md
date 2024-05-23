@@ -1,14 +1,17 @@
 # biometryassist 1.1.4
 
+## Major changes
+
+- Introduced the `summary_plot()` function (#75)
+- Enabled arbitrary `row`, `column`, `block` and `treatment` columns to be provided in the `autoplot.design()` function, to enable more general plotting of designs. (#28)
+
 ## Minor changes
 
-- Implemented the ability to plot designs with buffer plots 
+- Implemented the ability to plot designs with buffer plots. (#68)
+- Changed `install_asreml()` to check if there is a later version before downloading.
+- Enabled non-standard evaluation input of column names in `autoplot.design()`.
 
 ## Bug fixes
-
-- Testing updates on mobile
-
-
 
 
 # biometryassist 1.1.3
