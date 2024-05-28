@@ -16,9 +16,9 @@ name: test-coverage
 
 jobs:
   test-coverage:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     env:
-      RSPM: "https://packagemanager.rstudio.com/cran/__linux__/jammy/latest"
+      # RSPM: "https://packagemanager.rstudio.com/cran/__linux__/jammy/latest"
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       # vsni_LICENSE: ${{ secrets.vsni_LICENSE }}
 
