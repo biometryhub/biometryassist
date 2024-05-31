@@ -28,14 +28,11 @@
 #'
 install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALSE, keep_file = FALSE) {
 
-    if(rlang::is_installed("asreml") & !force) {
-        if(!quiet) message("ASReml-R is already installed.")
+    if(rlang::is_installed("asreml") && !newer_version() && !force) {
+        if(!quiet) message("The latest version of ASReml-R available for your sysetm is already installed. To install anyway, set `force = TRUE`.")
         invisible(TRUE)
     }
     else {
-        # First check last downloaded
-
-
         # Get OS and R version
         os_ver <- get_r_os()
         if(os_ver$os=="mac") {
@@ -237,7 +234,7 @@ get_version_table <- function() {
 #'
 #' @return TRUE if a newer version is available online, FALSE otherwise
 #' @keywords internal
-compare_versions <- function() {
+newer_version <- function() {
     online_versions <- get_version_table()
     os_ver <- get_r_os()
 
@@ -257,7 +254,7 @@ compare_versions <- function() {
         asr_ver <- 0
     }
 
-    if(newest$`Date published` > asr_date | numeric_version(newest$asr_ver) > numeric_version(asr_ver)) {
+    if((nrow(newest)>0) && (newest$`Date published` > asr_date+7) && (numeric_version(newest$asr_ver) > numeric_version(asr_ver))) {
         output <- TRUE
     }
     else {

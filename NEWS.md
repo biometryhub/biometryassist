@@ -2,7 +2,7 @@
 
 ## Major changes
 
-- Introduced the `summary_plot()` function (#75)
+- Introduced the `summary_plot()` (#75) and `heat_map()` (#19) functions 
 - Enabled arbitrary `row`, `column`, `block` and `treatment` columns to be provided in the `autoplot.design()` function, to enable more general plotting of designs. (#28)
 
 ## Minor changes
