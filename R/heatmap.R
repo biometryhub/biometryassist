@@ -11,7 +11,8 @@
 #' @param smooth Logical (default: `TRUE`). If `raster` is `TRUE`, interpolation can be applied across the grid to obtain a smoothed grid. Ignored if `raster` is `FALSE`.
 #' @param palette Colour palatte to use. By default it will use the `viridis` (colour-blind friendly) palette. Other palettes available can be seen with [grDevices::hcl.pals()].
 #'
-#' @importFrom ggplot2 ggplot aes geom_tile geom_raster scale_fill_gradientn scale_x_continuous scale_y_continuous facet_wrap
+#' @importFrom ggplot2 ggplot aes geom_tile geom_raster scale_fill_gradientn scale_x_continuous scale_y_continuous facet_wrap vars theme_bw
+#' @importFrom rlang ensym enquo quo_is_null
 #'
 #' @return A `ggplot2` object.
 #' @export
@@ -24,16 +25,16 @@
 #' dat$groups <- sample(rep(LETTERS[1:6], times = 5))
 #'
 #' heat_map(dat, value, x, y)
+#' heat_map(dat, "value", "x", "y", "groups")
 heat_map <- function(data, value, x_axis, y_axis, grouping = NULL, raster = TRUE, smooth = FALSE, palette = "default") {
 
     # TODO:
     # - Error and sanity checking
-    #   - What if grouping is NULL?
-    # - NSE
 
     value <- rlang::ensym(value)
     x_axis <- rlang::ensym(x_axis)
     y_axis <- rlang::ensym(y_axis)
+    grouping <- rlang::enquo(grouping)
 
     # Set the default palette to viridis
     if(palette=="default") {
@@ -55,9 +56,11 @@ heat_map <- function(data, value, x_axis, y_axis, grouping = NULL, raster = TRUE
         ggplot2::scale_x_continuous(expand = c(0, 0)) +
         ggplot2::scale_y_continuous(expand = c(0, 0))
 
-    if(!is.null(grouping)) {
+    if(!rlang::quo_is_null(grouping)) {
         grouping <- rlang::ensym(grouping)
-        plt <- plt + ggplot2::facet_wrap(vars({{ gropuing }}))
+        plt <- plt + ggplot2::facet_wrap(ggplot2::vars({{ grouping }}))
     }
+
+    plt <- plt+ggplot2::theme_bw()
     return(plt)
 }

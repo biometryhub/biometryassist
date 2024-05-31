@@ -46,4 +46,5 @@ dat$value <- rnorm(30)
 dat$groups <- sample(rep(LETTERS[1:6], times = 5))
 
 heat_map(dat, value, x, y)
+heat_map(dat, "value", "x", "y", "groups")
 }
