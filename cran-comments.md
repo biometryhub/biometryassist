@@ -1,10 +1,10 @@
 ## Submission
 
-This version fixes some minor bugs, and adds a vignette.
+This version add some new features and fixes some minor bugs.
 
 ## Test environments
-* Local Windows 10 install, R 4.3.1
-* Ubuntu 22.04 (Virtual Machine), R 4.3.1
+* Local Windows 10 install, R 4.4.0
+* Ubuntu 22.04 (Virtual Machine), R 4.4.0
 * Rhub `check_for_cran()`
 * Github Actions:
     - macOS: r-release
