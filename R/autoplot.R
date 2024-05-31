@@ -8,7 +8,7 @@
 #' @param label_rotation Enables rotation of the treatment group labels independently of the x axis labels within the plot.
 #' @param margin Logical (default `FALSE`). A value of `FALSE` will expand the plot to the edges of the plotting area i.e. remove white space between plot and axes.
 #' @param palette A string specifying the colour scheme to use for plotting. Default is equivalent to "Spectral". Colour blind friendly palettes can also be provided via options `"colour blind"` (or `"color blind"`, both equivalent to `"viridis"`), `"magma"`, `"inferno"`, `"plasma"` or `"cividis"`. Other palettes from [scales::brewer_pal()] are also possible.
-#' @param buffer A string specifying the buffer plots to include for plotting. Default is `NULL` (no buffers plotted). Other options are "edge" (outside of trial area), "plots" (around each plot), "rows" (between rows), "columns" (between columns), "double row" (a buffer row each side of a treatment row), "double column" (a buffer row each side of a treatment column), or "blocks" (a buffer around each treatment block).
+#' @param buffer A string specifying the buffer plots to include for plotting. Default is `NULL` (no buffers plotted). Other options are "edge" (outer edge of trial area), "rows" (between rows), "columns" (between columns), "double row" (a buffer row each side of a treatment row) or "double column" (a buffer row each side of a treatment column). "blocks" (a buffer around each treatment block) will be implemented in a future release.
 #' @param row A variable to plot a column from `object` as rows.
 #' @param column A variable to plot a column from `object` as columns.
 #' @param block A variable to plot a column from `object` as blocks.

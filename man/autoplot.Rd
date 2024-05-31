@@ -51,7 +51,7 @@ autoplot(object, ...)
 
 \item{palette}{A string specifying the colour scheme to use for plotting. Default is equivalent to "Spectral". Colour blind friendly palettes can also be provided via options \code{"colour blind"} (or \code{"color blind"}, both equivalent to \code{"viridis"}), \code{"magma"}, \code{"inferno"}, \code{"plasma"} or \code{"cividis"}. Other palettes from \code{\link[scales:pal_brewer]{scales::brewer_pal()}} are also possible.}
 
-\item{buffer}{A string specifying the buffer plots to include for plotting. Default is \code{NULL} (no buffers plotted). Other options are "edge" (outside of trial area), "plots" (around each plot), "rows" (between rows), "columns" (between columns), "double row" (a buffer row each side of a treatment row), "double column" (a buffer row each side of a treatment column), or "blocks" (a buffer around each treatment block).}
+\item{buffer}{A string specifying the buffer plots to include for plotting. Default is \code{NULL} (no buffers plotted). Other options are "edge" (outer edge of trial area), "rows" (between rows), "columns" (between columns), "double row" (a buffer row each side of a treatment row) or "double column" (a buffer row each side of a treatment column). "blocks" (a buffer around each treatment block) will be implemented in a future release.}
 
 \item{row}{A variable to plot a column from \code{object} as rows.}
 
