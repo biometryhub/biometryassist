@@ -1,6 +1,6 @@
 ## Submission
 
-This version add some new features and fixes some minor bugs.
+Resubmission. Extra files removed, apologies. This version add some new features and fixes some minor bugs.
 
 ## Test environments
 * Local Windows 10 install, R 4.4.0
