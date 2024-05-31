@@ -11,8 +11,6 @@
 - Changed `install_asreml()` to check if there is a later version before downloading.
 - Enabled non-standard evaluation input of column names in `autoplot.design()`.
 
-## Bug fixes
-
 
 # biometryassist 1.1.3
 
