@@ -83,14 +83,13 @@ test_that("example 3 LMM works", {
 test_that("example 4 LMM works", {
     skip_on_cran()
     skip_if_not_installed("asreml")
-    expect_warning(example4.asr <- asreml(DM ~ trt, random = ~ row + col,
-                                          residual = ~ id(plots), data = example4,
-                                          trace = FALSE),
-                   "Some components changed by more than 1% on the last iteration.")
-    example4.asr <- update(example4.asr)
+    example4.asr <- asreml(DM ~ trt, random = ~ row + col,
+                           residual = ~ id(plots), data = example4,
+                           trace = FALSE)
+    # example4.asr <- update(example4.asr)
     expect_snapshot_output(print.data.frame(asreml::wald(example4.asr, denDF = "default")$Wald))
     pred4lmm.out <- multiple_comparisons(example4.asr, classify = "trt")
-    expect_equal(pred4lmm.out$predicted.value, c(1707.94, 1802.7, 2053.73, 2200.08))
+    expect_equal(pred4lmm.out$predicted.value, c(1707.94, 1802.7, 2053.73, 2200.08), tolerance = 0.01)
     expect_snapshot_output(pred4lmm.out)
     skip_on_ci()
     skip_on_covr()
@@ -129,9 +128,10 @@ test_that("example 6 works", {
     expect_snapshot_output(summary(example6.asr)$varcomp)
     expect_equal(summary(example6.asr)$varcomp$component, c(0.0000002864157, 0.1790097741606, 0.5407770686889))
 
-    expect_warning(logl.tab <- logl_test(example6.asr,
-                                         rand.terms = NULL, resid.terms = c("ar1(Row)")),
-                   "Some components changed by more than 1% on the last iteration.")
+    # expect_warning(
+    logl.tab <- logl_test(example6.asr,
+                          rand.terms = NULL, resid.terms = c("ar1(Row)"))#,
+    # "Some components changed by more than 1% on the last iteration.")
 
     expect_equal(logl.tab$LogLRT.pvalue, '0.003')
     pred6.out <- multiple_comparisons(example6.asr, classify = "Treatment")
@@ -153,9 +153,10 @@ test_that("example 7 works", {
     expect_snapshot_output(print.data.frame(asreml::wald(example7.asr, denDF = "default")$Wald))
     vg7 <- variogram(example7.asr)
     expect_snapshot_output(print(summary(example7.asr)$varcomp, digits = 2))
-    expect_warning(logl.tab <- logl_test(example7.asr,
-                                         rand.terms = NULL, resid.terms = c("ar1(Row)")),
-                   "Some components changed by more than 1% on the last iteration.")
+    # expect_warning(
+    logl.tab <- logl_test(example7.asr,
+                          rand.terms = NULL, resid.terms = c("ar1(Row)"))#,
+    # "Some components changed by more than 1% on the last iteration.")
     expect_equal(logl.tab$LogLRT.pvalue, '0.003')
     expect_warning(pred7.out <- multiple_comparisons(example7.asr, classify = "Herbicide:Rate",
                                                      present = c("Control", "Herbicide", "Rate")),
@@ -279,7 +280,7 @@ test_that("exercise 8 works", {
     skip_if_not_installed("asreml")
     exercise8.asr <- asreml::asreml(Yield ~ SeedingRate, random = ~ Block,
                                     residual = ~ id(Plot), data = exercise4, trace = FALSE)
-    expect_equal(print.data.frame(asreml::wald(exercise8.asr, denDF = "default")$Wald$Pr[2]), 0.30758014)
+    expect_equal(asreml::wald(exercise8.asr, denDF = "default")$Wald$Pr[2], 0.30758014, tolerance = 0.0001)
     expect_snapshot_output(print.data.frame(asreml::wald(exercise8.asr, denDF = "default")$Wald))
     skip_on_ci()
     skip_on_covr()

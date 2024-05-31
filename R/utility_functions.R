@@ -27,8 +27,8 @@ quiet <- function(x) {
 {
     installed_version <- utils::packageVersion('biometryassist')
 
-    if(rlang::is_interactive() && !isFALSE(rlang::peek_option("biometryassist.check"))) {# && Sys.time() > (last_load + 1)) {
-        output <- paste("    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+    if(rlang::is_interactive() && !isFALSE(rlang::peek_option("biometryassist.check"))) {
+        output <- paste(paste0("    ", paste0(rep("~", times = 69), collapse = "")),
                         paste("    |  ", pkg, " version ", installed_version, "                                     |",sep=""),
                         "    |  Authors: Sharon Nielsen, Sam Rogers, Annie Conway                |",
                         "    |  Developed at the University of Adelaide with funding provided    |",
@@ -37,9 +37,9 @@ quiet <- function(x) {
                         "    |                                                                   |",
                         "    |  If you have used this package in your work, please cite it.      |",
                         "    |  Type 'citation('biometryassist')' for the citation details.      |",
-                        "    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n", sep = "\n")
+                        paste0("    ", paste0(rep("~", times = 69), collapse = ""), "\n"), sep = "\n")
 
-        if(rlang::is_installed("crayon")) {
+        if(is_installed("crayon")) {
             packageStartupMessage(crayon::green(output), appendLF=TRUE)
         }
         else {
@@ -57,23 +57,11 @@ quiet <- function(x) {
             }
         )
 
-        if(!is.na(current_version) && current_version > installed_version) { # installed version < current version on CRAN
+        if(!is.na(current_version) && current_version > installed_version) { # current version on CRAN newer than installed
             warning("    biometryassist version ", current_version, " is now available.\n",
                     "    Please update biometryassist by running\n",
                     "    install.packages('biometryassist')", call. = FALSE)
         }
-        # else {
-        #   output2 <- paste("    The latest version of this package is available at",
-        #                    "    https://github.com/biometryhub/biometryassist. To update type:",
-        #                    "    remotes::install_github('biometryhub/biometryassist')", sep = "\n")
-        #
-        #   if(rlang::is_installed("crayon")) {
-        #     packageStartupMessage(crayon::green(output2),appendLF=TRUE)
-        #   }
-        #   else {
-        #     packageStartupMessage(output2,appendLF=TRUE)
-        #   }
-        # }
     }
     invisible()
 }

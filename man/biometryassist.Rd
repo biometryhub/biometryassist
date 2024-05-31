@@ -3,7 +3,6 @@
 \docType{package}
 \name{biometryassist}
 \alias{biometryassist}
-\alias{_PACKAGE}
 \alias{biometryassist-package}
 \title{biometryassist: Functions to Assist Design and Analysis of Agronomic Experiments}
 \description{

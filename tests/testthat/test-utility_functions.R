@@ -9,6 +9,6 @@ test_that("Package message prints on load", {
 
 test_that("Output prints if crayon is not installed", {
     rlang::local_interactive(value = TRUE)
-    mockery::stub(biometryassist:::.onAttach, "rlang::is_installed", FALSE)
+    local_mocked_bindings(is_installed = function(...) FALSE)
     expect_output(print(biometryassist:::.onAttach(pkg = "biometryassist")))
 })
