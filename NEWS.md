@@ -1,4 +1,4 @@
-# biometryassist 1.1.4
+# biometryassist 1.2.0
 
 ## Major changes
 
