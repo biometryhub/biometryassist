@@ -9,9 +9,9 @@
 #' @param resp_units A string providing units to display on the response variable axis.
 #'
 #' @importFrom ggplot2 ggplot aes geom_boxplot stat_summary facet_wrap geom_point labs theme_bw
-#' @importFrom rlang ensym ensyms as_string !! {{
+#' @importFrom rlang ensym ensyms as_string
 #'
-#' @return A ggplot2 plot
+#' @return A ggplot2 plot object
 #' @export
 #'
 #' @examples
