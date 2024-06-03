@@ -34,10 +34,25 @@
     <loc>https://biometryhub.github.io/biometryassist/reference/biometryassist.html</loc>
   </url>
   <url>
+    <loc>https://biometryhub.github.io/biometryassist/reference/create_buffers.html</loc>
+  </url>
+  <url>
+    <loc>https://biometryhub.github.io/biometryassist/reference/create_mac_folder.html</loc>
+  </url>
+  <url>
     <loc>https://biometryhub.github.io/biometryassist/reference/des_info.html</loc>
   </url>
   <url>
     <loc>https://biometryhub.github.io/biometryassist/reference/design.html</loc>
+  </url>
+  <url>
+    <loc>https://biometryhub.github.io/biometryassist/reference/get_r_os.html</loc>
+  </url>
+  <url>
+    <loc>https://biometryhub.github.io/biometryassist/reference/get_version_table.html</loc>
+  </url>
+  <url>
+    <loc>https://biometryhub.github.io/biometryassist/reference/heat_map.html</loc>
   </url>
   <url>
     <loc>https://biometryhub.github.io/biometryassist/reference/index.html</loc>
@@ -50,6 +65,9 @@
   </url>
   <url>
     <loc>https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.html</loc>
+  </url>
+  <url>
+    <loc>https://biometryhub.github.io/biometryassist/reference/newer_version.html</loc>
   </url>
   <url>
     <loc>https://biometryhub.github.io/biometryassist/reference/print.mct.html</loc>
@@ -65,6 +83,9 @@
   </url>
   <url>
     <loc>https://biometryhub.github.io/biometryassist/reference/satab.html</loc>
+  </url>
+  <url>
+    <loc>https://biometryhub.github.io/biometryassist/reference/summary_graph.html</loc>
   </url>
   <url>
     <loc>https://biometryhub.github.io/biometryassist/reference/vario_df.html</loc>

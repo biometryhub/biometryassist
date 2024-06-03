@@ -1,9 +1,9 @@
-pandoc: 2.19.2
-pkgdown: 2.0.7.9000
-pkgdown_sha: 5a0a31f89d7c839c04a929844e4b7216196189ca
+pandoc: 3.1.11
+pkgdown: 2.0.9
+pkgdown_sha: ~
 articles:
   installing-asreml-r: installing-asreml-r.html
-last_built: 2023-11-28T10:42Z
+last_built: 2024-06-03T22:51Z
 urls:
   reference: https://biometryhub.github.io/biometryassist/reference
   article: https://biometryhub.github.io/biometryassist/articles
