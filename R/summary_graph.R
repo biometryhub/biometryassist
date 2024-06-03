@@ -20,7 +20,7 @@
 #' summary_graph(iris, Petal.Length, "Species", "mm")
 #' summary_graph(npk, "yield", c("N", "P", "K"), "lb/plot")
 #'
-summary_graph <- function(data, response, exp_var, resp_units, ...) {
+summary_graph <- function(data, response, exp_var, resp_units) {
 
     # TODO: NSE
 

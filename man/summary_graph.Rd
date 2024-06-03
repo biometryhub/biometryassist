@@ -4,7 +4,7 @@
 \alias{summary_graph}
 \title{Summary Graph}
 \usage{
-summary_graph(data, response, exp_var, resp_units, ...)
+summary_graph(data, response, exp_var, resp_units)
 }
 \arguments{
 \item{data}{A data frame containing the variables to be plotted.}
