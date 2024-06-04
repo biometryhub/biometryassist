@@ -1,4 +1,4 @@
-#' Residual plots of linear models.
+#' Produce residual plots of linear models
 #'
 #' Produces plots of residuals for assumption checking of linear (mixed) models.
 #'
@@ -10,7 +10,7 @@
 #' @param call.size A numeric value for the size of the model displayed on the plot.
 #' @param mod.obj Deprecated to be consistent with other functions. Please use `model.obj` instead.
 #'
-#' @return A list containing ggplot2 objects which are diagnostic plots.
+#' @return A ggplot2 object containing the diagnostic plots.
 #'
 #' @importFrom ggplot2 ggplot geom_histogram aes theme_bw stat_qq labs geom_qq_line geom_point
 #' @importFrom stats fitted qnorm quantile residuals sd shapiro.test

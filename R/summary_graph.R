@@ -1,12 +1,12 @@
-#' Summary Graph
+#' Visualise a graphical summary of variables from a data frame
 #'
-#' Produce a graphical summary of variables from a data frame. Variables are plotted
-#' as box plots, grouped and, if enough variables are provided, coloured and facetted.
+#' Variables are plotted in different ways according to the number of explanatory
+#' variables provided as input.
 #'
 #' @param data A data frame containing the variables to be plotted.
 #' @param response The response variable to plot.
-#' @param exp_var The explanatory (or grouping) variable to plot.
-#' @param resp_units A string providing units to display on the response variable axis.
+#' @param exp_var The explanatory (or grouping) variable(s) to plot. Up to three can be provided.
+#' @param resp_units A string providing units to display on the response variable (y) axis.
 #'
 #' @importFrom ggplot2 ggplot aes geom_boxplot stat_summary facet_wrap geom_point labs theme_bw
 #' @importFrom rlang ensym ensyms as_string
@@ -14,10 +14,21 @@
 #' @return A ggplot2 plot object
 #' @export
 #'
+#' @details
+#' With a single explanatory variable, a boxplot grouped by `exp_var` is produced.
+#' With two explanatory variables, a dot-plot with lines connecting the mean of each
+#' group is produced, with the first element of `exp_var` used as the x axis variable,
+#' and the second is used to colour the points. Three explanatory variables produces
+#' the same as two, but with the third used to facet the plot.
+#'
 #' @examples
 #'
 #' summary_graph(iris, "Petal.Length", "Species", "mm")
-#' summary_graph(iris, Petal.Length, "Species", "mm")
+#'
+#' # Multiple
+#' summary_graph(npk, "yield", c("N", "P"), "lb/plot")
+#'
+#  # Three way interaction
 #' summary_graph(npk, "yield", c("N", "P", "K"), "lb/plot")
 #'
 summary_graph <- function(data, response, exp_var, resp_units) {
@@ -69,3 +80,5 @@ summary_graph <- function(data, response, exp_var, resp_units) {
 
     return(gg)
 }
+
+

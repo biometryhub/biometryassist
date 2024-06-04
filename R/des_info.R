@@ -1,4 +1,4 @@
-#' Produces graph of design layout, skeletal ANOVA table and data frame with complete design
+#' Produce a graph of design layout, skeletal ANOVA table and data frame with complete design
 #'
 #' @param design.obj An `agricolae` design object.
 #' @param nrows The number of rows in the design.
@@ -11,7 +11,7 @@
 #' @param plot Logical (default `TRUE`). If `TRUE`, display a plot of the generated design. A plot can always be produced later using [autoplot()].
 #' @param rotation Rotate the text output as Treatments within the plot. Allows for easier reading of long treatment labels. Takes positive and negative values being number of degrees of rotation from horizontal.
 #' @param size Increase or decrease the text size within the plot for treatment labels. Numeric with default value of 4.
-#' @param margin Logical (default FALSE). Expand the plot to the edges of the plotting area i.e. remove white space between plot and axes.
+#' @param margin Logical (default FALSE). Setting to `TRUE` will add a margin (white space) between plot and axes.
 #' @param save One of `FALSE` (default)/`"none"`, `TRUE`/`"both"`, `"plot"` or `"workbook"`. Specifies which output to save.
 #' @param savename A filename for the design to be saved to. Default is the type of the design combined with "_design".
 #' @param plottype The type of file to save the plot as. Usually one of `"pdf"`, `"png"`, or `"jpg"`. See [ggplot2::ggsave()] for all possible options.

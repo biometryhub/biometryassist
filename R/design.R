@@ -1,14 +1,14 @@
-#' Produces an experimental design with graph of design layout and skeletal ANOVA table
+#' Create a complete experimental design with graph of design layout and skeletal ANOVA table
 #'
-#' @param type The type of design. Supported design types are `crd`, `rcbd`, `lsd`, `crossed:<type>` where `<type>` is one of the previous types and `split`. See Details for more information.
+#' @param type The type of design. Supported design types are `crd`, `rcbd`, `lsd`, `crossed:<type>` where `<type>` is one of the previous types, and `split`. See Details for more information.
 #' @param treatments A vector containing the treatment names or labels.
-#' @param reps The number of replicates. Not required for Latin Squared Designs.
+#' @param reps The number of replicates. Ignored for Latin Square Designs.
 #' @param nrows The number of rows in the design.
 #' @param ncols The number of columns in the design.
 #' @param brows For RCBD and Split Plot designs. The number of rows in a block.
 #' @param bcols For RCBD and Split Plot designs. The number of columns in a block.
 #' @param byrow For split-plot only. Logical (default `TRUE`). Provides a way to arrange plots within whole-plots when there are multiple possible arrangements.
-#' @param sub_treatments A vector of treatments for subplots in a split plot design.
+#' @param sub_treatments A vector of treatments for sub-plots in a split plot design.
 #' @param fac.names Allows renaming of the `A` level of factorial designs (i.e. those using [agricolae::design.ab()]) by passing (optionally named) vectors of new labels to be applied to the factors within a list. See examples and details for more information.
 #' @param fac.sep The separator used by `fac.names`. Used to combine factorial design levels. If a vector of 2 levels is supplied, the first separates factor levels and label, and the second separates the different factors.
 #' @param plot Logical (default `TRUE`). If `TRUE`, display a plot of the generated design. A plot can always be produced later using [autoplot()].
@@ -16,7 +16,7 @@
 #' @param size Increase or decrease the text size within the plot for treatment labels. Numeric with default value of 4.
 #' @param margin Logical (default `FALSE`). Expand the plot to the edges of the plotting area i.e. remove white space between plot and axes.
 #' @param save One of `FALSE` (default)/`"none"`, `TRUE`/`"both"`, `"plot"` or `"workbook"`. Specifies which output to save.
-#' @param savename A filename for the design to be saved to. Default is the type of the design combined with "_design".
+#' @param savename A file name for the design to be saved to. Default is the type of the design combined with "_design".
 #' @param plottype The type of file to save the plot as. Usually one of `"pdf"`, `"png"`, or `"jpg"`. See [ggplot2::ggsave()] for all possible options.
 #' @param seed Logical (default `TRUE`). If `TRUE`, return the seed used to generate the design. If a numeric value, use that value as the seed for the design.
 #' @param quiet Logical (default `FALSE`). Hide the output.
@@ -25,7 +25,7 @@
 #' @details The designs currently supported by `type` are Completely Randomised designs (`crd`), Randomised Complete Block designs (`rcbd`), Latin Square Designs (`lsd`), Factorial with crossed structure (use `crossed:<type>` where `<type>` is one of the previous types e.g. `crossed:crd`) and Split Plot designs (`split`). Nested factorial designs are supported through manual setup, see Examples.
 #' @details If `save = TRUE` (or `"both"`), both the plot and the workbook will be saved to the current working directory, with filename given by `savename`. If one of either `"plot"` or `"workbook"` is specified, only that output is saved. If `save = FALSE` (the default, or equivalently `"none"`), nothing will be output.
 #' @details `fac.names` can be supplied to provide more intuitive names for factors and their levels in factorial and split plot designs. They can be specified in a list format, for example `fac.names = list(A_names = c("a", "b", "c"), B_names = c("x", "y", "z"))`. This will result a design output with a column named `A_names` with levels `a, b, c` and another named `B_names` with levels `x, y, z`. Labels can also be supplied as a character vector (e.g. `c("A", "B")`) which will result in only the treatment column names being renamed. Only the first two elements of the list will be used, except in the case of a 3-way factorial design.
-#' @details `...` allows extra arguments to be passed to ggsave for output of the plot. The details of possible arguments can be found in  [ggplot2::ggsave()].
+#' @details `...` allows extra arguments to be passed to `ggsave()` for output of the plot. The details of possible arguments can be found in  [ggplot2::ggsave()].
 #'
 #' @importFrom graphics plot
 #' @importFrom ggplot2 ggsave

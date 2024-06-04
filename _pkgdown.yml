@@ -9,18 +9,18 @@ template:
 
 reference:
 - title: Design
-  desc: Functions to help with the design of experiments
+  desc: Functions to help with the design of experiments.
 - contents:
   - starts_with("des")
 - title: Analysis
-  desc: Functions to help with the analysis of experiments
+  desc: Functions to help with the analysis of experiments.
 - contents:
   - resplot
   - multiple_comparisons
   - variogram
   - logl_test
 - title: Utilities
-  desc: Other helper functions
+  desc: Other helper functions.
 - contents:
   - autoplot
   - heat_map
