@@ -57,7 +57,7 @@ quiet <- function(x) {
             }
         )
 
-        if(utils::compareVersion(cran_version, as.character(installed_version)) == 1) { # current version on CRAN newer than installed
+        if(utils::compareVersion(cran_version, as.character(local_version)) == 1) { # current version on CRAN newer than installed
             warning("    biometryassist version ", cran_version, " is now available.\n",
                     "    Please update biometryassist by running\n",
                     "    install.packages('biometryassist')", call. = FALSE)
