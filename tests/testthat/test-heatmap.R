@@ -3,6 +3,11 @@ dat <- expand.grid(x = 1:5, y = 1:6)
 dat$value <- rnorm(30)
 dat$groups <- sample(rep(LETTERS[1:6], times = 5))
 
+test_that("Invalid data argument produces an error", {
+    expect_error(heat_map("abc", value, x, y),
+                 "abc is not a data frame\\.")
+})
+
 test_that("heat_map produces a ggplot object", {
     hm <- heat_map(dat, value, x, y)
     expect_s3_class(hm, "gg")
@@ -31,10 +36,9 @@ test_that("heat_map produces a grouped plot", {
                                 heat_map(dat, value, x, y, groups))
 })
 
-test_that("raster produces identical results", {
-    hm1 <- heat_map(dat, value, x, y, raster = TRUE)
-    hm2 <- heat_map(dat, value, x, y)
-    expect_identical(hm1, hm2)
+test_that("raster=FALSE uses geom_tile", {
+    vdiffr::expect_doppelganger(title = "Heatmap using geom_tile",
+                                heat_map(dat, value, x, y, raster = FALSE))
 })
 
 test_that("smooth argument produces an interpolated heat_map", {
