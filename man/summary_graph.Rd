@@ -4,7 +4,7 @@
 \alias{summary_graph}
 \title{Visualise a graphical summary of variables from a data frame}
 \usage{
-summary_graph(data, response, exp_var, resp_units)
+summary_graph(data, response, exp_var, resp_units = "")
 }
 \arguments{
 \item{data}{A data frame containing the variables to be plotted.}
@@ -13,7 +13,7 @@ summary_graph(data, response, exp_var, resp_units)
 
 \item{exp_var}{The explanatory (or grouping) variable(s) to plot. Up to three can be provided.}
 
-\item{resp_units}{A string providing units to display on the response variable (y) axis.}
+\item{resp_units}{A string providing units to display on the response variable (y) axis. Will use the empty string by default so axes will have no units by default.}
 }
 \value{
 A ggplot2 plot object

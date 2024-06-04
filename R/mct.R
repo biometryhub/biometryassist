@@ -484,7 +484,7 @@ multiple_comparisons <- function(model.obj,
 }
 
 
-#' Print method for multiple_comparisons
+#' Print output of multiple_comparisons
 #'
 #' @param x An mct object to print to the console.
 #' @param ... Other arguments

@@ -12,7 +12,8 @@ heat_map(
   grouping = NULL,
   raster = TRUE,
   smooth = FALSE,
-  palette = "default"
+  palette = "default",
+  ...
 )
 }
 \arguments{
@@ -31,6 +32,8 @@ heat_map(
 \item{smooth}{Logical (default: \code{FALSE}). If \code{raster} is \code{TRUE}, interpolation can be applied across the grid to obtain a smoothed grid. Ignored if \code{raster} is \code{FALSE}.}
 
 \item{palette}{Colour palette to use. By default it will use the \code{viridis} (colour-blind friendly) palette. Other palettes available can be seen with \code{\link[grDevices:palettes]{grDevices::hcl.pals()}}.}
+
+\item{...}{Other arguments passed to \code{\link[=facet_wrap]{facet_wrap()}}}
 }
 \value{
 A \code{ggplot2} object.
@@ -49,4 +52,12 @@ heat_map(dat, value, x, y)
 
 # Column names can be quoted, but don't need to be.
 heat_map(dat, "value", "x", "y", "groups")
+
+# Different palettes are available
+heat_map(dat, value, x, y, palette = "Spectral")
+
+# Arguments in ... are passed through to facet_wrap
+heat_map(dat, value, x, y, groups, labeller = ggplot2:::label_both)
+heat_map(dat, value, x, y, groups, scales = "free_y")
+heat_map(dat, value, x, y, groups, nrow = 1)
 }
