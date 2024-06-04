@@ -57,11 +57,22 @@ quiet <- function(x) {
             }
         )
 
-        if(utils::compareVersion(cran_version, as.character(local_version)) == 1) { # current version on CRAN newer than installed
+        if(compare_version(cran_version, as.character(local_version)) == 1) { # current version on CRAN newer than installed
             warning("    biometryassist version ", cran_version, " is now available.\n",
                     "    Please update biometryassist by running\n",
                     "    install.packages('biometryassist')", call. = FALSE)
         }
     }
     invisible()
+}
+
+#' Function to compare package version for mocking
+#'
+#' @param a One package version
+#' @param b Another package version
+#'
+#' @return
+#' @keywords internal
+compare_version <- function(a, b) {
+    return(utils::compareVersion(as.character(a), as.character(b)))
 }
