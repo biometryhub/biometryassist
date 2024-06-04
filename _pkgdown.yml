@@ -23,5 +23,7 @@ reference:
   desc: Other helper functions
 - contents:
   - autoplot
+  - heat_map
   - print.mct
+  - summary_graph
   - ends_with("asreml")
