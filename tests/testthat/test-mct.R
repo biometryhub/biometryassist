@@ -26,10 +26,8 @@ logit <- function (p, percents = range.p[2] > 1, adjust)
 dat.aov <- aov(Petal.Width ~ Species, data = iris)
 
 test_that("mct produces output", {
-    # dat.aov <- aov(Petal.Width ~ Species, data = iris)
     output <- multiple_comparisons(dat.aov, classify = "Species", plot = TRUE)
     expect_equal(output$predicted.value, c(0.25, 1.33, 2.03), tolerance = 5e-2)
-    # skip_if(interactive())
     vdiffr::expect_doppelganger("mct output", autoplot(output))
 })
 
@@ -73,7 +71,6 @@ test_that("transformations are handled", {
     expect_equal(output.power2$low, c(0.09, 1.30, 2.03), tolerance = 5e-2)
     expect_equal(output.power3$up, c(0.49, 1.42, 2.10), tolerance = 5e-2)
 
-    # skip_if(interactive())
     vdiffr::expect_doppelganger("mct log output", autoplot(output.log))
     vdiffr::expect_doppelganger("mct sqrt output", autoplot(output.sqrt))
     vdiffr::expect_doppelganger("mct logit output", autoplot(output.logit))
@@ -98,7 +95,6 @@ test_that("ordering output works", {
 })
 
 test_that("different interval types work", {
-    # dat.aov <- aov(Petal.Width ~ Species, data = iris)
     output1 <- multiple_comparisons(dat.aov, classify = "Species", int.type = "1se")
     output2 <- multiple_comparisons(dat.aov, classify = "Species", int.type = "2se")
     expect_equal(output1$low, c(0.22, 1.30, 2.00), tolerance = 5e-2)
@@ -111,7 +107,6 @@ test_that("different interval types work", {
 })
 
 test_that("save produces output", {
-    # dat.aov <- aov(Petal.Width ~ Species, data = iris)
     withr::local_file("pred_vals.csv")
     output <- multiple_comparisons(dat.aov, classify = "Species", save = TRUE, savename = "pred_vals")
     expect_snapshot_output(output)
@@ -126,14 +121,11 @@ test_that("Interaction terms work", {
     load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
     skip_if_not(requireNamespace("asreml", quietly = TRUE))
     quiet(library(asreml))
-    # model.asr <- readRDS(test_path("data", "model_asr.rds"))
-    # load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
     output <- multiple_comparisons(model.asr, classify = "Nitrogen:Variety", pvals = T)
     expect_equal(output$predicted.value,
                  c(70.85, 76.58, 85.86, 92.22, 99.91, 108.32, 113.1, 113.5, 116.63, 118.4, 123.75, 127.53),
                  tolerance = 5e-2)
 
-    # skip_if(interactive())
     vdiffr::expect_doppelganger("Interactions work", autoplot(output))
 })
 
@@ -180,7 +172,6 @@ test_that("mct removes aliased treatments in aov", {
 test_that("mct handles aliased results in asreml with a warning", {
     skip_if_not(requireNamespace("asreml", quietly = TRUE))
     quiet(library(asreml))
-    # model.asr <- readRDS(test_path("data", "model_asr.rds"))
     load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
     load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
     expect_warning(
@@ -189,7 +180,7 @@ test_that("mct handles aliased results in asreml with a warning", {
         ),
         "Aliased level is: 0\\.2_cwt:Golden_rain\\."
     )
-    # model2.asr <- readRDS(test_path("data", "model_asr2.rds"))
+
     load(test_path("data", "oats_data2.Rdata"), envir = .GlobalEnv)
 
     expect_warning(
@@ -203,11 +194,11 @@ test_that("mct handles aliased results in asreml with a warning", {
 })
 
 test_that("Invalid classify argument causes an error", {
-  dat.aov <- aov(Petal.Width ~ Species, data = iris)
-  expect_error(multiple_comparisons(dat.aov, classify = "ABC"),
-               "ABC is not a term in the model\\. Please check model specification\\.")
-  expect_error(multiple_comparisons(model.asr, classify = "ABC"),
-               "ABC is not a term in the model\\. Please check model specification\\.")
+    dat.aov <- aov(Petal.Width ~ Species, data = iris)
+    expect_error(multiple_comparisons(dat.aov, classify = "ABC"),
+                 "ABC is not a term in the model\\. Please check model specification\\.")
+    expect_error(multiple_comparisons(model.asr, classify = "ABC"),
+                 "ABC is not a term in the model\\. Please check model specification\\.")
 })
 
 test_that("Significance values that are too high give a warning", {
@@ -228,35 +219,32 @@ test_that("Invalid column name causes an error", {
     dat.aov <- aov(rnorm(16, 10)~groups, data = dat)
 
     expect_error(multiple_comparisons(dat.aov, classify = "groups"),
-                   "Invalid column name. Please change the name of column\\(s\\): groups")
+                 "Invalid column name. Please change the name of column\\(s\\): groups")
 })
 
 test_that("Including pred.obj object causes warning", {
     skip_if_not(requireNamespace("asreml", quietly = TRUE))
     quiet(library(asreml))
     load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
-    # load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
-    # model.asr <- readRDS(test_path("data", "model_asr.rds"))
     expect_warning(multiple_comparisons(model.asr, pred.obj = pred.asr, classify = "Nitrogen"),
                    "Argument \\`pred.obj\\` has been deprecated and will be removed in a future version\\. Predictions are now performed internally in the function\\.")
 })
 
 test_that("Providing a random term in classify produces an error.", {
-  skip_if_not(requireNamespace("asreml", quietly = TRUE))
-  expect_error(multiple_comparisons(model2.asr, classify = "Blocks"), 
-               "All predicted values are aliased\\. Perhaps you need the `present` argument\\?")
+    skip_if_not(requireNamespace("asreml", quietly = TRUE))
+    load(test_path("data", "oats_data2.Rdata"), envir = .GlobalEnv)
+    expect_error(multiple_comparisons(model2.asr, classify = "Blocks"),
+                 "All predicted values are aliased\\. Perhaps you need the `present` argument\\?")
 })
 
 test_that("lme4 model works", {
     skip_if_not_installed("lme4")
     quiet(library(lme4))
-    # load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
     dat.lmer <- lmer(yield ~ Nitrogen*Variety + (1|Blocks), data = dat)
     output <- multiple_comparisons(dat.lmer, classify = "Nitrogen")
     expect_equal(output$std.error, rep(7.39, 4), tolerance = 5e-2)
     expect_equal(min(output$predicted.value), 79.39, tolerance = 5e-2)
     expect_equal(max(output$predicted.value), 123.39, tolerance = 5e-2)
-    # skip_on_os("linux")
     expect_equal(output$predicted.value, c(79.39, 98.89, 114.22, 123.39), tolerance = 5e-2)
     vdiffr::expect_doppelganger("lme4 output", autoplot(output))
 })
