@@ -68,10 +68,9 @@ quiet <- function(x) {
 
 #' Function to compare package version for mocking
 #'
-#' @param a One package version
-#' @param b Another package version
+#' @param a,b Character strings representing package version numbers.
 #'
-#' @return
+#' @return Numeric. `0` if the numbers are equal, `-1` if `b` is later and `1` if `a` is later
 #' @keywords internal
 compare_version <- function(a, b) {
     return(utils::compareVersion(as.character(a), as.character(b)))
