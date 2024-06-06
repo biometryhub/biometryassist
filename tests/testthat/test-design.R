@@ -685,7 +685,7 @@ test_that("Various colour blind spellings and options", {
 
 })
 
-test_that("Alternative palattes work", {
+test_that("Alternative palettes work", {
     # CRD
     d1 <- design("crd", treatments = LETTERS[1:11], reps = 4,
                  nrows = 11, ncols = 4, seed = 42, quiet = TRUE, plot = FALSE)
@@ -696,12 +696,12 @@ test_that("Alternative palattes work", {
                  seed = 42, quiet = TRUE, plot = FALSE)
 
 
-    vdiffr::expect_doppelganger(title = "CRD RdBu palatte", autoplot(d1, palette = "RdBu"))
-    vdiffr::expect_doppelganger(title = "CRD Set3 palatte", autoplot(d1, palette = "Set3"))
-    vdiffr::expect_doppelganger(title = "CRD Paired palatte", autoplot(d1, palette = "Paired"))
-    vdiffr::expect_doppelganger(title = "RCBD RdBu palatte", autoplot(d2, palette = "RdBu"))
-    vdiffr::expect_doppelganger(title = "RCBD Set3 palatte", autoplot(d2, palette = "Set3"))
-    vdiffr::expect_doppelganger(title = "RCBD Paired palatte", autoplot(d2, palette = "Paired"))
+    vdiffr::expect_doppelganger(title = "CRD RdBu palette", autoplot(d1, palette = "RdBu"))
+    vdiffr::expect_doppelganger(title = "CRD Set3 palette", autoplot(d1, palette = "Set3"))
+    vdiffr::expect_doppelganger(title = "CRD Paired palette", autoplot(d1, palette = "Paired"))
+    vdiffr::expect_doppelganger(title = "RCBD RdBu palette", autoplot(d2, palette = "RdBu"))
+    vdiffr::expect_doppelganger(title = "RCBD Set3 palette", autoplot(d2, palette = "Set3"))
+    vdiffr::expect_doppelganger(title = "RCBD Paired palette", autoplot(d2, palette = "Paired"))
 })
 
 test_that("Invalid palette option produces error", {
@@ -751,6 +751,16 @@ test_that("Adding buffers to plots works for RCBD", {
                                 autoplot(d2, buffer = "double row"))
     vdiffr::expect_doppelganger(title = "Double Column buffers RCBD",
                                 autoplot(d2, buffer = "double column"))
+})
+
+test_that("Invalid buffer options produce an error", {
+    # RCBD
+    d2 <- design("rcbd", treatments = LETTERS[1:11], reps = 4,
+                 nrows = 11, ncols = 4, brows = 11, bcols = 1,
+                 seed = 42, quiet = TRUE, plot = FALSE)
+
+    expect_error(autoplot(d2, buffer = "block"), "Block buffers are not yet supported\\.")
+    expect_error(autoplot(d2, buffer = "abc"), "Invalid buffer option: abc")
 })
 
 # test_that("Buffers are produced when abreviations are given", {

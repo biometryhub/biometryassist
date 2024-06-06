@@ -1,4 +1,4 @@
-#' Multiple Comparison Tests
+#' Perform Multiple Comparison Tests on a statistical model
 #'
 #' A function for comparing and ranking predicted means with Tukey's Honest Significant Difference (HSD) Test.
 #'
@@ -484,7 +484,7 @@ multiple_comparisons <- function(model.obj,
 }
 
 
-#' Print method for multiple_comparisons
+#' Print output of multiple_comparisons
 #'
 #' @param x An mct object to print to the console.
 #' @param ... Other arguments

@@ -2,7 +2,7 @@
 % Please edit documentation in R/mct.R
 \name{print.mct}
 \alias{print.mct}
-\title{Print method for multiple_comparisons}
+\title{Print output of multiple_comparisons}
 \usage{
 \method{print}{mct}(x, ...)
 }
@@ -15,7 +15,7 @@
 The original object invisibly.
 }
 \description{
-Print method for multiple_comparisons
+Print output of multiple_comparisons
 }
 \examples{
 dat.aov <- aov(Petal.Width ~ Species, data = iris)

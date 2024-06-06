@@ -2,7 +2,7 @@
 % Please edit documentation in R/variogram.r
 \name{variogram}
 \alias{variogram}
-\title{Variogram plots for spatial models.}
+\title{Display variogram plots for spatial models}
 \usage{
 variogram(
   model.obj,

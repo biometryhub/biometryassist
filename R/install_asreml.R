@@ -1,4 +1,4 @@
-#' Install or Update the ASReml-R package
+#' Install or update the ASReml-R package
 #'
 #' @description Helper functions for installing or updating the ASReml-R package, intended to reduce the difficulty of finding the correct version for your operating system and R version.
 #'

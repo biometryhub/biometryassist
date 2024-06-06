@@ -2,7 +2,7 @@
 % Please edit documentation in R/resplot.R
 \name{resplot}
 \alias{resplot}
-\title{Residual plots of linear models.}
+\title{Produce residual plots of linear models}
 \usage{
 resplot(
   model.obj,
@@ -30,7 +30,7 @@ resplot(
 \item{mod.obj}{Deprecated to be consistent with other functions. Please use \code{model.obj} instead.}
 }
 \value{
-A list containing ggplot2 objects which are diagnostic plots.
+A ggplot2 object containing the diagnostic plots.
 }
 \description{
 Produces plots of residuals for assumption checking of linear (mixed) models.

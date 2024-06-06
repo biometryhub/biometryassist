@@ -1,8 +1,14 @@
+# biometryassist 1.2.1
+
+## Bug Fixes
+
+- The new `summary_graph()` function was accidentally left out of the CRAN submission.
+
 # biometryassist 1.2.0
 
 ## Major changes
 
-- Introduced the `summary_plot()` (#75) and `heat_map()` (#19) functions 
+- Introduced the `summary_graph()` (#75) and `heat_map()` (#19) functions 
 - Enabled arbitrary `row`, `column`, `block` and `treatment` columns to be provided in the `autoplot.design()` function, to enable more general plotting of designs. (#28)
 
 ## Minor changes

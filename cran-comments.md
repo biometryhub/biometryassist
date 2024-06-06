@@ -1,6 +1,6 @@
 ## Submission
 
-Resubmission. Extra files removed, apologies. This version add some new features and fixes some minor bugs.
+Resubmission with incremented version number. One of the functions I was intending to submit with previous (1.2.0) update was excluded via .Rbuildignore - now included.
 
 ## Test environments
 * Local Windows 10 install, R 4.4.0
@@ -18,4 +18,4 @@ There was 1 NOTE:
 
 * checking package dependencies ... NOTE
   Packages which this enhances but not available for checking:
-    'asreml', 'ARTool', 'sommer'
+    'asreml'

@@ -2,7 +2,7 @@
 % Please edit documentation in R/logltest.R
 \name{logl_test}
 \alias{logl_test}
-\title{Log-likelihood test for comparing terms in ASReml-R models}
+\title{Conduct a log-likelihood test for comparing terms in ASReml-R models}
 \usage{
 logl_test(
   model.obj,
@@ -30,7 +30,7 @@ logl_test(
 A dataframe containing the results of the test.
 }
 \description{
-Log-likelihood test for comparing terms in ASReml-R models
+Conduct a log-likelihood test for comparing terms in ASReml-R models
 }
 \details{
 Typically p-values cannot be 0, and are usually just below some threshold of accuracy in calculation of probability.

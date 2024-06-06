@@ -3,7 +3,7 @@
 \name{install_asreml}
 \alias{install_asreml}
 \alias{update_asreml}
-\title{Install or Update the ASReml-R package}
+\title{Install or update the ASReml-R package}
 \usage{
 install_asreml(
   library = .libPaths()[1],

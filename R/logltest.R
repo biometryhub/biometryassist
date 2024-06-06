@@ -1,4 +1,4 @@
-#' Log-likelihood test for comparing terms in ASReml-R models
+#' Conduct a log-likelihood test for comparing terms in ASReml-R models
 #'
 #' @param model.obj An ASReml-R model object
 #' @param rand.terms Random terms from the model. Default is NULL.

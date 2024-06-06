@@ -1,4 +1,4 @@
-#' Variogram plots for spatial models.
+#' Display variogram plots for spatial models
 #'
 #' Produces variogram plots for checking spatial trends.
 #'

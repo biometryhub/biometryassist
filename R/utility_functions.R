@@ -21,15 +21,15 @@ quiet <- function(x) {
 # this function is executed once the package is loaded
 ######################################################
 
-#' @importFrom utils available.packages packageVersion
+#' @importFrom utils available.packages packageVersion compareVersion
 #' @importFrom rlang is_interactive is_installed
 .onAttach <- function(library, pkg)
 {
-    installed_version <- utils::packageVersion('biometryassist')
+    local_version <- utils::packageVersion('biometryassist')
 
     if(rlang::is_interactive() && !isFALSE(rlang::peek_option("biometryassist.check"))) {
         output <- paste(paste0("    ", paste0(rep("~", times = 69), collapse = "")),
-                        paste("    |  ", pkg, " version ", installed_version, "                                     |",sep=""),
+                        paste("    |  ", pkg, " version ", local_version, "                                     |",sep=""),
                         "    |  Authors: Sharon Nielsen, Sam Rogers, Annie Conway                |",
                         "    |  Developed at the University of Adelaide with funding provided    |",
                         "    |  by the Australian Grains Research and Development Corporation.   |",
@@ -47,7 +47,7 @@ quiet <- function(x) {
         }
 
         # check which version is more recent
-        current_version <- tryCatch(
+        cran_version <- tryCatch(
             {
                 packages <- utils::available.packages()
                 ver <- packages["biometryassist","Version"]
@@ -57,11 +57,22 @@ quiet <- function(x) {
             }
         )
 
-        if(!is.na(current_version) && current_version > installed_version) { # current version on CRAN newer than installed
-            warning("    biometryassist version ", current_version, " is now available.\n",
+        if(compare_version(cran_version, as.character(local_version)) == 1) { # current version on CRAN newer than installed
+            warning("    biometryassist version ", cran_version, " is now available.\n",
                     "    Please update biometryassist by running\n",
                     "    install.packages('biometryassist')", call. = FALSE)
         }
     }
     invisible()
+}
+
+#' Function to compare package version for mocking
+#'
+#' @param a One package version
+#' @param b Another package version
+#'
+#' @return
+#' @keywords internal
+compare_version <- function(a, b) {
+    return(utils::compareVersion(as.character(a), as.character(b)))
 }

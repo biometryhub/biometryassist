@@ -4,7 +4,7 @@
 \alias{autoplot}
 \alias{autoplot.mct}
 \alias{autoplot.design}
-\title{Automatic plots for objects generated in biometryassist}
+\title{Generate automatic plots for objects generated in biometryassist}
 \usage{
 autoplot(object, ...)
 
@@ -65,7 +65,7 @@ autoplot(object, ...)
 A \code{ggplot2} object.
 }
 \description{
-Automatic plots for objects generated in biometryassist
+Generate automatic plots for objects generated in biometryassist
 }
 \examples{
 dat.aov <- aov(Petal.Width ~ Species, data = iris)

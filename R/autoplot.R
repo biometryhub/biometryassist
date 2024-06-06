@@ -1,4 +1,4 @@
-#' Automatic plots for objects generated in biometryassist
+#' Generate automatic plots for objects generated in biometryassist
 #'
 #' @param object An object to create a plot for. Currently objects from the [multiple_comparisons()] or [design()] functions with class "mct" or "design" respectively are supported.
 #' @param label_height Height of the text labels above the upper error bar on the plot. Default is 0.1 (10%) of the difference between upper and lower error bars above the top error bar. Values > 1 are interpreted as the actual value above the upper error bar.

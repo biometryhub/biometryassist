@@ -2,7 +2,7 @@
 % Please edit documentation in R/heatmap.R
 \name{heat_map}
 \alias{heat_map}
-\title{Heatmap}
+\title{Produce a heatmap of variables in a grid layout.}
 \usage{
 heat_map(
   data,
@@ -12,13 +12,14 @@ heat_map(
   grouping = NULL,
   raster = TRUE,
   smooth = FALSE,
-  palette = "default"
+  palette = "default",
+  ...
 )
 }
 \arguments{
-\item{data}{A data frame containing the data to be plotted}
+\item{data}{A data frame containing the data to be plotted.}
 
-\item{value}{A column of \code{data}, containing the values that vary over the space which produces the colours}
+\item{value}{A column of \code{data}, containing the values that vary over the space which produces the colours.}
 
 \item{x_axis}{The column of \code{data} to use as the x axis data.}
 
@@ -28,15 +29,17 @@ heat_map(
 
 \item{raster}{Logical (default: \code{TRUE}). If \code{TRUE} uses \code{\link[ggplot2:geom_tile]{ggplot2::geom_raster()}} for speed. Will not work if the grid is irregular.}
 
-\item{smooth}{Logical (default: \code{TRUE}). If \code{raster} is \code{TRUE}, interpolation can be applied across the grid to obtain a smoothed grid. Ignored if \code{raster} is \code{FALSE}.}
+\item{smooth}{Logical (default: \code{FALSE}). If \code{raster} is \code{TRUE}, interpolation can be applied across the grid to obtain a smoothed grid. Ignored if \code{raster} is \code{FALSE}.}
 
-\item{palette}{Colour palatte to use. By default it will use the \code{viridis} (colour-blind friendly) palette. Other palettes available can be seen with \code{\link[grDevices:palettes]{grDevices::hcl.pals()}}.}
+\item{palette}{Colour palette to use. By default it will use the \code{viridis} (colour-blind friendly) palette. Other palettes available can be seen with \code{\link[grDevices:palettes]{grDevices::hcl.pals()}}.}
+
+\item{...}{Other arguments passed to \code{\link[=facet_wrap]{facet_wrap()}}}
 }
 \value{
 A \code{ggplot2} object.
 }
 \description{
-Function to plot heatmaps of variables in a grid layout.
+This function plots a heatmap of variables in a grid layout, optionally grouping them.
 }
 \examples{
 
@@ -46,5 +49,15 @@ dat$value <- rnorm(30)
 dat$groups <- sample(rep(LETTERS[1:6], times = 5))
 
 heat_map(dat, value, x, y)
+
+# Column names can be quoted, but don't need to be.
 heat_map(dat, "value", "x", "y", "groups")
+
+# Different palettes are available
+heat_map(dat, value, x, y, palette = "Spectral")
+
+# Arguments in ... are passed through to facet_wrap
+heat_map(dat, value, x, y, groups, labeller = ggplot2:::label_both)
+heat_map(dat, value, x, y, groups, scales = "free_y")
+heat_map(dat, value, x, y, groups, nrow = 1)
 }
