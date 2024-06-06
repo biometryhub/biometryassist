@@ -25,10 +25,10 @@
 #'
 #' summary_graph(iris, "Petal.Length", "Species", "mm")
 #'
-#' # Multiple
+#' # Multiple explanatory variables can be provided as a vector
 #' summary_graph(npk, "yield", c("N", "P"), "lb/plot")
 #'
-#  # Three way interaction
+#  # Three way interaction of explanatory variables
 #' summary_graph(npk, "yield", c("N", "P", "K"), "lb/plot")
 #'
 summary_graph <- function(data, response, exp_var, resp_units = "") {
