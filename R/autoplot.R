@@ -147,7 +147,7 @@ autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, pale
         colour_palette <- scales::viridis_pal(option = palette)(ntrt)
     }
     else {
-        stop("Invalid value for palette.")
+        stop("Invalid value for palette.", call. = FALSE)
     }
 
     hcl <- farver::decode_colour(colour_palette, "rgb", "hcl")

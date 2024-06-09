@@ -82,7 +82,7 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
         }
     }
     else {
-        stop("model.obj must be a linear (mixed) model object. Currently supported model types are: aov, lm, lmerMod, lmerModLmerTest, asreml, mmer or art")
+        stop("model.obj must be a linear (mixed) model object. Currently supported model types are: aov, lm, lmerMod, lmerModLmerTest, asreml, mmer or art", call. = FALSE)
     }
 
     aa <- data.frame(residuals = resids, fitted = fits, lvl = rep(1:facet, k))

@@ -105,11 +105,11 @@ des_info <- function(design.obj,
 
     # Check brows and bcols supplied if necessary
     if(design.obj$parameters$design == "rcbd" & anyNA(c(brows, bcols))) {
-        stop("Design has blocks so brows and bcols must be supplied.")
+        stop("Design has blocks so brows and bcols must be supplied.", call. = FALSE)
     }
     else if(design.obj$parameters$design == "factorial") {
         if(design.obj$parameters$applied == "rcbd" & anyNA(c(brows, bcols))) {
-            stop("Design has blocks so brows and bcols must be supplied.")
+            stop("Design has blocks so brows and bcols must be supplied.", call. = FALSE)
         }
 
         # If factorial design, and names are supplied, use them
@@ -160,7 +160,7 @@ des_info <- function(design.obj,
     }
     else if(design.obj$parameters$design == "split") {
         if(design.obj$parameters$applied == "rcbd" & anyNA(c(brows, bcols))) {
-            stop("Design has blocks so brows and bcols must be supplied.")
+            stop("Design has blocks so brows and bcols must be supplied.", call. = FALSE)
         }
 
         # If names are supplied, use them
@@ -556,7 +556,7 @@ des_info <- function(design.obj,
             # Do nothing
         }
         else {
-            stop("save must be one of 'none'/FALSE, 'both'/TRUE, 'plot', or 'workbook'.")
+            stop("save must be one of 'none'/FALSE, 'both'/TRUE, 'plot', or 'workbook'.", call. = FALSE)
         }
     }
     else if(save) {

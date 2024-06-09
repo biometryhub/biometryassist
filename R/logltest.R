@@ -35,11 +35,11 @@
 logl_test <- function(model.obj, rand.terms = NULL, resid.terms = NULL, decimals = 3, numeric = FALSE, quiet = FALSE) {
 
     if(!inherits(model.obj, "asreml")){
-        stop("Only asreml models are supported at this time.")
+        stop("Only asreml models are supported at this time.", call. = FALSE)
     }
 
     if(is.null(rand.terms) & is.null(resid.terms)) {
-        stop("One of rand.terms or resid.terms must be provided.")
+        stop("One of rand.terms or resid.terms must be provided.", call. = FALSE)
     }
 
     # Find terms on the boundary

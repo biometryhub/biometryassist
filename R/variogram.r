@@ -36,11 +36,11 @@
 variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palette = "default") {
 
     if(!(inherits(model.obj, "asreml"))) {
-        stop("model.obj must be an asreml model object")
+        stop("model.obj must be an asreml model object", call. = FALSE)
     }
 
     if(attr(model.obj$formulae$residual,"term.labels") == "units") {
-        stop("Residual term must include spatial component.")
+        stop("Residual term must include spatial component.", call. = FALSE)
     }
 
     vario_points <- vario_df(model.obj, row, column)
@@ -146,7 +146,7 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
                                     col.regions = scales::brewer_pal(palette = palette)(11))
         }
         else {
-            stop("Invalid value for palette.")
+            stop("Invalid value for palette.", call. = FALSE)
         }
         output[[i]] <- cowplot::plot_grid(b, a, nrow = 2, scale = c(2, 1))
         if(!orig_row) {

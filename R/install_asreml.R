@@ -298,7 +298,7 @@ create_mac_folder <- function() {
             else {
                 stop("ASReml-R cannot be installed until the folder '/Library/Application Support/Reprise' is created with appropriate permissions.
                          Please run the following command on your terminal:
-                         sudo -S mkdir '/Library/Application Support/Reprise' && sudo -S chmod 777 '/Library/Application Support/Reprise'")
+                         sudo -S mkdir '/Library/Application Support/Reprise' && sudo -S chmod 777 '/Library/Application Support/Reprise'", call. = FALSE)
             }
         }
     }

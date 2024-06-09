@@ -146,7 +146,7 @@ multiple_comparisons <- function(model.obj,
     reserved_col_names <- c("predicted.value", "std.error", "Df",
                             "groups", "PredictedValue", "ApproxSE", "ci", "low", "up")
     if(any(vars %in% reserved_col_names)) {
-        stop("Invalid column name. Please change the name of column(s): ", vars[vars %in% reserved_col_names])
+        stop("Invalid column name. Please change the name of column(s): ", vars[vars %in% reserved_col_names], call. = FALSE)
     }
 
     if(inherits(model.obj, "asreml")){
@@ -157,13 +157,13 @@ multiple_comparisons <- function(model.obj,
         }
 
         if(!missing(pred.obj)) {
-            warning("Argument `pred.obj` has been deprecated and will be removed in a future version. Predictions are now performed internally in the function.")
+            warning("Argument `pred.obj` has been deprecated and will be removed in a future version. Predictions are now performed internally in the function.", call. = FALSE)
         }
 
         pred.obj <- quiet(asreml::predict.asreml(model.obj, classify = classify, sed = TRUE, trace = FALSE, ...))
         # Check if all the predicted values are NA. If so, suggests the need of the `present` argument
         if(all(is.na(pred.obj$pvals$predicted.value)) & all(is.na(pred.obj$pvals$std.error))) {
-            stop("All predicted values are aliased. Perhaps you need the `present` argument?")
+            stop("All predicted values are aliased. Perhaps you need the `present` argument?", call. = FALSE)
         }
 
         # Check if any treatments are aliased, and remove them and print a warning
@@ -282,7 +282,7 @@ multiple_comparisons <- function(model.obj,
     }
 
     else {
-        stop("Models of type ", class(model.obj), " are not supported.")
+        stop("Models of type ", class(model.obj), " are not supported.", call. = FALSE)
     }
 
     # Check that the predicted levels don't contain a dash -, if they do replace and display warning
