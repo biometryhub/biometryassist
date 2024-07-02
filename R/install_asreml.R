@@ -36,7 +36,7 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
         # Get OS and R version
         os_ver <- get_r_os()
         if(os_ver$os=="mac") {
-          create_mac_folder()
+            create_mac_folder()
         }
 
         url <- paste0("https://link.biometryhubwaite.com/", os_ver$os_ver)
@@ -46,12 +46,11 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
         dir_files <- list.files(pattern = "asreml+(([a-zA-Z0-9_.\\-])*)+(.zip|.tar.gz|.tgz)")
 
         if(length(dir_files) > 0) {
-            filename <- dir_files[length(dir_files)] # Get the alphabetically last one. Theoretically this should be the highest version number.
+            filename <- tail(dir_files, 1) # Get the alphabetically last one. Theoretically this should be the highest version number.
             save_file <- filename
         }
-
-        # Can't find file, download
         else {
+            # Can't find file, download
             if(!quiet) {
                 message("\nDownloading and installing ASReml-R. This may take some time, depending on internet speed...\n")
             }
@@ -63,8 +62,8 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
 
             # Extract everything after the last / as the filename
             filename <- basename(response$url)
-            file.rename(save_file, paste0(tempdir(), "/", filename))
-            save_file <- normalizePath(paste0(tempdir(), "/", filename))
+            file.rename(save_file, file.path(dirname(save_file), filename))
+            save_file <- normalizePath(file.path(tempdir(), filename))
         }
 
         # If forcing installation, remove existing version to avoid errors on installation
@@ -80,7 +79,7 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
         pkgs <- rownames(installed.packages(lib.loc = library))
         deps <- setdiff(c("data.table", "ggplot2", "jsonlite"), pkgs)
 
-        if(!rlang::is_installed("data.table", version = "1.9.6")) {
+        if(!rlang::is_installed("data.table", version = "1.14")) {
             deps <- c(deps, "data.table")
         }
 
@@ -91,52 +90,7 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
         # Install asreml
         install.packages(save_file, lib = library, repos = NULL, quiet = quiet, type = ifelse(os_ver$os == "win", "binary", "source"))
 
-        # If keep_file is true, copy asreml to current directory
-        if(keep_file == TRUE) {
-            result <- tryCatch(
-                expr = {
-                    file.rename(save_file, filename)
-                },
-                error = function(cond) {
-                    warning("Could not copy asreml install file to current working directory", call. = FALSE)
-                    file.remove(save_file)
-                    return(FALSE)
-                },
-                warning = function(cond) {
-                    warning("Could not copy asreml install file to current working directory", call. = FALSE)
-                    file.remove(save_file)
-                    return(FALSE)
-                }
-            )
-        }
-        else if(keep_file == FALSE) {
-            file.remove(save_file)
-        }
-        else if(is.character(keep_file) & length(keep_file) == 1) { # Assume keep_file is a path
-            if(dir.exists(keep_file)) {
-                result <- tryCatch(
-                    expr = {
-                        file.rename(save_file, paste0(keep_file, "/", filename))
-                    },
-                    error = function(cond) {
-                        warning("Could not copy asreml install file to provided directory.", call. = FALSE)
-                        file.remove(save_file)
-                        return(FALSE)
-                    },
-                    warning = function(cond) {
-                        warning("Could not copy asreml install file to provided directory.", call. = FALSE)
-                        file.remove(save_file)
-                        return(FALSE)
-                    }
-                )
-            }
-            else {
-                warning("Directory provided in keep_file does not exist. Please provide a valid path in the keep_file argument to save the package to.")
-            }
-        }
-        else {
-            warning("Argument keep_file should be provided as a path to a single directory or TRUE to save in current working directory. Downloaded file has not been kept.")
-        }
+        manage_file(save_file, keep_file, filename)
 
         if(rlang::is_installed("asreml")) {
             if(!quiet) message("ASReml-R successfully installed!")
@@ -279,21 +233,23 @@ create_mac_folder <- function() {
                 dir.create("/Library/Application Support/Reprise/", recursive = T)
             },
             error = function(cond) {
-                return(FALSE)
+                FALSE
             },
             warning = function(cond) {
-                return(FALSE)
+                FALSE
             }
         )
 
         if(isFALSE(result)) {
             message("The ASReml-R package uses Reprise license management and will require administrator privilege to create the folder '/Library/Application Support/Reprise' before it can be installed.")
-            input <- readline("Would you like to create this folder now (Yes/No)? You will be prompted for your password if yes. ")
+            input <- readline("Would you like to create this folder now (Yes/No)? ")
 
             if(toupper(input) %in% c("YES", "Y")) {
+                message("You should now be prompted for your account password.")
+                sleep(3)
                 system("sudo -S mkdir '/Library/Application Support/Reprise' && sudo -S chmod 777 '/Library/Application Support/Reprise'",
                        input = askpass::askpass("Please enter your user account password: "))
-              cat("\n")
+                cat("\n")
             }
             else {
                 stop("ASReml-R cannot be installed until the folder '/Library/Application Support/Reprise' is created with appropriate permissions.
@@ -303,4 +259,55 @@ create_mac_folder <- function() {
         }
     }
     return(dir.exists("/Library/Application Support/Reprise/"))
+}
+
+#' Manage the downloaded file
+#'
+#' @return logical; TRUE if file successfully moved, FALSE otherwise
+#' @keywords internal
+manage_file <- function(save_file, keep_file, filename) {
+
+    handle_failure <- function(cond) {
+        warning("Could not copy asreml install file to the directory.", call. = FALSE)
+        unlink(save_file)
+        return(FALSE)
+    }
+
+    # If keep_file is FALSE, remove file
+    if(!keep_file) {
+        unlink(save_file)
+        result <- TRUE
+    }
+    else if(keep_file) {
+        # If keep_file is true, copy asreml to current directory
+        result <- tryCatch(
+            expr = {
+                file.rename(save_file, filename)
+            },
+            error = handle_failure,
+            warning = handle_failure
+        )
+    }
+    else if(is.character(keep_file) & length(keep_file) == 1) {
+        # If keep_file is a character, assume it's a path to copy to
+        if(dir.exists(keep_file)) {
+            result <- tryCatch(
+                expr = {
+                    file.rename(save_file, file.path(keep_file, filename))
+                },
+                error = handle_failure,
+                warning = handle_failure
+            )
+        }
+        else {
+            warning("Directory provided in keep_file does not exist. Please provide a valid path in the keep_file argument to save the package to. Downloaded file has not been kept.")
+            result <- FALSE
+        }
+    }
+    else {
+        warning("Argument keep_file should be provided as a path to a single directory or TRUE to save in current working directory. Downloaded file has not been kept.")
+        result <- FALSE
+    }
+
+    return(result)
 }
