@@ -6,10 +6,11 @@
 #' @param quiet Logical (default `FALSE`). Should package be installed quietly?
 #' @param force Logical (default `FALSE`). Force ASReml-R to install. Useful for upgrading if it is already installed.
 #' @param keep_file Should the downloaded asreml package file be kept? Default is `FALSE`. `TRUE` downloads to current directory. A file path can also be provided to save to another directory. See `Details` for more information.
+#' @param check_version Logical (default `TRUE`). Should function check if there is a newer version of asreml available before attempting to download and install?
 #'
 #' @details The ASReml-R package file is downloaded from a shortlink, and if `keep_file` is `TRUE`, the package archive file will be saved in the current directory. If a valid path is provided in `keep_file`, the file will be saved to that path, but all directories are assumed to exist and will not be created. If `keep_file` does not specify an existing, valid path, an error will be shown after package installation.
 #'
-#' @importFrom utils install.packages installed.packages download.file remove.packages
+#' @importFrom utils install.packages installed.packages download.file remove.packages tail
 #' @importFrom curl curl_fetch_disk
 #' @importFrom rlang is_installed
 #'
@@ -26,80 +27,83 @@
 #' install_asreml(keep_file = TRUE)
 #' }
 #'
-install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALSE, keep_file = FALSE) {
+install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALSE, keep_file = FALSE, check_version = TRUE) {
 
-    if(rlang::is_installed("asreml") && !newer_version() && !force) {
+    new_version <- FALSE
+    if(check_version) {
+        new_version <- newer_version()
+    }
+
+    if(rlang::is_installed("asreml") && isFALSE(new_version) && isFALSE(force)) {
         if(!quiet) message("The latest version of ASReml-R available for your sysetm is already installed. To install anyway, set `force = TRUE`.")
+        return(invisible(TRUE))
+    }
+    # Get OS and R version
+    os_ver <- get_r_os()
+    if(os_ver$os=="mac") {
+        create_mac_folder()
+    }
+
+    url <- paste0("https://link.biometryhubwaite.com/", os_ver$os_ver)
+
+    # First check if file already exists, both in the current directory and temp folder
+    # Need to create a regex to check it's the correct file extension, so tests ignore .R files
+    dir_files <- list.files(pattern = "asreml+(([a-zA-Z0-9_.\\-])*)+(.zip|.tar.gz|.tgz)")
+
+    if(length(dir_files) > 0) {
+        filename <- tail(dir_files, 1) # Get the alphabetically last one. Theoretically this should be the highest version number.
+        save_file <- filename
+    }
+    else {
+        # Can't find file, download
+        if(!quiet) {
+            message("\nDownloading and installing ASReml-R. This may take some time, depending on internet speed...\n")
+        }
+        #Create a temporary file to save the package
+        save_file <- tempfile("asreml_")
+
+        # Use curl to download the file which also gives the expanded URL
+        response <- curl::curl_fetch_disk(url = url, path = save_file)
+
+        # Extract everything after the last / as the filename
+        filename <- basename(response$url)
+        file.rename(save_file, file.path(dirname(save_file), filename))
+        save_file <- normalizePath(file.path(tempdir(), filename))
+    }
+
+    # If forcing installation, remove existing version to avoid errors on installation
+    if(force && rlang::is_installed("asreml") && os_ver$os != "linux") {
+        unloadNamespace("asreml")
+        if("asreml" %in% .packages()) {
+            detach("package:asreml", unload = TRUE, force = TRUE)
+        }
+        suppressMessages(remove.packages("asreml"))
+    }
+
+    # Check dependencies are installed first
+    pkgs <- rownames(installed.packages(lib.loc = library))
+    deps <- setdiff(c("data.table", "ggplot2", "jsonlite"), pkgs)
+
+    if(!rlang::is_installed("data.table", version = "1.14")) {
+        deps <- c(deps, "data.table")
+    }
+
+    if(length(deps) > 0) {
+        install.packages(deps, lib = library, repos = "https://cloud.r-project.org")
+    }
+
+    # Install asreml
+    install.packages(save_file, lib = library, repos = NULL, quiet = quiet, type = ifelse(os_ver$os == "win", "binary", "source"))
+
+    manage_file(save_file, keep_file, filename)
+
+    if(rlang::is_installed("asreml")) {
+        if(!quiet) message("ASReml-R successfully installed!")
         invisible(TRUE)
     }
     else {
-        # Get OS and R version
-        os_ver <- get_r_os()
-        if(os_ver$os=="mac") {
-            create_mac_folder()
-        }
-
-        url <- paste0("https://link.biometryhubwaite.com/", os_ver$os_ver)
-
-        # First check if file already exists, both in the current directory and temp folder
-        # Need to create a regex to check it's the correct file extension, so tests ignore .R files
-        dir_files <- list.files(pattern = "asreml+(([a-zA-Z0-9_.\\-])*)+(.zip|.tar.gz|.tgz)")
-
-        if(length(dir_files) > 0) {
-            filename <- tail(dir_files, 1) # Get the alphabetically last one. Theoretically this should be the highest version number.
-            save_file <- filename
-        }
-        else {
-            # Can't find file, download
-            if(!quiet) {
-                message("\nDownloading and installing ASReml-R. This may take some time, depending on internet speed...\n")
-            }
-            #Create a temporary file to save the package
-            save_file <- tempfile("asreml_")
-
-            # Use curl to download the file which also gives the expanded URL
-            response <- curl::curl_fetch_disk(url = url, path = save_file)
-
-            # Extract everything after the last / as the filename
-            filename <- basename(response$url)
-            file.rename(save_file, file.path(dirname(save_file), filename))
-            save_file <- normalizePath(file.path(tempdir(), filename))
-        }
-
-        # If forcing installation, remove existing version to avoid errors on installation
-        if(force && rlang::is_installed("asreml") && os_ver$os != "linux") {
-            unloadNamespace("asreml")
-            if("asreml" %in% .packages()) {
-                detach("package:asreml", unload = TRUE, force = TRUE)
-            }
-            suppressMessages(remove.packages("asreml"))
-        }
-
-        # Check dependencies are installed first
-        pkgs <- rownames(installed.packages(lib.loc = library))
-        deps <- setdiff(c("data.table", "ggplot2", "jsonlite"), pkgs)
-
-        if(!rlang::is_installed("data.table", version = "1.14")) {
-            deps <- c(deps, "data.table")
-        }
-
-        if(length(deps) > 0) {
-            install.packages(deps, lib = library, repos = "https://cloud.r-project.org")
-        }
-
-        # Install asreml
-        install.packages(save_file, lib = library, repos = NULL, quiet = quiet, type = ifelse(os_ver$os == "win", "binary", "source"))
-
-        manage_file(save_file, keep_file, filename)
-
-        if(rlang::is_installed("asreml")) {
-            if(!quiet) message("ASReml-R successfully installed!")
-            invisible(TRUE)
-        }
-        else {
-            if(!quiet) warning("There was a problem with installation and ASReml-R was not successfully installed.")
-            invisible(FALSE)
-        }
+        if(!quiet) warning("There was a problem with installation and ASReml-R was not successfully installed.")
+        invisible(FALSE)
     }
 }
 
@@ -144,12 +148,15 @@ get_r_os <- function() {
 #' @keywords internal
 #' @importFrom xml2 read_html xml_text xml_find_all
 #' @importFrom stringi stri_split_fixed
-get_version_table <- function() {
-    url <- "https://asreml.kb.vsni.co.uk/asreml-r-4-download-success/?site_reference=VS9AF20"
+get_version_table <- function(url = "https://asreml.kb.vsni.co.uk/asreml-r-4-download-success/?site_reference=VS9AF20") {
+
     res <- xml2::read_html(url)
 
     headers <- xml2::xml_text(xml2::xml_find_all(res, "//h3"))
     headers <- headers[grepl("^ASReml-?R? 4.*\\(All platforms\\)", headers)]
+    if(length(headers)==0) {
+        stop("URL doesn't seem to contain asreml version information.")
+    }
 
     tables <- xml2::xml_text(xml2::xml_find_all(res, xpath = "//table"))
     tables <- tables[grepl("macOS", tables)]
@@ -246,7 +253,7 @@ create_mac_folder <- function() {
 
             if(toupper(input) %in% c("YES", "Y")) {
                 message("You should now be prompted for your account password.")
-                sleep(3)
+                Sys.sleep(3)
                 system("sudo -S mkdir '/Library/Application Support/Reprise' && sudo -S chmod 777 '/Library/Application Support/Reprise'",
                        input = askpass::askpass("Please enter your user account password: "))
                 cat("\n")
