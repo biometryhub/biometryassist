@@ -8,7 +8,6 @@
 ^docs$
 ^pkgdown$
 ^\.github$
-variogram_2d\.R
 ^.*pdf$
 ^.*csv$
 ^.*xls$
