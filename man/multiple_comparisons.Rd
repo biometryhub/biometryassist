@@ -69,7 +69,25 @@ A list containing a data frame with predicted means, standard errors, confidence
 A function for comparing and ranking predicted means with Tukey's Honest Significant Difference (HSD) Test.
 }
 \details{
-Some transformations require that data has a small offset applied, otherwise it will cause errors (for example taking a log of 0, or square root of negative values). In order to correctly reverse this offset, if the \code{trans} argument is supplied, an offset value must also be supplied. If there was no offset required for a transformation, then use a value of 0 for the \code{offset} argument.
+\subsection{Offset}{
+
+Some transformations require that data has a small offset to be
+applied, otherwise it will cause errors (for example taking a log of 0, or
+the square root of negative values). In order to correctly reverse this
+offset, if the \code{trans} argument is supplied, a value should also be supplied
+in the \code{offset} argument. By default the function assumes no offset was
+required for a transformation, implying a value of 0 for the \code{offset}
+argument. If an offset value is provided, use the same value as provided in
+the model, not the inverse. For example, if adding 0.1 to values for a log
+transformation, add 0.1 in the \code{offset} argument.
+}
+
+\subsection{Power}{
+
+The power argument allows the specification of arbitrary powers to be
+back transformed, if they have been used to attempt to improve normality of
+residuals.
+}
 }
 \examples{
 # Fit aov model
@@ -88,6 +106,28 @@ pred.out
 autoplot(pred.out, label_height = 0.5)
 
 
+# AOV model example with transformation
+my_iris <- iris
+my_iris$Petal.Length <- exp(my_iris$Petal.Length) # Create exponential response
+exp_model <- aov(Petal.Length ~ Species, data = my_iris)
+
+resplot(exp_model) # Not a good residual plot
+
+log_model <- aov(log(Petal.Length) ~ Species, data = my_iris)
+resplot(log_model) # Looks much better
+
+# Display the ANOVA table for the model
+anova(log_model)
+
+# Back transform, because the "original" data was exponential
+pred.out <- multiple_comparisons(log_model, classify = "Species",
+                                   trans = "log")
+
+# Display the predicted values table
+pred.out
+
+# Show the predicted values plot
+autoplot(pred.out, label_height = 15)
 
 \dontrun{
 # ASReml-R Example
