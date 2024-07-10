@@ -53,8 +53,10 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
             facet_name <- NULL
             k <- length(model.obj$residual)
         }
-        resids <- residuals(model.obj)
+        resids <- as.numeric(model.obj[["residuals"]])
         fits <- fitted(model.obj)
+        fits <- ifelse(rep("fitted" %in% names(model.obj), nrow(model.obj$mf)), model.obj[["fitted"]], fitted(model.obj))
+
         if(call) {
             model_call <- paste(trimws(deparse(model.obj$call, width.cutoff = 50)), collapse = "\n")
             model_call <- gsub("G\\.param \\= model\\.asr\\$G\\.param, ", "", model_call)

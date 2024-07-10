@@ -26,7 +26,7 @@ test_that("Old mod.obj argument produces a warning", {
 
 test_that("Residual plots work for asreml", {
     skip_on_cran()
-    skip_if_not(requireNamespace("asreml", quietly = TRUE))
+    # skip_if_not(requireNamespace("asreml", quietly = TRUE))
 
     # dat.asr <- quiet(asreml::asreml(Petal.Length ~ Petal.Width, data = iris, trace = FALSE))
     load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
@@ -40,9 +40,6 @@ test_that("Residual plots work for asreml", {
     vdiffr::expect_doppelganger(title = "Resplot for asreml pt 1", p1_multi[[1]])
     vdiffr::expect_doppelganger(title = "Resplot for asreml pt 2", p1_multi[[2]])
     vdiffr::expect_doppelganger(title = "Resplot for asreml pt 3", p1_multi[[3]])
-
-
-    # vdiffr::manage_cases()
 })
 
 
