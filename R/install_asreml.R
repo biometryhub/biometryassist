@@ -281,11 +281,11 @@ manage_file <- function(save_file, keep_file, filename) {
     }
 
     # If keep_file is FALSE, remove file
-    if(!keep_file) {
+    if(isFALSE(keep_file)) {
         unlink(save_file)
         result <- TRUE
     }
-    else if(keep_file) {
+    else if(isTRUE(keep_file)) {
         # If keep_file is true, copy asreml to current directory
         result <- tryCatch(
             expr = {
