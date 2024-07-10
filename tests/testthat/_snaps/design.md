@@ -191,6 +191,18 @@
     [13] "==================================================\n"
     [14] "Total                                       31\n"    
 
+# Output is produced when quiet = FALSE
+
+    Code
+      cat(des$satab)
+    Output
+      Source of Variation                     df
+       =============================================
+       treatments                              10
+       Residual                                33
+       =============================================
+       Total                                   43
+
 # Colour blind friendly plots work
 
     [1] "Source of Variation                     df\n"   

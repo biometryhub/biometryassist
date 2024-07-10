@@ -503,6 +503,15 @@ test_that("save = TRUE produces plot file and csv", {
     expect_snapshot_file("crd_design4.csv")
 })
 
+test_that("Output is produced when quiet = FALSE", {
+    withr::local_file("Rplots.pdf")
+    expect_output(des <- design("crd", treatments = 1:11, reps = 4, 
+                                nrows = 11, ncols = 4, quiet = FALSE),
+                  "Source of Variation                     df")
+    expect_snapshot(cat(des$satab))
+    vdiffr::expect_doppelganger(title = "Plot output", des$plot.des)
+})
+
 test_that("designs have a class of 'design'", {
     d1 <- design("crd", treatments = 1:11, reps = 4, 
                  nrows = 11, ncols = 4, quiet = TRUE)
