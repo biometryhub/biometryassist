@@ -44,9 +44,15 @@
 #' back transformed, if they have been used to attempt to improve normality of
 #' residuals.
 #'
-#' @return A list containing a data frame with predicted means, standard errors, confidence interval upper and lower bounds, and significant group allocations (named `predicted_values`), as well as a plot visually displaying the predicted values (named `predicted_plot`). If some of the predicted values are aliased, a warning is printed, and the aliased treatment levels are returned in the output (named `aliased`).
+#' @return A list containing a data frame with predicted means, standard errors,
+#'  confidence interval upper and lower bounds, and significant group
+#'  allocations (named `predicted_values`), as well as a plot visually
+#'  displaying the predicted values (named `predicted_plot`). If some of the
+#'  predicted values are aliased, a warning is printed, and the aliased
+#'  treatment levels are returned in the output (named `aliased`).
 #'
-#' @references Jørgensen, E. & Pedersen, A. R. (1997). How to Obtain Those Nasty Standard Errors From Transformed Data - and Why They Should Not Be Used. [<https://pure.au.dk/portal/en/publications/how-to-obtain-those-nasty-standard-errors-from-transformed-data--and-why-they-should-not-be-used(d649ca20-d15f-11db-8e26-000ea68e967b).html>](https://pure.au.dk/portal/en/publications/how-to-obtain-those-nasty-standard-errors-from-transformed-data--and-why-they-should-not-be-used(d649ca20-d15f-11db-8e26-000ea68e967b).html)
+#' @references Jørgensen, E. & Pedersen, A. R. (1997). How to Obtain Those Nasty
+#'  Standard Errors From Transformed Data - and Why They Should Not Be Used. [<https://pure.au.dk/portal/en/publications/how-to-obtain-those-nasty-standard-errors-from-transformed-data--and-why-they-should-not-be-used(d649ca20-d15f-11db-8e26-000ea68e967b).html>](https://pure.au.dk/portal/en/publications/how-to-obtain-those-nasty-standard-errors-from-transformed-data--and-why-they-should-not-be-used(d649ca20-d15f-11db-8e26-000ea68e967b).html)
 #'
 #' @examples
 #' # Fit aov model
