@@ -70,9 +70,11 @@
 #' my_iris$Petal.Length <- exp(my_iris$Petal.Length) # Create exponential response
 #' exp_model <- aov(Petal.Length ~ Species, data = my_iris)
 #'
-#' resplot(exp_model) # Not a good residual plot
+#' resplot(exp_model) # Residual plot shows problems
 #'
+#' # Fit a new model using a log transformation of the response
 #' log_model <- aov(log(Petal.Length) ~ Species, data = my_iris)
+#'
 #' resplot(log_model) # Looks much better
 #'
 #' # Display the ANOVA table for the model
