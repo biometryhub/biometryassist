@@ -204,7 +204,7 @@ newer_version <- function() {
                      online_versions$os==os_ver$os &
                          online_versions$arm==os_ver$arm &
                          online_versions$r_ver==os_ver$ver &
-                         numeric_version(online_versions$asr_ver)==max(numeric_version(online_versions$asr_ver)))
+                         numeric_version(as.character(online_versions$asr_ver))==max(numeric_version(as.character(online_versions$asr_ver))))
 
     if(rlang::is_installed("asreml")) {
         asr_desc <- utils::packageDescription("asreml")
@@ -216,7 +216,7 @@ newer_version <- function() {
         asr_ver <- 0
     }
 
-    if((nrow(newest)>0) && (newest$`Date published` > asr_date+7) && (numeric_version(newest$asr_ver) > numeric_version(asr_ver))) {
+    if((nrow(newest)>0) && (newest$`Date published` > asr_date+7) && (numeric_version(as.character(newest$asr_ver)) > numeric_version(as.character(asr_ver)))) {
         output <- TRUE
     }
     else {
