@@ -453,7 +453,7 @@ des_info <- function(design.obj,
         # Calculate direction of blocking
         xx <- c()
         rr <- nrows / brows
-        cc <- ncols / bcols
+        cc <- ncols / bcols 
         # Blocking across rows: brows == ntrt in a single column
         if(brows == ntrt) {
             plan <- expand.grid(row = 1:nrows, col = 1:ncols) # 2

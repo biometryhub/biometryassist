@@ -147,7 +147,7 @@ logl_test <- function(model.obj, rand.terms = NULL, resid.terms = NULL, decimals
                 }
 
                 n[6] <- 1
-                while (any(model.obj1$vparameters.pc > 1) & n[6] < 10) {
+                while (any(model.obj1$vparameters.pc > 1) & n[6] < 50) {
                     model.obj1 <- quiet(update(model.obj1))
                     n[6] <- n[6] + 1
                 }
