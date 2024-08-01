@@ -439,7 +439,7 @@ des_info <- function(design.obj,
 
     if(design == "split") {
         des <- design.obj$book
-        spfacs <- c("plots", "splots", "block")
+        spfacs <- c("plots", "block", "wplots", "splots")
 
         trtNams <- names(des[!is.element(names(des), spfacs)])
 
