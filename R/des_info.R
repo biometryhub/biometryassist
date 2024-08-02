@@ -192,10 +192,10 @@ des_info <- function(design.obj,
                         warning(names(fac.names)[2], " must contain the correct number of elements. Elements have not been applied.", call. = FALSE)
                     }
 
-                    colnames(design.obj$book)[4:5] <- names(fac.names)[1:2]
+                    colnames(design.obj$book)[colnames(design.obj$book) %in% c("treatments", "sub_treatments")] <- names(fac.names)[1:2]
                 }
                 else if(is.character(fac.names)) {
-                    colnames(design.obj$book)[4:5] <- fac.names[1:2]
+                    colnames(design.obj$book)[colnames(design.obj$book) %in% c("treatments", "sub_treatments")] <- fac.names[1:2]
                 }
             }
         }
@@ -453,7 +453,7 @@ des_info <- function(design.obj,
         # Calculate direction of blocking
         xx <- c()
         rr <- nrows / brows
-        cc <- ncols / bcols 
+        cc <- ncols / bcols
         # Blocking across rows: brows == ntrt in a single column
         if(brows == ntrt) {
             plan <- expand.grid(row = 1:nrows, col = 1:ncols) # 2
