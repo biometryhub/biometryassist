@@ -439,16 +439,22 @@ des_info <- function(design.obj,
 
     if(design == "split") {
         des <- design.obj$book
+
+        numsp <- max(as.numeric(des$splots))
+        lenblk <- as.vector(table(des$block)[1])
+        numwp <- lenblk/numsp
+        des$wplots <- rep(rep(1:numwp, each = numsp), max(as.numeric(des$block)))
+        des <- des[, c(1, 3, 6, 2, 4, 5)]
+
         spfacs <- c("plots", "block", "wplots", "splots")
 
         trtNams <- names(des[!is.element(names(des), spfacs)])
-
+        design.obj$book <- des
 
         des$treatments <- factor(paste(des[, trtNams[1]], des[, trtNams[2]], sep = "_"))
 
         # Number of treatments
         ntrt <- nlevels(des$treatments)
-
 
         # Calculate direction of blocking
         xx <- c()

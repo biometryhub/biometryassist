@@ -63,7 +63,12 @@ multiple_comparisons(
 \item{...}{Other arguments passed through to \code{predict.asreml()}.}
 }
 \value{
-A list containing a data frame with predicted means, standard errors, confidence interval upper and lower bounds, and significant group allocations (named \code{predicted_values}), as well as a plot visually displaying the predicted values (named \code{predicted_plot}). If some of the predicted values are aliased, a warning is printed, and the aliased treatment levels are returned in the output (named \code{aliased}).
+A list containing a data frame with predicted means, standard errors,
+confidence interval upper and lower bounds, and significant group
+allocations (named \code{predicted_values}), as well as a plot visually
+displaying the predicted values (named \code{predicted_plot}). If some of the
+predicted values are aliased, a warning is printed, and the aliased
+treatment levels are returned in the output (named \code{aliased}).
 }
 \description{
 A function for comparing and ranking predicted means with Tukey's Honest Significant Difference (HSD) Test.
@@ -111,9 +116,11 @@ my_iris <- iris
 my_iris$Petal.Length <- exp(my_iris$Petal.Length) # Create exponential response
 exp_model <- aov(Petal.Length ~ Species, data = my_iris)
 
-resplot(exp_model) # Not a good residual plot
+resplot(exp_model) # Residual plot shows problems
 
+# Fit a new model using a log transformation of the response
 log_model <- aov(log(Petal.Length) ~ Species, data = my_iris)
+
 resplot(log_model) # Looks much better
 
 # Display the ANOVA table for the model
@@ -186,5 +193,6 @@ autoplot(pred.out)
 
 }
 \references{
-Jørgensen, E. & Pedersen, A. R. (1997). How to Obtain Those Nasty Standard Errors From Transformed Data - and Why They Should Not Be Used. \url{https://pure.au.dk/portal/en/publications/how-to-obtain-those-nasty-standard-errors-from-transformed-data--and-why-they-should-not-be-used(d649ca20-d15f-11db-8e26-000ea68e967b).html}
+Jørgensen, E. & Pedersen, A. R. (1997). How to Obtain Those Nasty
+Standard Errors From Transformed Data - and Why They Should Not Be Used. \url{https://pure.au.dk/portal/en/publications/how-to-obtain-those-nasty-standard-errors-from-transformed-data--and-why-they-should-not-be-used(d649ca20-d15f-11db-8e26-000ea68e967b).html}
 }

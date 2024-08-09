@@ -156,11 +156,6 @@ design <- function(type,
                                              trt2 = sub_treatments,
                                              r = reps,
                                              seed = ifelse(is.numeric(seed), seed, 0))
-       numsp <- max(as.numeric(outdesign$book$splots))
-       lenblk <- as.vector(table(outdesign$book$block)[1])
-       numwp <- lenblk/numsp
-       outdesign$book$wplots <- rep(rep(1:numwp, each = numsp), reps)
-       outdesign$book <- outdesign$book[, c(1, 3, 6, 2, 4, 5)]
     }
 
     else if(substr(tolower(type), 1, 7) == "crossed") {

@@ -1,6 +1,6 @@
 #' Produces a skeletal ANOVA table
 #'
-#' @param design.obj An `agricolae` design object.
+#' @param design.obj A modified `agricolae` design object as output from des_info.
 #'
 #' @return Prints skeletal ANOVA table to console output.
 #'
@@ -112,12 +112,12 @@ satab <- function(design.obj) {
     blkdf <- length(unique(design.obj$block)) - 1
     totdf <- nrow(design.obj) - 1
     numwplots <- nrow(design.obj) / length(unique(design.obj$splots))
-    sp.facWdf <- length(unique(design.obj[, 5])) - 1
-    wpresdf <- (numwplots - 1) - blkdf - sp.facWdf
 
     trtAdf <- length(unique(design.obj[, 5])) - 1
     trtBdf <- length(unique(design.obj[, 6])) - 1
     trtABdf <- trtAdf * trtBdf
+
+    wpresdf <- (numwplots - 1) - blkdf - trtAdf
     errdf <- totdf - trtAdf - trtBdf - trtABdf - blkdf - wpresdf
 
     output <- paste0(format("Source of Variation", width = 45), "df", "\n")
