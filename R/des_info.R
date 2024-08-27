@@ -522,6 +522,8 @@ des_info <- function(design.obj,
             plan$block <- NULL
         } # 5
 
+        colnames(des)[colnames(des)=="wplots"] <- "wholeplots"
+        colnames(des)[colnames(des)=="splots"] <- "subplots"
         des <- cbind(plan, des)
         # Order by column within blocks, rather than row default
         if(!byrow) {

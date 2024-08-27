@@ -259,7 +259,7 @@ test_that("3 way factorial designs are possible", {
 })
 
 test_that("Adding names to 3 way factorial designs works", {
-    d9.2 <- design(type = "crossed:rcbd", treatments = c(2, 2, 2), quiet = TRUE, 
+    d9.2 <- design(type = "crossed:rcbd", treatments = c(2, 2, 2), quiet = TRUE,
                    reps = 3, nrows = 8, ncols = 3, brows = 8, bcols = 1, seed = 42,
                    fac.names = list(X = c("A", "B"), Y = 1:2, Z = c(10, 20)))
 
@@ -348,7 +348,7 @@ test_that("unsupported design types give an error", {
 })
 
 test_that("split plot requires sub_treatments", {
-    expect_error(design(type = "split", treatments = c("A", "B"), quiet = TRUE, 
+    expect_error(design(type = "split", treatments = c("A", "B"), quiet = TRUE,
                         sub_treatments = NULL, reps = 4, nrows = 8,
                         ncols = 4, brows = 4, bcols = 2, seed = 42),
                  "sub_treatments are required for a split plot design")
@@ -467,7 +467,7 @@ test_that("save = FALSE produces nothing", {
 })
 
 test_that("save = 'workbook' produces csv file and not plot", {
-    design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4, 
+    design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4,
            save = "workbook", savename = "crd_design1", quiet = TRUE)
     withr::local_file("crd_design1.csv")
     expect_true(file.exists("crd_design1.csv"))
@@ -476,7 +476,7 @@ test_that("save = 'workbook' produces csv file and not plot", {
 })
 
 test_that("save = 'plot' produces plot file and not csv", {
-    design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4, 
+    design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4,
            save = "plot", savename = "crd_design2", quiet = TRUE)
     withr::local_file("crd_design2.pdf")
     expect_false(file.exists("crd_design2.csv"))
@@ -484,7 +484,7 @@ test_that("save = 'plot' produces plot file and not csv", {
 })
 
 test_that("save = 'both' produces plot file and csv", {
-    design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4, 
+    design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4,
            save = "both", savename = "crd_design3", quiet = TRUE)
     withr::local_file("crd_design3.pdf")
     withr::local_file("crd_design3.csv")
@@ -494,7 +494,7 @@ test_that("save = 'both' produces plot file and csv", {
 })
 
 test_that("save = TRUE produces plot file and csv", {
-    design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4, 
+    design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4,
            save = TRUE, savename = "crd_design4", quiet = TRUE)
     withr::local_file("crd_design4.pdf")
     withr::local_file("crd_design4.csv")
@@ -505,7 +505,7 @@ test_that("save = TRUE produces plot file and csv", {
 
 test_that("Output is produced when quiet = FALSE", {
     withr::local_file("Rplots.pdf")
-    expect_output(des <- design("crd", treatments = 1:11, reps = 4, 
+    expect_output(des <- design("crd", treatments = 1:11, reps = 4,
                                 nrows = 11, ncols = 4, quiet = FALSE),
                   "Source of Variation                     df")
     expect_snapshot(cat(des$satab))
@@ -513,7 +513,7 @@ test_that("Output is produced when quiet = FALSE", {
 })
 
 test_that("designs have a class of 'design'", {
-    d1 <- design("crd", treatments = 1:11, reps = 4, 
+    d1 <- design("crd", treatments = 1:11, reps = 4,
                  nrows = 11, ncols = 4, quiet = TRUE)
     expect_s3_class(d1, "design")
 })
