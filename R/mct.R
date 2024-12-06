@@ -408,6 +408,44 @@ multiple_comparisons <- function(model.obj,
             pp.tab$low <- 1/(pp.tab$predicted.value - pp.tab$ci)
             pp.tab$up <- 1/(pp.tab$predicted.value + pp.tab$ci)
         }
+      if (trans == "boxcox") { #include trans="boxcox" for transformations in the form dry_weight^lambda-1)/lambda, I am considering power=lambda for this transformation
+        pp.tab$PredictedValue <- (power*pp.tab$predicted.value+1)^(1/power) - 
+          ifelse(!is.na(offset), offset, 0)
+        
+        pp.tab$ApproxSE <- (power*pp.tab$std.error+1) * (1/(power * 
+                                                              pp.tab$PredictedValue^(power - 1))) #not sure about se
+        if (int.type == "ci") {
+          pp.tab$ci <- stats::qt(p = sig, ndf, lower.tail = FALSE) * 
+            pp.tab$std.error
+        }
+        if (int.type == "1se") {
+          pp.tab$ci <- pp.tab$std.error
+        }
+        if (int.type == "2se") {
+          pp.tab$ci <- 2 * pp.tab$std.error
+        }
+        pp.tab$low <- (power*(pp.tab$predicted.value - pp.tab$ci)+1)^(1/power) - 
+          ifelse(!is.na(offset), offset, 0) #not sure about low and up as is returning negative values
+        pp.tab$up <- (power*(pp.tab$predicted.value + pp.tab$ci)+1)^(1/power) - 
+          ifelse(!is.na(offset), offset, 0)
+      }
+      
+      if (trans == "cloglog") { #include trans="cloglog" link
+        pp.tab$PredictedValue <- 1-exp(-exp(pp.tab$predicted.value)) 
+        pp.tab$ApproxSE <- abs(pp.tab$std.error) * pp.tab$PredictedValue
+        if (int.type == "ci") {
+          pp.tab$ci <- stats::qt(p = sig, ndf, lower.tail = FALSE) * 
+            pp.tab$std.error
+        }
+        if (int.type == "1se") {
+          pp.tab$ci <- pp.tab$std.error
+        }
+        if (int.type == "2se") {
+          pp.tab$ci <- 2 * pp.tab$std.error
+        }
+        pp.tab$low <- 1-exp(-exp(pp.tab$predicted.value - pp.tab$ci)) 
+        pp.tab$up <- 1-exp(-exp(pp.tab$predicted.value + pp.tab$ci))
+      }
     }
 
     else {
