@@ -10,7 +10,7 @@
 #' @param raster Logical (default: `TRUE`). If `TRUE` uses [ggplot2::geom_raster()] for speed. Will not work if the grid is irregular.
 #' @param smooth Logical (default: `FALSE`). If `raster` is `TRUE`, interpolation can be applied across the grid to obtain a smoothed grid. Ignored if `raster` is `FALSE`.
 #' @param palette Colour palette to use. By default it will use the `viridis` (colour-blind friendly) palette. Other palettes available can be seen with [grDevices::hcl.pals()].
-#' @param ... Other arguments passed to [`facet_wrap()`]
+#' @param ... Other arguments passed to [ggplot2::facet_wrap()]
 #'
 #' @importFrom ggplot2 ggplot aes geom_tile geom_raster scale_fill_gradientn scale_x_continuous scale_y_continuous facet_wrap vars theme_bw
 #' @importFrom rlang ensym enquo quo_is_null
