@@ -6,7 +6,7 @@
 #'
 #' @importFrom stats setNames aggregate
 #'
-#' @return The original data frame, updated to include buffers
+#' @returns The original data frame, updated to include buffers
 #' @keywords internal
 create_buffers <- function(design, type, blocks = FALSE) {
     nrow <- max(design$row)

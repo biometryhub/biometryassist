@@ -15,7 +15,7 @@
 #' @importFrom ggplot2 ggplot aes geom_tile geom_raster scale_fill_gradientn scale_x_continuous scale_y_continuous facet_wrap vars theme_bw
 #' @importFrom rlang ensym enquo quo_is_null
 #'
-#' @return A `ggplot2` object.
+#' @returns A `ggplot2` object.
 #' @export
 #'
 #' @examples

@@ -5,7 +5,7 @@
 #'
 #' @param x A function call with output to be suppressed.
 #'
-#' @return The invisible output of the function called.
+#' @returns The invisible output of the function called.
 #'
 #' @keywords internal
 #'
@@ -70,7 +70,7 @@ quiet <- function(x) {
 #'
 #' @param a,b Character strings representing package version numbers.
 #'
-#' @return Numeric. `0` if the numbers are equal, `-1` if `b` is later and `1` if `a` is later
+#' @returns Numeric. `0` if the numbers are equal, `-1` if `b` is later and `1` if `a` is later
 #' @keywords internal
 compare_version <- function(a, b) {
     return(utils::compareVersion(as.character(a), as.character(b)))

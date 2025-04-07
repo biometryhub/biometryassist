@@ -2,7 +2,7 @@
 #'
 #' @param design.obj A modified `agricolae` design object as output from des_info.
 #'
-#' @return Prints skeletal ANOVA table to console output.
+#' @returns Prints skeletal ANOVA table to console output.
 #'
 #' @keywords internal
 #'

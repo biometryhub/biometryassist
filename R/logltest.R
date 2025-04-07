@@ -11,7 +11,7 @@
 #'
 #' @importFrom stats as.formula update pchisq
 #'
-#' @return A dataframe containing the results of the test.
+#' @returns A dataframe containing the results of the test.
 #' @export
 #'
 #' @examples

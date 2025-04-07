@@ -9,7 +9,7 @@
 #' @param palette A string specifying the colour scheme to use for plotting. The default value (`"default"`) is equivalent to `"rainbow"`. Colour blind friendly palettes can also be provided via options `"colo(u)r blind"` (both equivalent to `"viridis"`), `"magma"`, `"inferno"`, `"plasma"`, `"cividis"`, `"rocket"`, `"mako"` or `"turbo"`. The `"Spectral"` palette from [scales::brewer_pal()] is also possible.
 #'
 #'
-#' @return A `ggplot2` object.
+#' @returns A `ggplot2` object.
 #'
 #' @importFrom pracma interp2
 #' @importFrom grDevices rainbow
@@ -177,7 +177,7 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
 #'
 #' @param model.obj An asreml model
 #'
-#' @return A data frame with the variogram for a model. The data frame contains the spatial coordinates (typically row and column), the `gamma` for that position and the number of points with the separation.
+#' @returns A data frame with the variogram for a model. The data frame contains the spatial coordinates (typically row and column), the `gamma` for that position and the number of points with the separation.
 #' @keywords internal
 #'
 #'

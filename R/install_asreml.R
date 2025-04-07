@@ -16,7 +16,7 @@
 #'
 #' @export
 #'
-#' @return Silently returns `TRUE` if `asreml` installed successfully or already present, `FALSE` otherwise. Optionally prints a confirmation message on success.
+#' @returns Silently returns `TRUE` if `asreml` installed successfully or already present, `FALSE` otherwise. Optionally prints a confirmation message on success.
 #'
 #' @examples
 #' \dontrun{
@@ -118,7 +118,7 @@ update_asreml <- function(...) {
 
 #' Get the version of R and OS
 #'
-#' @return A list with the version of R and the OS in a standard format
+#' @returns A list with the version of R and the OS in a standard format
 #' @keywords internal
 get_r_os <- function() {
 
@@ -144,7 +144,7 @@ get_r_os <- function() {
 
 #' Get released versions of ASReml-R in lookup table
 #'
-#' @return A list of data frames containing the version number and release date of released ASReml-R versions for comparison
+#' @returns A list of data frames containing the version number and release date of released ASReml-R versions for comparison
 #' @keywords internal
 #' @importFrom xml2 read_html xml_text xml_find_all
 #' @importFrom stringi stri_split_fixed
@@ -194,7 +194,7 @@ get_version_table <- function(url = "https://asreml.kb.vsni.co.uk/asreml-r-4-dow
 #'
 #' @importFrom utils packageDescription
 #'
-#' @return TRUE if a newer version is available online, FALSE otherwise
+#' @returns TRUE if a newer version is available online, FALSE otherwise
 #' @keywords internal
 newer_version <- function() {
     online_versions <- get_version_table()
@@ -227,7 +227,7 @@ newer_version <- function() {
 
 #' Create the folder MacOS needs for licensing
 #'
-#' @return logical; TRUE if folder successfully created, otherwise it will error
+#' @returns logical; TRUE if folder successfully created, otherwise it will error
 #' @keywords internal
 #' @importFrom askpass askpass
 create_mac_folder <- function() {
@@ -270,7 +270,7 @@ create_mac_folder <- function() {
 
 #' Manage the downloaded file
 #'
-#' @return logical; TRUE if file successfully moved, FALSE otherwise
+#' @returns logical; TRUE if file successfully moved, FALSE otherwise
 #' @keywords internal
 manage_file <- function(save_file, keep_file, filename) {
 

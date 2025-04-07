@@ -17,7 +17,7 @@
 #'
 #' @name autoplot
 #'
-#' @return A `ggplot2` object.
+#' @returns A `ggplot2` object.
 #' @seealso [multiple_comparisons()] and [design()]
 #'
 NULL
