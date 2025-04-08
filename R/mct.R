@@ -11,6 +11,7 @@
 #' @param power Numeric power applied to response variable with power transformation. Default is `NA`. See Details for more information.
 #' @param decimals Controls rounding of decimal places in output. Default is 2 decimal places.
 #' @param descending Logical (default `FALSE`). Order of the output sorted by the predicted value. If `TRUE`, largest will be first, through to smallest last.
+#' @param letters Logical (default `TRUE`). If `TRUE`, the significance letter groupings will be calculated and displayed. This can get overwhelming for large numbers of comparisons, so can be turned off by setting to `FALSE`.
 #' @param plot Automatically produce a plot of the output of the multiple comparison test? Default is `FALSE`. This is maintained for backwards compatibility, but the preferred method now is to use `autoplot(<multiple_comparisons output>)`. See [biometryassist::autoplot.mct()] for more details.
 #' @param label_height Height of the text labels above the upper error bar on the plot. Default is 0.1 (10%) of the difference between upper and lower error bars above the top error bar.
 #' @param rotation Rotate the text output as Treatments within the plot. Allows for easier reading of long treatment labels. Number between 0 and 360 (inclusive) - default 0
@@ -44,7 +45,7 @@
 #' back transformed, if they have been used to attempt to improve normality of
 #' residuals.
 #'
-#' @return A list containing a data frame with predicted means, standard errors,
+#' @returns A list containing a data frame with predicted means, standard errors,
 #'  confidence interval upper and lower bounds, and significant group
 #'  allocations (named `predicted_values`), as well as a plot visually
 #'  displaying the predicted values (named `predicted_plot`). If some of the
@@ -162,6 +163,7 @@ multiple_comparisons <- function(model.obj,
                                  power = NA,
                                  decimals = 2,
                                  descending = FALSE,
+                                 letters = TRUE,
                                  plot = FALSE,
                                  label_height = 0.1,
                                  rotation = 0,
@@ -261,6 +263,7 @@ multiple_comparisons <- function(model.obj,
             rand_terms <- vars[vars %in% attr(stats::terms(model.obj$formulae$random), 'term.labels')]
             warning(rand_terms, " is not a fixed term in the model. The denominator degrees of freedom are estimated using the residual degrees of freedom. This may be inaccurate.", call. = FALSE)
         }
+
         crit.val <- 1/sqrt(2)*stats::qtukey((1-sig), nrow(pp), ndf)*sed
 
         # Grab the response from the formula to create plot Y label
@@ -283,8 +286,6 @@ multiple_comparisons <- function(model.obj,
         names(pp)[names(pp) == "emmean"] <- "predicted.value"
         names(pp)[names(pp) == "SE"] <- "std.error"
 
-
-        # SED <- matrix(data = sed, nrow = nrow(pp), ncol = nrow(pp))
         diag(sed) <- NA
         ifelse(grepl(":", classify),
                pp$Names <- apply(pp[,vars], 1, paste, collapse = "_"),
@@ -357,12 +358,35 @@ multiple_comparisons <- function(model.obj,
 
     names(diffs) <- m
 
-    ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp, reversed = !descending)
+    if(letters) {
+        ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp, reversed = !descending)
 
-    rr <- data.frame(groups = ll$Letters)
-    rr$Names <- row.names(rr)
+        rr <- data.frame(groups = ll$Letters)
+        rr$Names <- row.names(rr)
 
-    pp.tab <- merge(pp,rr)
+        pp.tab <- merge(pp,rr)
+    }
+    else {
+        pp.tab <- pp
+    }
+
+    # Calculate confidence interval width
+    if(tolower(int.type) == "ci"){
+        pp.tab$ci <- stats::qt(p = sig, ndf, lower.tail = FALSE) * pp.tab$std.error
+    }
+    else if(tolower(int.type) == "1se"){
+        pp.tab$ci <- pp.tab$std.error
+    }
+    else if(tolower(int.type) == "2se"){
+        pp.tab$ci <- 2*pp.tab$std.error
+    }
+    # else if(tolower(int.type) == "tukey") {
+    #     pp.tab$ci <- stats::qtukey(p = sig,  ndf, lower.tail = FALSE) * pp.tab$std.error
+    #     crit.val <- 1/sqrt(2)*stats::qtukey((1-sig), nrow(pp), ndf)*sed
+    # }
+    else {
+        stop("Invalid int.type.")
+    }
 
     if(!is.na(trans)){
         if(is.na(offset)) {
@@ -373,15 +397,7 @@ multiple_comparisons <- function(model.obj,
         if(trans == "sqrt"){
             pp.tab$PredictedValue <- (pp.tab$predicted.value)^2 - ifelse(!is.na(offset), offset, 0)
             pp.tab$ApproxSE <- 2*abs(pp.tab$std.error)*sqrt(pp.tab$PredictedValue)
-            if(int.type == "ci"){
-                pp.tab$ci <- stats::qt(p = sig, ndf, lower.tail = FALSE) * pp.tab$std.error
-            }
-            if(int.type == "1se"){
-                pp.tab$ci <- pp.tab$std.error
-            }
-            if(int.type == "2se"){
-                pp.tab$ci <- 2*pp.tab$std.error
-            }
+
             pp.tab$low <- (pp.tab$predicted.value - pp.tab$ci)^2 - ifelse(!is.na(offset), offset, 0)
             pp.tab$up <- (pp.tab$predicted.value + pp.tab$ci)^2 - ifelse(!is.na(offset), offset, 0)
         }
@@ -389,15 +405,7 @@ multiple_comparisons <- function(model.obj,
         if(trans == "log"){
             pp.tab$PredictedValue <- exp(pp.tab$predicted.value) - ifelse(!is.na(offset), offset, 0)
             pp.tab$ApproxSE <- abs(pp.tab$std.error)*pp.tab$PredictedValue
-            if(int.type == "ci"){
-                pp.tab$ci <- stats::qt(p = sig, ndf, lower.tail = FALSE) * pp.tab$std.error
-            }
-            if(int.type == "1se"){
-                pp.tab$ci <- pp.tab$std.error
-            }
-            if(int.type == "2se"){
-                pp.tab$ci <- 2*pp.tab$std.error
-            }
+
             pp.tab$low <- exp(pp.tab$predicted.value - pp.tab$ci) - ifelse(!is.na(offset), offset, 0)
             pp.tab$up <- exp(pp.tab$predicted.value + pp.tab$ci) - ifelse(!is.na(offset), offset, 0)
         }
@@ -405,15 +413,7 @@ multiple_comparisons <- function(model.obj,
         if(trans == "logit"){
             pp.tab$PredictedValue <- exp(pp.tab$predicted.value)/(1 + exp(pp.tab$predicted.value))
             pp.tab$ApproxSE <- pp.tab$PredictedValue * (1 - pp.tab$PredictedValue)* abs(pp.tab$std.error)
-            if(int.type == "ci"){
-                pp.tab$ci <- stats::qt(p = sig, ndf, lower.tail = FALSE) * pp.tab$std.error
-            }
-            if(int.type == "1se"){
-                pp.tab$ci <- pp.tab$std.error
-            }
-            if(int.type == "2se"){
-                pp.tab$ci <- 2*pp.tab$std.error
-            }
+
             pp.tab$ll <- pp.tab$predicted.value - pp.tab$ci
             pp.tab$low <- exp(pp.tab$ll)/(1 + exp(pp.tab$ll))
             pp.tab$uu <- pp.tab$predicted.value + pp.tab$ci
@@ -426,15 +426,7 @@ multiple_comparisons <- function(model.obj,
         if(trans == "power"){
             pp.tab$PredictedValue <- (pp.tab$predicted.value)^(1/power) - ifelse(!is.na(offset), offset, 0)
             pp.tab$ApproxSE <- pp.tab$std.error*(1/(power*pp.tab$PredictedValue^(power-1)))
-            if(int.type == "ci"){
-                pp.tab$ci <- stats::qt(p = sig, ndf, lower.tail = FALSE) * pp.tab$std.error
-            }
-            if(int.type == "1se"){
-                pp.tab$ci <- pp.tab$std.error
-            }
-            if(int.type == "2se"){
-                pp.tab$ci <- 2*pp.tab$std.error
-            }
+
             pp.tab$low <- (pp.tab$predicted.value - pp.tab$ci)^(1/power) - ifelse(!is.na(offset), offset, 0)
             pp.tab$up <- (pp.tab$predicted.value + pp.tab$ci)^(1/power) - ifelse(!is.na(offset), offset, 0)
         }
@@ -442,34 +434,15 @@ multiple_comparisons <- function(model.obj,
         if(trans == "inverse"){
             pp.tab$PredictedValue <- 1/pp.tab$predicted.value
             pp.tab$ApproxSE <- abs(pp.tab$std.error)*pp.tab$PredictedValue^2
-            if(int.type == "ci"){
-                pp.tab$ci <- stats::qt(p = sig, ndf, lower.tail = FALSE) * pp.tab$std.error
-            }
-            if(int.type == "1se"){
-                pp.tab$ci <- pp.tab$std.error
-            }
-            if(int.type == "2se"){
-                pp.tab$ci <- 2*pp.tab$std.error
-            }
+
             pp.tab$low <- 1/(pp.tab$predicted.value - pp.tab$ci)
             pp.tab$up <- 1/(pp.tab$predicted.value + pp.tab$ci)
         }
     }
 
     else {
-
-        if(int.type == "ci"){
-            pp.tab$ci <- stats::qt(p = sig, ndf, lower.tail = FALSE) * pp.tab$std.error
-        }
-        if(int.type == "1se"){
-            pp.tab$ci <- pp.tab$std.error
-        }
-        if(int.type == "2se"){
-            pp.tab$ci <- 2*pp.tab$std.error
-        }
         pp.tab$low <- pp.tab$predicted.value - pp.tab$ci
         pp.tab$up <- pp.tab$predicted.value + pp.tab$ci
-
     }
 
     pp.tab <- pp.tab[base::order(pp.tab$predicted.value, decreasing = descending),]
@@ -480,7 +453,7 @@ multiple_comparisons <- function(model.obj,
     trtnam <- names(pp.tab)[1:trtindex]
     # Exclude reserved column names
     trtnam <- trtnam[trtnam %!in% c("predicted.value", "std.error", "Df",
-                             "groups", "PredictedValue", "ApproxSE", "ci", "low", "up")]
+                                    "groups", "PredictedValue", "ApproxSE", "ci", "low", "up")]
 
     for(i in seq_along(trtnam)){
         pp.tab[[trtnam[i]]] <- factor(pp.tab[[trtnam[i]]], levels = unique(pp.tab[[trtnam[i]]]))
@@ -535,7 +508,7 @@ multiple_comparisons <- function(model.obj,
 #' @param x An mct object to print to the console.
 #' @param ... Other arguments
 #'
-#' @return The original object invisibly.
+#' @returns The original object invisibly.
 #' @seealso [multiple_comparisons()]
 #' @method print mct
 #' @export

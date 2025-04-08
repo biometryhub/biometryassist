@@ -14,6 +14,7 @@ multiple_comparisons(
   power = NA,
   decimals = 2,
   descending = FALSE,
+  letters = TRUE,
   plot = FALSE,
   label_height = 0.1,
   rotation = 0,
@@ -43,6 +44,8 @@ multiple_comparisons(
 \item{decimals}{Controls rounding of decimal places in output. Default is 2 decimal places.}
 
 \item{descending}{Logical (default \code{FALSE}). Order of the output sorted by the predicted value. If \code{TRUE}, largest will be first, through to smallest last.}
+
+\item{letters}{Logical (default \code{TRUE}). If \code{TRUE}, the significance letter groupings will be calculated and displayed. This can get overwhelming for large numbers of comparisons, so can be turned off by setting to \code{FALSE}.}
 
 \item{plot}{Automatically produce a plot of the output of the multiple comparison test? Default is \code{FALSE}. This is maintained for backwards compatibility, but the preferred method now is to use \verb{autoplot(<multiple_comparisons output>)}. See \code{\link[=autoplot.mct]{autoplot.mct()}} for more details.}
 
