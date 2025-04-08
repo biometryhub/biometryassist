@@ -10,7 +10,7 @@
 #' @param call.size A numeric value for the size of the model displayed on the plot.
 #' @param mod.obj Deprecated to be consistent with other functions. Please use `model.obj` instead.
 #'
-#' @return A ggplot2 object containing the diagnostic plots.
+#' @returns A ggplot2 object containing the diagnostic plots.
 #'
 #' @importFrom ggplot2 ggplot geom_histogram aes theme_bw stat_qq labs geom_qq_line geom_point
 #' @importFrom stats fitted qnorm quantile residuals sd shapiro.test
@@ -63,15 +63,26 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
             model_call <- gsub("R\\.param = model\\.asr\\$R\\.param, \\\n", "", model_call)
         }
     }
-    else if(inherits(model.obj, "mmer")) { # sommer doesn't display residuals the same way
+    else if(inherits(model.obj, c("mmer"))) { # sommer doesn't display residuals the same way
         facet <- model.obj$termsN$rcov
         facet_name <- NULL
         k <- length(model.obj$residual)
 
-        resids <- residuals(model.obj)[,ncol(residuals(model.obj))]
-        fits <- fitted(model.obj)$dataWithFitted[,paste0(model.obj$terms$response[[1]], ".fitted")]
+        resids <- residuals(model.obj)
+        fits <- fitted(model.obj)
         model_call <- paste(trimws(deparse(model.obj$call[c("fixed", "random", "rcov")], width.cutoff = 50)), collapse = "\n")
         model_call <- gsub("list", "mmer", model_call)
+    }
+    else if(inherits(model.obj, "mmes")) { # new sommer function. More like other mixed model functions
+        facet <- 1 #model.obj$termsN$rcov
+        facet_name <- NULL
+        k <- length(model.obj$residual)
+
+        resids <- as.numeric(residuals(model.obj))
+        fits <- as.numeric(fitted(model.obj))#$dataWithFitted[,paste0(model.obj$terms$response[[1]], ".fitted")]
+        model_call <- "Model call not currently available for mmes models."
+            # paste(trimws(deparse(model.obj$call[c("fixed", "random", "rcov")], width.cutoff = 50)), collapse = "\n")
+        # model_call <- gsub("list", "mmer", model_call)
     }
     else if(inherits(model.obj, "art")) {
         facet <- 1

@@ -73,13 +73,17 @@ test_that("Residual plots work for nlme", {
 test_that("Residual plots work for sommer", {
     skip_if_not_installed("sommer")
     load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
-    dat.som <- sommer::mmer(yield ~ Nitrogen + Variety + Nitrogen:Variety,
+    library(sommer)
+    dat.som <- mmer(yield ~ Nitrogen + Variety + Nitrogen:Variety,
+                            random = ~ Blocks + Blocks:Wplots,
+                            rcov = ~ units,
+                            data = dat)
+    dat.som <- mmes(yield ~ Nitrogen + Variety + Nitrogen:Variety,
                             random = ~ Blocks + Blocks:Wplots,
                             rcov = ~ units,
                             data = dat)
 
     p1 <- resplot(dat.som, call = T)
-    # p2 <- resplot(dat.aov, shapiro = FALSE)
 
     vdiffr::expect_doppelganger(title = "Resplot for sommer", p1)
     # vdiffr::expect_doppelganger(title = "Resplot for aov without shapiro", p2)
