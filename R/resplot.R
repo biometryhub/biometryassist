@@ -3,7 +3,7 @@
 #' Produces plots of residuals for assumption checking of linear (mixed) models.
 #'
 #' @param model.obj An `aov`, `lm`, `lme` ([nlme::lme()]), `lmerMod` ([lme4::lmer()]), `asreml` or `mmer` (sommer) model object.
-#' @param shapiro (Logical) Display the Shapiro-Wilks test of normality on the plot?
+#' @param shapiro (Logical) Display the Shapiro-Wilk test of normality on the plot? This test is unreliable for larger numbers of observations and will not work with n >= 5000 so will be omitted from any plots.
 #' @param call (Logical) Display the model call on the plot?
 #' @param axes.size A numeric value for the size of the axes label font size in points.
 #' @param label.size A numeric value for the size of the label (A,B,C) font point size.
@@ -121,7 +121,15 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
 
         top_row <- cowplot::plot_grid(a, b, ncol=2, labels = c("A", "B"), label_size = label.size)
 
+        if(nrow(aa.f) >= 5000 & shapiro) {
+            warning("Shapiro-Wilk test p-values are unreliable for more than 5000 observations and has not been performed.")
+            shapiro <- FALSE
+        }
+
         if(shapiro) {
+            if(nrow(aa.f) >= 2000) {
+                warning("Shapiro-Wilk test p-values are unreliable for large numbers of observations.")
+            }
             shap <- shapiro.test(aa.f$residuals)
 
             shapiro_text <- c(paste(shap$method, "p-value:", round(shap$p.value, 4)),
