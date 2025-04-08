@@ -68,9 +68,22 @@ heat_map <- function(data, value, x_axis, y_axis, grouping = NULL, raster = TRUE
         plt <- plt + ggplot2::geom_tile()
     }
 
-    plt <- plt + ggplot2::scale_fill_gradientn(colors = grDevices::hcl.colors(10, palette = palette)) +
-        ggplot2::scale_x_continuous(expand = c(0, 0)) +
-        ggplot2::scale_y_continuous(expand = c(0, 0))
+    plt <- plt + ggplot2::scale_fill_gradientn(colors = grDevices::hcl.colors(10, palette = palette))
+
+    # Expand the axes appropriately for the data type
+    if(is.numeric(x_axis)) {
+        plt <- plt + ggplot2::scale_x_continuous(expand = c(0, 0))
+    }
+    else {
+        plt <- plt + ggplot2::scale_x_discrete(expand = c(0, 0))
+    }
+    if(is.numeric(y_axis)) {
+        plt <- plt + ggplot2::scale_y_continuous(expand = c(0, 0))
+    }
+    else {
+        plt <- plt + ggplot2::scale_y_discrete(expand = c(0, 0))
+    }
+
 
     if(!rlang::quo_is_null(grouping)) {
         grouping <- rlang::ensym(grouping)
