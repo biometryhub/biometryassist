@@ -15,6 +15,7 @@ autoplot(object, ...)
   rotation = 0,
   axis_rotation = rotation,
   label_rotation = rotation,
+  type = "point",
   ...
 )
 
@@ -46,6 +47,8 @@ autoplot(object, ...)
 \item{axis_rotation}{Enables rotation of the x axis independently of the group labels within the plot.}
 
 \item{label_rotation}{Enables rotation of the treatment group labels independently of the x axis labels within the plot.}
+
+\item{type}{A string specifying the type of plot to display. The default of 'point' will display a point estimate with error bars. The alternative, 'column' (or 'col'), will display a column graph with error bars.}
 
 \item{margin}{Logical (default \code{FALSE}). A value of \code{FALSE} will expand the plot to the edges of the plotting area i.e. remove white space between plot and axes.}
 

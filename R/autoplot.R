@@ -6,6 +6,7 @@
 #' @param rotation Rotate the x axis labels and the treatment group labels within the plot. Allows for easier reading of long axis or treatment labels. Number between 0 and 360 (inclusive) - default 0
 #' @param axis_rotation Enables rotation of the x axis independently of the group labels within the plot.
 #' @param label_rotation Enables rotation of the treatment group labels independently of the x axis labels within the plot.
+#' @param type A string specifying the type of plot to display. The default of 'point' will display a point estimate with error bars. The alternative, 'column' (or 'col'), will display a column graph with error bars.
 #' @param margin Logical (default `FALSE`). A value of `FALSE` will expand the plot to the edges of the plotting area i.e. remove white space between plot and axes.
 #' @param palette A string specifying the colour scheme to use for plotting. Default is equivalent to "Spectral". Colour blind friendly palettes can also be provided via options `"colour blind"` (or `"color blind"`, both equivalent to `"viridis"`), `"magma"`, `"inferno"`, `"plasma"` or `"cividis"`. Other palettes from [scales::brewer_pal()] are also possible.
 #' @param buffer A string specifying the buffer plots to include for plotting. Default is `NULL` (no buffers plotted). Other options are "edge" (outer edge of trial area), "rows" (between rows), "columns" (between columns), "double row" (a buffer row each side of a treatment row) or "double column" (a buffer row each side of a treatment column). "blocks" (a buffer around each treatment block) will be implemented in a future release.
@@ -36,7 +37,7 @@ ggplot2::autoplot
 #' dat.aov <- aov(Petal.Width ~ Species, data = iris)
 #' output <- multiple_comparisons(dat.aov, classify = "Species")
 #' autoplot(output, label_height = 0.5)
-autoplot.mct <- function(object, size = 4, label_height = 0.1, rotation = 0, axis_rotation = rotation, label_rotation = rotation, ...) {
+autoplot.mct <- function(object, size = 4, label_height = 0.1, rotation = 0, axis_rotation = rotation, label_rotation = rotation, type = "point", ...) {
     stopifnot(inherits(object, "mct"))
 
     rlang::check_dots_used()
@@ -57,16 +58,28 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1, rotation = 0, axi
     yval <- rlang::ensym(yval)
 
     plot <- ggplot2::ggplot(data = object, ggplot2::aes(x = {{ classify }})) +
-        ggplot2::geom_errorbar(aes(ymin = low, ymax = up), width = 0.2) +
-        ggplot2::geom_text(ggplot2::aes(x = {{ classify }}, y = ifelse(object$up > object$low, object$up, object$low),
-                                         label = object$groups),
-                           nudge_y = ifelse(abs(label_height) <= 1,
-                                            abs(object$up-object$low)*label_height, # invert for cases with inverse transform
-                                            label_height),
-                           size = size, angle = label_rotation, ...) +
-        ggplot2::geom_point(ggplot2::aes(y = {{ yval }}), color = "black", shape = 16) + ggplot2::theme_bw() +
+        ggplot2::theme_bw() +
         ggplot2::theme(axis.text.x = ggplot2::element_text(angle = axis_rotation, ...)) +
         ggplot2::labs(x = "", y = paste0("Predicted ", ylab))
+
+    if(type == "point") {
+        plot <- plot + ggplot2::geom_point(ggplot2::aes(y = {{ yval }}), color = "black", shape = 16, size = 2) +
+            ggplot2::geom_errorbar(aes(ymin = low, ymax = up), width = 0.2)
+    }
+    else if(type %in% c("col", "column")) {
+        plot <- plot + ggplot2::geom_col(ggplot2::aes(y = {{ yval }}), color = "black", fill = "cornflowerblue", alpha = 0.75) +
+            ggplot2::geom_errorbar(aes(ymin = low, ymax = up), width = 0.2)
+    }
+
+    if("groups" %in% colnames(object)) {
+        plot <- plot +
+            ggplot2::geom_text(ggplot2::aes(x = {{ classify }}, y = ifelse(object$up > object$low, object$up, object$low),
+                                            label = object$groups),
+                               nudge_y = ifelse(abs(label_height) <= 1,
+                                                abs(object$up-object$low)*label_height, # invert for cases with inverse transform
+                                                label_height),
+                               size = size, angle = label_rotation, ...)
+    }
 
     if(exists("classify3")) {
         plot <- plot + ggplot2::facet_wrap(as.formula(paste("~", classify2, "+", classify3)))
