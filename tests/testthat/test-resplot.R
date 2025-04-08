@@ -78,14 +78,16 @@ test_that("Residual plots work for sommer", {
                             random = ~ Blocks + Blocks:Wplots,
                             rcov = ~ units,
                             data = dat)
-    dat.som <- mmes(yield ~ Nitrogen + Variety + Nitrogen:Variety,
+
+    dat.som2 <- mmes(yield ~ Nitrogen + Variety + Nitrogen:Variety,
                             random = ~ Blocks + Blocks:Wplots,
                             rcov = ~ units,
                             data = dat)
 
     p1 <- resplot(dat.som, call = T)
-
-    vdiffr::expect_doppelganger(title = "Resplot for sommer", p1)
+    p2 <- resplot(dat.som2, call = T)
+    vdiffr::expect_doppelganger(title = "Resplot for sommer mmer", p1)
+    vdiffr::expect_doppelganger(title = "Resplot for sommer mmes", p2)
     # vdiffr::expect_doppelganger(title = "Resplot for aov without shapiro", p2)
 })
 
