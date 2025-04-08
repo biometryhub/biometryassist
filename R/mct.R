@@ -11,7 +11,7 @@
 #' @param power Numeric power applied to response variable with power transformation. Default is `NA`. See Details for more information.
 #' @param decimals Controls rounding of decimal places in output. Default is 2 decimal places.
 #' @param descending Logical (default `FALSE`). Order of the output sorted by the predicted value. If `TRUE`, largest will be first, through to smallest last.
-#' @param letters Logical (default `TRUE`). If `TRUE`, the significance letter groupings will be calculated and displayed. This can get overwhelming for large numbers of comparisons, so can be turned off by setting to `FALSE`.
+#' @param groups Logical (default `TRUE`). If `TRUE`, the significance letter groupings will be calculated and displayed. This can get overwhelming for large numbers of comparisons, so can be turned off by setting to `FALSE`.
 #' @param plot Automatically produce a plot of the output of the multiple comparison test? Default is `FALSE`. This is maintained for backwards compatibility, but the preferred method now is to use `autoplot(<multiple_comparisons output>)`. See [biometryassist::autoplot.mct()] for more details.
 #' @param label_height Height of the text labels above the upper error bar on the plot. Default is 0.1 (10%) of the difference between upper and lower error bars above the top error bar.
 #' @param rotation Rotate the text output as Treatments within the plot. Allows for easier reading of long treatment labels. Number between 0 and 360 (inclusive) - default 0
@@ -163,7 +163,7 @@ multiple_comparisons <- function(model.obj,
                                  power = NA,
                                  decimals = 2,
                                  descending = FALSE,
-                                 letters = TRUE,
+                                 groups = TRUE,
                                  plot = FALSE,
                                  label_height = 0.1,
                                  rotation = 0,
@@ -175,6 +175,20 @@ multiple_comparisons <- function(model.obj,
                                  ...) {
 
     rlang::check_dots_used()
+
+    args <- list(...)
+
+    # Check for alias 'letters' instead of 'groups'
+    if ("letters" %in% names(args)) {
+        if (!missing(groups)) {
+            warning("Both 'groups' and 'letters' provided. Using 'groups'.")
+        } else {
+            groups <- args$letters
+        }
+    }
+
+    asr_args <- args[names(args) %in% names(formals(asreml::predict.asreml))]
+
 
     if(!missing(pred)) {
         warning("Argument `pred` has been deprecated and will be removed in a future version. Please use `classify` instead.")
@@ -358,7 +372,7 @@ multiple_comparisons <- function(model.obj,
 
     names(diffs) <- m
 
-    if(letters) {
+    if(groups) {
         ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp, reversed = !descending)
 
         rr <- data.frame(groups = ll$Letters)

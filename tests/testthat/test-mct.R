@@ -295,6 +295,20 @@ test_that("multiple_comparisons output has a class of 'mct'", {
     expect_s3_class(output, "mct")
 })
 
+test_that("Setting groups to FALSE disables letter groups", {
+    output <- multiple_comparisons(dat.aov, classify = "Species")
+    expect_true("groups" %in% colnames(output))
+    expect_equal(output$groups, c("a", "b", "c"))
+
+    output <- multiple_comparisons(dat.aov, classify = "Species", groups = FALSE)
+    expect_false("groups" %in% colnames(output))
+
+    output <- multiple_comparisons(dat.aov, classify = "Species", letters = FALSE)
+    expect_false("groups" %in% colnames(output))
+
+    vdiffr::expect_doppelganger("No letter groups",
+                                autoplot(output))
+})
 
 test_that("autoplot can rotate axis and labels independently", {
     output <- multiple_comparisons(dat.aov, classify = "Species")
