@@ -187,7 +187,7 @@ multiple_comparisons <- function(model.obj,
         }
     }
 
-    asr_args <- args[names(args) %in% names(formals(asreml::predict.asreml))]
+    # asr_args <- args[names(args) %in% names(formals(asreml::predict.asreml))]
 
 
     if(!missing(pred)) {

@@ -42,6 +42,13 @@
 <polyline points='468.34,545.11 468.34,22.78 ' style='stroke-width: 1.07; stroke: #EBEBEB; stroke-linecap: butt;' />
 <polyline points='563.03,545.11 563.03,22.78 ' style='stroke-width: 1.07; stroke: #EBEBEB; stroke-linecap: butt;' />
 <polyline points='657.71,545.11 657.71,22.78 ' style='stroke-width: 1.07; stroke: #EBEBEB; stroke-linecap: butt;' />
+<circle cx='89.60' cy='488.27' r='2.49' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
+<circle cx='184.29' cy='410.03' r='2.49' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
+<circle cx='278.97' cy='315.54' r='2.49' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
+<circle cx='373.66' cy='250.55' r='2.49' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
+<circle cx='468.34' cy='189.76' r='2.49' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
+<circle cx='563.03' cy='121.75' r='2.49' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
+<circle cx='657.71' cy='86.25' r='2.49' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
 <polyline points='80.14,455.17 99.07,455.17 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
 <polyline points='89.60,455.17 89.60,521.37 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
 <polyline points='80.14,521.37 99.07,521.37 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
@@ -70,13 +77,6 @@
 <text x='468.34' y='153.96' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='12.03px' lengthAdjust='spacingAndGlyphs'>cd</text>
 <text x='563.03' y='85.95' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='12.66px' lengthAdjust='spacingAndGlyphs'>de</text>
 <text x='657.71' y='50.44' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='6.33px' lengthAdjust='spacingAndGlyphs'>e</text>
-<circle cx='89.60' cy='488.27' r='1.95' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
-<circle cx='184.29' cy='410.03' r='1.95' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
-<circle cx='278.97' cy='315.54' r='1.95' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
-<circle cx='373.66' cy='250.55' r='1.95' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
-<circle cx='468.34' cy='189.76' r='1.95' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
-<circle cx='563.03' cy='121.75' r='1.95' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
-<circle cx='657.71' cy='86.25' r='1.95' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
 <rect x='32.79' y='22.78' width='681.73' height='522.33' style='stroke-width: 1.07; stroke: #333333;' />
 </g>
 <g clip-path='url(#cpMC4wMHw3MjAuMDB8MC4wMHw1NzYuMDA=)'>
