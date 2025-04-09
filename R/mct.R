@@ -210,8 +210,9 @@ multiple_comparisons <- function(model.obj,
     pp <- process_treatment_names(pp, classify)
 
     # Calculate critical values and determine pairs that are significantly different
-    crit_val <- calculate_critical_value(pp, sed, ndf, sig)
-    diffs <- calculate_differences(pp, crit_val)
+    calc_diffs <- calculate_differences(pp, sed, ndf, sig)
+    crit_val <- calc_diffs$crit_val
+    diffs <- calc_diffs$diffs
 
     # Add letter groups if requested
     if (groups) {
@@ -302,9 +303,7 @@ validate_inputs <- function(sig, classify, model.obj) {
     return(vars)
 }
 
-get_predictions <- function(model.obj, classify, args, pred.obj, ...) {
-    # Operator for "not in"
-    `%!in%` <- function(x, y) !(`%in%`(x, y))
+get_predictions <- function(model.obj, classify, args, pred.obj, vars, ...) {
 
     result <- list(
         predictions = NULL,
@@ -316,7 +315,7 @@ get_predictions <- function(model.obj, classify, args, pred.obj, ...) {
 
     # Handle different model types
     if (inherits(model.obj, "asreml")) {
-        result <- get_asreml_predictions(model.obj, classify, pred.obj, ...)
+        result <- get_asreml_predictions(model.obj, classify, pred.obj, vars, ...)
     } else if (inherits(model.obj, c("aov", "lm", "lmerMod", "lmerModLmerTest"))) {
         result <- get_lm_predictions(model.obj, classify)
     }
@@ -324,12 +323,8 @@ get_predictions <- function(model.obj, classify, args, pred.obj, ...) {
     return(result)
 }
 
-get_asreml_predictions <- function(model.obj, classify, pred.obj, ...) {
-    # Operator for "not in"
-    `%!in%` <- function(x, y) !(`%in%`(x, y))
-
+get_asreml_predictions <- function(model.obj, classify, pred.obj, vars, ...) {
     # Check if classify is in model terms
-    vars <- unlist(strsplit(classify, "\\:"))
     if (classify %!in% c(attr(stats::terms(model.obj$formulae$fixed), 'term.labels'),
                          attr(stats::terms(model.obj$formulae$random), 'term.labels'))) {
         stop(classify, " is not a term in the model. Please check model specification.", call. = FALSE)
@@ -337,13 +332,6 @@ get_asreml_predictions <- function(model.obj, classify, pred.obj, ...) {
 
     # Generate predictions if not provided
     if (missing(pred.obj)) {
-        # Function to suppress output messages
-        quiet <- function(x) {
-            sink(tempfile())
-            on.exit(sink())
-            invisible(force(x))
-        }
-
         pred.obj <- quiet(asreml::predict.asreml(model.obj, classify = classify, sed = TRUE, trace = FALSE, ...))
     }
 
@@ -418,19 +406,10 @@ get_asreml_predictions <- function(model.obj, classify, pred.obj, ...) {
 }
 
 get_lm_predictions <- function(model.obj, classify) {
-    # Operator for "not in"
-    `%!in%` <- function(x, y) !(`%in%`(x, y))
 
     # Check if classify is in model terms
     if (classify %!in% attr(stats::terms(model.obj), 'term.labels')) {
         stop(classify, " is not a term in the model. Please check model specification.", call. = FALSE)
-    }
-
-    # Function to suppress output messages
-    quiet <- function(x) {
-        sink(tempfile())
-        on.exit(sink())
-        invisible(force(x))
     }
 
     # Set emmeans options
@@ -527,12 +506,10 @@ process_treatment_names <- function(pp, classify, vars) {
     return(pp)
 }
 
-calculate_critical_value <- function(pp, sed, ndf, sig) {
-    crit_val <- 1/sqrt(2) * stats::qtukey((1-sig), nrow(pp), ndf) * sed
-    return(crit_val)
-}
+calculate_differences <- function(pp, sed, ndf, sig) {
+    # Calculate the critical value
+    crit_val <- 1 / sqrt(2) * stats::qtukey((1 - sig), nrow(pp), ndf) * sed
 
-calculate_differences <- function(pp, crit_val) {
     # Determine pairs that are significantly different
     diffs <- abs(outer(pp$predicted.value, pp$predicted.value, "-")) > crit_val
     diffs <- diffs[lower.tri(diffs)]
@@ -543,7 +520,8 @@ calculate_differences <- function(pp, crit_val) {
 
     names(diffs) <- m
 
-    return(diffs)
+    # Return both the critical value and the differences
+    return(list(crit_val = crit_val, diffs = diffs))
 }
 
 add_confidence_intervals <- function(pp, int.type, sig, ndf) {
