@@ -52,7 +52,7 @@ autoplot(object, ...)
 
 \item{margin}{Logical (default \code{FALSE}). A value of \code{FALSE} will expand the plot to the edges of the plotting area i.e. remove white space between plot and axes.}
 
-\item{palette}{A string specifying the colour scheme to use for plotting. Default is equivalent to "Spectral". Colour blind friendly palettes can also be provided via options \code{"colour blind"} (or \code{"color blind"}, both equivalent to \code{"viridis"}), \code{"magma"}, \code{"inferno"}, \code{"plasma"} or \code{"cividis"}. Other palettes from \code{\link[scales:pal_brewer]{scales::brewer_pal()}} are also possible.}
+\item{palette}{A string specifying the colour scheme to use for plotting or a vector of custom colours to use as the palette. Default is equivalent to "Spectral". Colour blind friendly palettes can also be provided via options \code{"colour blind"} (or \code{"color blind"}, both equivalent to \code{"viridis"}), \code{"magma"}, \code{"inferno"}, \code{"plasma"}, \code{"cividis"}, \code{"rocket"}, \code{"mako"} or \code{"turbo"}. Other palettes from \code{\link[scales:pal_brewer]{scales::brewer_pal()}} are also possible.}
 
 \item{buffer}{A string specifying the buffer plots to include for plotting. Default is \code{NULL} (no buffers plotted). Other options are "edge" (outer edge of trial area), "rows" (between rows), "columns" (between columns), "double row" (a buffer row each side of a treatment row) or "double column" (a buffer row each side of a treatment column). "blocks" (a buffer around each treatment block) will be implemented in a future release.}
 
@@ -83,6 +83,9 @@ autoplot(des.out, palette = "colour-blind")
 
 # Alternative colour scheme
 autoplot(des.out, palette = "plasma")
+
+# Custom colour palatte
+autoplot(des.out, palette = c("#ef746a", "#3fbfc5", "#81ae00", "#c37cff"))
 }
 \seealso{
 \code{\link[=multiple_comparisons]{multiple_comparisons()}} and \code{\link[=design]{design()}}
