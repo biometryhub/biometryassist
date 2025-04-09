@@ -75,3 +75,35 @@ quiet <- function(x) {
 compare_version <- function(a, b) {
     return(utils::compareVersion(as.character(a), as.character(b)))
 }
+
+#' Handle deprecated parameters
+#'
+#' Simple internal function to warn about deprecated parameters
+#'
+#' @param old_param Name of the deprecated parameter
+#' @param new_param Name of the replacement parameter or NULL if parameter is being removed
+#' @param custom_msg Optional custom message to append to the warning
+#' @param call_env Environment where to check for the deprecated parameter
+#'
+#' @return Nothing, called for side effects (warnings)
+#'
+#' @keywords internal
+handle_deprecated_param <- function(old_param, new_param = NULL, custom_msg = NULL, call_env = parent.frame()) {
+    # Check if the old parameter was provided
+    if (!eval(substitute(missing(PARAM), list(PARAM = as.name(old_param))), envir = call_env)) {
+        # Different message depending on whether parameter is replaced or removed
+        msg <- sprintf("Argument `%s` has been deprecated and will be removed in a future version.", old_param)
+        if (!is.null(new_param)) {
+            warning(msg, sprintf(" Please use `%s` instead.", new_param), call. = FALSE)
+        } else {
+            if (!is.null(custom_msg)) {
+                msg <- paste(msg, custom_msg)
+            }
+            warning(msg, call. = FALSE)
+        }
+    }
+}
+
+
+
+
