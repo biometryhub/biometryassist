@@ -8,7 +8,7 @@
 #' @param label_rotation Enables rotation of the treatment group labels independently of the x axis labels within the plot.
 #' @param type A string specifying the type of plot to display. The default of 'point' will display a point estimate with error bars. The alternative, 'column' (or 'col'), will display a column graph with error bars.
 #' @param margin Logical (default `FALSE`). A value of `FALSE` will expand the plot to the edges of the plotting area i.e. remove white space between plot and axes.
-#' @param palette A string specifying the colour scheme to use for plotting. Default is equivalent to "Spectral". Colour blind friendly palettes can also be provided via options `"colour blind"` (or `"color blind"`, both equivalent to `"viridis"`), `"magma"`, `"inferno"`, `"plasma"` or `"cividis"`. Other palettes from [scales::brewer_pal()] are also possible.
+#' @param palette A string specifying the colour scheme to use for plotting or a vector of custom colours to use as the palette. Default is equivalent to "Spectral". Colour blind friendly palettes can also be provided via options `"colour blind"` (or `"color blind"`, both equivalent to `"viridis"`), `"magma"`, `"inferno"`, `"plasma"`, `"cividis"`, `"rocket"`, `"mako"` or `"turbo"`. Other palettes from [scales::brewer_pal()] are also possible.
 #' @param buffer A string specifying the buffer plots to include for plotting. Default is `NULL` (no buffers plotted). Other options are "edge" (outer edge of trial area), "rows" (between rows), "columns" (between columns), "double row" (a buffer row each side of a treatment row) or "double column" (a buffer row each side of a treatment column). "blocks" (a buffer around each treatment block) will be implemented in a future release.
 #' @param row A variable to plot a column from `object` as rows.
 #' @param column A variable to plot a column from `object` as columns.
@@ -110,6 +110,9 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1, rotation = 0, axi
 #'
 #' # Alternative colour scheme
 #' autoplot(des.out, palette = "plasma")
+#'
+#' # Custom colour palatte
+#' autoplot(des.out, palette = c("#ef746a", "#3fbfc5", "#81ae00", "#c37cff"))
 autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, palette = "default", buffer = NULL, row = NULL, column = NULL, block = NULL, treatments = NULL, ...) {
     stopifnot(inherits(object, "design"))
     rlang::check_dots_used()
@@ -146,26 +149,35 @@ autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, pale
     ntrt <- nlevels(object[[trt_expr]])
 
     # create the colours for the graph
-    if(palette == "default") {
-        colour_palette <- grDevices::colorRampPalette(scales::brewer_pal(palette = "Spectral")(11))(ntrt)
-    }
-    else if(palette %in% c("BrBG", "PiYG", "PRGn", "PuOr", "RdBu", "RdGy",
-                           "RdYlBu", "RdYlGn", "Spectral", "Set3", "Paired")) {
-        colour_palette <- grDevices::colorRampPalette(scales::brewer_pal(palette = palette)(11))(ntrt)
-    }
-    else if(any(grepl("(colou?r([[:punct:]]|[[:space:]]?)blind)|cb|viridis", palette, ignore.case = T))) {
-        colour_palette <- scales::viridis_pal(option = "viridis")(ntrt)
-    }
-    else if(tolower(trimws(palette)) %in% c("magma", "inferno", "cividis", "plasma", "rocket", "mako", "turbo")) {
-        colour_palette <- scales::viridis_pal(option = palette)(ntrt)
+    if(length(palette) > 1) {
+        # Assume custom palette colours are being passed in
+        if(length(palette) != ntrt) {
+            stop("palette needs to be a single string to choose a predefined palette, or ", ntrt, " custom colours.")
+        }
+        colour_palette <- palette
     }
     else {
-        stop("Invalid value for palette.", call. = FALSE)
+        if(palette == "default") {
+            colour_palette <- grDevices::colorRampPalette(scales::brewer_pal(palette = "Spectral")(11))(ntrt)
+        }
+        else if(palette %in% c("BrBG", "PiYG", "PRGn", "PuOr", "RdBu", "RdGy",
+                               "RdYlBu", "RdYlGn", "Spectral", "Set3", "Paired")) {
+            colour_palette <- grDevices::colorRampPalette(scales::brewer_pal(palette = palette)(11))(ntrt)
+        }
+        else if(any(grepl("(colou?r([[:punct:]]|[[:space:]]?)blind)|cb|viridis", palette, ignore.case = T))) {
+            colour_palette <- scales::viridis_pal(option = "viridis")(ntrt)
+        }
+        else if(tolower(trimws(palette)) %in% c("magma", "inferno", "cividis", "plasma", "rocket", "mako", "turbo")) {
+            colour_palette <- scales::viridis_pal(option = palette)(ntrt)
+        }
+        else {
+            stop("Invalid value for palette.", call. = FALSE)
+        }
     }
 
     hcl <- farver::decode_colour(colour_palette, "rgb", "hcl")
     colours <- data.frame(treatments = levels(object[[trt_expr]]),
-                       text_col = ifelse(hcl[, "l"] > 50, "black", "white"))
+                          text_col = ifelse(hcl[, "l"] > 50, "black", "white"))
     colnames(colours)[1] <- trt_expr
     object <- merge(object, colours)
 
@@ -173,7 +185,7 @@ autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, pale
         if(!missing(buffer)) {
             object <- create_buffers(object, type = buffer)
             if("buffer" %in% levels(object[[trt_expr]])) {
-               colour_palette <- c(colour_palette, "white")
+                colour_palette <- c(colour_palette, "white")
             }
         }
 

@@ -701,6 +701,25 @@ test_that("Alternative palettes work", {
     vdiffr::expect_doppelganger(title = "RCBD Paired palette", autoplot(d2, palette = "Paired"))
 })
 
+test_that("Users can provide custom colours for the palette argument", {
+    # CRD
+    d1 <- design("crd", treatments = LETTERS[1:5], reps = 4,
+                 nrows = 5, ncols = 4, seed = 42, quiet = TRUE)
+
+    vdiffr::expect_doppelganger(title = "Custom palette", autoplot(d1, palette = c("red", "blue", "orange", "darkgreen", "purple")))
+})
+
+test_that("Incorrect number of custom colours for palette results in error", {
+    # CRD
+    d1 <- design("crd", treatments = LETTERS[1:5], reps = 4,
+                 nrows = 5, ncols = 4, seed = 42, quiet = TRUE)
+
+    expect_error(autoplot(d1, palette = c("red", "blue")),
+                 "palette needs to be a single string to choose a predefined palette, or 5 custom colours\\.")
+    expect_error(autoplot(d1, palette = c("red", "blue", "red", "blue", "red", "blue")),
+                 "palette needs to be a single string to choose a predefined palette, or 5 custom colours\\.")
+})
+
 test_that("Invalid palette option produces error", {
     # CRD
     d1 <- design("crd", treatments = LETTERS[1:11], reps = 4,
