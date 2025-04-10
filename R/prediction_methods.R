@@ -8,7 +8,7 @@
 #' @param vars Variables used in the model.
 #' @param ... Additional arguments passed to specific methods.
 #'
-#' @return A list containing predictions, standard errors, degrees of freedom, 
+#' @return A list containing predictions, standard errors, degrees of freedom,
 #' response variable label, and aliased names.
 #' @export
 get_predictions <- function(model.obj, classify, pred.obj = NULL, vars = NULL, ...) {
@@ -25,7 +25,7 @@ get_predictions <- function(model.obj, classify, pred.obj = NULL, vars = NULL, .
 #' @param vars Variables used in the model.
 #' @param ... Additional arguments passed to `asreml::predict.asreml`.
 #'
-#' @return A list containing predictions, standard errors, degrees of freedom, 
+#' @return A list containing predictions, standard errors, degrees of freedom,
 #' response variable label, and aliased names.
 #' @export
 get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, vars = NULL, ...) {
@@ -36,7 +36,7 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, vars = 
     }
 
     # Generate predictions if not provided
-    if (is.null(pred.obj)) {
+    if (missing(pred.obj) || is.null(pred.obj)) {
         pred.obj <- quiet(asreml::predict.asreml(model.obj, classify = classify, sed = TRUE, trace = FALSE, ...))
     }
 
@@ -50,7 +50,7 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, vars = 
     sed <- pred.obj$sed
 
     # Process aliased treatments with asreml-specific exclude columns
-    aliased_result <- process_aliased(pp, sed, classify, 
+    aliased_result <- process_aliased(pp, sed, classify,
                                     exclude_cols = c("predicted.value", "std.error", "status"))
     pp <- aliased_result$predictions
     sed <- aliased_result$sed
@@ -72,6 +72,7 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, vars = 
 
     # Get response variable for plot label
     ylab <- model.obj$formulae$fixed[[2]]
+    # ylab <- trimws(gsub("\\(|\\)", "", ylab))
 
     return(list(
         predictions = pp,
@@ -90,7 +91,7 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, vars = 
 #' @param classify Name of predictor variable as a string.
 #' @param ... Additional arguments passed to `emmeans::emmeans`.
 #'
-#' @return A list containing predictions, standard errors, degrees of freedom, 
+#' @return A list containing predictions, standard errors, degrees of freedom,
 #' response variable label, and aliased names.
 #' @export
 get_predictions.lm <- function(model.obj, classify, ...) {
@@ -104,7 +105,7 @@ get_predictions.lm <- function(model.obj, classify, ...) {
     emmeans::emm_options("msg.interaction" = FALSE, "msg.nesting" = FALSE)
 
     # Generate predictions
-    pred.out <- emmeans::emmeans(model.obj, as.formula(paste("~", classify)), ...)
+    pred.out <- emmeans::emmeans(model.obj, as.formula(paste("~", classify)))
 
     # Extract standard errors and predictions
     sed <- pred.out@misc$sigma * sqrt(outer(1 / pred.out@grid$.wgt., 1 / pred.out@grid$.wgt., "+"))
@@ -129,7 +130,9 @@ get_predictions.lm <- function(model.obj, classify, ...) {
     ndf <- pp$df[1]
 
     # Get response variable for plot label
-    ylab <- model.obj$terms[[2]]
+    formula_text <- deparse(stats::formula(model.obj))
+    ylab <- strsplit(formula_text, "~")[[1]][1]
+    ylab <- trimws(ylab)
 
     return(list(
         predictions = pp,
@@ -148,16 +151,16 @@ get_predictions.lm <- function(model.obj, classify, ...) {
 #' @param classify Name of predictor variable as a string.
 #' @param ... Additional arguments passed to `emmeans::emmeans`.
 #'
-#' @return A list containing predictions, standard errors, degrees of freedom, 
+#' @return A list containing predictions, standard errors, degrees of freedom,
 #' response variable label, and aliased names.
 #' @export
 get_predictions.lmerMod <- function(model.obj, classify, ...) {
     # Reuse lm method for common functionality
     result <- get_predictions.lm(model.obj, classify, ...)
-    
+
     # Override ylab extraction for lmerMod
-    result$ylab <- model.obj@call[[2]][[2]]
-    
+    # result$ylab <- model.obj@call[[2]][[2]]
+
     return(result)
 }
 
@@ -178,7 +181,7 @@ get_predictions.lmerModLmerTest <- function(model.obj, classify, ...) {
 #' @keywords internal
 process_aliased <- function(pp, sed, classify, exclude_cols = c("predicted.value", "std.error", "df", "Names")) {
     aliased_names <- NULL
-    
+
     if (anyNA(pp$predicted.value)) {
         aliased <- which(is.na(pp$predicted.value))
         # Get aliased treatment levels
@@ -206,7 +209,7 @@ process_aliased <- function(pp, sed, classify, exclude_cols = c("predicted.value
         sed <- sed[-aliased, -aliased]
         warning(warn_string, call. = FALSE)
     }
-    
+
     return(list(
         predictions = pp,
         sed = sed,

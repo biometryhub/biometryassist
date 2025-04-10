@@ -199,7 +199,7 @@ multiple_comparisons <- function(model.obj,
     # asr_args <- args[names(args) %in% names(formals(asreml::predict.asreml))]
 
     # Get model-specific predictions and SED
-    result <- get_predictions(model.obj, classify, args, pred.obj, ...)
+    result <- get_predictions(model.obj, classify, pred.obj, vars, ...)
 
     pp <- result$predictions
     sed <- result$sed
@@ -624,6 +624,22 @@ format_output <- function(pp, descending, vars, decimals) {
     return(pp)
 }
 
+#' Add Attributes to the Output Data Frame
+#'
+#' This internal helper function adds attributes to the output data frame, including
+#' the response variable label (`ylab`), critical value (`HSD`), and aliased treatment levels.
+#'
+#' @param pp A data frame containing the predicted values and related statistics.
+#' @param ylab A label for the response variable, typically extracted from the model.
+#' @param crit_val The critical value calculated for Tukey's Honest Significant Difference (HSD) test.
+#' @param aliased_names A character vector of aliased treatment levels, if any.
+#'
+#' @return The input data frame `pp` with additional attributes:
+#'   - `ylab`: The response variable label.
+#'   - `HSD`: The critical value for Tukey's HSD test.
+#'   - `aliased`: A character vector of aliased treatment levels, if applicable.
+#'
+#' @keywords internal
 add_attributes <- function(pp, ylab, crit_val, aliased_names) {
     # If there are brackets in the label, grab the text from inside
     if (is.call(ylab)) {

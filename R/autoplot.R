@@ -134,10 +134,10 @@ autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, pale
         column_expr <- rlang::sym("col")  # Default to the col column
     }
     if(rlang::quo_is_null(block_expr)) {
-        block_expr <- rlang::sym("block")  # Default to the col column
+        block_expr <- rlang::sym("block")  # Default to the block column
     }
     if(rlang::quo_is_null(trt_expr)) {
-        trt_expr <- rlang::sym("treatments")  # Default to the col column
+        trt_expr <- rlang::sym("treatments")  # Default to the treatments column
     }
 
     row_expr <- rlang::quo_name(row_expr)
