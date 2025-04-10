@@ -93,6 +93,9 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, vars = 
 #'
 #' @return A list containing predictions, standard errors, degrees of freedom,
 #' response variable label, and aliased names.
+#'
+#' @importFrom emmeans emmeans
+#'
 #' @export
 get_predictions.lm <- function(model.obj, classify, ...) {
     # Check if classify is in model terms

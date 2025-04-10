@@ -22,8 +22,6 @@
 #' @param pred.obj Deprecated. Predicted values are calculated within the function from version 1.0.1 onwards.
 #' @param ... Other arguments passed through to `predict.asreml()`.
 #'
-#' @importFrom multcompView multcompLetters
-#' @importFrom emmeans emmeans
 #' @importFrom stats model.frame predict qtukey qt terms var
 #' @importFrom utils packageVersion
 #'
@@ -279,6 +277,18 @@ print.mct <- function(x, ...) {
     invisible(x)
 }
 
+#' Validate Input Parameters
+#'
+#' This internal helper function validates the input parameters for the multiple
+#' comparisons test, checking significance levels, model types, and column names.
+#'
+#' @param sig Numeric value between 0 and 1 specifying the significance level.
+#' @param classify A character string specifying the treatment variable(s) to use.
+#' @param model.obj The model object to validate.
+#'
+#' @return A character vector containing the validated treatment variable names.
+#'
+#' @keywords internal
 validate_inputs <- function(sig, classify, model.obj) {
     # Check significance level
     if (sig > 0.5) {
@@ -303,184 +313,20 @@ validate_inputs <- function(sig, classify, model.obj) {
     return(vars)
 }
 
-get_predictions <- function(model.obj, classify, args, pred.obj, vars, ...) {
 
-    result <- list(
-        predictions = NULL,
-        sed = NULL,
-        df = NULL,
-        ylab = NULL,
-        aliased_names = NULL
-    )
-
-    # Handle different model types
-    if (inherits(model.obj, "asreml")) {
-        result <- get_asreml_predictions(model.obj, classify, pred.obj, vars, ...)
-    } else if (inherits(model.obj, c("aov", "lm", "lmerMod", "lmerModLmerTest"))) {
-        result <- get_lm_predictions(model.obj, classify)
-    }
-
-    return(result)
-}
-
-get_asreml_predictions <- function(model.obj, classify, pred.obj, vars, ...) {
-    # Check if classify is in model terms
-    if (classify %!in% c(attr(stats::terms(model.obj$formulae$fixed), 'term.labels'),
-                         attr(stats::terms(model.obj$formulae$random), 'term.labels'))) {
-        stop(classify, " is not a term in the model. Please check model specification.", call. = FALSE)
-    }
-
-    # Generate predictions if not provided
-    if (missing(pred.obj)) {
-        pred.obj <- quiet(asreml::predict.asreml(model.obj, classify = classify, sed = TRUE, trace = FALSE, ...))
-    }
-
-    # Check if all predicted values are NA
-    if (all(is.na(pred.obj$pvals$predicted.value)) & all(is.na(pred.obj$pvals$std.error))) {
-        stop("All predicted values are aliased. Perhaps you need the `present` argument?", call. = FALSE)
-    }
-
-    # For use with asreml 4+
-    if (utils::packageVersion("asreml") > "4") {
-        pp <- pred.obj$pvals
-        sed <- pred.obj$sed
-    } else {
-        pp <- pred.obj$pvals
-        sed <- pred.obj$sed
-    }
-
-    # Process aliased treatments
-    aliased_names <- NULL
-    if (anyNA(pp$predicted.value)) {
-        aliased <- which(is.na(pp$predicted.value))
-        # Get aliased treatment levels
-        aliased_names <- pp[aliased, !names(pp) %in% c("predicted.value", "std.error", "status")]
-
-        # Convert to character vector
-        if (is.data.frame(aliased_names)) {
-            aliased_names <- apply(aliased_names, 1, paste, collapse = ":")
-        }
-
-        # Create warning message
-        if (length(aliased_names) > 1) {
-            warn_string <- paste0("Some levels of ", classify, " are aliased. They have been removed from predicted output.\n  Aliased levels are: ",
-                                  paste(aliased_names, collapse = ", "),
-                                  ".\n  These levels are saved in the output object.")
-        } else {
-            warn_string <- paste0("A level of ", classify, " is aliased. It has been removed from predicted output.\n  Aliased level is: ",
-                                  aliased_names,
-                                  ".\n  This level is saved as an attribute of the output object.")
-        }
-
-        # Remove aliased values
-        pp <- pp[!is.na(pp$predicted.value),]
-        pp <- droplevels(pp)
-        sed <- sed[-aliased, -aliased]
-        warning(warn_string, call. = FALSE)
-    }
-
-    # Remove status column if present
-    pp$status <- NULL
-
-    # Get denominator degrees of freedom
-    dat.ww <- quiet(asreml::wald(model.obj, ssType = "conditional", denDF = "default", trace = FALSE)$Wald)
-    dendf <- data.frame(Source = row.names(dat.ww), denDF = dat.ww$denDF)
-
-    ndf <- dendf$denDF[grepl(classify, dendf$Source) & nchar(classify) == nchar(as.character(dendf$Source))]
-    if (rlang::is_empty(ndf)) {
-        ndf <- model.obj$nedf
-        rand_terms <- vars[vars %in% attr(stats::terms(model.obj$formulae$random), 'term.labels')]
-        warning(rand_terms, " is not a fixed term in the model. The denominator degrees of freedom are estimated using the residual degrees of freedom. This may be inaccurate.", call. = FALSE)
-    }
-
-    # Get response variable for plot label
-    ylab <- model.obj$formulae$fixed[[2]]
-
-    return(list(
-        predictions = pp,
-        sed = sed,
-        df = ndf,
-        ylab = ylab,
-        aliased_names = aliased_names
-    ))
-}
-
-get_lm_predictions <- function(model.obj, classify) {
-
-    # Check if classify is in model terms
-    if (classify %!in% attr(stats::terms(model.obj), 'term.labels')) {
-        stop(classify, " is not a term in the model. Please check model specification.", call. = FALSE)
-    }
-
-    # Set emmeans options
-    on.exit(options(emmeans = emmeans::emm_defaults))
-    emmeans::emm_options("msg.interaction" = FALSE, "msg.nesting" = FALSE)
-
-    # Generate predictions
-    pred.out <- emmeans::emmeans(model.obj, as.formula(paste("~", classify)))
-
-    # Extract standard errors and predictions
-    sed <- pred.out@misc$sigma * sqrt(outer(1/pred.out@grid$.wgt., 1/pred.out@grid$.wgt., "+"))
-    pred.out <- as.data.frame(pred.out)
-    pred.out <- pred.out[, !grepl("CL", names(pred.out))]
-
-    # Rename columns for consistency
-    pp <- pred.out
-    names(pp)[names(pp) == "emmean"] <- "predicted.value"
-    names(pp)[names(pp) == "SE"] <- "std.error"
-
-    # Set diagonals to NA
-    diag(sed) <- NA
-
-    # Process aliased treatments
-    aliased_names <- NULL
-    if (anyNA(pp$predicted.value)) {
-        aliased <- which(is.na(pp$predicted.value))
-        # Get aliased treatment levels
-        aliased_names <- pp[aliased, !names(pp) %in% c("predicted.value", "std.error", "df", "Names")]
-
-        # Convert to character vector
-        if (is.data.frame(aliased_names)) {
-            aliased_names <- apply(aliased_names, 1, paste, collapse = ":")
-        }
-
-        # Create warning message
-        if (length(aliased_names) > 1) {
-            warn_string <- paste0("Some levels of ", classify, " are aliased. They have been removed from predicted output.\n  Aliased levels are: ",
-                                  paste(aliased_names, collapse = ", "),
-                                  ".\n  These levels are saved in the output object.")
-        } else {
-            warn_string <- paste0("A level of ", classify, " is aliased. It has been removed from predicted output.\n  Aliased level is: ",
-                                  aliased_names,
-                                  ".\n  This level is saved as an attribute of the output object.")
-        }
-
-        # Remove aliased values
-        pp <- pp[!is.na(pp$predicted.value),]
-        pp <- droplevels(pp)
-        sed <- sed[-aliased, -aliased]
-        warning(warn_string, call. = FALSE)
-    }
-
-    # Get degrees of freedom
-    ndf <- pp$df[1]
-
-    # Get response variable for plot label
-    if (inherits(model.obj, c("lmerMod", "lmerModLmerTest"))) {
-        ylab <- model.obj@call[[2]][[2]]
-    } else {
-        ylab <- model.obj$terms[[2]]
-    }
-
-    return(list(
-        predictions = pp,
-        sed = sed,
-        df = ndf,
-        ylab = ylab,
-        aliased_names = aliased_names
-    ))
-}
-
+#' Process Treatment Names
+#'
+#' This internal helper function creates a standardized Names column by combining
+#' treatment variables and replacing dashes with underscores in treatment names.
+#'
+#' @param pp A data frame containing the predicted values and related statistics.
+#' @param classify A character string specifying the treatment variable(s) to use.
+#' @param vars A character vector of variable names used in the classification.
+#'
+#' @return A data frame with an additional `Names` column containing standardized
+#'   treatment names where dashes have been replaced with underscores.
+#'
+#' @keywords internal
 process_treatment_names <- function(pp, classify, vars) {
     # Create Names column
     if (grepl(":", classify)) {
@@ -506,6 +352,22 @@ process_treatment_names <- function(pp, classify, vars) {
     return(pp)
 }
 
+#' Calculate Critical Values and Treatment Differences
+#'
+#' This internal helper function calculates the critical value for Tukey's HSD test
+#' and determines which pairs of treatments are significantly different.
+#'
+#' @param pp A data frame containing the predicted values and related statistics.
+#' @param sed A matrix of standard errors of differences between treatments.
+#' @param ndf Numeric value specifying the denominator degrees of freedom.
+#' @param sig Numeric value between 0 and 1 specifying the significance level.
+#'
+#' @return A list containing:
+#'   - `crit_val`: The critical value for Tukey's HSD test
+#'   - `diffs`: A named logical vector indicating which pairs of treatments are
+#'     significantly different
+#'
+#' @keywords internal
 calculate_differences <- function(pp, sed, ndf, sig) {
     # Calculate the critical value
     crit_val <- 1 / sqrt(2) * stats::qtukey((1 - sig), nrow(pp), ndf) * sed
@@ -524,6 +386,23 @@ calculate_differences <- function(pp, sed, ndf, sig) {
     return(list(crit_val = crit_val, diffs = diffs))
 }
 
+#' Add Confidence Intervals to Predicted Values
+#'
+#' This internal helper function calculates and adds confidence intervals to the
+#' predicted values based on the specified interval type.
+#'
+#' @param pp A data frame containing the predicted values and related statistics.
+#' @param int.type A character string specifying the type of interval. One of:
+#'   - `"ci"`: Confidence interval based on t-distribution
+#'   - `"1se"`: One standard error
+#'   - `"2se"`: Two standard errors
+#' @param sig Numeric value between 0 and 1 specifying the significance level.
+#' @param ndf Numeric value specifying the denominator degrees of freedom.
+#'
+#' @return A data frame with an additional column `ci` containing the confidence
+#'   interval widths.
+#'
+#' @keywords internal
 add_confidence_intervals <- function(pp, int.type, sig, ndf) {
     # Calculate confidence interval width
     pp$ci <- switch(
@@ -537,6 +416,25 @@ add_confidence_intervals <- function(pp, int.type, sig, ndf) {
     return(pp)
 }
 
+#' Apply Transformation to Predicted Values
+#'
+#' This internal helper function applies a specified transformation to predicted values
+#' and calculates associated statistics, including approximate standard errors and
+#' confidence interval bounds.
+#'
+#' @param pp A data frame containing the predicted values and related statistics.
+#' @param trans A character string specifying the transformation to apply.
+#'   One of `"sqrt"`, `"log"`, `"logit"`, `"power"`, or `"inverse"`.
+#' @param offset A numeric value specifying the offset applied to the response variable
+#'   prior to transformation. Default is `0` if not provided.
+#' @param power A numeric value specifying the power for the `"power"` transformation.
+#'   Required if `trans` is `"power"`.
+#'
+#' @return A data frame with transformed predicted values (`PredictedValue`),
+#'   approximate standard errors (`ApproxSE`), and updated confidence interval
+#'   bounds (`low` and `up`).
+#'
+#' @keywords internal
 apply_transformation <- function(pp, trans, offset, power) {
     # Set default offset if not provided
     if (is.na(offset)) {
@@ -582,6 +480,22 @@ apply_transformation <- function(pp, trans, offset, power) {
     return(pp)
 }
 
+#' Add Letter Groups to Predicted Values
+#'
+#' This internal helper function assigns letter groupings to predicted values
+#' based on significant differences. The function uses the `multcompView` package
+#' to generate compact letter displays for pairwise comparisons.
+#'
+#' @param pp A data frame containing the predicted values and related statistics.
+#' @param diffs A logical vector indicating which pairs of treatments are significantly different.
+#' @param descending Logical. If `TRUE`, the letter groups are assigned in descending order
+#'   of predicted values. If `FALSE`, they are assigned in ascending order.
+#'
+#' @return A data frame with an additional column `groups` containing the letter groupings.
+#'
+#' @importFrom multcompView multcompLetters
+#'
+#' @keywords internal
 add_letter_groups <- function(pp, diffs, descending) {
     ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp, reversed = !descending)
 
@@ -592,6 +506,22 @@ add_letter_groups <- function(pp, diffs, descending) {
     return(pp)
 }
 
+#' Format Output Data Frame
+#'
+#' This internal helper function formats the output data frame by ordering rows,
+#' removing unnecessary columns, converting treatment variables to factors,
+#' and rounding numeric columns to a specified number of decimal places.
+#'
+#' @param pp A data frame containing the predicted values and related statistics.
+#' @param descending Logical. If `TRUE`, the output is ordered in descending order
+#'   of predicted values. If `FALSE`, it is ordered in ascending order.
+#' @param vars A character vector of variable names to identify treatment columns.
+#' @param decimals An integer specifying the number of decimal places to round numeric columns.
+#'
+#' @return A formatted data frame with ordered rows, rounded numeric values,
+#'   and treatment variables converted to factors.
+#'
+#' @keywords internal
 format_output <- function(pp, descending, vars, decimals) {
     # Order by predicted value
     pp <- pp[base::order(pp$predicted.value, decreasing = descending), ]
