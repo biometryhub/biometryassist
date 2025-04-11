@@ -23,6 +23,9 @@
 #' @export
 
 resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, axes.size = 10, call.size = 9, mod.obj){
+
+    handle_deprecated_param("mod.obj", "model.obj")
+    # Need to pass on old argument if provided
     if(!missing(mod.obj)) {
         warning("mod.obj has been deprecated to be consistent with other functions. Please use `model.obj` instead.")
         model.obj <- mod.obj

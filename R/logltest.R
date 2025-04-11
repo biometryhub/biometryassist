@@ -49,7 +49,7 @@ logl_test <- function(model.obj, rand.terms = NULL, resid.terms = NULL, decimals
 
     bnd <- rownames(summary(model.obj)$varcomp[summary(model.obj)$varcomp$bound == "B",])
 
-    if (any(grepl("!cor", bnd))) {
+    if(any(grepl("!cor", bnd))) {
         trm <- substring(
             bnd[grepl("!cor", bnd, fixed = TRUE)],
             (unlist(gregexpr("!", bnd[grepl("!cor", bnd, fixed = TRUE)]))[1] + 1),
@@ -65,14 +65,14 @@ logl_test <- function(model.obj, rand.terms = NULL, resid.terms = NULL, decimals
     # terms to conduct loglikehood ratio test on
     tt <- c(rand.terms[!is.element(rand.terms, bnd)], resid.terms[!is.element(resid.terms, bnd)])
 
-    if (length(bnd) > 0) {
+    if(length(bnd) > 0) {
         test.df <- data.frame(Term = bnd, LogLRT.pvalue = 1)
     } else {
         test.df <- data.frame(Term = character(), LogLRT.pvalue = numeric())
     }
 
     # Loglikehood ratio tests
-    if (!all.bnd) {
+    if(!all.bnd) {
 
         # update model excluding the boundary terms - random
         brand.terms <- c()
@@ -82,7 +82,7 @@ logl_test <- function(model.obj, rand.terms = NULL, resid.terms = NULL, decimals
             model.obj$vparameters.pc[is.na(model.obj$vparameters.pc)] <- 0
         }
 
-        if (length(brand.terms > 0)) {
+        if(length(brand.terms > 0)) {
             model.obj <- quiet(update(model.obj, random = as.formula(paste("~ . - ", paste(brand.terms, collapse = " - "), sep = " "))))
             n[1] <- 1
             while (!model.obj$converge & (n[1] < 10)) {
@@ -100,7 +100,7 @@ logl_test <- function(model.obj, rand.terms = NULL, resid.terms = NULL, decimals
         # Fitting the models
 
         for (i in seq_along(tt)) {
-            if (grepl("ar", tt[i])) {
+            if(grepl("ar", tt[i])) {
                 tt.new <- paste("id", substring(tt[i], 4), sep = "")
                 old.resid <- substring(toString(model.obj$formulae$residual), 4)
                 new.resid <- gsub(tt[[i]], tt.new, old.resid, fixed = TRUE)
@@ -134,7 +134,7 @@ logl_test <- function(model.obj, rand.terms = NULL, resid.terms = NULL, decimals
                 result.df <- data.frame(Term = tt[i], LogLRT.pvalue = ll.test)
                 test.df <- rbind(test.df, result.df)
             }
-            if (!grepl("ar", tt[i])) {
+            if(!grepl("ar", tt[i])) {
 
                 # Fit reduced model
                 tst.terms <- tt[grepl(tt[i], tt)]

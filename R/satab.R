@@ -16,12 +16,12 @@ satab <- function(design.obj) {
 
   design.obj <- design.obj$book
 
-  if (design != "split") {
+  if(design != "split") {
     output <- paste0(format("Source of Variation", width = 40), "df", "\n")
     output <- c(output, paste0("=============================================\n"))
   }
 
-  if (design == "crd") {
+  if(design == "crd") {
     trt <- names(design.obj)[3]
     totdf <- nrow(design.obj) - 1
     trtdf <- length(unique(design.obj[, 3])) - 1
@@ -33,7 +33,7 @@ satab <- function(design.obj) {
     output <- c(output, paste0(format("Total", width = 40), totdf, "\n"))
   }
 
-  if (design == "rcbd") {
+  if(design == "rcbd") {
     trt <- names(design.obj)[3]
     blkdf <- length(unique(design.obj$block)) - 1
     totdf <- nrow(design.obj) - 1
@@ -48,7 +48,7 @@ satab <- function(design.obj) {
     output <- c(output, paste0(format("Total", width = 40), totdf, "\n"))
   }
 
-  if (design == "factorial_crd") {
+  if(design == "factorial_crd") {
     trt <- names(design.obj)[3:length(names(design.obj))]
     totdf <- nrow(design.obj) - 1
     trtdf <- c()
@@ -68,7 +68,7 @@ satab <- function(design.obj) {
   }
 
 
-  if (design == "factorial_rcbd") {
+  if(design == "factorial_rcbd") {
     trt <- names(design.obj)[3:length(names(design.obj))]
     totdf <- nrow(design.obj) - 1
     trtdf <- c()
@@ -90,7 +90,7 @@ satab <- function(design.obj) {
     output <- c(output, paste0(format("Total", width = 40), totdf, "\n"))
   }
 
-  if (design == "lsd") {
+  if(design == "lsd") {
     trt <- names(design.obj)[4]
     rowdf <- length(unique(design.obj$row)) - 1
     coldf <- length(unique(design.obj$col)) - 1
@@ -108,7 +108,7 @@ satab <- function(design.obj) {
 
 
 
-  if (design == "split") {
+  if(design == "split") {
     blkdf <- length(unique(design.obj$block)) - 1
     totdf <- nrow(design.obj) - 1
     numwplots <- nrow(design.obj) / length(unique(design.obj$splots))
@@ -136,7 +136,7 @@ satab <- function(design.obj) {
     output <- c(output, paste0(format("Total", width = ifelse(totdf>10, 44, 45)), totdf, "\n"))
   }
 
-  if (design == "factorial_lsd") {
+  if(design == "factorial_lsd") {
     rowdf <- length(unique(design.obj$row)) - 1
     coldf <- length(unique(design.obj$col)) - 1
     totdf <- nrow(design.obj) - 1

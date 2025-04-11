@@ -254,10 +254,10 @@ vario_df <- function(model.obj, Row = NA, Column = NA) {
                     row <- Row[val_index] + offset[1]
                     col <- Column[val_index] + offset[2]
 
-                    if (0 < row && row <= nrows && 0 < col && col <= ncols && !is.na(Resid[val_index])) {
+                    if(0 < row && row <= nrows && 0 < col && col <= ncols && !is.na(Resid[val_index])) {
                         other <- Resid[Row == row & Column == col]
 
-                        if (!is.na(other)) {
+                        if(!is.na(other)) {
                             gamma <- gamma + (Resid[val_index] - other)^2
                             np <- np + 1
                         }
@@ -268,7 +268,7 @@ vario_df <- function(model.obj, Row = NA, Column = NA) {
             np <- np / 2
             gamma <- gamma / 2
 
-            if (np > 0) {
+            if(np > 0) {
                 gamma <- gamma / (2*np)
             }
 
