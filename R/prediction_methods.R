@@ -30,18 +30,18 @@ get_predictions <- function(model.obj, classify, pred.obj = NULL, vars = NULL, .
 #' @export
 get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, vars = NULL, ...) {
     # Check if classify is in model terms
-    if (classify %!in% c(attr(stats::terms(model.obj$formulae$fixed), 'term.labels'),
+    if(classify %!in% c(attr(stats::terms(model.obj$formulae$fixed), 'term.labels'),
                          attr(stats::terms(model.obj$formulae$random), 'term.labels'))) {
         stop(classify, " is not a term in the model. Please check model specification.", call. = FALSE)
     }
 
     # Generate predictions if not provided
-    if (missing(pred.obj) || is.null(pred.obj)) {
+    if(missing(pred.obj) || is.null(pred.obj)) {
         pred.obj <- quiet(asreml::predict.asreml(model.obj, classify = classify, sed = TRUE, trace = FALSE, ...))
     }
 
     # Check if all predicted values are NA
-    if (all(is.na(pred.obj$pvals$predicted.value)) & all(is.na(pred.obj$pvals$std.error))) {
+    if(all(is.na(pred.obj$pvals$predicted.value)) & all(is.na(pred.obj$pvals$std.error))) {
         stop("All predicted values are aliased. Perhaps you need the `present` argument?", call. = FALSE)
     }
 
@@ -64,7 +64,7 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, vars = 
     dendf <- data.frame(Source = row.names(dat.ww), denDF = dat.ww$denDF)
 
     ndf <- dendf$denDF[grepl(classify, dendf$Source) & nchar(classify) == nchar(as.character(dendf$Source))]
-    if (rlang::is_empty(ndf)) {
+    if(rlang::is_empty(ndf)) {
         ndf <- model.obj$nedf
         rand_terms <- vars[vars %in% attr(stats::terms(model.obj$formulae$random), 'term.labels')]
         warning(rand_terms, " is not a fixed term in the model. The denominator degrees of freedom are estimated using the residual degrees of freedom. This may be inaccurate.", call. = FALSE)
@@ -99,7 +99,7 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, vars = 
 #' @export
 get_predictions.lm <- function(model.obj, classify, ...) {
     # Check if classify is in model terms
-    if (classify %!in% attr(stats::terms(model.obj), 'term.labels')) {
+    if(classify %!in% attr(stats::terms(model.obj), 'term.labels')) {
         stop(classify, " is not a term in the model. Please check model specification.", call. = FALSE)
     }
 
@@ -185,18 +185,18 @@ get_predictions.lmerModLmerTest <- function(model.obj, classify, ...) {
 process_aliased <- function(pp, sed, classify, exclude_cols = c("predicted.value", "std.error", "df", "Names")) {
     aliased_names <- NULL
 
-    if (anyNA(pp$predicted.value)) {
+    if(anyNA(pp$predicted.value)) {
         aliased <- which(is.na(pp$predicted.value))
         # Get aliased treatment levels
         aliased_names <- pp[aliased, !names(pp) %in% exclude_cols]
 
         # Convert to character vector
-        if (is.data.frame(aliased_names)) {
+        if(is.data.frame(aliased_names)) {
             aliased_names <- apply(aliased_names, 1, paste, collapse = ":")
         }
 
         # Create warning message
-        warn_string <- if (length(aliased_names) > 1) {
+        warn_string <- if(length(aliased_names) > 1) {
             paste0("Some levels of ", classify, " are aliased. They have been removed from predicted output.\n",
                   "  Aliased levels are: ", paste(aliased_names, collapse = ", "),
                   ".\n  These levels are saved in the output object.")
