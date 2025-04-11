@@ -22,6 +22,8 @@
 #' @param pred.obj Deprecated. Predicted values are calculated within the function from version 1.0.1 onwards.
 #' @param ... Other arguments passed through to `predict.asreml()`.
 #'
+#' @importFrom multcompView multcompLetters
+#' @importFrom emmeans emmeans
 #' @importFrom stats model.frame predict qtukey qt terms var
 #' @importFrom utils packageVersion
 #'
@@ -197,7 +199,7 @@ multiple_comparisons <- function(model.obj,
     # asr_args <- args[names(args) %in% names(formals(asreml::predict.asreml))]
 
     # Get model-specific predictions and SED
-    result <- get_predictions(model.obj, classify, pred.obj, vars, ...)
+    result <- get_predictions(model.obj, classify, args, pred.obj, ...)
 
     pp <- result$predictions
     sed <- result$sed
@@ -208,9 +210,9 @@ multiple_comparisons <- function(model.obj,
     pp <- process_treatment_names(pp, classify)
 
     # Calculate critical values and determine pairs that are significantly different
-    calc_diffs <- calculate_differences(pp, sed, ndf, sig)
-    crit_val <- calc_diffs$crit_val
-    diffs <- calc_diffs$diffs
+    result <- calculate_differences(pp, sed, ndf, sig)
+    crit_val <- result$crit_val
+    diffs <- result$diffs
 
     # Add letter groups if requested
     if (groups) {
@@ -277,18 +279,6 @@ print.mct <- function(x, ...) {
     invisible(x)
 }
 
-#' Validate Input Parameters
-#'
-#' This internal helper function validates the input parameters for the multiple
-#' comparisons test, checking significance levels, model types, and column names.
-#'
-#' @param sig Numeric value between 0 and 1 specifying the significance level.
-#' @param classify A character string specifying the treatment variable(s) to use.
-#' @param model.obj The model object to validate.
-#'
-#' @return A character vector containing the validated treatment variable names.
-#'
-#' @keywords internal
 validate_inputs <- function(sig, classify, model.obj) {
     # Check significance level
     if (sig > 0.5) {
@@ -313,20 +303,6 @@ validate_inputs <- function(sig, classify, model.obj) {
     return(vars)
 }
 
-
-#' Process Treatment Names
-#'
-#' This internal helper function creates a standardized Names column by combining
-#' treatment variables and replacing dashes with underscores in treatment names.
-#'
-#' @param pp A data frame containing the predicted values and related statistics.
-#' @param classify A character string specifying the treatment variable(s) to use.
-#' @param vars A character vector of variable names used in the classification.
-#'
-#' @return A data frame with an additional `Names` column containing standardized
-#'   treatment names where dashes have been replaced with underscores.
-#'
-#' @keywords internal
 process_treatment_names <- function(pp, classify, vars) {
     # Create Names column
     if (grepl(":", classify)) {
@@ -352,22 +328,6 @@ process_treatment_names <- function(pp, classify, vars) {
     return(pp)
 }
 
-#' Calculate Critical Values and Treatment Differences
-#'
-#' This internal helper function calculates the critical value for Tukey's HSD test
-#' and determines which pairs of treatments are significantly different.
-#'
-#' @param pp A data frame containing the predicted values and related statistics.
-#' @param sed A matrix of standard errors of differences between treatments.
-#' @param ndf Numeric value specifying the denominator degrees of freedom.
-#' @param sig Numeric value between 0 and 1 specifying the significance level.
-#'
-#' @return A list containing:
-#'   - `crit_val`: The critical value for Tukey's HSD test
-#'   - `diffs`: A named logical vector indicating which pairs of treatments are
-#'     significantly different
-#'
-#' @keywords internal
 calculate_differences <- function(pp, sed, ndf, sig) {
     # Calculate the critical value
     crit_val <- 1 / sqrt(2) * stats::qtukey((1 - sig), nrow(pp), ndf) * sed
@@ -386,55 +346,19 @@ calculate_differences <- function(pp, sed, ndf, sig) {
     return(list(crit_val = crit_val, diffs = diffs))
 }
 
-#' Add Confidence Intervals to Predicted Values
-#'
-#' This internal helper function calculates and adds confidence intervals to the
-#' predicted values based on the specified interval type.
-#'
-#' @param pp A data frame containing the predicted values and related statistics.
-#' @param int.type A character string specifying the type of interval. One of:
-#'   - `"ci"`: Confidence interval based on t-distribution
-#'   - `"1se"`: One standard error
-#'   - `"2se"`: Two standard errors
-#' @param sig Numeric value between 0 and 1 specifying the significance level.
-#' @param ndf Numeric value specifying the denominator degrees of freedom.
-#'
-#' @return A data frame with an additional column `ci` containing the confidence
-#'   interval widths.
-#'
-#' @keywords internal
 add_confidence_intervals <- function(pp, int.type, sig, ndf) {
     # Calculate confidence interval width
     pp$ci <- switch(
-    tolower(int.type),
-    "ci" = stats::qt(p = sig, ndf, lower.tail = FALSE) * pp$std.error,
-    "1se" = pp$std.error,
-    "2se" = 2 * pp$std.error,
-    stop("Invalid int.type.")
-)
+        tolower(int.type),
+        "ci" = stats::qt(p = sig, ndf, lower.tail = FALSE) * pp$std.error,
+        "1se" = pp$std.error,
+        "2se" = 2 * pp$std.error,
+        stop("Invalid int.type.")
+    )
 
     return(pp)
 }
 
-#' Apply Transformation to Predicted Values
-#'
-#' This internal helper function applies a specified transformation to predicted values
-#' and calculates associated statistics, including approximate standard errors and
-#' confidence interval bounds.
-#'
-#' @param pp A data frame containing the predicted values and related statistics.
-#' @param trans A character string specifying the transformation to apply.
-#'   One of `"sqrt"`, `"log"`, `"logit"`, `"power"`, or `"inverse"`.
-#' @param offset A numeric value specifying the offset applied to the response variable
-#'   prior to transformation. Default is `0` if not provided.
-#' @param power A numeric value specifying the power for the `"power"` transformation.
-#'   Required if `trans` is `"power"`.
-#'
-#' @return A data frame with transformed predicted values (`PredictedValue`),
-#'   approximate standard errors (`ApproxSE`), and updated confidence interval
-#'   bounds (`low` and `up`).
-#'
-#' @keywords internal
 apply_transformation <- function(pp, trans, offset, power) {
     # Set default offset if not provided
     if (is.na(offset)) {
@@ -480,22 +404,6 @@ apply_transformation <- function(pp, trans, offset, power) {
     return(pp)
 }
 
-#' Add Letter Groups to Predicted Values
-#'
-#' This internal helper function assigns letter groupings to predicted values
-#' based on significant differences. The function uses the `multcompView` package
-#' to generate compact letter displays for pairwise comparisons.
-#'
-#' @param pp A data frame containing the predicted values and related statistics.
-#' @param diffs A logical vector indicating which pairs of treatments are significantly different.
-#' @param descending Logical. If `TRUE`, the letter groups are assigned in descending order
-#'   of predicted values. If `FALSE`, they are assigned in ascending order.
-#'
-#' @return A data frame with an additional column `groups` containing the letter groupings.
-#'
-#' @importFrom multcompView multcompLetters
-#'
-#' @keywords internal
 add_letter_groups <- function(pp, diffs, descending) {
     ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp, reversed = !descending)
 
@@ -506,22 +414,6 @@ add_letter_groups <- function(pp, diffs, descending) {
     return(pp)
 }
 
-#' Format Output Data Frame
-#'
-#' This internal helper function formats the output data frame by ordering rows,
-#' removing unnecessary columns, converting treatment variables to factors,
-#' and rounding numeric columns to a specified number of decimal places.
-#'
-#' @param pp A data frame containing the predicted values and related statistics.
-#' @param descending Logical. If `TRUE`, the output is ordered in descending order
-#'   of predicted values. If `FALSE`, it is ordered in ascending order.
-#' @param vars A character vector of variable names to identify treatment columns.
-#' @param decimals An integer specifying the number of decimal places to round numeric columns.
-#'
-#' @return A formatted data frame with ordered rows, rounded numeric values,
-#'   and treatment variables converted to factors.
-#'
-#' @keywords internal
 format_output <- function(pp, descending, vars, decimals) {
     # Order by predicted value
     pp <- pp[base::order(pp$predicted.value, decreasing = descending), ]
@@ -554,22 +446,6 @@ format_output <- function(pp, descending, vars, decimals) {
     return(pp)
 }
 
-#' Add Attributes to the Output Data Frame
-#'
-#' This internal helper function adds attributes to the output data frame, including
-#' the response variable label (`ylab`), critical value (`HSD`), and aliased treatment levels.
-#'
-#' @param pp A data frame containing the predicted values and related statistics.
-#' @param ylab A label for the response variable, typically extracted from the model.
-#' @param crit_val The critical value calculated for Tukey's Honest Significant Difference (HSD) test.
-#' @param aliased_names A character vector of aliased treatment levels, if any.
-#'
-#' @return The input data frame `pp` with additional attributes:
-#'   - `ylab`: The response variable label.
-#'   - `HSD`: The critical value for Tukey's HSD test.
-#'   - `aliased`: A character vector of aliased treatment levels, if applicable.
-#'
-#' @keywords internal
 add_attributes <- function(pp, ylab, crit_val, aliased_names) {
     # If there are brackets in the label, grab the text from inside
     if (is.call(ylab)) {
