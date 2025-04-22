@@ -1,3 +1,22 @@
+# biometryassist 1.2.2
+
+## Major changes
+
+- Switched to using S3 methods to get predictions in `multiple_comparisons()` to enable easier expansion to different models in future. (#92)
+
+## Minor changes
+
+- Added ability to produce column plots from `multiple_comparisons()` (#90)
+- Add option in multiple_comparisons() to disable letter comparisons (#85)
+- Enable custom colour palettes for design plots (#84)
+
+## Bug Fixes
+
+- Fixed CRAN warnings due to changes in the sommer package (#89)
+- Fixed errors in `shapiro.test()` within `resplot()` with too many data points (#87)
+- Fixed a bug where `heat_map()` didn't work properly with factor columns (#86)
+- Split-plot design dataframe doesn't have the required columns (#82)
+
 # biometryassist 1.2.1
 
 ## Bug Fixes
