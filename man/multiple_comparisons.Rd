@@ -197,5 +197,5 @@ autoplot(pred.out)
 }
 \references{
 Jørgensen, E. & Pedersen, A. R. (1997). How to Obtain Those Nasty
-Standard Errors From Transformed Data - and Why They Should Not Be Used. \url{https://pure.au.dk/portal/en/publications/how-to-obtain-those-nasty-standard-errors-from-transformed-data--and-why-they-should-not-be-used(d649ca20-d15f-11db-8e26-000ea68e967b).html}
+Standard Errors From Transformed Data - and Why They Should Not Be Used. \url{https://pure.au.dk/portal/en/publications/how-to-obtain-those-nasty-standard-errors-from-transformed-data-a}
 }

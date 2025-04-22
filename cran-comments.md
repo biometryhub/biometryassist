@@ -1,6 +1,6 @@
 ## Submission
 
-Updates to fix issues flagged by CRAN
+Updates to fix issues flagged by CRAN; resubmission to fix broken URLs.
 
 ## Test environments
 * Local Windows 10 install, R 4.5.0
