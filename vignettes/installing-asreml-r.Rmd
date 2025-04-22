@@ -44,7 +44,7 @@ The developers of biometryassist do not provide support for `ASReml-R` via way o
 As of June 2023, the University of Adelaide has unlimited licence codes until June 2026 for university staff, students and affiliates, thanks to funding provided by the Grains Research and Development Corporation, via the Analytics for the Australian Grains Industry (AAGI) project.
 
 To access the University of Adelaide licence key, please complete this form:
-https://forms.office.com/r/gBva4iL3FU
+https://forms.office.com/Pages/ResponsePage.aspx?id=QN_Ns1SWJkqGoXecUfacSFFynOaV3gFMjBxPWBG-lVFUMzIyMjc3MjExVVk3WUFFOUkyNEJNMllaTC4u
 
 You will receive an email with a licence key if you hold a valid University of Adelaide account.
 
