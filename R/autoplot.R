@@ -122,10 +122,10 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1, rotation = 0, axi
 #' autoplot(des.out)
 #'
 #' # Show the wholeplot components
-#' autoplot(des.out, treatments = wholeplot)
+#' autoplot(des.out, treatments = wholeplots)
 #'
 #' # Display block level
-#' autoplot(des.out, treatments = wholeplot)
+#' autoplot(des.out, treatments = block)
 autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, palette = "default", buffer = NULL, row = NULL, column = NULL, block = NULL, treatments = NULL, ...) {
     stopifnot(inherits(object, "design"))
     rlang::check_dots_used()
