@@ -95,10 +95,10 @@ reps = 4, nrows = 8, ncols = 4, brows = 4, bcols = 2, seed = 42)
 autoplot(des.out)
 
 # Show the wholeplot components
-autoplot(des.out, treatments = wholeplot)
+autoplot(des.out, treatments = wholeplots)
 
 # Display block level
-autoplot(des.out, treatments = wholeplot)
+autoplot(des.out, treatments = block)
 }
 \seealso{
 \code{\link[=multiple_comparisons]{multiple_comparisons()}} and \code{\link[=design]{design()}}
