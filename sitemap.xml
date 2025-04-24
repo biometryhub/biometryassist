@@ -1,99 +1,39 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/404.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/LICENSE-text.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/LICENSE.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/articles/index.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/articles/installing-asreml-r.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/authors.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/index.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/news/index.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/reference/autoplot.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/reference/biometryassist-deprecated.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/reference/biometryassist.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/reference/compare_version.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/reference/create_buffers.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/reference/create_mac_folder.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/reference/des_info.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/reference/design.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/reference/get_r_os.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/reference/get_version_table.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/reference/heat_map.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/reference/index.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/reference/install_asreml.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/reference/logl_test.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/reference/newer_version.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/reference/print.mct.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/reference/quiet.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/reference/resplot.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/reference/resplt-deprecated.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/reference/satab.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/reference/summary_graph.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/reference/vario_df.html</loc>
-  </url>
-  <url>
-    <loc>https://biometryhub.github.io/biometryassist/reference/variogram.html</loc>
-  </url>
+<urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
+<url><loc>https://biometryhub.github.io/biometryassist/404.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/LICENSE-text.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/LICENSE.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/articles/index.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/articles/installing-asreml-r.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/authors.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/index.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/news/index.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/autoplot.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/biometryassist-deprecated.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/biometryassist.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/compare_version.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/create_buffers.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/create_mac_folder.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/des_info.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/design.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/get_r_os.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/get_version_table.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/handle_deprecated_param.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/heat_map.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/index.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/install_asreml.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/logl_test.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/manage_file.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/newer_version.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/predictions.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/print.mct.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/process_aliased.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/quiet.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/resplot.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/resplt-deprecated.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/satab.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/summary_graph.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/vario_df.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/variogram.html</loc></url>
 </urlset>
+
