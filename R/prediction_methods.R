@@ -2,7 +2,7 @@
 #'
 #' A generic function to get predictions for statistical models.
 #'
-#' @param model.obj A model object.
+#' @param model.obj A model object. Currently supported model objects are asreml, aov/lm, lmerMod/lmerModLmerTest.
 #' @param classify Name of predictor variable as a string.
 #' @param pred.obj Optional precomputed prediction object.
 #' @param vars Variables used in the model.
@@ -19,14 +19,6 @@ get_predictions <- function(model.obj, classify, pred.obj = NULL, vars = NULL, .
 
 #' @rdname predictions
 #'
-#' @param model.obj An ASReml model object.
-#' @param classify Name of predictor variable as a string.
-#' @param pred.obj Optional precomputed prediction object.
-#' @param vars Variables used in the model.
-#' @param ... Additional arguments passed to `asreml::predict.asreml`.
-#'
-#' @return A list containing predictions, standard errors, degrees of freedom,
-#' response variable label, and aliased names.
 #' @keywords internal
 get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, vars = NULL, ...) {
     # Check if classify is in model terms
@@ -85,13 +77,6 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, vars = 
 
 #' @rdname predictions
 #'
-#' @param model.obj A linear model object.
-#' @param classify Name of predictor variable as a string.
-#' @param ... Additional arguments passed to `emmeans::emmeans`.
-#'
-#' @return A list containing predictions, standard errors, degrees of freedom,
-#' response variable label, and aliased names.
-#'
 #' @importFrom emmeans emmeans
 #'
 #' @keywords internal
@@ -146,12 +131,6 @@ get_predictions.lm <- function(model.obj, classify, ...) {
 
 #' @rdname predictions
 #'
-#' @param model.obj A mixed-effects model object (lmerMod or lmerModLmerTest).
-#' @param classify Name of predictor variable as a string.
-#' @param ... Additional arguments passed to `emmeans::emmeans`.
-#'
-#' @return A list containing predictions, standard errors, degrees of freedom,
-#' response variable label, and aliased names.
 #' @keywords internal
 get_predictions.lmerMod <- function(model.obj, classify, ...) {
     # Reuse lm method for common functionality

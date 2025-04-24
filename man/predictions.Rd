@@ -20,7 +20,7 @@ get_predictions(model.obj, classify, pred.obj = NULL, vars = NULL, ...)
 \method{get_predictions}{lmerModLmerTest}(model.obj, classify, ...)
 }
 \arguments{
-\item{model.obj}{A mixed-effects model object (lmerMod or lmerModLmerTest).}
+\item{model.obj}{A model object. Currently supported model objects are asreml, aov/lm, lmerMod/lmerModLmerTest.}
 
 \item{classify}{Name of predictor variable as a string.}
 
@@ -28,18 +28,9 @@ get_predictions(model.obj, classify, pred.obj = NULL, vars = NULL, ...)
 
 \item{vars}{Variables used in the model.}
 
-\item{...}{Additional arguments passed to \code{emmeans::emmeans}.}
+\item{...}{Additional arguments passed to specific methods.}
 }
 \value{
-A list containing predictions, standard errors, degrees of freedom,
-response variable label, and aliased names.
-
-A list containing predictions, standard errors, degrees of freedom,
-response variable label, and aliased names.
-
-A list containing predictions, standard errors, degrees of freedom,
-response variable label, and aliased names.
-
 A list containing predictions, standard errors, degrees of freedom,
 response variable label, and aliased names.
 }
