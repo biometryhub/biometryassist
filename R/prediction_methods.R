@@ -8,16 +8,16 @@
 #' @param vars Variables used in the model.
 #' @param ... Additional arguments passed to specific methods.
 #'
+#' @name predictions
+#'
 #' @return A list containing predictions, standard errors, degrees of freedom,
 #' response variable label, and aliased names.
-#' @export
+#' @keywords internal
 get_predictions <- function(model.obj, classify, pred.obj = NULL, vars = NULL, ...) {
     UseMethod("get_predictions")
 }
 
-#' Get Predictions for ASReml Models
-#'
-#' An S3 method for getting predictions from ASReml models.
+#' @rdname predictions
 #'
 #' @param model.obj An ASReml model object.
 #' @param classify Name of predictor variable as a string.
@@ -27,7 +27,7 @@ get_predictions <- function(model.obj, classify, pred.obj = NULL, vars = NULL, .
 #'
 #' @return A list containing predictions, standard errors, degrees of freedom,
 #' response variable label, and aliased names.
-#' @export
+#' @keywords internal
 get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, vars = NULL, ...) {
     # Check if classify is in model terms
     if(classify %!in% c(attr(stats::terms(model.obj$formulae$fixed), 'term.labels'),
@@ -83,9 +83,7 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, vars = 
     ))
 }
 
-#' Get Predictions for Linear Models
-#'
-#' An S3 method for getting predictions from linear models.
+#' @rdname predictions
 #'
 #' @param model.obj A linear model object.
 #' @param classify Name of predictor variable as a string.
@@ -96,7 +94,7 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, vars = 
 #'
 #' @importFrom emmeans emmeans
 #'
-#' @export
+#' @keywords internal
 get_predictions.lm <- function(model.obj, classify, ...) {
     # Check if classify is in model terms
     if(classify %!in% attr(stats::terms(model.obj), 'term.labels')) {
@@ -146,9 +144,7 @@ get_predictions.lm <- function(model.obj, classify, ...) {
     ))
 }
 
-#' Get Predictions for Mixed-Effects Models
-#'
-#' An S3 method for getting predictions from mixed-effects models.
+#' @rdname predictions
 #'
 #' @param model.obj A mixed-effects model object (lmerMod or lmerModLmerTest).
 #' @param classify Name of predictor variable as a string.
@@ -156,7 +152,7 @@ get_predictions.lm <- function(model.obj, classify, ...) {
 #'
 #' @return A list containing predictions, standard errors, degrees of freedom,
 #' response variable label, and aliased names.
-#' @export
+#' @keywords internal
 get_predictions.lmerMod <- function(model.obj, classify, ...) {
     # Reuse lm method for common functionality
     result <- get_predictions.lm(model.obj, classify, ...)
@@ -167,8 +163,8 @@ get_predictions.lmerMod <- function(model.obj, classify, ...) {
     return(result)
 }
 
-#' @rdname get_predictions.lmerMod
-#' @export
+#' @rdname predictions
+#' @keywords internal
 get_predictions.lmerModLmerTest <- function(model.obj, classify, ...) {
     get_predictions.lmerMod(model.obj, classify, ...)
 }
