@@ -38,6 +38,9 @@
 <polyline points='162.60,545.11 162.60,22.78 ' style='stroke-width: 1.07; stroke: #EBEBEB; stroke-linecap: butt;' />
 <polyline points='374.88,545.11 374.88,22.78 ' style='stroke-width: 1.07; stroke: #EBEBEB; stroke-linecap: butt;' />
 <polyline points='587.16,545.11 587.16,22.78 ' style='stroke-width: 1.07; stroke: #EBEBEB; stroke-linecap: butt;' />
+<circle cx='162.60' cy='508.73' r='2.49' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
+<circle cx='374.88' cy='235.81' r='2.49' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
+<circle cx='587.16' cy='58.91' r='2.49' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
 <polyline points='141.38,498.63 183.83,498.63 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
 <polyline points='162.60,498.63 162.60,521.37 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
 <polyline points='141.38,521.37 183.83,521.37 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
@@ -50,9 +53,6 @@
 <text x='162.60' y='500.27' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='6.33px' lengthAdjust='spacingAndGlyphs'>a</text>
 <text x='374.88' y='227.34' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='6.33px' lengthAdjust='spacingAndGlyphs'>b</text>
 <text x='587.16' y='50.44' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='5.70px' lengthAdjust='spacingAndGlyphs'>c</text>
-<circle cx='162.60' cy='508.73' r='1.95' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
-<circle cx='374.88' cy='235.81' r='1.95' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
-<circle cx='587.16' cy='58.91' r='1.95' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
 <rect x='35.24' y='22.78' width='679.28' height='522.33' style='stroke-width: 1.07; stroke: #333333;' />
 </g>
 <g clip-path='url(#cpMC4wMHw3MjAuMDB8MC4wMHw1NzYuMDA=)'>

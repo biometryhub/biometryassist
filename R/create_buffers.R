@@ -6,7 +6,7 @@
 #'
 #' @importFrom stats setNames aggregate
 #'
-#' @return The original data frame, updated to include buffers
+#' @returns The original data frame, updated to include buffers
 #' @keywords internal
 create_buffers <- function(design, type, blocks = FALSE) {
     nrow <- max(design$row)
@@ -81,7 +81,7 @@ create_buffers <- function(design, type, blocks = FALSE) {
     }
     # Match block, blocks, or b
     else if(grepl("(^blocks?$|^b$)", tolower(type))) {
-        stop("Block buffers are not yet supported.")
+        stop("Block buffers are not yet supported.", call. = FALSE)
     }
     else {
         stop("Invalid buffer option: ", type, call. = FALSE)

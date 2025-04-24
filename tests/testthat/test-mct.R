@@ -1,22 +1,22 @@
 logit <- function (p, percents = range.p[2] > 1, adjust)
 {
     range.p <- range(p, na.rm = TRUE)
-    if (percents) {
-        if (range.p[1] < 0 || range.p[1] > 100)
+    if(percents) {
+        if(range.p[1] < 0 || range.p[1] > 100)
             stop("p must be in the range 0 to 100")
         p <- p/100
         range.p <- range.p/100
     }
-    else if (range.p[1] < 0 || range.p[1] > 1)
+    else if(range.p[1] < 0 || range.p[1] > 1)
         stop("p must be in the range 0 to 1")
-    a <- if (missing(adjust)) {
-        if (isTRUE(all.equal(range.p[1], 0)) || isTRUE(all.equal(range.p[2],
+    a <- if(missing(adjust)) {
+        if(isTRUE(all.equal(range.p[1], 0)) || isTRUE(all.equal(range.p[2],
                                                                  1)))
             0.025
         else 0
     }
     else adjust
-    if (missing(adjust) && a != 0)
+    if(missing(adjust) && a != 0)
         warning(paste("proportions remapped to (", a, ", ",
                       1 - a, ")", sep = ""))
     a <- 1 - 2 * a
@@ -175,20 +175,18 @@ test_that("mct handles aliased results in asreml with a warning", {
     load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
     load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
     expect_warning(
-        expect_snapshot_output(
-            multiple_comparisons(model.asr, classify = "Nitrogen:Variety")
-        ),
+        output <- multiple_comparisons(model.asr, classify = "Nitrogen:Variety"),
         "Aliased level is: 0\\.2_cwt:Golden_rain\\."
     )
+    expect_snapshot_output(output)
 
     load(test_path("data", "oats_data2.Rdata"), envir = .GlobalEnv)
 
     expect_warning(
-        expect_snapshot_output(
-            multiple_comparisons(model2.asr, classify = "Nitrogen:Variety")
-        ),
+        output <- multiple_comparisons(model2.asr, classify = "Nitrogen:Variety"),
         "Some levels of Nitrogen:Variety are aliased\\. They have been removed from predicted output\\."
     )
+    expect_snapshot_output(output)
     expect_warning(multiple_comparisons(model2.asr, classify = "Nitrogen:Variety"),
                    "Aliased levels are: 0\\.2_cwt:Golden_rain, 0\\.2_cwt:Victory\\.")
 })
@@ -209,7 +207,7 @@ test_that("Significance values that are too high give a warning", {
 
 test_that("Use of pred argument gives warning", {
     # dat.aov <- aov(Petal.Width ~ Species, data = iris)
-    expect_warning(multiple_comparisons(dat.aov, pred = "Species"),
+    expect_warning(multiple_comparisons(dat.aov, classify = "Species", pred = "Species"),
                    "Argument `pred` has been deprecated and will be removed in a future version. Please use `classify` instead.")
 })
 
@@ -295,6 +293,20 @@ test_that("multiple_comparisons output has a class of 'mct'", {
     expect_s3_class(output, "mct")
 })
 
+test_that("Setting groups to FALSE disables letter groups", {
+    output <- multiple_comparisons(dat.aov, classify = "Species")
+    expect_true("groups" %in% colnames(output))
+    expect_equal(output$groups, c("a", "b", "c"))
+
+    output <- multiple_comparisons(dat.aov, classify = "Species", groups = FALSE)
+    expect_false("groups" %in% colnames(output))
+
+    output <- multiple_comparisons(dat.aov, classify = "Species", letters = FALSE)
+    expect_false("groups" %in% colnames(output))
+
+    vdiffr::expect_doppelganger("No letter groups",
+                                autoplot(output))
+})
 
 test_that("autoplot can rotate axis and labels independently", {
     output <- multiple_comparisons(dat.aov, classify = "Species")

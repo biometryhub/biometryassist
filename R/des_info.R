@@ -29,7 +29,7 @@
 #' @importFrom utils write.csv
 #' @importFrom rlang check_dots_used
 #'
-#' @return A list containing a data frame with the complete design, a ggplot object with plot layout, the seed (if `return.seed = TRUE`), and the `satab` object, allowing repeat output of the `satab` table via `cat(output$satab)`.
+#' @returns A list containing a data frame with the complete design, a ggplot object with plot layout, the seed (if `return.seed = TRUE`), and the `satab` object, allowing repeat output of the `satab` table via `cat(output$satab)`.
 #'
 #' @examples
 #' library(agricolae)
@@ -105,11 +105,11 @@ des_info <- function(design.obj,
 
     # Check brows and bcols supplied if necessary
     if(design.obj$parameters$design == "rcbd" & anyNA(c(brows, bcols))) {
-        stop("Design has blocks so brows and bcols must be supplied.")
+        stop("Design has blocks so brows and bcols must be supplied.", call. = FALSE)
     }
     else if(design.obj$parameters$design == "factorial") {
         if(design.obj$parameters$applied == "rcbd" & anyNA(c(brows, bcols))) {
-            stop("Design has blocks so brows and bcols must be supplied.")
+            stop("Design has blocks so brows and bcols must be supplied.", call. = FALSE)
         }
 
         # If factorial design, and names are supplied, use them
@@ -160,7 +160,7 @@ des_info <- function(design.obj,
     }
     else if(design.obj$parameters$design == "split") {
         if(design.obj$parameters$applied == "rcbd" & anyNA(c(brows, bcols))) {
-            stop("Design has blocks so brows and bcols must be supplied.")
+            stop("Design has blocks so brows and bcols must be supplied.", call. = FALSE)
         }
 
         # If names are supplied, use them
@@ -192,10 +192,10 @@ des_info <- function(design.obj,
                         warning(names(fac.names)[2], " must contain the correct number of elements. Elements have not been applied.", call. = FALSE)
                     }
 
-                    colnames(design.obj$book)[4:5] <- names(fac.names)[1:2]
+                    colnames(design.obj$book)[colnames(design.obj$book) %in% c("treatments", "sub_treatments")] <- names(fac.names)[1:2]
                 }
                 else if(is.character(fac.names)) {
-                    colnames(design.obj$book)[4:5] <- fac.names[1:2]
+                    colnames(design.obj$book)[colnames(design.obj$book) %in% c("treatments", "sub_treatments")] <- fac.names[1:2]
                 }
             }
         }
@@ -439,16 +439,22 @@ des_info <- function(design.obj,
 
     if(design == "split") {
         des <- design.obj$book
-        spfacs <- c("plots", "splots", "block")
+
+        numsp <- max(as.numeric(des$splots))
+        lenblk <- as.vector(table(des$block)[1])
+        numwp <- lenblk/numsp
+        des$wplots <- rep(rep(1:numwp, each = numsp), max(as.numeric(des$block)))
+        des <- des[, c(1, 3, 6, 2, 4, 5)]
+
+        spfacs <- c("plots", "block", "wplots", "splots")
 
         trtNams <- names(des[!is.element(names(des), spfacs)])
-
+        design.obj$book <- des
 
         des$treatments <- factor(paste(des[, trtNams[1]], des[, trtNams[2]], sep = "_"))
 
         # Number of treatments
         ntrt <- nlevels(des$treatments)
-
 
         # Calculate direction of blocking
         xx <- c()
@@ -516,6 +522,8 @@ des_info <- function(design.obj,
             plan$block <- NULL
         } # 5
 
+        colnames(des)[colnames(des)=="wplots"] <- "wholeplots"
+        colnames(des)[colnames(des)=="splots"] <- "subplots"
         des <- cbind(plan, des)
         # Order by column within blocks, rather than row default
         if(!byrow) {
@@ -556,7 +564,7 @@ des_info <- function(design.obj,
             # Do nothing
         }
         else {
-            stop("save must be one of 'none'/FALSE, 'both'/TRUE, 'plot', or 'workbook'.")
+            stop("save must be one of 'none'/FALSE, 'both'/TRUE, 'plot', or 'workbook'.", call. = FALSE)
         }
     }
     else if(save) {

@@ -35,7 +35,7 @@ Then paste your [licence code](#licence) at the prompt.
 
 ## Note: Licencing ASReml-R
 
-ASReml-R is a proprietary R package which is sold and supported by [VSN International](https://vsni.co.uk/), and requires a licence code to activate and run. This licence code is checked for validity via the internet, and may require opening some network ports on your computer to successfully activate. Further information about the licence requirements can be obtained from [VSNi directly](https://vsni.co.uk/licensing).
+ASReml-R is a proprietary R package which is sold and supported by [VSN International](https://vsni.co.uk/), and requires a licence code to activate and run. This licence code is checked for validity via the internet, and may require opening some network ports on your computer to successfully activate. Further information about the licence requirements can be obtained from [VSNi directly](https://vsni.co.uk/licensing/).
 
 The developers of biometryassist do not provide support for `ASReml-R` via way of bug reports or software patches, and any problems with the ASReml-R software should be directed to [VSN International](https://vsni.co.uk/). These installation instructions are provided on a best-effort basis and any problems with the steps in this _installation guide_ should be reported to the [developers of biometryassist](https://github.com/biometryhub/biometryassist/issues/new).
 
@@ -44,7 +44,7 @@ The developers of biometryassist do not provide support for `ASReml-R` via way o
 As of June 2023, the University of Adelaide has unlimited licence codes until June 2026 for university staff, students and affiliates, thanks to funding provided by the Grains Research and Development Corporation, via the Analytics for the Australian Grains Industry (AAGI) project.
 
 To access the University of Adelaide licence key, please complete this form:
-https://forms.office.com/r/gBva4iL3FU
+https://forms.office.com/Pages/ResponsePage.aspx?id=QN_Ns1SWJkqGoXecUfacSFFynOaV3gFMjBxPWBG-lVFUMzIyMjc3MjExVVk3WUFFOUkyNEJNMllaTC4u
 
 You will receive an email with a licence key if you hold a valid University of Adelaide account.
 
@@ -148,7 +148,7 @@ install_asreml(force = TRUE) # Equivalent to the above
 ## Where To Get Help
 
 - For errors or problems encountered following these instructions, or problems using [functions in biometryassist](https://biometryhub.github.io/biometryassist/reference/index.html) with ASReml-R, contact the [developers of biometryassist](https://github.com/biometryhub/biometryassist/issues/new)
-- For problems with licence activation, or for errors encountered using a successfully installed and licenced ASReml-R package, or for questions about how to use the ASReml-R package, [contact VSNi](https://vsni.co.uk/contact-us).
+- For problems with licence activation, or for errors encountered using a successfully installed and licenced ASReml-R package, or for questions about how to use the ASReml-R package, [contact VSNi](https://vsni.co.uk/contact/).
 
 ---
 

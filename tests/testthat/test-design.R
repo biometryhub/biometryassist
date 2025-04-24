@@ -237,7 +237,7 @@ test_that("3 way factorial designs are possible", {
     expect_snapshot_output(d9$satab)
     vdiffr::expect_doppelganger(title = "3 way factorial", autoplot(d9))
 
-    d9.1 <- design(type = "crossed:crd", treatments = c(2, 2, 2),
+    d9.1 <- design(type = "crossed:crd", treatments = c(2, 2, 2), quiet = TRUE,
                    reps = 3, nrows = 6, ncols = 4, seed = 42,
                    fac.names = list(X = c("A", "B"), Y = 1:2, Z = c(10, 20)))
 
@@ -247,7 +247,7 @@ test_that("3 way factorial designs are possible", {
     expect_snapshot_output(d9.1$satab)
     vdiffr::expect_doppelganger(title = "3 way factorial with names", autoplot(d9.1))
 
-    d9.2 <- design(type = "crossed:rcbd", treatments = c(2, 2, 2),
+    d9.2 <- design(type = "crossed:rcbd", treatments = c(2, 2, 2), quiet = TRUE,
                    reps = 3, nrows = 8, ncols = 3, brows = 8, bcols = 1, seed = 42,
                    fac.names = list(X = c("A", "B"), Y = 1:2, Z = c(10, 20)))
 
@@ -259,7 +259,7 @@ test_that("3 way factorial designs are possible", {
 })
 
 test_that("Adding names to 3 way factorial designs works", {
-    d9.2 <- design(type = "crossed:rcbd", treatments = c(2, 2, 2),
+    d9.2 <- design(type = "crossed:rcbd", treatments = c(2, 2, 2), quiet = TRUE,
                    reps = 3, nrows = 8, ncols = 3, brows = 8, bcols = 1, seed = 42,
                    fac.names = list(X = c("A", "B"), Y = 1:2, Z = c(10, 20)))
 
@@ -308,23 +308,6 @@ test_that("Invalid seed options give errors or warnings", {
     expect_error(design(type = "crd", treatments = c(1, 5, 10, 20),
                         reps = 5, nrows = 4, ncols = 5, seed = "ABC", quiet = TRUE),
                  "seed must be numeric or TRUE/FALSE")
-
-    # seed is vector of numbers
-    # expect_warning(
-    #     expect_warning(
-    #         expect_warning(d1 <- design(type = "crd", treatments = c(1, 5, 10, 20),
-    #                                     reps = 5, nrows = 4, ncols = 5, seed = 1:10, quiet = TRUE),
-    #                        "the condition has length > 1 and only the first element will be used"),
-    #         "the condition has length > 1 and only the first element will be used"),
-    #     "the condition has length > 1 and only the first element will be used")
-    # expect_true(is.numeric(d1$seed))
-    # expect_equal(d1$seed, 1)
-
-    # expect_warning(
-    #     expect_error(design(type = "crd", treatments = c(1, 5, 10, 20),
-    #                         reps = 5, nrows = 4, ncols = 5, seed = c('a', 'b'), quiet = TRUE),
-    #                  "seed must be numeric or TRUE/FALSE"),
-    #     "the condition has length > 1 and only the first element will be used")
 })
 
 test_that("reps in lsd produces a message", {
@@ -365,14 +348,14 @@ test_that("unsupported design types give an error", {
 })
 
 test_that("split plot requires sub_treatments", {
-    expect_error(design(type = "split", treatments = c("A", "B"),
+    expect_error(design(type = "split", treatments = c("A", "B"), quiet = TRUE,
                         sub_treatments = NULL, reps = 4, nrows = 8,
                         ncols = 4, brows = 4, bcols = 2, seed = 42),
                  "sub_treatments are required for a split plot design")
 })
 
 test_that("split plot requires brows and bcols", {
-    expect_error(design(type = "split", treatments = c("A", "B"),
+    expect_error(design(type = "split", treatments = c("A", "B"), quiet = TRUE,
                         sub_treatments = 1:4, reps = 4, nrows = 8,
                         ncols = 4, brows = NA, bcols = 2, seed = 42),
                  "Design has blocks so brows and bcols must be supplied.")
@@ -391,19 +374,19 @@ test_that("split plot allows a character vector for factor names", {
 })
 
 test_that("split plot produces warning when incorrect number of treatment labels given", {
-    expect_warning(design(type = "split", treatments = c("A", "B"),
+    expect_warning(design(type = "split", treatments = c("A", "B"), quiet = TRUE,
                           sub_treatments = 1:4, reps = 4, nrows = 8,
                           ncols = 4, brows = 4, bcols = 2, seed = 42,
                           fac.names = list(Water = "ABC",
                                            N = 1:4)),
                    "Water must contain the correct number of elements. Elements have not been applied.")
-    expect_warning(design(type = "split", treatments = c("A", "B"),
+    expect_warning(design(type = "split", treatments = c("A", "B"), quiet = TRUE,
                           sub_treatments = 1:4, reps = 4, nrows = 8,
                           ncols = 4, brows = 4, bcols = 2, seed = 42,
                           fac.names = list(Water = c("A", "B"),
                                            N = 1:10)),
                    "N must contain the correct number of elements. Elements have not been applied.")
-    expect_warning(design(type = "split", treatments = c("A", "B"),
+    expect_warning(design(type = "split", treatments = c("A", "B"), quiet = TRUE,
                           sub_treatments = 1:4, reps = 4, nrows = 8,
                           ncols = 4, brows = 4, bcols = 2, seed = 42,
                           fac.names = list(Water = c("A", "B"),
@@ -411,7 +394,7 @@ test_that("split plot produces warning when incorrect number of treatment labels
                                            Another = 1:5)),
                    "fac.names contains 3 elements but only the first 2 have been used.")
 
-    expect_warning(design(type = "split", treatments = c("A", "B"),
+    expect_warning(design(type = "split", treatments = c("A", "B"), quiet = TRUE,
                           sub_treatments = 1:4, reps = 4, nrows = 8,
                           ncols = 4, brows = 4, bcols = 2, seed = 42,
                           fac.names = list(Water = c("A", "B"))),
@@ -484,7 +467,8 @@ test_that("save = FALSE produces nothing", {
 })
 
 test_that("save = 'workbook' produces csv file and not plot", {
-    design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4, save = "workbook", savename = "crd_design1", quiet = TRUE)
+    design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4,
+           save = "workbook", savename = "crd_design1", quiet = TRUE)
     withr::local_file("crd_design1.csv")
     expect_true(file.exists("crd_design1.csv"))
     expect_snapshot_file("crd_design1.csv")
@@ -492,14 +476,16 @@ test_that("save = 'workbook' produces csv file and not plot", {
 })
 
 test_that("save = 'plot' produces plot file and not csv", {
-    design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4, save = "plot", savename = "crd_design2", quiet = TRUE)
+    design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4,
+           save = "plot", savename = "crd_design2", quiet = TRUE)
     withr::local_file("crd_design2.pdf")
     expect_false(file.exists("crd_design2.csv"))
     expect_true(file.exists("crd_design2.pdf"))
 })
 
 test_that("save = 'both' produces plot file and csv", {
-    design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4, save = "both", savename = "crd_design3", quiet = TRUE)
+    design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4,
+           save = "both", savename = "crd_design3", quiet = TRUE)
     withr::local_file("crd_design3.pdf")
     withr::local_file("crd_design3.csv")
     expect_true(file.exists("crd_design3.csv"))
@@ -508,7 +494,8 @@ test_that("save = 'both' produces plot file and csv", {
 })
 
 test_that("save = TRUE produces plot file and csv", {
-    design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4, save = TRUE, savename = "crd_design4", quiet = TRUE)
+    design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4,
+           save = TRUE, savename = "crd_design4", quiet = TRUE)
     withr::local_file("crd_design4.pdf")
     withr::local_file("crd_design4.csv")
     expect_true(file.exists("crd_design4.csv"))
@@ -516,8 +503,18 @@ test_that("save = TRUE produces plot file and csv", {
     expect_snapshot_file("crd_design4.csv")
 })
 
+test_that("Output is produced when quiet = FALSE", {
+    withr::local_file("Rplots.pdf")
+    expect_output(des <- design("crd", treatments = 1:11, reps = 4,
+                                nrows = 11, ncols = 4, quiet = FALSE),
+                  "Source of Variation                     df")
+    expect_snapshot(cat(des$satab))
+    vdiffr::expect_doppelganger(title = "Plot output", des$plot.des)
+})
+
 test_that("designs have a class of 'design'", {
-    d1 <- design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4, quiet = TRUE)
+    d1 <- design("crd", treatments = 1:11, reps = 4,
+                 nrows = 11, ncols = 4, quiet = TRUE)
     expect_s3_class(d1, "design")
 })
 
@@ -569,12 +566,12 @@ test_that("autoplot responds to size argument", {
 test_that("Colour blind friendly plots work", {
     # CRD
     d1 <- design("crd", treatments = LETTERS[1:11], reps = 4,
-                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE, plot = FALSE)
+                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE)
 
     # RCBD
     d2 <- design("rcbd", treatments = LETTERS[1:11], reps = 4,
                  nrows = 11, ncols = 4, brows = 11, bcols = 1,
-                 seed = 42, quiet = TRUE, plot = FALSE)
+                 seed = 42, quiet = TRUE)
 
 
     expect_snapshot_output(d1$satab)
@@ -586,12 +583,12 @@ test_that("Colour blind friendly plots work", {
 test_that("Colour blind friendly viridis", {
     # CRD
     d1 <- design("crd", treatments = LETTERS[1:11], reps = 4,
-                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE, plot = FALSE)
+                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE)
 
     # RCBD
     d2 <- design("rcbd", treatments = LETTERS[1:11], reps = 4,
                  nrows = 11, ncols = 4, brows = 11, bcols = 1,
-                 seed = 42, quiet = TRUE, plot = FALSE)
+                 seed = 42, quiet = TRUE)
 
 
     vdiffr::expect_doppelganger(title = "CRD colour blind viridis", autoplot(d1, palette = "viridis"))
@@ -601,12 +598,12 @@ test_that("Colour blind friendly viridis", {
 test_that("Colour blind friendly magma", {
     # CRD
     d1 <- design("crd", treatments = LETTERS[1:11], reps = 4,
-                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE, plot = FALSE)
+                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE)
 
     # RCBD
     d2 <- design("rcbd", treatments = LETTERS[1:11], reps = 4,
                  nrows = 11, ncols = 4, brows = 11, bcols = 1,
-                 seed = 42, quiet = TRUE, plot = FALSE)
+                 seed = 42, quiet = TRUE)
 
 
     vdiffr::expect_doppelganger(title = "CRD colour blind magma", autoplot(d1, palette = "magma"))
@@ -616,12 +613,12 @@ test_that("Colour blind friendly magma", {
 test_that("Colour blind friendly inferno", {
     # CRD
     d1 <- design("crd", treatments = LETTERS[1:11], reps = 4,
-                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE, plot = FALSE)
+                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE)
 
     # RCBD
     d2 <- design("rcbd", treatments = LETTERS[1:11], reps = 4,
                  nrows = 11, ncols = 4, brows = 11, bcols = 1,
-                 seed = 42, quiet = TRUE, plot = FALSE)
+                 seed = 42, quiet = TRUE)
 
 
     vdiffr::expect_doppelganger(title = "CRD colour blind inferno", autoplot(d1, palette = "inferno"))
@@ -631,12 +628,12 @@ test_that("Colour blind friendly inferno", {
 test_that("Colour blind friendly plasma", {
     # CRD
     d1 <- design("crd", treatments = LETTERS[1:11], reps = 4,
-                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE, plot = FALSE)
+                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE)
 
     # RCBD
     d2 <- design("rcbd", treatments = LETTERS[1:11], reps = 4,
                  nrows = 11, ncols = 4, brows = 11, bcols = 1,
-                 seed = 42, quiet = TRUE, plot = FALSE)
+                 seed = 42, quiet = TRUE)
 
 
     vdiffr::expect_doppelganger(title = "CRD colour blind plasma", autoplot(d1, palette = "plasma"))
@@ -646,12 +643,12 @@ test_that("Colour blind friendly plasma", {
 test_that("Colour blind friendly cividis", {
     # CRD
     d1 <- design("crd", treatments = LETTERS[1:11], reps = 4,
-                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE, plot = FALSE)
+                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE)
 
     # RCBD
     d2 <- design("rcbd", treatments = LETTERS[1:11], reps = 4,
                  nrows = 11, ncols = 4, brows = 11, bcols = 1,
-                 seed = 42, quiet = TRUE, plot = FALSE)
+                 seed = 42, quiet = TRUE)
 
 
     vdiffr::expect_doppelganger(title = "CRD colour blind cividis", autoplot(d1, palette = "cividis"))
@@ -661,12 +658,12 @@ test_that("Colour blind friendly cividis", {
 test_that("Various colour blind spellings and options", {
     # CRD
     d1 <- design("crd", treatments = LETTERS[1:11], reps = 4,
-                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE, plot = FALSE)
+                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE)
 
     # RCBD
     d2 <- design("rcbd", treatments = LETTERS[1:11], reps = 4,
                  nrows = 11, ncols = 4, brows = 11, bcols = 1,
-                 seed = 42, quiet = TRUE, plot = FALSE)
+                 seed = 42, quiet = TRUE)
 
     vdiffr::expect_doppelganger(title = "CRD colour blind option1", autoplot(d1, palette = "colour-blind"))
     vdiffr::expect_doppelganger(title = "CRD colour blind option2", autoplot(d1, palette = "colour blind"))
@@ -688,12 +685,12 @@ test_that("Various colour blind spellings and options", {
 test_that("Alternative palettes work", {
     # CRD
     d1 <- design("crd", treatments = LETTERS[1:11], reps = 4,
-                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE, plot = FALSE)
+                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE)
 
     # RCBD
     d2 <- design("rcbd", treatments = LETTERS[1:11], reps = 4,
                  nrows = 11, ncols = 4, brows = 11, bcols = 1,
-                 seed = 42, quiet = TRUE, plot = FALSE)
+                 seed = 42, quiet = TRUE)
 
 
     vdiffr::expect_doppelganger(title = "CRD RdBu palette", autoplot(d1, palette = "RdBu"))
@@ -704,10 +701,29 @@ test_that("Alternative palettes work", {
     vdiffr::expect_doppelganger(title = "RCBD Paired palette", autoplot(d2, palette = "Paired"))
 })
 
+test_that("Users can provide custom colours for the palette argument", {
+    # CRD
+    d1 <- design("crd", treatments = LETTERS[1:5], reps = 4,
+                 nrows = 5, ncols = 4, seed = 42, quiet = TRUE)
+
+    vdiffr::expect_doppelganger(title = "Custom palette", autoplot(d1, palette = c("red", "blue", "orange", "darkgreen", "purple")))
+})
+
+test_that("Incorrect number of custom colours for palette results in error", {
+    # CRD
+    d1 <- design("crd", treatments = LETTERS[1:5], reps = 4,
+                 nrows = 5, ncols = 4, seed = 42, quiet = TRUE)
+
+    expect_error(autoplot(d1, palette = c("red", "blue")),
+                 "palette needs to be a single string to choose a predefined palette, or 5 custom colours\\.")
+    expect_error(autoplot(d1, palette = c("red", "blue", "red", "blue", "red", "blue")),
+                 "palette needs to be a single string to choose a predefined palette, or 5 custom colours\\.")
+})
+
 test_that("Invalid palette option produces error", {
     # CRD
     d1 <- design("crd", treatments = LETTERS[1:11], reps = 4,
-                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE, plot = FALSE)
+                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE)
 
     expect_error(autoplot(d1, palette = "abc"), "Invalid value for palette.")
     expect_error(autoplot(d1, palette = "set3"), "Invalid value for palette.")
@@ -717,7 +733,7 @@ test_that("Invalid palette option produces error", {
 test_that("Adding buffers to plots works", {
     # CRD
     d1 <- design("crd", treatments = LETTERS[1:11], reps = 4,
-                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE, plot = FALSE)
+                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE)
 
     expect_equal(length(unique(d1$design$row)), 11)
     expect_equal(length(unique(d1$design$col)), 4)
@@ -737,7 +753,7 @@ test_that("Adding buffers to plots works for RCBD", {
     # RCBD
     d2 <- design("rcbd", treatments = LETTERS[1:11], reps = 4,
                  nrows = 11, ncols = 4, brows = 11, bcols = 1,
-                 seed = 42, quiet = TRUE, plot = FALSE)
+                 seed = 42, quiet = TRUE)
 
     expect_equal(length(unique(d2$design$row)), 11)
     expect_equal(length(unique(d2$design$col)), 4)
@@ -757,7 +773,7 @@ test_that("Invalid buffer options produce an error", {
     # RCBD
     d2 <- design("rcbd", treatments = LETTERS[1:11], reps = 4,
                  nrows = 11, ncols = 4, brows = 11, bcols = 1,
-                 seed = 42, quiet = TRUE, plot = FALSE)
+                 seed = 42, quiet = TRUE)
 
     expect_error(autoplot(d2, buffer = "block"), "Block buffers are not yet supported\\.")
     expect_error(autoplot(d2, buffer = "abc"), "Invalid buffer option: abc")

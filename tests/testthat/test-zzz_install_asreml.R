@@ -30,7 +30,8 @@ test_that("Prints message if asreml already installed", {
     skip_on_cran()
     skip_on_ci()
     install_asreml(quiet = TRUE)
-    expect_message(install_asreml(), "ASReml-R is already installed.")
+    expect_message(install_asreml(), 
+                   "The latest version of ASReml-R available for your sysetm is already installed\\. To install anyway, set `force = TRUE`\\.")
 })
 
 test_that("Quiet returns no output", {

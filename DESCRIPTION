@@ -1,7 +1,7 @@
 Type: Package
 Package: biometryassist
 Title: Functions to Assist Design and Analysis of Agronomic Experiments
-Version: 1.2.1
+Version: 1.2.2
 Authors@R: 
     c(person(given = "Sharon",
              family = "Nielsen",
@@ -35,7 +35,7 @@ License: MIT + file LICENSE
 URL: https://biometryhub.github.io/biometryassist/
 BugReports: https://github.com/biometryhub/biometryassist/issues
 Depends: 
-    R (>= 4.0.0)
+    R (>= 4.1.0)
 Imports: 
     agricolae,
     askpass,
@@ -69,5 +69,5 @@ Config/testthat/edition: 3
 Config/testthat/parallel: true
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2
 VignetteBuilder: knitr

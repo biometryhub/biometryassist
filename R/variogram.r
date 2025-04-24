@@ -9,7 +9,7 @@
 #' @param palette A string specifying the colour scheme to use for plotting. The default value (`"default"`) is equivalent to `"rainbow"`. Colour blind friendly palettes can also be provided via options `"colo(u)r blind"` (both equivalent to `"viridis"`), `"magma"`, `"inferno"`, `"plasma"`, `"cividis"`, `"rocket"`, `"mako"` or `"turbo"`. The `"Spectral"` palette from [scales::brewer_pal()] is also possible.
 #'
 #'
-#' @return A `ggplot2` object.
+#' @returns A `ggplot2` object.
 #'
 #' @importFrom pracma interp2
 #' @importFrom grDevices rainbow
@@ -36,11 +36,11 @@
 variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palette = "default") {
 
     if(!(inherits(model.obj, "asreml"))) {
-        stop("model.obj must be an asreml model object")
+        stop("model.obj must be an asreml model object", call. = FALSE)
     }
 
     if(attr(model.obj$formulae$residual,"term.labels") == "units") {
-        stop("Residual term must include spatial component.")
+        stop("Residual term must include spatial component.", call. = FALSE)
     }
 
     vario_points <- vario_df(model.obj, row, column)
@@ -146,7 +146,7 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
                                     col.regions = scales::brewer_pal(palette = palette)(11))
         }
         else {
-            stop("Invalid value for palette.")
+            stop("Invalid value for palette.", call. = FALSE)
         }
         output[[i]] <- cowplot::plot_grid(b, a, nrow = 2, scale = c(2, 1))
         if(!orig_row) {
@@ -177,7 +177,7 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
 #'
 #' @param model.obj An asreml model
 #'
-#' @return A data frame with the variogram for a model. The data frame contains the spatial coordinates (typically row and column), the `gamma` for that position and the number of points with the separation.
+#' @returns A data frame with the variogram for a model. The data frame contains the spatial coordinates (typically row and column), the `gamma` for that position and the number of points with the separation.
 #' @keywords internal
 #'
 #'
@@ -254,10 +254,10 @@ vario_df <- function(model.obj, Row = NA, Column = NA) {
                     row <- Row[val_index] + offset[1]
                     col <- Column[val_index] + offset[2]
 
-                    if (0 < row && row <= nrows && 0 < col && col <= ncols && !is.na(Resid[val_index])) {
+                    if(0 < row && row <= nrows && 0 < col && col <= ncols && !is.na(Resid[val_index])) {
                         other <- Resid[Row == row & Column == col]
 
-                        if (!is.na(other)) {
+                        if(!is.na(other)) {
                             gamma <- gamma + (Resid[val_index] - other)^2
                             np <- np + 1
                         }
@@ -268,7 +268,7 @@ vario_df <- function(model.obj, Row = NA, Column = NA) {
             np <- np / 2
             gamma <- gamma / 2
 
-            if (np > 0) {
+            if(np > 0) {
                 gamma <- gamma / (2*np)
             }
 

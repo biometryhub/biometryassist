@@ -3,14 +3,14 @@
 #' Produces plots of residuals for assumption checking of linear (mixed) models.
 #'
 #' @param model.obj An `aov`, `lm`, `lme` ([nlme::lme()]), `lmerMod` ([lme4::lmer()]), `asreml` or `mmer` (sommer) model object.
-#' @param shapiro (Logical) Display the Shapiro-Wilks test of normality on the plot?
+#' @param shapiro (Logical) Display the Shapiro-Wilk test of normality on the plot? This test is unreliable for larger numbers of observations and will not work with n >= 5000 so will be omitted from any plots.
 #' @param call (Logical) Display the model call on the plot?
 #' @param axes.size A numeric value for the size of the axes label font size in points.
 #' @param label.size A numeric value for the size of the label (A,B,C) font point size.
 #' @param call.size A numeric value for the size of the model displayed on the plot.
 #' @param mod.obj Deprecated to be consistent with other functions. Please use `model.obj` instead.
 #'
-#' @return A ggplot2 object containing the diagnostic plots.
+#' @returns A ggplot2 object containing the diagnostic plots.
 #'
 #' @importFrom ggplot2 ggplot geom_histogram aes theme_bw stat_qq labs geom_qq_line geom_point
 #' @importFrom stats fitted qnorm quantile residuals sd shapiro.test
@@ -23,6 +23,9 @@
 #' @export
 
 resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, axes.size = 10, call.size = 9, mod.obj){
+
+    handle_deprecated_param("mod.obj", "model.obj")
+    # Need to pass on old argument if provided
     if(!missing(mod.obj)) {
         warning("mod.obj has been deprecated to be consistent with other functions. Please use `model.obj` instead.")
         model.obj <- mod.obj
@@ -53,23 +56,36 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
             facet_name <- NULL
             k <- length(model.obj$residual)
         }
-        resids <- residuals(model.obj)
+        resids <- as.numeric(model.obj[["residuals"]])
         fits <- fitted(model.obj)
+        fits <- ifelse(rep("fitted" %in% names(model.obj), nrow(model.obj$mf)), model.obj[["fitted"]], fitted(model.obj))
+
         if(call) {
             model_call <- paste(trimws(deparse(model.obj$call, width.cutoff = 50)), collapse = "\n")
             model_call <- gsub("G\\.param \\= model\\.asr\\$G\\.param, ", "", model_call)
             model_call <- gsub("R\\.param = model\\.asr\\$R\\.param, \\\n", "", model_call)
         }
     }
-    else if(inherits(model.obj, "mmer")) { # sommer doesn't display residuals the same way
+    else if(inherits(model.obj, c("mmer"))) { # sommer doesn't display residuals the same way
         facet <- model.obj$termsN$rcov
         facet_name <- NULL
         k <- length(model.obj$residual)
 
-        resids <- residuals(model.obj)[,ncol(residuals(model.obj))]
-        fits <- fitted(model.obj)$dataWithFitted[,paste0(model.obj$terms$response[[1]], ".fitted")]
+        resids <- residuals(model.obj)
+        fits <- fitted(model.obj)
         model_call <- paste(trimws(deparse(model.obj$call[c("fixed", "random", "rcov")], width.cutoff = 50)), collapse = "\n")
         model_call <- gsub("list", "mmer", model_call)
+    }
+    else if(inherits(model.obj, "mmes")) { # new sommer function. More like other mixed model functions
+        facet <- 1 #model.obj$termsN$rcov
+        facet_name <- NULL
+        k <- length(model.obj$residual)
+
+        resids <- as.numeric(residuals(model.obj))
+        fits <- as.numeric(fitted(model.obj))#$dataWithFitted[,paste0(model.obj$terms$response[[1]], ".fitted")]
+        model_call <- "Model call not currently available for mmes models."
+            # paste(trimws(deparse(model.obj$call[c("fixed", "random", "rcov")], width.cutoff = 50)), collapse = "\n")
+        # model_call <- gsub("list", "mmer", model_call)
     }
     else if(inherits(model.obj, "art")) {
         facet <- 1
@@ -82,7 +98,7 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
         }
     }
     else {
-        stop("model.obj must be a linear (mixed) model object. Currently supported model types are: aov, lm, lmerMod, lmerModLmerTest, asreml, mmer or art")
+        stop("model.obj must be a linear (mixed) model object. Currently supported model types are: aov, lm, lmerMod, lmerModLmerTest, asreml, mmer or art", call. = FALSE)
     }
 
     aa <- data.frame(residuals = resids, fitted = fits, lvl = rep(1:facet, k))
@@ -108,7 +124,15 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
 
         top_row <- cowplot::plot_grid(a, b, ncol=2, labels = c("A", "B"), label_size = label.size)
 
+        if(nrow(aa.f) >= 5000 & shapiro) {
+            warning("Shapiro-Wilk test p-values are unreliable for more than 5000 observations and has not been performed.")
+            shapiro <- FALSE
+        }
+
         if(shapiro) {
+            if(nrow(aa.f) >= 2000) {
+                warning("Shapiro-Wilk test p-values are unreliable for large numbers of observations.")
+            }
             shap <- shapiro.test(aa.f$residuals)
 
             shapiro_text <- c(paste(shap$method, "p-value:", round(shap$p.value, 4)),

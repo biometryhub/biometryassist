@@ -6,8 +6,9 @@
 #' @param rotation Rotate the x axis labels and the treatment group labels within the plot. Allows for easier reading of long axis or treatment labels. Number between 0 and 360 (inclusive) - default 0
 #' @param axis_rotation Enables rotation of the x axis independently of the group labels within the plot.
 #' @param label_rotation Enables rotation of the treatment group labels independently of the x axis labels within the plot.
+#' @param type A string specifying the type of plot to display. The default of 'point' will display a point estimate with error bars. The alternative, 'column' (or 'col'), will display a column graph with error bars.
 #' @param margin Logical (default `FALSE`). A value of `FALSE` will expand the plot to the edges of the plotting area i.e. remove white space between plot and axes.
-#' @param palette A string specifying the colour scheme to use for plotting. Default is equivalent to "Spectral". Colour blind friendly palettes can also be provided via options `"colour blind"` (or `"color blind"`, both equivalent to `"viridis"`), `"magma"`, `"inferno"`, `"plasma"` or `"cividis"`. Other palettes from [scales::brewer_pal()] are also possible.
+#' @param palette A string specifying the colour scheme to use for plotting or a vector of custom colours to use as the palette. Default is equivalent to "Spectral". Colour blind friendly palettes can also be provided via options `"colour blind"` (or `"color blind"`, both equivalent to `"viridis"`), `"magma"`, `"inferno"`, `"plasma"`, `"cividis"`, `"rocket"`, `"mako"` or `"turbo"`. Other palettes from [scales::brewer_pal()] are also possible.
 #' @param buffer A string specifying the buffer plots to include for plotting. Default is `NULL` (no buffers plotted). Other options are "edge" (outer edge of trial area), "rows" (between rows), "columns" (between columns), "double row" (a buffer row each side of a treatment row) or "double column" (a buffer row each side of a treatment column). "blocks" (a buffer around each treatment block) will be implemented in a future release.
 #' @param row A variable to plot a column from `object` as rows.
 #' @param column A variable to plot a column from `object` as columns.
@@ -17,7 +18,7 @@
 #'
 #' @name autoplot
 #'
-#' @return A `ggplot2` object.
+#' @returns A `ggplot2` object.
 #' @seealso [multiple_comparisons()] and [design()]
 #'
 NULL
@@ -36,7 +37,7 @@ ggplot2::autoplot
 #' dat.aov <- aov(Petal.Width ~ Species, data = iris)
 #' output <- multiple_comparisons(dat.aov, classify = "Species")
 #' autoplot(output, label_height = 0.5)
-autoplot.mct <- function(object, size = 4, label_height = 0.1, rotation = 0, axis_rotation = rotation, label_rotation = rotation, ...) {
+autoplot.mct <- function(object, size = 4, label_height = 0.1, rotation = 0, axis_rotation = rotation, label_rotation = rotation, type = "point", ...) {
     stopifnot(inherits(object, "mct"))
 
     rlang::check_dots_used()
@@ -57,16 +58,28 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1, rotation = 0, axi
     yval <- rlang::ensym(yval)
 
     plot <- ggplot2::ggplot(data = object, ggplot2::aes(x = {{ classify }})) +
-        ggplot2::geom_errorbar(aes(ymin = low, ymax = up), width = 0.2) +
-        ggplot2::geom_text(ggplot2::aes(x = {{ classify }}, y = ifelse(object$up > object$low, object$up, object$low),
-                                         label = object$groups),
-                           nudge_y = ifelse(abs(label_height) <= 1,
-                                            abs(object$up-object$low)*label_height, # invert for cases with inverse transform
-                                            label_height),
-                           size = size, angle = label_rotation, ...) +
-        ggplot2::geom_point(ggplot2::aes(y = {{ yval }}), color = "black", shape = 16) + ggplot2::theme_bw() +
+        ggplot2::theme_bw() +
         ggplot2::theme(axis.text.x = ggplot2::element_text(angle = axis_rotation, ...)) +
         ggplot2::labs(x = "", y = paste0("Predicted ", ylab))
+
+    if(type == "point") {
+        plot <- plot + ggplot2::geom_point(ggplot2::aes(y = {{ yval }}), color = "black", shape = 16, size = 2) +
+            ggplot2::geom_errorbar(aes(ymin = low, ymax = up), width = 0.2)
+    }
+    else if(type %in% c("col", "column")) {
+        plot <- plot + ggplot2::geom_col(ggplot2::aes(y = {{ yval }}), color = "black", fill = "cornflowerblue", alpha = 0.75) +
+            ggplot2::geom_errorbar(aes(ymin = low, ymax = up), width = 0.2)
+    }
+
+    if("groups" %in% colnames(object)) {
+        plot <- plot +
+            ggplot2::geom_text(ggplot2::aes(x = {{ classify }}, y = ifelse(object$up > object$low, object$up, object$low),
+                                            label = object$groups),
+                               nudge_y = ifelse(abs(label_height) <= 1,
+                                                abs(object$up-object$low)*label_height, # invert for cases with inverse transform
+                                                label_height),
+                               size = size, angle = label_rotation, ...)
+    }
 
     if(exists("classify3")) {
         plot <- plot + ggplot2::facet_wrap(as.formula(paste("~", classify2, "+", classify3)))
@@ -97,6 +110,22 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1, rotation = 0, axi
 #'
 #' # Alternative colour scheme
 #' autoplot(des.out, palette = "plasma")
+#'
+#' # Custom colour palette
+#' autoplot(des.out, palette = c("#ef746a", "#3fbfc5", "#81ae00", "#c37cff"))
+#'
+#' # Visualise different components of a split plot design
+#' des.out <- design(type = "split", treatments = c("A", "B"), sub_treatments = 1:4,
+#' reps = 4, nrows = 8, ncols = 4, brows = 4, bcols = 2, seed = 42)
+#'
+#' # Regular split plot
+#' autoplot(des.out)
+#'
+#' # Show the wholeplot components
+#' autoplot(des.out, treatments = wholeplot)
+#'
+#' # Display block level
+#' autoplot(des.out, treatments = wholeplot)
 autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, palette = "default", buffer = NULL, row = NULL, column = NULL, block = NULL, treatments = NULL, ...) {
     stopifnot(inherits(object, "design"))
     rlang::check_dots_used()
@@ -118,10 +147,10 @@ autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, pale
         column_expr <- rlang::sym("col")  # Default to the col column
     }
     if(rlang::quo_is_null(block_expr)) {
-        block_expr <- rlang::sym("block")  # Default to the col column
+        block_expr <- rlang::sym("block")  # Default to the block column
     }
     if(rlang::quo_is_null(trt_expr)) {
-        trt_expr <- rlang::sym("treatments")  # Default to the col column
+        trt_expr <- rlang::sym("treatments")  # Default to the treatments column
     }
 
     row_expr <- rlang::quo_name(row_expr)
@@ -133,26 +162,35 @@ autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, pale
     ntrt <- nlevels(object[[trt_expr]])
 
     # create the colours for the graph
-    if(palette == "default") {
-        colour_palette <- grDevices::colorRampPalette(scales::brewer_pal(palette = "Spectral")(11))(ntrt)
-    }
-    else if(palette %in% c("BrBG", "PiYG", "PRGn", "PuOr", "RdBu", "RdGy",
-                           "RdYlBu", "RdYlGn", "Spectral", "Set3", "Paired")) {
-        colour_palette <- grDevices::colorRampPalette(scales::brewer_pal(palette = palette)(11))(ntrt)
-    }
-    else if(any(grepl("(colou?r([[:punct:]]|[[:space:]]?)blind)|cb|viridis", palette, ignore.case = T))) {
-        colour_palette <- scales::viridis_pal(option = "viridis")(ntrt)
-    }
-    else if(tolower(trimws(palette)) %in% c("magma", "inferno", "cividis", "plasma", "rocket", "mako", "turbo")) {
-        colour_palette <- scales::viridis_pal(option = palette)(ntrt)
+    if(length(palette) > 1) {
+        # Assume custom palette colours are being passed in
+        if(length(palette) != ntrt) {
+            stop("palette needs to be a single string to choose a predefined palette, or ", ntrt, " custom colours.")
+        }
+        colour_palette <- palette
     }
     else {
-        stop("Invalid value for palette.")
+        if(palette == "default") {
+            colour_palette <- grDevices::colorRampPalette(scales::brewer_pal(palette = "Spectral")(11))(ntrt)
+        }
+        else if(palette %in% c("BrBG", "PiYG", "PRGn", "PuOr", "RdBu", "RdGy",
+                               "RdYlBu", "RdYlGn", "Spectral", "Set3", "Paired")) {
+            colour_palette <- grDevices::colorRampPalette(scales::brewer_pal(palette = palette)(11))(ntrt)
+        }
+        else if(any(grepl("(colou?r([[:punct:]]|[[:space:]]?)blind)|cb|viridis", palette, ignore.case = T))) {
+            colour_palette <- scales::viridis_pal(option = "viridis")(ntrt)
+        }
+        else if(tolower(trimws(palette)) %in% c("magma", "inferno", "cividis", "plasma", "rocket", "mako", "turbo")) {
+            colour_palette <- scales::viridis_pal(option = palette)(ntrt)
+        }
+        else {
+            stop("Invalid value for palette.", call. = FALSE)
+        }
     }
 
     hcl <- farver::decode_colour(colour_palette, "rgb", "hcl")
     colours <- data.frame(treatments = levels(object[[trt_expr]]),
-                       text_col = ifelse(hcl[, "l"] > 50, "black", "white"))
+                          text_col = ifelse(hcl[, "l"] > 50, "black", "white"))
     colnames(colours)[1] <- trt_expr
     object <- merge(object, colours)
 
@@ -160,7 +198,7 @@ autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, pale
         if(!missing(buffer)) {
             object <- create_buffers(object, type = buffer)
             if("buffer" %in% levels(object[[trt_expr]])) {
-               colour_palette <- c(colour_palette, "white")
+                colour_palette <- c(colour_palette, "white")
             }
         }
 

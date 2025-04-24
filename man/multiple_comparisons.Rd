@@ -14,6 +14,7 @@ multiple_comparisons(
   power = NA,
   decimals = 2,
   descending = FALSE,
+  groups = TRUE,
   plot = FALSE,
   label_height = 0.1,
   rotation = 0,
@@ -44,6 +45,8 @@ multiple_comparisons(
 
 \item{descending}{Logical (default \code{FALSE}). Order of the output sorted by the predicted value. If \code{TRUE}, largest will be first, through to smallest last.}
 
+\item{groups}{Logical (default \code{TRUE}). If \code{TRUE}, the significance letter groupings will be calculated and displayed. This can get overwhelming for large numbers of comparisons, so can be turned off by setting to \code{FALSE}.}
+
 \item{plot}{Automatically produce a plot of the output of the multiple comparison test? Default is \code{FALSE}. This is maintained for backwards compatibility, but the preferred method now is to use \verb{autoplot(<multiple_comparisons output>)}. See \code{\link[=autoplot.mct]{autoplot.mct()}} for more details.}
 
 \item{label_height}{Height of the text labels above the upper error bar on the plot. Default is 0.1 (10\%) of the difference between upper and lower error bars above the top error bar.}
@@ -63,13 +66,36 @@ multiple_comparisons(
 \item{...}{Other arguments passed through to \code{predict.asreml()}.}
 }
 \value{
-A list containing a data frame with predicted means, standard errors, confidence interval upper and lower bounds, and significant group allocations (named \code{predicted_values}), as well as a plot visually displaying the predicted values (named \code{predicted_plot}). If some of the predicted values are aliased, a warning is printed, and the aliased treatment levels are returned in the output (named \code{aliased}).
+A list containing a data frame with predicted means, standard errors,
+confidence interval upper and lower bounds, and significant group
+allocations (named \code{predicted_values}), as well as a plot visually
+displaying the predicted values (named \code{predicted_plot}). If some of the
+predicted values are aliased, a warning is printed, and the aliased
+treatment levels are returned in the output (named \code{aliased}).
 }
 \description{
 A function for comparing and ranking predicted means with Tukey's Honest Significant Difference (HSD) Test.
 }
 \details{
-Some transformations require that data has a small offset applied, otherwise it will cause errors (for example taking a log of 0, or square root of negative values). In order to correctly reverse this offset, if the \code{trans} argument is supplied, an offset value must also be supplied. If there was no offset required for a transformation, then use a value of 0 for the \code{offset} argument.
+\subsection{Offset}{
+
+Some transformations require that data has a small offset to be
+applied, otherwise it will cause errors (for example taking a log of 0, or
+the square root of negative values). In order to correctly reverse this
+offset, if the \code{trans} argument is supplied, a value should also be supplied
+in the \code{offset} argument. By default the function assumes no offset was
+required for a transformation, implying a value of 0 for the \code{offset}
+argument. If an offset value is provided, use the same value as provided in
+the model, not the inverse. For example, if adding 0.1 to values for a log
+transformation, add 0.1 in the \code{offset} argument.
+}
+
+\subsection{Power}{
+
+The power argument allows the specification of arbitrary powers to be
+back transformed, if they have been used to attempt to improve normality of
+residuals.
+}
 }
 \examples{
 # Fit aov model
@@ -88,6 +114,30 @@ pred.out
 autoplot(pred.out, label_height = 0.5)
 
 
+# AOV model example with transformation
+my_iris <- iris
+my_iris$Petal.Length <- exp(my_iris$Petal.Length) # Create exponential response
+exp_model <- aov(Petal.Length ~ Species, data = my_iris)
+
+resplot(exp_model) # Residual plot shows problems
+
+# Fit a new model using a log transformation of the response
+log_model <- aov(log(Petal.Length) ~ Species, data = my_iris)
+
+resplot(log_model) # Looks much better
+
+# Display the ANOVA table for the model
+anova(log_model)
+
+# Back transform, because the "original" data was exponential
+pred.out <- multiple_comparisons(log_model, classify = "Species",
+                                   trans = "log")
+
+# Display the predicted values table
+pred.out
+
+# Show the predicted values plot
+autoplot(pred.out, label_height = 15)
 
 \dontrun{
 # ASReml-R Example
@@ -146,5 +196,6 @@ autoplot(pred.out)
 
 }
 \references{
-Jørgensen, E. & Pedersen, A. R. (1997). How to Obtain Those Nasty Standard Errors From Transformed Data - and Why They Should Not Be Used. \url{https://pure.au.dk/portal/en/publications/how-to-obtain-those-nasty-standard-errors-from-transformed-data--and-why-they-should-not-be-used(d649ca20-d15f-11db-8e26-000ea68e967b).html}
+Jørgensen, E. & Pedersen, A. R. (1997). How to Obtain Those Nasty
+Standard Errors From Transformed Data - and Why They Should Not Be Used. \url{https://pure.au.dk/portal/en/publications/how-to-obtain-those-nasty-standard-errors-from-transformed-data-a}
 }

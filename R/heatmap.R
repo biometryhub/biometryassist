@@ -10,12 +10,12 @@
 #' @param raster Logical (default: `TRUE`). If `TRUE` uses [ggplot2::geom_raster()] for speed. Will not work if the grid is irregular.
 #' @param smooth Logical (default: `FALSE`). If `raster` is `TRUE`, interpolation can be applied across the grid to obtain a smoothed grid. Ignored if `raster` is `FALSE`.
 #' @param palette Colour palette to use. By default it will use the `viridis` (colour-blind friendly) palette. Other palettes available can be seen with [grDevices::hcl.pals()].
-#' @param ... Other arguments passed to [`facet_wrap()`]
+#' @param ... Other arguments passed to [ggplot2::facet_wrap()]
 #'
 #' @importFrom ggplot2 ggplot aes geom_tile geom_raster scale_fill_gradientn scale_x_continuous scale_y_continuous facet_wrap vars theme_bw
 #' @importFrom rlang ensym enquo quo_is_null
 #'
-#' @return A `ggplot2` object.
+#' @returns A `ggplot2` object.
 #' @export
 #'
 #' @examples
@@ -68,9 +68,22 @@ heat_map <- function(data, value, x_axis, y_axis, grouping = NULL, raster = TRUE
         plt <- plt + ggplot2::geom_tile()
     }
 
-    plt <- plt + ggplot2::scale_fill_gradientn(colors = grDevices::hcl.colors(10, palette = palette)) +
-        ggplot2::scale_x_continuous(expand = c(0, 0)) +
-        ggplot2::scale_y_continuous(expand = c(0, 0))
+    plt <- plt + ggplot2::scale_fill_gradientn(colors = grDevices::hcl.colors(10, palette = palette))
+
+    # Expand the axes appropriately for the data type
+    if(is.numeric(data[[x_axis]])) {
+        plt <- plt + ggplot2::scale_x_continuous(expand = c(0, 0))
+    }
+    else {
+        plt <- plt + ggplot2::scale_x_discrete(expand = c(0, 0))
+    }
+    if(is.numeric(data[[y_axis]])) {
+        plt <- plt + ggplot2::scale_y_continuous(expand = c(0, 0))
+    }
+    else {
+        plt <- plt + ggplot2::scale_y_discrete(expand = c(0, 0))
+    }
+
 
     if(!rlang::quo_is_null(grouping)) {
         grouping <- rlang::ensym(grouping)

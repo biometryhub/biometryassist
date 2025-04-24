@@ -33,7 +33,7 @@ heat_map(
 
 \item{palette}{Colour palette to use. By default it will use the \code{viridis} (colour-blind friendly) palette. Other palettes available can be seen with \code{\link[grDevices:palettes]{grDevices::hcl.pals()}}.}
 
-\item{...}{Other arguments passed to \code{\link[=facet_wrap]{facet_wrap()}}}
+\item{...}{Other arguments passed to \code{\link[ggplot2:facet_wrap]{ggplot2::facet_wrap()}}}
 }
 \value{
 A \code{ggplot2} object.

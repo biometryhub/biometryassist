@@ -26,7 +26,7 @@ test_that("Old mod.obj argument produces a warning", {
 
 test_that("Residual plots work for asreml", {
     skip_on_cran()
-    skip_if_not(requireNamespace("asreml", quietly = TRUE))
+    # skip_if_not(requireNamespace("asreml", quietly = TRUE))
 
     # dat.asr <- quiet(asreml::asreml(Petal.Length ~ Petal.Width, data = iris, trace = FALSE))
     load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
@@ -40,9 +40,6 @@ test_that("Residual plots work for asreml", {
     vdiffr::expect_doppelganger(title = "Resplot for asreml pt 1", p1_multi[[1]])
     vdiffr::expect_doppelganger(title = "Resplot for asreml pt 2", p1_multi[[2]])
     vdiffr::expect_doppelganger(title = "Resplot for asreml pt 3", p1_multi[[3]])
-
-
-    # vdiffr::manage_cases()
 })
 
 
@@ -76,15 +73,22 @@ test_that("Residual plots work for nlme", {
 test_that("Residual plots work for sommer", {
     skip_if_not_installed("sommer")
     load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
-    dat.som <- sommer::mmer(yield ~ Nitrogen + Variety + Nitrogen:Variety,
-                            random = ~ Blocks + Blocks:Wplots,
-                            rcov = ~ units,
-                            data = dat)
+    library(sommer)
+    expect_message(dat.som <- mmer(yield ~ Nitrogen + Variety + Nitrogen:Variety,
+                    random = ~ Blocks + Blocks:Wplots,
+                    rcov = ~ units,
+                    data = dat, verbose = FALSE),
+                   "This function has been deprecated\\. Please start using 'mmes' and its auxiliary functions")
+
+    dat.som2 <- mmes(yield ~ Nitrogen + Variety + Nitrogen:Variety,
+                     random = ~ Blocks + Blocks:Wplots,
+                     rcov = ~ units,
+                     data = dat, verbose = FALSE)
 
     p1 <- resplot(dat.som, call = T)
-    # p2 <- resplot(dat.aov, shapiro = FALSE)
-
-    vdiffr::expect_doppelganger(title = "Resplot for sommer", p1)
+    p2 <- resplot(dat.som2, call = T)
+    vdiffr::expect_doppelganger(title = "Resplot for sommer mmer", p1)
+    vdiffr::expect_doppelganger(title = "Resplot for sommer mmes", p2)
     # vdiffr::expect_doppelganger(title = "Resplot for aov without shapiro", p2)
 })
 
@@ -107,5 +111,20 @@ test_that("Residual plots work for ARTool models", {
 
     vdiffr::expect_doppelganger(title = "ARTool resplot", p1)
     vdiffr::expect_doppelganger(title = "ARTool resplot with call", p2)
+    # vdiffr::expect_doppelganger(title = "Resplot for aov without shapiro", p2)
+})
+
+test_that("Shapiro-Wilk test produces a warning with large numbers of observations.", {
+    load(test_path("data", "large_data.Rdata"))
+    dat_large.aov <- aov(y ~ x, data = large_dat)
+    dat_med.aov <- aov(y ~ x, data = med_dat)
+
+    expect_warning(p1 <- resplot(dat_large.aov, shapiro = TRUE),
+                   "Shapiro-Wilk test p-values are unreliable for more than 5000 observations and has not been performed")
+    expect_warning(p2 <- resplot(dat_med.aov, shapiro = TRUE),
+                   "Shapiro-Wilk test p-values are unreliable for large numbers of observations")
+
+    vdiffr::expect_doppelganger(title = "Large data shapiro", p1)
+    vdiffr::expect_doppelganger(title = "Medium data shapiro", p2)
     # vdiffr::expect_doppelganger(title = "Resplot for aov without shapiro", p2)
 })

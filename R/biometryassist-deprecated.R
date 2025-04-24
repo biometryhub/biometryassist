@@ -6,6 +6,6 @@
 #'   available at `help("<function>-deprecated")`.
 #' @name biometryassist-deprecated
 #' @keywords internal
-#' @return No return value.
+#' @returns No return value.
 NULL
 

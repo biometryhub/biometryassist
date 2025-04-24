@@ -33,7 +33,7 @@
 #'
 #' @export
 #'
-#' @return A list containing a data frame with the complete design (`$design`), a ggplot object with plot layout (`$plot.des`), the seed (`$seed`, if `return.seed = TRUE`), and the `satab` object (`$satab`), allowing repeat output of the `satab` table via `cat(output$satab)`.
+#' @returns A list containing a data frame with the complete design (`$design`), a ggplot object with plot layout (`$plot.des`), the seed (`$seed`, if `return.seed = TRUE`), and the `satab` object (`$satab`), allowing repeat output of the `satab` table via `cat(output$satab)`.
 #'
 #' @examples
 #' # Completely Randomised Design
@@ -104,19 +104,19 @@ design <- function(type,
 
     # Some error checking of inputs before creating design
     if(!is.na(brows) & brows > nrows) {
-        stop("brows must not be larger than nrows")
+        stop("brows must not be larger than nrows", call. = FALSE)
     }
 
     if(!is.na(bcols) & bcols > ncols) {
-        stop("bcols must not be larger than ncols")
+        stop("bcols must not be larger than ncols", call. = FALSE)
     }
 
     if(!is.numeric(size)) {
-        stop("size must be numeric")
+        stop("size must be numeric", call. = FALSE)
     }
 
     if((!is.logical(seed) | is.na(seed)) & !is.numeric(seed)) {
-        stop("seed must be numeric or TRUE/FALSE")
+        stop("seed must be numeric or TRUE/FALSE", call. = FALSE)
     }
 
     dim <- nrows*ncols
@@ -149,7 +149,7 @@ design <- function(type,
 
     else if(tolower(type) == "split") {
         if(is.null(sub_treatments) | anyNA(sub_treatments)) {
-            stop("sub_treatments are required for a split plot design")
+            stop("sub_treatments are required for a split plot design", call. = FALSE)
         }
         trs <- length(treatments)*length(sub_treatments)*reps
         outdesign <- agricolae::design.split(trt1 = treatments,
@@ -163,11 +163,11 @@ design <- function(type,
         savename <- gsub(":", "_", savename)
 
         if(type_split[2] %!in% c("crd", "rcbd", "lsd")) {
-            stop("Crossed designs of type '", type_split[2], "' are not supported")
+            stop("Crossed designs of type '", type_split[2], "' are not supported", call. = FALSE)
         }
 
         if(length(treatments) > 3) {
-            stop("Crossed designs with more than three treatment factors are not supported")
+            stop("Crossed designs with more than three treatment factors are not supported", call. = FALSE)
         }
         trs <- ifelse(tolower(type_split[2])=="lsd", prod(treatments)^2, prod(treatments)*reps)
 
@@ -178,15 +178,15 @@ design <- function(type,
     }
 
     else {
-        stop("Designs of type '", type, "' are not supported")
+        stop("Designs of type '", type, "' are not supported", call. = FALSE)
     }
 
     if(dim > trs) {
-        warning("Area provided is larger than treatments applied. Please check inputs.")
+        warning("Area provided is larger than treatments applied. Please check inputs.", call. = FALSE)
     }
 
     if(dim < trs) {
-        warning("Area provided is smaller than treatments applied. Please check inputs.")
+        warning("Area provided is smaller than treatments applied. Please check inputs.", call. = FALSE)
     }
 
     output <- des_info(design.obj = outdesign, nrows = nrows, ncols = ncols,

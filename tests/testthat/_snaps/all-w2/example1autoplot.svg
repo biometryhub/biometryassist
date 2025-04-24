@@ -42,6 +42,10 @@
 <polyline points='292.50,545.11 292.50,22.78 ' style='stroke-width: 1.07; stroke: #EBEBEB; stroke-linecap: butt;' />
 <polyline points='454.82,545.11 454.82,22.78 ' style='stroke-width: 1.07; stroke: #EBEBEB; stroke-linecap: butt;' />
 <polyline points='617.13,545.11 617.13,22.78 ' style='stroke-width: 1.07; stroke: #EBEBEB; stroke-linecap: butt;' />
+<circle cx='130.18' cy='485.86' r='2.49' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
+<circle cx='292.50' cy='369.19' r='2.49' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
+<circle cx='454.82' cy='172.38' r='2.49' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
+<circle cx='617.13' cy='89.69' r='2.49' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
 <polyline points='113.95,449.85 146.41,449.85 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
 <polyline points='130.18,449.85 130.18,521.37 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
 <polyline points='113.95,521.37 146.41,521.37 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
@@ -58,10 +62,6 @@
 <text x='292.50' y='330.45' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='6.33px' lengthAdjust='spacingAndGlyphs'>b</text>
 <text x='454.82' y='133.13' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='5.70px' lengthAdjust='spacingAndGlyphs'>c</text>
 <text x='617.13' y='50.44' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='5.70px' lengthAdjust='spacingAndGlyphs'>c</text>
-<circle cx='130.18' cy='485.86' r='1.95' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
-<circle cx='292.50' cy='369.19' r='1.95' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
-<circle cx='454.82' cy='172.38' r='1.95' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
-<circle cx='617.13' cy='89.69' r='1.95' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
 <rect x='32.79' y='22.78' width='681.73' height='522.33' style='stroke-width: 1.07; stroke: #333333;' />
 </g>
 <g clip-path='url(#cpMC4wMHw3MjAuMDB8MC4wMHw1NzYuMDA=)'>

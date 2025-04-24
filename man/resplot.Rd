@@ -17,7 +17,7 @@ resplot(
 \arguments{
 \item{model.obj}{An \code{aov}, \code{lm}, \code{lme} (\code{\link[nlme:lme]{nlme::lme()}}), \code{lmerMod} (\code{\link[lme4:lmer]{lme4::lmer()}}), \code{asreml} or \code{mmer} (sommer) model object.}
 
-\item{shapiro}{(Logical) Display the Shapiro-Wilks test of normality on the plot?}
+\item{shapiro}{(Logical) Display the Shapiro-Wilk test of normality on the plot? This test is unreliable for larger numbers of observations and will not work with n >= 5000 so will be omitted from any plots.}
 
 \item{call}{(Logical) Display the model call on the plot?}
 
