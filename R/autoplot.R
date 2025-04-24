@@ -111,8 +111,21 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1, rotation = 0, axi
 #' # Alternative colour scheme
 #' autoplot(des.out, palette = "plasma")
 #'
-#' # Custom colour palatte
+#' # Custom colour palette
 #' autoplot(des.out, palette = c("#ef746a", "#3fbfc5", "#81ae00", "#c37cff"))
+#'
+#' # Visualise different components of a split plot design
+#' des.out <- design(type = "split", treatments = c("A", "B"), sub_treatments = 1:4,
+#' reps = 4, nrows = 8, ncols = 4, brows = 4, bcols = 2, seed = 42)
+#'
+#' # Regular split plot
+#' autoplot(des.out)
+#'
+#' # Show the wholeplot components
+#' autoplot(des.out, treatments = wholeplot)
+#'
+#' # Display block level
+#' autoplot(des.out, treatments = wholeplot)
 autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, palette = "default", buffer = NULL, row = NULL, column = NULL, block = NULL, treatments = NULL, ...) {
     stopifnot(inherits(object, "design"))
     rlang::check_dots_used()
