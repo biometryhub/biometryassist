@@ -118,9 +118,6 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1, rotation = 0, axi
 #' des.out <- design(type = "split", treatments = c("A", "B"), sub_treatments = 1:4,
 #' reps = 4, nrows = 8, ncols = 4, brows = 4, bcols = 2, seed = 42)
 #'
-#' # Regular split plot
-#' autoplot(des.out)
-#'
 #' # Show the wholeplot components
 #' autoplot(des.out, treatments = wholeplots)
 #'
@@ -244,7 +241,7 @@ autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, pale
             ggplot2::theme_bw()
     }
 
-    plt <- plt + scale_fill_manual(values = colour_palette, name = "Treatment")
+    plt <- plt + scale_fill_manual(values = colour_palette, name = trt_expr)
 
     if(!margin) {
         plt <- plt + ggplot2::scale_x_continuous(expand = c(0, 0), breaks = seq(1, max(object[[column_expr]]), 1)) + ggplot2::scale_y_continuous(expand = c(0, 0), trans = scales::reverse_trans(), breaks = seq(1, max(object[[row_expr]]), 1))
