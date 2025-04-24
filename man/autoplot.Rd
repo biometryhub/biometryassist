@@ -91,9 +91,6 @@ autoplot(des.out, palette = c("#ef746a", "#3fbfc5", "#81ae00", "#c37cff"))
 des.out <- design(type = "split", treatments = c("A", "B"), sub_treatments = 1:4,
 reps = 4, nrows = 8, ncols = 4, brows = 4, bcols = 2, seed = 42)
 
-# Regular split plot
-autoplot(des.out)
-
 # Show the wholeplot components
 autoplot(des.out, treatments = wholeplots)
 
