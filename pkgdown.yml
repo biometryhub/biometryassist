@@ -3,7 +3,7 @@ pkgdown: 2.1.1
 pkgdown_sha: ~
 articles:
   installing-asreml-r: installing-asreml-r.html
-last_built: 2025-04-24T13:28Z
+last_built: 2025-04-24T13:35Z
 urls:
   reference: https://biometryhub.github.io/biometryassist/reference
   article: https://biometryhub.github.io/biometryassist/articles
