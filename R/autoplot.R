@@ -241,7 +241,7 @@ autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, pale
             ggplot2::theme_bw()
     }
 
-    plt <- plt + scale_fill_manual(values = colour_palette, name = trt_expr)
+    plt <- plt + scale_fill_manual(values = colour_palette, name = tools::toTitleCase(trt_expr))
 
     if(!margin) {
         plt <- plt + ggplot2::scale_x_continuous(expand = c(0, 0), breaks = seq(1, max(object[[column_expr]]), 1)) + ggplot2::scale_y_continuous(expand = c(0, 0), trans = scales::reverse_trans(), breaks = seq(1, max(object[[row_expr]]), 1))
