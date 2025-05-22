@@ -63,7 +63,7 @@ multiple_comparisons(
 
 \item{pred}{Deprecated. Use \code{classify} instead.}
 
-\item{...}{Other arguments passed through to \code{predict.asreml()}.}
+\item{...}{Other arguments passed through to \code{\link[=get_predictions]{get_predictions()}}.}
 }
 \value{
 A list containing a data frame with predicted means, standard errors,

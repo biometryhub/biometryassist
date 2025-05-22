@@ -20,7 +20,7 @@
 #' @param order Deprecated. Use `descending` instead.
 #' @param pred Deprecated. Use `classify` instead.
 #' @param pred.obj Deprecated. Predicted values are calculated within the function from version 1.0.1 onwards.
-#' @param ... Other arguments passed through to `predict.asreml()`.
+#' @param ... Other arguments passed through to [get_predictions()].
 #'
 #' @importFrom multcompView multcompLetters
 #' @importFrom emmeans emmeans
@@ -185,7 +185,7 @@ multiple_comparisons <- function(model.obj,
 
     # Process dots
     rlang::check_dots_used()
-    args <- list(...)
+    args = list(...)
 
     # Check for alias 'letters' instead of 'groups'
     if ("letters" %in% names(args)) {
@@ -196,15 +196,14 @@ multiple_comparisons <- function(model.obj,
         }
     }
 
-    # asr_args <- args[names(args) %in% names(formals(asreml::predict.asreml))]
-
     # Get model-specific predictions and SED
-    result <- get_predictions(model.obj, classify, args, pred.obj, ...)
+    result <- get_predictions(model.obj, classify, pred.obj, ...)
 
     pp <- result$predictions
     sed <- result$sed
     ndf <- result$df
     ylab <- result$ylab
+    aliased <- result$aliased_names
 
     # Process treatment names
     pp <- process_treatment_names(pp, classify)
@@ -239,7 +238,7 @@ multiple_comparisons <- function(model.obj,
     }
 
     # Add attributes
-    pp <- add_attributes(pp, ylab, crit_val, result$aliased_names)
+    pp <- add_attributes(pp, ylab, crit_val, aliased)
 
     # Plot if requested
     if (plot) {

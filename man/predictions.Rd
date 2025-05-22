@@ -9,9 +9,9 @@
 \alias{get_predictions.lmerModLmerTest}
 \title{Get Predictions for Statistical Models}
 \usage{
-get_predictions(model.obj, classify, pred.obj = NULL, vars = NULL, ...)
+get_predictions(model.obj, classify, pred.obj = NULL, ...)
 
-\method{get_predictions}{asreml}(model.obj, classify, pred.obj = NULL, vars = NULL, ...)
+\method{get_predictions}{asreml}(model.obj, classify, pred.obj = NULL, ...)
 
 \method{get_predictions}{lm}(model.obj, classify, ...)
 
@@ -25,8 +25,6 @@ get_predictions(model.obj, classify, pred.obj = NULL, vars = NULL, ...)
 \item{classify}{Name of predictor variable as a string.}
 
 \item{pred.obj}{Optional precomputed prediction object.}
-
-\item{vars}{Variables used in the model.}
 
 \item{...}{Additional arguments passed to specific methods.}
 }

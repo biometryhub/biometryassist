@@ -5,7 +5,6 @@
 #' @param model.obj A model object. Currently supported model objects are asreml, aov/lm, lmerMod/lmerModLmerTest.
 #' @param classify Name of predictor variable as a string.
 #' @param pred.obj Optional precomputed prediction object.
-#' @param vars Variables used in the model.
 #' @param ... Additional arguments passed to specific methods.
 #'
 #' @name predictions
@@ -13,14 +12,17 @@
 #' @return A list containing predictions, standard errors, degrees of freedom,
 #' response variable label, and aliased names.
 #' @keywords internal
-get_predictions <- function(model.obj, classify, pred.obj = NULL, vars = NULL, ...) {
+get_predictions <- function(model.obj, classify, pred.obj = NULL, ...) {
     UseMethod("get_predictions")
 }
 
 #' @rdname predictions
 #'
 #' @keywords internal
-get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, vars = NULL, ...) {
+get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
+
+    args <- list(...)
+    asr_args <- args[names(args) %in% names(formals(asreml::predict.asreml))]
     # Check if classify is in model terms
     if(classify %!in% c(attr(stats::terms(model.obj$formulae$fixed), 'term.labels'),
                          attr(stats::terms(model.obj$formulae$random), 'term.labels'))) {
@@ -29,7 +31,10 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, vars = 
 
     # Generate predictions if not provided
     if(missing(pred.obj) || is.null(pred.obj)) {
-        pred.obj <- quiet(asreml::predict.asreml(model.obj, classify = classify, sed = TRUE, trace = FALSE, ...))
+        pred.obj <- quiet(asreml::predict.asreml(object = model.obj,
+                                                 classify = classify,
+                                                 sed = TRUE,
+                                                 trace = FALSE, ...))
     }
 
     # Check if all predicted values are NA
@@ -55,6 +60,7 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, vars = 
     dat.ww <- quiet(asreml::wald(model.obj, ssType = "conditional", denDF = "default", trace = FALSE)$Wald)
     dendf <- data.frame(Source = row.names(dat.ww), denDF = dat.ww$denDF)
 
+    vars <- unlist(strsplit(classify, "\\:"))
     ndf <- dendf$denDF[grepl(classify, dendf$Source) & nchar(classify) == nchar(as.character(dendf$Source))]
     if(rlang::is_empty(ndf)) {
         ndf <- model.obj$nedf
