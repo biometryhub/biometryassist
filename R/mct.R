@@ -388,7 +388,7 @@ apply_transformation <- function(pp, trans, offset, power) {
         pp$up <- exp(uu) / (1 + exp(uu))
     } else if (trans == "power") {
         pp$PredictedValue <- (pp$predicted.value)^(1/power) - ifelse(!is.na(offset), offset, 0)
-        pp$ApproxSE <- pp$std.error * (1/(power * pp$PredictedValue^(power-1)))
+        pp$ApproxSE <- pp$std.error / abs(power * pp$PredictedValue^(power-1))
 
         pp$low <- (pp$predicted.value - pp$ci)^(1/power) - ifelse(!is.na(offset), offset, 0)
         pp$up <- (pp$predicted.value + pp$ci)^(1/power) - ifelse(!is.na(offset), offset, 0)

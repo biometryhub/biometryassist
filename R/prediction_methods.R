@@ -31,10 +31,7 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 
     # Generate predictions if not provided
     if(missing(pred.obj) || is.null(pred.obj)) {
-        pred.obj <- quiet(asreml::predict.asreml(object = model.obj,
-                                                 classify = classify,
-                                                 sed = TRUE,
-                                                 trace = FALSE, ...))
+        pred.obj <- quiet(asreml::predict.asreml(object = model.obj, classify = classify, sed = TRUE, trace = FALSE, ...))
     }
 
     # Check if all predicted values are NA
