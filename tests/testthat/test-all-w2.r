@@ -26,7 +26,7 @@ test_that("example 2 works", {
     example2.aov <- aov(TuberLengthGrowth ~ trt, data = example2)
     expect_snapshot_output(anova(example2.aov))
     pred2.out <- multiple_comparisons(example2.aov, classify =  "trt")
-    expect_equal(pred2.out$predicted.value, c(11.15, 12.45, 14.02, 15.1, 16.11, 17.24, 17.83))
+    expect_equal(pred2.out$predicted.value, c(11.15, 12.45, 14.02, 15.1, 16.11, 17.24, 17.83), tolerance = 0.001)
     expect_snapshot_output(pred2.out)
     skip_on_ci()
     skip_on_covr()

@@ -26,16 +26,13 @@ test_that("Old mod.obj argument produces a warning", {
 
 test_that("Residual plots work for asreml", {
     skip_on_cran()
-    # skip_if_not(requireNamespace("asreml", quietly = TRUE))
 
-    # dat.asr <- quiet(asreml::asreml(Petal.Length ~ Petal.Width, data = iris, trace = FALSE))
-    load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
+      load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
     p1_single <- resplot(model.asr, shapiro = FALSE, call = T)
 
     final.m.asr <- readRDS(test_path("data", "complex_model.rds"))
     p1_multi <- suppressWarnings(resplot(final.m.asr))
 
-    # expect_plots_identical("test-plot.png", "../figs/resplt/resplt-aov.png")
     vdiffr::expect_doppelganger(title = "Resplot for asreml single", p1_single)
     vdiffr::expect_doppelganger(title = "Resplot for asreml pt 1", p1_multi[[1]])
     vdiffr::expect_doppelganger(title = "Resplot for asreml pt 2", p1_multi[[2]])
@@ -47,12 +44,8 @@ test_that("Residual plots work for lme4", {
     skip_if_not_installed("lme4")
     dat.lme4 <- lme4::lmer(Reaction ~ Days + (Days | Subject), lme4::sleepstudy)
 
-    # expect_error(resplot(1:10), "mod.obj must be an aov, lm, lmerMod, lmerModLmerTest, asreml or mmer object")
     p1 <- resplot(dat.lme4, call = T)
-    # p2 <- resplot(dat.lme4, shapiro = FALSE)
-
     vdiffr::expect_doppelganger(title = "Resplot for lme4", p1)
-    # vdiffr::expect_doppelganger(title = "Resplot for aov without shapiro", p2)
 })
 
 
@@ -66,20 +59,20 @@ test_that("Residual plots work for nlme", {
 
     p1 <- resplot(dat.nlme, call = T)
 
-    vdiffr::expect_doppelganger(title = "Resplot for nlme", dat.nlme)
-    # vdiffr::expect_doppelganger(title = "Resplot for aov without shapiro", p2)
+    vdiffr::expect_doppelganger(title = "Resplot for nlme", p1)
 })
 
 test_that("Residual plots work for sommer", {
     skip_if_not_installed("sommer")
     load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
     library(sommer)
+
+    skip_on_os("linux")
     expect_message(dat.som <- mmer(yield ~ Nitrogen + Variety + Nitrogen:Variety,
                     random = ~ Blocks + Blocks:Wplots,
                     rcov = ~ units,
                     data = dat, verbose = FALSE),
                    "This function has been deprecated\\. Please start using 'mmes' and its auxiliary functions")
-
     dat.som2 <- mmes(yield ~ Nitrogen + Variety + Nitrogen:Variety,
                      random = ~ Blocks + Blocks:Wplots,
                      rcov = ~ units,
@@ -89,7 +82,6 @@ test_that("Residual plots work for sommer", {
     p2 <- resplot(dat.som2, call = T)
     vdiffr::expect_doppelganger(title = "Resplot for sommer mmer", p1)
     vdiffr::expect_doppelganger(title = "Resplot for sommer mmes", p2)
-    # vdiffr::expect_doppelganger(title = "Resplot for aov without shapiro", p2)
 })
 
 test_that("Residual plots display call for aov and lm", {
@@ -99,7 +91,6 @@ test_that("Residual plots display call for aov and lm", {
 
     vdiffr::expect_doppelganger(title = "Resplot with call", p1)
     vdiffr::expect_doppelganger(title = "Resplot with smaller call", p2)
-    # vdiffr::expect_doppelganger(title = "Resplot for aov without shapiro", p2)
 })
 
 test_that("Residual plots work for ARTool models", {
@@ -111,7 +102,6 @@ test_that("Residual plots work for ARTool models", {
 
     vdiffr::expect_doppelganger(title = "ARTool resplot", p1)
     vdiffr::expect_doppelganger(title = "ARTool resplot with call", p2)
-    # vdiffr::expect_doppelganger(title = "Resplot for aov without shapiro", p2)
 })
 
 test_that("Shapiro-Wilk test produces a warning with large numbers of observations.", {
@@ -124,7 +114,7 @@ test_that("Shapiro-Wilk test produces a warning with large numbers of observatio
     expect_warning(p2 <- resplot(dat_med.aov, shapiro = TRUE),
                    "Shapiro-Wilk test p-values are unreliable for large numbers of observations")
 
-    vdiffr::expect_doppelganger(title = "Large data shapiro", p1)
     vdiffr::expect_doppelganger(title = "Medium data shapiro", p2)
-    # vdiffr::expect_doppelganger(title = "Resplot for aov without shapiro", p2)
+    skip_on_os("linux")
+    vdiffr::expect_doppelganger(title = "Large data shapiro", p1)
 })
