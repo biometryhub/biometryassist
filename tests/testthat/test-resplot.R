@@ -19,8 +19,8 @@ test_that("resplot produces an error for invalid data types", {
 
 test_that("Old mod.obj argument produces a warning", {
     dat.aov <- aov(Petal.Length ~ Petal.Width, data = iris)
-    expect_warning(p <- resplot(mod.obj = dat.aov),
-                   "mod.obj has been deprecated to be consistent with other functions. Please use `model.obj` instead.")
+    expect_warning(p <- resplot(model.obj = dat.aov, mod.obj = dat.aov),
+                   "Argument `mod\\.obj` has been deprecated and will be removed in a future version\\. Please use `model\\.obj` instead\\.")
     vdiffr::expect_doppelganger(title = "Resplot after warning", p)
 })
 
