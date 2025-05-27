@@ -22,7 +22,7 @@ get_predictions <- function(model.obj, classify, pred.obj = NULL, ...) {
 get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 
     args <- list(...)
-    asr_args <- args[names(args) %in% names(formals(asreml::predict.asreml))]
+    # asr_args <- args[names(args) %in% names(formals(asreml::predict.asreml))]
     # Check if classify is in model terms
     if(classify %!in% c(attr(stats::terms(model.obj$formulae$fixed), 'term.labels'),
                          attr(stats::terms(model.obj$formulae$random), 'term.labels'))) {
