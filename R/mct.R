@@ -6,9 +6,9 @@
 #' @param classify Name of predictor variable as string.
 #' @param sig The significance level, numeric between 0 and 1. Default is 0.05.
 #' @param int.type The type of confidence interval to calculate. One of `ci`, `1se` or `2se`. Default is `ci`.
-#' @param trans Transformation that was applied to the response variable. One of `log`, `sqrt`, `logit`, `power` or `inverse`. Default is `NA`.
-#' @param offset Numeric offset applied to response variable prior to transformation. Default is `NA`. Use 0 if no offset was applied to the transformed data. See Details for more information.
-#' @param power Numeric power applied to response variable with power transformation. Default is `NA`. See Details for more information.
+#' @param trans Transformation that was applied to the response variable. One of `log`, `sqrt`, `logit`, `power` or `inverse`. Default is `NULL`.
+#' @param offset Numeric offset applied to response variable prior to transformation. Default is `NULL`. Use 0 if no offset was applied to the transformed data. See Details for more information.
+#' @param power Numeric power applied to response variable with power transformation. Default is `NULL`. See Details for more information.
 #' @param decimals Controls rounding of decimal places in output. Default is 2 decimal places.
 #' @param descending Logical (default `FALSE`). Order of the output sorted by the predicted value. If `TRUE`, largest will be first, through to smallest last.
 #' @param groups Logical (default `TRUE`). If `TRUE`, the significance letter groupings will be calculated and displayed. This can get overwhelming for large numbers of comparisons, so can be turned off by setting to `FALSE`.
@@ -158,9 +158,9 @@ multiple_comparisons <- function(model.obj,
                                  classify,
                                  sig = 0.05,
                                  int.type = "ci",
-                                 trans = NA,
-                                 offset = NA,
-                                 power = NA,
+                                 trans = NULL,
+                                 offset = NULL,
+                                 power = NULL,
                                  decimals = 2,
                                  descending = FALSE,
                                  groups = TRUE,
@@ -222,7 +222,7 @@ multiple_comparisons <- function(model.obj,
     pp <- add_confidence_intervals(pp, int.type, sig, ndf)
 
     # Apply transformations if requested
-    if (!is.na(trans)) {
+    if (!is.null(trans)) {
         pp <- apply_transformation(pp, trans, offset, power)
     } else {
         pp$low <- pp$predicted.value - pp$ci
@@ -360,24 +360,24 @@ add_confidence_intervals <- function(pp, int.type, sig, ndf) {
 
 apply_transformation <- function(pp, trans, offset, power) {
     # Set default offset if not provided
-    if (is.na(offset)) {
+    if (is.null(offset)) {
         warning("Offset value assumed to be 0. Change with `offset` argument.")
         offset <- 0
     }
 
     # Apply appropriate transformation
     if (trans == "sqrt") {
-        pp$PredictedValue <- (pp$predicted.value)^2 - ifelse(!is.na(offset), offset, 0)
+        pp$PredictedValue <- (pp$predicted.value)^2 - ifelse(!is.null(offset), offset, 0)
         pp$ApproxSE <- 2 * abs(pp$std.error) * sqrt(pp$PredictedValue)
 
-        pp$low <- (pp$predicted.value - pp$ci)^2 - ifelse(!is.na(offset), offset, 0)
-        pp$up <- (pp$predicted.value + pp$ci)^2 - ifelse(!is.na(offset), offset, 0)
+        pp$low <- (pp$predicted.value - pp$ci)^2 - ifelse(!is.null(offset), offset, 0)
+        pp$up <- (pp$predicted.value + pp$ci)^2 - ifelse(!is.null(offset), offset, 0)
     } else if (trans == "log") {
-        pp$PredictedValue <- exp(pp$predicted.value) - ifelse(!is.na(offset), offset, 0)
+        pp$PredictedValue <- exp(pp$predicted.value) - ifelse(!is.null(offset), offset, 0)
         pp$ApproxSE <- abs(pp$std.error) * pp$PredictedValue
 
-        pp$low <- exp(pp$predicted.value - pp$ci) - ifelse(!is.na(offset), offset, 0)
-        pp$up <- exp(pp$predicted.value + pp$ci) - ifelse(!is.na(offset), offset, 0)
+        pp$low <- exp(pp$predicted.value - pp$ci) - ifelse(!is.null(offset), offset, 0)
+        pp$up <- exp(pp$predicted.value + pp$ci) - ifelse(!is.null(offset), offset, 0)
     } else if (trans == "logit") {
         pp$PredictedValue <- exp(pp$predicted.value) / (1 + exp(pp$predicted.value))
         pp$ApproxSE <- pp$PredictedValue * (1 - pp$PredictedValue) * abs(pp$std.error)
@@ -387,11 +387,11 @@ apply_transformation <- function(pp, trans, offset, power) {
         uu <- pp$predicted.value + pp$ci
         pp$up <- exp(uu) / (1 + exp(uu))
     } else if (trans == "power") {
-        pp$PredictedValue <- (pp$predicted.value)^(1/power) - ifelse(!is.na(offset), offset, 0)
+        pp$PredictedValue <- (pp$predicted.value)^(1/power) - ifelse(!is.null(offset), offset, 0)
         pp$ApproxSE <- pp$std.error / abs(power * pp$PredictedValue^(power-1))
 
-        pp$low <- (pp$predicted.value - pp$ci)^(1/power) - ifelse(!is.na(offset), offset, 0)
-        pp$up <- (pp$predicted.value + pp$ci)^(1/power) - ifelse(!is.na(offset), offset, 0)
+        pp$low <- (pp$predicted.value - pp$ci)^(1/power) - ifelse(!is.null(offset), offset, 0)
+        pp$up <- (pp$predicted.value + pp$ci)^(1/power) - ifelse(!is.null(offset), offset, 0)
     } else if (trans == "inverse") {
         pp$PredictedValue <- 1/pp$predicted.value
         pp$ApproxSE <- abs(pp$std.error) * pp$PredictedValue^2
