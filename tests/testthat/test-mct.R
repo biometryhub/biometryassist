@@ -308,6 +308,13 @@ test_that("Setting groups to FALSE disables letter groups", {
                                 autoplot(output))
 })
 
+test_that("Check for letters as an alias of groups", {
+    expect_warning(output <- multiple_comparisons(dat.aov, classify = "Species",
+                                                  groups = FALSE, letters = TRUE),
+                   "Both 'groups' and 'letters' provided\\. Using 'groups'\\.")
+    expect_false("groups" %in% colnames(output))
+})
+
 test_that("autoplot can rotate axis and labels independently", {
     output <- multiple_comparisons(dat.aov, classify = "Species")
     vdiffr::expect_doppelganger("label rotation",
@@ -326,42 +333,13 @@ test_that("autoplot can rotate axis and labels independently", {
 
 
 
-
-
-
-
-
-
-
-
-
-# test_that("sommer model works", {
-#     skip_if_not_installed("sommer")
-#     quiet(library(sommer))
-#     data("DT_yatesoats")
-#     dat.sommer <- mmer(Y ~ N*V, random = ~B + B/MP, data = DT_yatesoats, verbose = FALSE)
-#     output <- multiple_comparisons(dat.sommer, classify = "N")
-#     expect_identical(output$predicted.value, c(0.25, 1.33, 2.03))
-#     skip_if(interactive())
-#     vdiffr::expect_doppelganger("mct output", output$predicted_plot)
-# })
-
-# skip if not local/asreml installed
-# model.asr <- asreml(yield ~ Nitrogen + Variety + Nitrogen:Variety,
-#                     random = ~ Blocks + Blocks:Wplots,
-#                     residual = ~ units,
-#                     data = asreml::oats)
-#
-# pred.asr <- predict(model.asr, classify = "Nitrogen:Variety", sed = TRUE)
-
-# multiple_comparisons(model.obj = model.asr, pred.obj = pred.asr, classify = "Nitrogen:Variety", label_height = 0.1)
-
-# model.asr <- asreml(log(yield) ~ Nitrogen + Variety + Nitrogen:Variety,
-#                     random = ~ Blocks + Blocks:Wplots,
-#                     residual = ~ units,
-#                     data = asreml::oats)
-#
-# pred.asr <- predict(model.asr, classify = "Nitrogen", sed = TRUE)
-#
-# multiple_comparisons(model.obj = model.asr, pred.obj = pred.asr, classify = "Nitrogen", trans = "log", offset = 0, label_height = 0.1)
+test_that("Autoplot can output column graphs", {
+    output <- multiple_comparisons(dat.aov, classify = "Species")
+    p1 <- autoplot(output, type = "column", label_height = 1)
+    p2 <- autoplot(output, type = "col", label_height = 1)
+    expect_in("GeomCol", class(p1$layers[[1]]$geom))
+    expect_in("GeomCol", class(p2$layers[[1]]$geom))
+    expect_true(equivalent_ggplot2(p1, p2))
+    vdiffr::expect_doppelganger("autoplot column", p1)
+})
 

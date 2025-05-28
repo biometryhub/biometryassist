@@ -28,7 +28,10 @@ test_that("Residual plots work for asreml", {
     skip_on_cran()
 
     load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
-    p1_single <- resplot(model.asr, shapiro = FALSE, call = T)
+    p1_single <- resplot(model.asr, shapiro = FALSE, call = TRUE)
+    expect_type(p1_single, "list")
+    expect_equal(class(p1_single), c("gg", "ggplot"))
+
     expect_warning(
         expect_warning(
             expect_warning(
@@ -49,7 +52,7 @@ test_that("Residual plots work for lme4", {
     skip_if_not_installed("lme4")
     dat.lme4 <- lme4::lmer(Reaction ~ Days + (Days | Subject), lme4::sleepstudy)
 
-    p1 <- resplot(dat.lme4, call = T)
+    p1 <- resplot(dat.lme4, call = TRUE)
     vdiffr::expect_doppelganger(title = "Resplot for lme4", p1)
 })
 
@@ -62,7 +65,7 @@ test_that("Residual plots work for nlme", {
                            random = Asym ~ 1,
                            start = c(Asym = 103, R0 = -8.5, lrc = -3.3))
 
-    p1 <- resplot(dat.nlme, call = T)
+    p1 <- resplot(dat.nlme, call = TRUE)
 
     vdiffr::expect_doppelganger(title = "Resplot for nlme", p1)
 })
@@ -83,8 +86,8 @@ test_that("Residual plots work for sommer", {
                      rcov = ~ units,
                      data = dat, verbose = FALSE)
 
-    p1 <- resplot(dat.som, call = T)
-    p2 <- resplot(dat.som2, call = T)
+    p1 <- resplot(dat.som, call = TRUE)
+    p2 <- resplot(dat.som2, call = TRUE)
     vdiffr::expect_doppelganger(title = "Resplot for sommer mmer", p1)
     vdiffr::expect_doppelganger(title = "Resplot for sommer mmes", p2)
 })

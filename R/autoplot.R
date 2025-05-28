@@ -37,7 +37,9 @@ ggplot2::autoplot
 #' dat.aov <- aov(Petal.Width ~ Species, data = iris)
 #' output <- multiple_comparisons(dat.aov, classify = "Species")
 #' autoplot(output, label_height = 0.5)
-autoplot.mct <- function(object, size = 4, label_height = 0.1, rotation = 0, axis_rotation = rotation, label_rotation = rotation, type = "point", ...) {
+autoplot.mct <- function(object, size = 4, label_height = 0.1,
+                         rotation = 0, axis_rotation = rotation,
+                         label_rotation = rotation, type = "point", ...) {
     stopifnot(inherits(object, "mct"))
 
     rlang::check_dots_used()
@@ -123,7 +125,9 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1, rotation = 0, axi
 #'
 #' # Display block level
 #' autoplot(des.out, treatments = block)
-autoplot.design <- function(object, rotation = 0, size = 4, margin = FALSE, palette = "default", buffer = NULL, row = NULL, column = NULL, block = NULL, treatments = NULL, ...) {
+autoplot.design <- function(object, rotation = 0, size = 4,
+                            margin = FALSE, palette = "default", buffer = NULL,
+                            row = NULL, column = NULL, block = NULL, treatments = NULL, ...) {
     stopifnot(inherits(object, "design"))
     rlang::check_dots_used()
 
