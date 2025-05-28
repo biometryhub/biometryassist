@@ -124,19 +124,6 @@ test_that("Shapiro-Wilk test produces a warning with large numbers of observatio
     vdiffr::expect_doppelganger(title = "Large data shapiro", p1)
 })
 
-equivalent_ggplot2 <- function(x, y) {
-    # Create temporary files that will be automatically cleaned up when the function exits
-    tmp1 <- withr::local_tempfile(fileext = ".svg")
-    tmp2 <- withr::local_tempfile(fileext = ".svg")
-
-    # Save the ggplot2 objects to the temporary SVG files
-    suppressMessages(ggplot2::ggsave(tmp1, plot = x))
-    suppressMessages(ggplot2::ggsave(tmp2, plot = y))
-
-    # Compare the MD5 checksums of the two files
-    tools::md5sum(tmp1) == tools::md5sum(tmp2)
-}
-
 test_that("onepage is ignored for single plots", {
     dat.aov <- aov(Petal.Length ~ Petal.Width, data = iris)
 
