@@ -118,3 +118,4 @@ test_that("Shapiro-Wilk test produces a warning with large numbers of observatio
     skip_on_os("linux")
     vdiffr::expect_doppelganger(title = "Large data shapiro", p1)
 })
+
