@@ -8,6 +8,8 @@
 #' @param axes.size A numeric value for the size of the axes label font size in points.
 #' @param label.size A numeric value for the size of the label (A,B,C) font point size.
 #' @param call.size A numeric value for the size of the model displayed on the plot.
+#' @param onepage (Logical) If TRUE and there are multiple plots, combines up to 6 plots per page.
+#' @param onepage_cols Integer. Number of columns to use in grid layout when onepage=TRUE. Default is 3.
 #' @param mod.obj Deprecated to be consistent with other functions. Please use `model.obj` instead.
 #'
 #' @returns A ggplot2 object containing the diagnostic plots.
@@ -22,7 +24,9 @@
 #' resplot(dat.aov, call = TRUE)
 #' @export
 
-resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, axes.size = 10, call.size = 9, mod.obj){
+resplot <- function(model.obj, shapiro = TRUE, call = FALSE,
+                    label.size = 10, axes.size = 10, call.size = 9,
+                    onepage = FALSE, onepage_cols = 3, mod.obj) {
 
     handle_deprecated_param("mod.obj", "model.obj")
     # Need to pass on old argument if provided
@@ -77,15 +81,14 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
         model_call <- gsub("list", "mmer", model_call)
     }
     else if(inherits(model.obj, "mmes")) { # new sommer function. More like other mixed model functions
-        facet <- 1 #model.obj$termsN$rcov
+        facet <- 1
         facet_name <- NULL
         k <- length(model.obj$residual)
 
         resids <- as.numeric(residuals(model.obj))
-        fits <- as.numeric(fitted(model.obj))#$dataWithFitted[,paste0(model.obj$terms$response[[1]], ".fitted")]
+        fits <- as.numeric(fitted(model.obj))
         model_call <- "Model call not currently available for mmes models."
-            # paste(trimws(deparse(model.obj$call[c("fixed", "random", "rcov")], width.cutoff = 50)), collapse = "\n")
-        # model_call <- gsub("list", "mmer", model_call)
+
     }
     else if(inherits(model.obj, "art")) {
         facet <- 1
@@ -158,9 +161,42 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE, label.size = 10, ax
         }
     }
 
-    if(facet>1) {
+    if(facet > 1) {
         names(output) <- facet_name
-        return(output)
+
+        if(onepage) {
+            # Validate onepage_cols
+            onepage_cols <- min(max(1, onepage_cols), facet)
+            
+            # Calculate number of pages needed based on onepage_cols
+            plots_per_page <- onepage_cols * ceiling(6/onepage_cols)
+            n_pages <- ceiling(facet/plots_per_page)
+            pages <- vector("list", n_pages)
+            
+            for(page in 1:n_pages) {
+                # Get index range for current page
+                start_idx <- (page-1)*plots_per_page + 1
+                end_idx <- min(page*plots_per_page, facet)
+                
+                # Calculate grid dimensions for current page
+                n_plots_on_page <- end_idx - start_idx + 1
+                n_cols <- min(onepage_cols, n_plots_on_page)
+                n_rows <- ceiling(n_plots_on_page/n_cols)
+
+                # Create combined plot for current page
+                pages[[page]] <- cowplot::plot_grid(
+                    plotlist = output[start_idx:end_idx],
+                    ncol = n_cols,
+                    nrow = n_rows,
+                    scale = 0.90,
+                    labels = facet_name[start_idx:end_idx]
+                )
+            }
+            return(pages)
+        }
+        else {
+            return(output)
+        }
     }
     else {
         return(output[[1]])
