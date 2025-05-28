@@ -61,8 +61,8 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE,
             k <- length(model.obj$residual)
         }
         resids <- as.numeric(model.obj[["residuals"]])
-        fits <- fitted(model.obj)
-        fits <- ifelse(rep("fitted" %in% names(model.obj), nrow(model.obj$mf)), model.obj[["fitted"]], fitted(model.obj))
+        fits <- model.obj[["linear.predictors"]]
+        # fits <- ifelse(rep("fitted" %in% names(model.obj), nrow(model.obj$mf)), model.obj[["fitted"]], fitted(model.obj))
 
         if(call) {
             model_call <- paste(trimws(deparse(model.obj$call, width.cutoff = 50)), collapse = "\n")
@@ -167,17 +167,17 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE,
         if(onepage) {
             # Validate onepage_cols
             onepage_cols <- min(max(1, onepage_cols), facet)
-            
+
             # Calculate number of pages needed based on onepage_cols
             plots_per_page <- onepage_cols * ceiling(6/onepage_cols)
             n_pages <- ceiling(facet/plots_per_page)
             pages <- vector("list", n_pages)
-            
+
             for(page in 1:n_pages) {
                 # Get index range for current page
                 start_idx <- (page-1)*plots_per_page + 1
                 end_idx <- min(page*plots_per_page, facet)
-                
+
                 # Calculate grid dimensions for current page
                 n_plots_on_page <- end_idx - start_idx + 1
                 n_cols <- min(onepage_cols, n_plots_on_page)
