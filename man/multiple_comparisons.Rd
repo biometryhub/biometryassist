@@ -9,9 +9,9 @@ multiple_comparisons(
   classify,
   sig = 0.05,
   int.type = "ci",
-  trans = NA,
-  offset = NA,
-  power = NA,
+  trans = NULL,
+  offset = NULL,
+  power = NULL,
   decimals = 2,
   descending = FALSE,
   groups = TRUE,
@@ -35,11 +35,11 @@ multiple_comparisons(
 
 \item{int.type}{The type of confidence interval to calculate. One of \code{ci}, \verb{1se} or \verb{2se}. Default is \code{ci}.}
 
-\item{trans}{Transformation that was applied to the response variable. One of \code{log}, \code{sqrt}, \code{logit}, \code{power} or \code{inverse}. Default is \code{NA}.}
+\item{trans}{Transformation that was applied to the response variable. One of \code{log}, \code{sqrt}, \code{logit}, \code{power} or \code{inverse}. Default is \code{NULL}.}
 
-\item{offset}{Numeric offset applied to response variable prior to transformation. Default is \code{NA}. Use 0 if no offset was applied to the transformed data. See Details for more information.}
+\item{offset}{Numeric offset applied to response variable prior to transformation. Default is \code{NULL}. Use 0 if no offset was applied to the transformed data. See Details for more information.}
 
-\item{power}{Numeric power applied to response variable with power transformation. Default is \code{NA}. See Details for more information.}
+\item{power}{Numeric power applied to response variable with power transformation. Default is \code{NULL}. See Details for more information.}
 
 \item{decimals}{Controls rounding of decimal places in output. Default is 2 decimal places.}
 
