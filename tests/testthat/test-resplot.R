@@ -14,7 +14,8 @@ test_that("resplt is deprecated and produces a warning", {
 })
 
 test_that("resplot produces an error for invalid data types", {
-    expect_error(resplot(1:10), "model\\.obj must be a linear \\(mixed\\) model object\\. Currently supported model types are\\: aov, lm, lmerMod, lmerModLmerTest, asreml, mmer or art")
+    expect_error(resplot(1:10),
+                 "model\\.obj must be a linear \\(mixed\\) model object\\. Currently supported model types are: aov, lm, lme, lmerMod, lmerModLmerTest, asreml, mmer, mmes, art")
 })
 
 test_that("Old mod.obj argument produces a warning", {
