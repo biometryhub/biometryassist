@@ -67,7 +67,7 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE,
     }
 
     # Handle output formatting based on facet structure
-    result <- format_output(output,
+    result <- format_output_resplot(output,
         model_info$facet,
         model_info$facet_name,
         onepage,
@@ -224,7 +224,7 @@ combine_plots <- function(plots, shapiro_result, model_call, call, call.size, la
 #' @param onepage Logical, combine plots on one page
 #' @param onepage_cols Number of columns for onepage layout
 #' @keywords internal
-format_output <- function(output, facet, facet_name, onepage, onepage_cols) {
+format_output_resplot <- function(output, facet, facet_name, onepage, onepage_cols) {
     if (facet > 1) {
         names(output) <- facet_name
 

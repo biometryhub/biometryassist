@@ -423,9 +423,6 @@ format_output <- function(pp, descending, vars, decimals) {
     # Extract treatment variable names
     trtindex <- max(unlist(lapply(paste0("^", vars, "$"), grep, x = names(pp))))
 
-    # Operator for "not in"
-    `%!in%` <- function(x, y) !(`%in%`(x, y))
-
     trtnam <- names(pp)[1:trtindex]
     # Exclude reserved column names
     trtnam <- trtnam[trtnam %!in% c("predicted.value", "std.error", "Df",
