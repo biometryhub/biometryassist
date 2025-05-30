@@ -108,6 +108,24 @@ create_buffers <- function(design, type, blocks = FALSE) {
     return(design)
 }
 
+#' Add buffers to an existing design
+#'
+#' @param design_obj A design object (with class "design") from the design() function
+#' @param type The type of buffer to add
+#' @returns The modified design object with buffers added
+#' @export
+add_buffers <- function(design_obj, type) {
+    stopifnot(inherits(design_obj, "design"))
+
+    # Determine if design has blocks
+    has_blocks <- any(grepl("block", tolower(names(design_obj$design))))
+
+    # Create buffers and update the design dataframe
+    design_obj$design <- create_buffers(design_obj$design, type, blocks = has_blocks)
+
+    return(design_obj)
+}
+
 
 # # Blocks
 #
