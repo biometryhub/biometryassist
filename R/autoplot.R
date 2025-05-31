@@ -9,7 +9,6 @@
 #' @param type A string specifying the type of plot to display. The default of 'point' will display a point estimate with error bars. The alternative, 'column' (or 'col'), will display a column graph with error bars.
 #' @param margin Logical (default `FALSE`). A value of `FALSE` will expand the plot to the edges of the plotting area i.e. remove white space between plot and axes.
 #' @param palette A string specifying the colour scheme to use for plotting or a vector of custom colours to use as the palette. Default is equivalent to "Spectral". Colour blind friendly palettes can also be provided via options `"colour blind"` (or `"color blind"`, both equivalent to `"viridis"`), `"magma"`, `"inferno"`, `"plasma"`, `"cividis"`, `"rocket"`, `"mako"` or `"turbo"`. Other palettes from [scales::brewer_pal()] are also possible.
-#' @param buffer A string specifying the buffer plots to include for plotting. Default is `NULL` (no buffers plotted). Other options are "edge" (outer edge of trial area), "rows" (between rows), "columns" (between columns), "double row" (a buffer row each side of a treatment row) or "double column" (a buffer row each side of a treatment column). "blocks" (a buffer around each treatment block) will be implemented in a future release.
 #' @param row A variable to plot a column from `object` as rows.
 #' @param column A variable to plot a column from `object` as columns.
 #' @param block A variable to plot a column from `object` as blocks.
@@ -180,9 +179,9 @@ autoplot.design <- function(object, rotation = 0, size = 4,
     }
 
     # Apply styling
-    plt <- plt +
-        scale_fill_manual(values = colour_palette, name = tools::toTitleCase(trt_expr)) +
-        apply_axis_styling(margin, object, row_expr, column_expr)
+    plt <- plt + scale_fill_manual(values = colour_palette, name = tools::toTitleCase(trt_expr))
+
+    plt <- apply_axis_styling(plt, margin, object, row_expr, column_expr)
 
     return(plt)
 }
@@ -285,4 +284,38 @@ create_blocked_plot <- function(object, row_expr, column_expr, block_expr, trt_e
                            mapping = ggplot2::aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
                            linewidth = 0.6, colour = "white", fill = NA) +
         ggplot2::theme_bw()
+}
+
+apply_axis_styling <- function(plot, margin, object, row_expr, column_expr) {
+    if(!margin) {
+        # No margin - expand plot to edges with no white space
+        plot <- plot + ggplot2::scale_x_continuous(expand = c(0, 0),
+                                                   breaks = seq(1, max(object[[column_expr]]), 1)) +
+            ggplot2::scale_y_continuous(expand = c(0, 0),
+                                        trans = scales::reverse_trans(),
+                                        breaks = seq(1, max(object[[row_expr]]), 1))
+    } else {
+        # With margin - default ggplot spacing
+        plot <- plot + ggplot2::scale_x_continuous(breaks = seq(1, max(object[[column_expr]]), 1)) +
+            ggplot2::scale_y_continuous(trans = scales::reverse_trans(),
+                                        breaks = seq(1, max(object[[row_expr]]), 1))
+    }
+    return(plot)
+}
+
+calculate_block_boundaries <- function(object, block_expr) {
+    blkdf <- data.frame(
+        block = sort(unique(object[[block_expr]])),
+        xmin = 0, xmax = 0, ymin = 0, ymax = 0
+    )
+
+    for (i in 1:nrow(blkdf)) {
+        tmp <- object[object[[block_expr]] == blkdf$block[i], ]
+        blkdf[i, "ymin"] <- (min(tmp$row) - 0.5)
+        blkdf[i, "ymax"] <- (max(tmp$row) + 0.5)
+        blkdf[i, "xmin"] <- (min(tmp$col) - 0.5)
+        blkdf[i, "xmax"] <- (max(tmp$col) + 0.5)
+    }
+
+    return(blkdf)
 }

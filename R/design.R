@@ -11,7 +11,7 @@
 #' @param sub_treatments A vector of treatments for sub-plots in a split plot design.
 #' @param fac.names Allows renaming of the `A` level of factorial designs (i.e. those using [agricolae::design.ab()]) by passing (optionally named) vectors of new labels to be applied to the factors within a list. See examples and details for more information.
 #' @param fac.sep The separator used by `fac.names`. Used to combine factorial design levels. If a vector of 2 levels is supplied, the first separates factor levels and label, and the second separates the different factors.
-#' @param buffer A string giving the type of buffer. One of 'edge', 'row', 'column', 'double row' or 'double column'.
+#' @param buffer A string specifying the buffer plots to include for plotting. Default is `NULL` (no buffers plotted). Other options are "edge" (outer edge of trial area), "rows" (between rows), "columns" (between columns), "double row" (a buffer row each side of a treatment row) or "double column" (a buffer row each side of a treatment column). "blocks" (a buffer around each treatment block) will be implemented in a future release.
 #' @param plot Logical (default `TRUE`). If `TRUE`, display a plot of the generated design. A plot can always be produced later using [autoplot()].
 #' @param rotation Rotate the text output as Treatments within the plot. Allows for easier reading of long treatment labels. Takes positive and negative values being number of degrees of rotation from horizontal.
 #' @param size Increase or decrease the text size within the plot for treatment labels. Numeric with default value of 4.
@@ -193,8 +193,8 @@ design <- function(type,
 
     output <- des_info(design.obj = outdesign, nrows = nrows, ncols = ncols,
                        brows = brows, bcols = bcols, byrow = byrow,
-                       fac.names = fac.names, fac.sep = fac.sep, plot = plot,
-                       rotation = rotation, size = size, margin = margin,
+                       fac.names = fac.names, fac.sep = fac.sep, buffer = buffer,
+                       plot = plot, rotation = rotation, size = size, margin = margin,
                        save = save, savename = savename, plottype = plottype,
                        return.seed = seed, quiet = quiet, ...)
 

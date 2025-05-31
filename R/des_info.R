@@ -89,6 +89,7 @@ des_info <- function(design.obj,
                      byrow = TRUE,
                      fac.names = NULL,
                      fac.sep = c("", " "),
+                     buffer = NULL,
                      plot = TRUE,
                      rotation = 0,
                      size = 4,
@@ -535,6 +536,12 @@ des_info <- function(design.obj,
 
     info <- list(design = des)
     class(des) <- c("design", class(des))
+
+    # After creating the basic design, add buffers if requested
+    if (!is.null(buffer)) {
+        has_blocks <- any(grepl("block", tolower(names(des))))
+        des <- create_buffers(des, buffer, blocks = has_blocks)
+    }
 
     if(plot) {
         info$plot.des <- autoplot(des, rotation = rotation, size = size, margin = margin)
