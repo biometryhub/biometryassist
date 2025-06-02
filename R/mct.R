@@ -301,13 +301,18 @@ validate_inputs <- function(sig, classify, model.obj, trans) {
 
     # Check if the response variable is transformed in the model formula
     model_formula <- formula(model.obj)
-    response_part <- model_formula[[2]]
+    if(inherits(model.obj, "asreml")) {
+        response_part <- model_formula[[1]][[2]]
+    }
+    else {
+        response_part <- model_formula[[2]]
+    }
     if (is.call(response_part) & is.null(trans)) {
         warning(call. = FALSE,
             sprintf(
                 "The response variable appears to be transformed in the model formula: %s.",
                 deparse(response_part)
-            ), 
+            ),
             "\nPlease specify the 'trans' argument if you want back-transformed predictions."
         )
     }
