@@ -189,40 +189,6 @@
 <text x='183.84' y='207.51' text-anchor='middle' style='font-size: 11.38px; fill: #FFFFFF; font-family: sans;' textLength='7.59px' lengthAdjust='spacingAndGlyphs'>K</text>
 <text x='284.53' y='247.69' text-anchor='middle' style='font-size: 11.38px; fill: #FFFFFF; font-family: sans;' textLength='7.59px' lengthAdjust='spacingAndGlyphs'>K</text>
 <text x='284.53' y='207.51' text-anchor='middle' style='font-size: 11.38px; fill: #FFFFFF; font-family: sans;' textLength='7.59px' lengthAdjust='spacingAndGlyphs'>K</text>
-<text x='83.14' y='46.79' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='183.84' y='46.79' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='284.53' y='46.79' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='385.23' y='46.79' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='485.92' y='46.79' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='586.62' y='46.79' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='83.14' y='528.94' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='183.84' y='528.94' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='284.53' y='528.94' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='385.23' y='528.94' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='485.92' y='528.94' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='586.62' y='528.94' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='83.14' y='86.97' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='83.14' y='127.15' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='83.14' y='167.33' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='83.14' y='207.51' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='83.14' y='247.69' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='83.14' y='287.86' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='83.14' y='328.04' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='83.14' y='368.22' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='83.14' y='408.40' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='83.14' y='448.58' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='83.14' y='488.76' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='586.62' y='86.97' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='586.62' y='127.15' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='586.62' y='167.33' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='586.62' y='207.51' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='586.62' y='247.69' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='586.62' y='287.86' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='586.62' y='328.04' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='586.62' y='368.22' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='586.62' y='408.40' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='586.62' y='448.58' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
-<text x='586.62' y='488.76' text-anchor='middle' style='font-size: 11.38px; fill: none; font-family: sans;' textLength='29.10px' lengthAdjust='spacingAndGlyphs'>buffer</text>
 <rect x='32.79' y='22.78' width='604.17' height='522.33' style='stroke-width: 1.07; stroke: #333333;' />
 </g>
 <g clip-path='url(#cpMC4wMHw3MjAuMDB8MC4wMHw1NzYuMDA=)'>

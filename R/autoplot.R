@@ -151,13 +151,33 @@ autoplot.design <- function(object, rotation = 0, size = 4,
     block_expr <- rlang::quo_name(block_expr)
     trt_expr <- rlang::quo_name(trt_expr)
 
-    # Set up treatments and colors (existing logic)
-    object[[trt_expr]] <- factor(as.character(object[[trt_expr]]),
-                                 levels = unique(stringi::stri_sort(as.character(object[[trt_expr]]), numeric = TRUE)))
-    ntrt <- nlevels(object[[trt_expr]])
+    # Set up treatments and colours
+    has_buffers <- "buffer" %in% as.character(object[[trt_expr]])
 
-    # Colour palette setup (existing code)
+    if(has_buffers) {
+        # Separate treatments and buffers for proper ordering
+        treatments_only <- unique(as.character(object[[trt_expr]]))
+        treatments_only <- treatments_only[treatments_only != "buffer"]
+        treatments_sorted <- stringi::stri_sort(treatments_only, numeric = TRUE)
+
+        # Set factor levels with treatments first, then buffer at the end
+        factor_levels <- c(treatments_sorted, "buffer")
+        object[[trt_expr]] <- factor(as.character(object[[trt_expr]]), levels = factor_levels)
+        ntrt <- length(treatments_sorted)  # Number of actual treatments (excluding buffer)
+    } else {
+        # Original logic for designs without buffers
+        object[[trt_expr]] <- factor(as.character(object[[trt_expr]]),
+                                     levels = unique(stringi::stri_sort(as.character(object[[trt_expr]]), numeric = TRUE)))
+        ntrt <- nlevels(object[[trt_expr]])
+    }
+
+    # Colour palette setup
     colour_palette <- setup_colour_palette(palette, ntrt)
+
+    # Check if buffers exist and adjust palette
+    if("buffer" %in% levels(object[[trt_expr]])) {
+        colour_palette <- c(colour_palette, "white")
+    }
 
     # Text color setup (existing code)
     hcl <- farver::decode_colour(colour_palette, "rgb", "hcl")
@@ -166,10 +186,6 @@ autoplot.design <- function(object, rotation = 0, size = 4,
     colnames(colours)[1] <- trt_expr
     object <- merge(object, colours)
 
-    # Check if buffers exist and adjust palette
-    if("buffer" %in% levels(object[[trt_expr]])) {
-        colour_palette <- c(colour_palette, "white")
-    }
 
     # Create plot based on whether blocks exist
     if(!any(grepl("block", tolower(names(object))))) {
@@ -248,23 +264,32 @@ setup_colour_palette <- function(palette, ntrt) {
 
 
 create_basic_plot <- function(object, row_expr, column_expr, trt_expr, rotation, size, ...) {
+    # Separate buffer plots from treatment plots
+    buffer_plots <- object[object[[trt_expr]] == "buffer", ]
+    treatment_plots <- object[object[[trt_expr]] != "buffer", ]
+
     ggplot2::ggplot() +
         ggplot2::geom_tile(data = object,
                            mapping = ggplot2::aes(x = .data[[column_expr]],
                                                   y = .data[[row_expr]],
                                                   fill = .data[[trt_expr]]),
                            colour = "black") +
-        ggplot2::geom_text(data = object,
+        # Only add text to non-buffer plots
+        ggplot2::geom_text(data = treatment_plots,
                            mapping = ggplot2::aes(x = .data[[column_expr]],
                                                   y = .data[[row_expr]],
                                                   label = .data[[trt_expr]]),
-                           colour = object$text_col, angle = rotation, size = size, ...) +
+                           colour = treatment_plots$text_col, angle = rotation, size = size, ...) +
         ggplot2::theme_bw()
 }
 
 create_blocked_plot <- function(object, row_expr, column_expr, block_expr, trt_expr, rotation, size, ...) {
-    # Block boundary calculation (existing logic)
+    # Block boundary calculation
     blkdf <- calculate_block_boundaries(object, block_expr)
+
+    # Separate buffer plots from treatment plots
+    buffer_plots <- object[object[[trt_expr]] == "buffer", ]
+    treatment_plots <- object[object[[trt_expr]] != "buffer", ]
 
     ggplot2::ggplot() +
         ggplot2::geom_tile(data = object,
@@ -272,11 +297,12 @@ create_blocked_plot <- function(object, row_expr, column_expr, block_expr, trt_e
                                                   y = .data[[row_expr]],
                                                   fill = .data[[trt_expr]]),
                            colour = "black") +
-        ggplot2::geom_text(data = object,
+        # Only add text to non-buffer plots
+        ggplot2::geom_text(data = treatment_plots,
                            mapping = ggplot2::aes(x = .data[[column_expr]],
                                                   y = .data[[row_expr]],
                                                   label = .data[[trt_expr]]),
-                           colour = object$text_col, angle = rotation, size = size, ...) +
+                           colour = treatment_plots$text_col, angle = rotation, size = size, ...) +
         ggplot2::geom_rect(data = blkdf,
                            mapping = ggplot2::aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
                            linewidth = 1.8, colour = "black", fill = NA) +
