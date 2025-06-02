@@ -67,10 +67,10 @@
 <rect x='484.70' y='231.72' width='152.27' height='104.47' style='stroke-width: 0.21; stroke-linecap: butt; stroke-linejoin: miter; fill: #A020F0;' />
 <rect x='332.43' y='440.65' width='152.27' height='104.47' style='stroke-width: 0.21; stroke-linecap: butt; stroke-linejoin: miter; fill: #A020F0;' />
 <rect x='484.70' y='440.65' width='152.27' height='104.47' style='stroke-width: 0.21; stroke-linecap: butt; stroke-linejoin: miter; fill: #A020F0;' />
-<text x='256.30' y='183.40' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='7.59px' lengthAdjust='spacingAndGlyphs'>A</text>
-<text x='408.57' y='392.33' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='7.59px' lengthAdjust='spacingAndGlyphs'>A</text>
-<text x='408.57' y='78.93' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='7.59px' lengthAdjust='spacingAndGlyphs'>A</text>
-<text x='104.03' y='392.33' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='7.59px' lengthAdjust='spacingAndGlyphs'>A</text>
+<text x='256.30' y='183.40' text-anchor='middle' style='font-size: 11.38px; fill: #FFFFFF; font-family: sans;' textLength='7.59px' lengthAdjust='spacingAndGlyphs'>A</text>
+<text x='408.57' y='392.33' text-anchor='middle' style='font-size: 11.38px; fill: #FFFFFF; font-family: sans;' textLength='7.59px' lengthAdjust='spacingAndGlyphs'>A</text>
+<text x='408.57' y='78.93' text-anchor='middle' style='font-size: 11.38px; fill: #FFFFFF; font-family: sans;' textLength='7.59px' lengthAdjust='spacingAndGlyphs'>A</text>
+<text x='104.03' y='392.33' text-anchor='middle' style='font-size: 11.38px; fill: #FFFFFF; font-family: sans;' textLength='7.59px' lengthAdjust='spacingAndGlyphs'>A</text>
 <text x='104.03' y='78.93' text-anchor='middle' style='font-size: 11.38px; fill: #FFFFFF; font-family: sans;' textLength='7.59px' lengthAdjust='spacingAndGlyphs'>B</text>
 <text x='256.30' y='496.80' text-anchor='middle' style='font-size: 11.38px; fill: #FFFFFF; font-family: sans;' textLength='7.59px' lengthAdjust='spacingAndGlyphs'>B</text>
 <text x='560.83' y='392.33' text-anchor='middle' style='font-size: 11.38px; fill: #FFFFFF; font-family: sans;' textLength='7.59px' lengthAdjust='spacingAndGlyphs'>B</text>

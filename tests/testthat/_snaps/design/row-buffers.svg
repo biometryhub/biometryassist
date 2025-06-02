@@ -211,10 +211,10 @@
 <text x='561.44' y='60.76' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='3.16px' lengthAdjust='spacingAndGlyphs'>I</text>
 <text x='561.44' y='378.70' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='3.16px' lengthAdjust='spacingAndGlyphs'>I</text>
 <text x='561.44' y='242.44' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='3.16px' lengthAdjust='spacingAndGlyphs'>I</text>
-<text x='108.31' y='106.18' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='5.70px' lengthAdjust='spacingAndGlyphs'>J</text>
-<text x='108.31' y='287.86' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='5.70px' lengthAdjust='spacingAndGlyphs'>J</text>
-<text x='259.36' y='424.12' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='5.70px' lengthAdjust='spacingAndGlyphs'>J</text>
-<text x='410.40' y='287.86' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='5.70px' lengthAdjust='spacingAndGlyphs'>J</text>
+<text x='108.31' y='106.18' text-anchor='middle' style='font-size: 11.38px; fill: #FFFFFF; font-family: sans;' textLength='5.70px' lengthAdjust='spacingAndGlyphs'>J</text>
+<text x='108.31' y='287.86' text-anchor='middle' style='font-size: 11.38px; fill: #FFFFFF; font-family: sans;' textLength='5.70px' lengthAdjust='spacingAndGlyphs'>J</text>
+<text x='259.36' y='424.12' text-anchor='middle' style='font-size: 11.38px; fill: #FFFFFF; font-family: sans;' textLength='5.70px' lengthAdjust='spacingAndGlyphs'>J</text>
+<text x='410.40' y='287.86' text-anchor='middle' style='font-size: 11.38px; fill: #FFFFFF; font-family: sans;' textLength='5.70px' lengthAdjust='spacingAndGlyphs'>J</text>
 <text x='259.36' y='60.76' text-anchor='middle' style='font-size: 11.38px; fill: #FFFFFF; font-family: sans;' textLength='7.59px' lengthAdjust='spacingAndGlyphs'>K</text>
 <text x='108.31' y='197.02' text-anchor='middle' style='font-size: 11.38px; fill: #FFFFFF; font-family: sans;' textLength='7.59px' lengthAdjust='spacingAndGlyphs'>K</text>
 <text x='259.36' y='242.44' text-anchor='middle' style='font-size: 11.38px; fill: #FFFFFF; font-family: sans;' textLength='7.59px' lengthAdjust='spacingAndGlyphs'>K</text>
