@@ -45,6 +45,11 @@ design_to_excel_layout <- function(design_df, value_column = "treatments",
                                    filename = NULL, export_excel = FALSE,
                                    palette = "default") {
 
+
+    if(inherits(design_df, "list")) {
+        design_df <- design_df$design
+    }
+
     # Check required columns
     required_cols <- c("row", "col", value_column)
     missing_cols <- setdiff(required_cols, names(design_df))
@@ -101,7 +106,7 @@ design_to_excel_layout <- function(design_df, value_column = "treatments",
     # Get unique treatments and setup colors
     unique_treatments <- sort(unique(design_df[[value_column]]))
     ntrt <- length(unique_treatments)
-    colors <- .setup_colour_palette(palette, ntrt)
+    colors <- setup_colour_palette(palette, ntrt)
 
     # Create color mapping
     color_map <- setNames(colors, unique_treatments)
