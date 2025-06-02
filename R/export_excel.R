@@ -152,7 +152,7 @@ design_to_excel_layout <- function(design_df, value_column = "treatments",
             border = "TopBottomLeftRight",
             borderColour = "black",
             fgFill = colour,
-            fontColour = ifelse(.is_light_colour(colour), "black", "white")
+            fontColour = ifelse(is_light_colour(colour), "black", "white")
         )
 
         # Find cells with this treatment value
