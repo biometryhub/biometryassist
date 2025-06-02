@@ -16,6 +16,7 @@ design(
   sub_treatments = NULL,
   fac.names = NULL,
   fac.sep = c("", " "),
+  buffer = NULL,
   plot = TRUE,
   rotation = 0,
   size = 4,
@@ -50,6 +51,8 @@ design(
 \item{fac.names}{Allows renaming of the \code{A} level of factorial designs (i.e. those using \code{\link[agricolae:design.ab]{agricolae::design.ab()}}) by passing (optionally named) vectors of new labels to be applied to the factors within a list. See examples and details for more information.}
 
 \item{fac.sep}{The separator used by \code{fac.names}. Used to combine factorial design levels. If a vector of 2 levels is supplied, the first separates factor levels and label, and the second separates the different factors.}
+
+\item{buffer}{A string specifying the buffer plots to include for plotting. Default is \code{NULL} (no buffers plotted). Other options are "edge" (outer edge of trial area), "rows" (between rows), "columns" (between columns), "double row" (a buffer row each side of a treatment row) or "double column" (a buffer row each side of a treatment column). "blocks" (a buffer around each treatment block) will be implemented in a future release.}
 
 \item{plot}{Logical (default \code{TRUE}). If \code{TRUE}, display a plot of the generated design. A plot can always be produced later using \code{\link[=autoplot]{autoplot()}}.}
 
