@@ -6,6 +6,7 @@ extract_model_info <- function(model.obj, call = FALSE) {
     UseMethod("extract_model_info")
 }
 
+#' @keywords internal
 extract_model_info.default <- function(model.obj, call = FALSE) {
     supported_types <- c("aov", "lm", "lme", "lmerMod", "lmerModLmerTest",
                          "asreml", "mmer", "mmes", "art")
@@ -13,6 +14,7 @@ extract_model_info.default <- function(model.obj, call = FALSE) {
          paste(supported_types, collapse = ", "), call. = FALSE)
 }
 
+#' @keywords internal
 extract_model_info.aov <- function(model.obj, call = FALSE) {
     resids <- residuals(model.obj)
     fits <- fitted(model.obj)
@@ -34,9 +36,13 @@ extract_model_info.aov <- function(model.obj, call = FALSE) {
     return(output)
 }
 
+#' @keywords internal
 extract_model_info.lm <- extract_model_info.aov
+
+#' @keywords internal
 extract_model_info.lme <- extract_model_info.aov
 
+#' @keywords internal
 extract_model_info.lmerMod <- function(model.obj, call = FALSE) {
     resids <- residuals(model.obj)
     fits <- fitted(model.obj)
@@ -58,8 +64,10 @@ extract_model_info.lmerMod <- function(model.obj, call = FALSE) {
     return(output)
 }
 
+#' @keywords internal
 extract_model_info.lmerModLmerTest <- extract_model_info.lmerMod
 
+#' @keywords internal
 extract_model_info.asreml <- function(model.obj, call = FALSE) {
     facet <- length(names(model.obj$R.param))
 
@@ -92,6 +100,7 @@ extract_model_info.asreml <- function(model.obj, call = FALSE) {
     return(output)
 }
 
+#' @keywords internal
 extract_model_info.mmer <- function(model.obj, call = FALSE) {
     facet <- model.obj$termsN$rcov
     k <- length(model.obj$residual)
@@ -116,6 +125,7 @@ extract_model_info.mmer <- function(model.obj, call = FALSE) {
     return(output)
 }
 
+#' @keywords internal
 extract_model_info.mmes <- function(model.obj, call = FALSE) {
     k <- length(model.obj$residual)
 
@@ -137,6 +147,7 @@ extract_model_info.mmes <- function(model.obj, call = FALSE) {
     )
 }
 
+#' @keywords internal
 extract_model_info.art <- function(model.obj, call = FALSE) {
     resids <- residuals(model.obj)
     k <- length(resids)

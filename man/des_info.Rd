@@ -13,6 +13,7 @@ des_info(
   byrow = TRUE,
   fac.names = NULL,
   fac.sep = c("", " "),
+  buffer = NULL,
   plot = TRUE,
   rotation = 0,
   size = 4,
@@ -41,6 +42,8 @@ des_info(
 \item{fac.names}{Allows renaming of the \code{A} level of factorial designs (i.e. those using \code{\link[agricolae:design.ab]{agricolae::design.ab()}}) by passing (optionally named) vectors of new labels to be applied to the factors within a list. See examples and details for more information.}
 
 \item{fac.sep}{The separator used by \code{fac.names}. Used to combine factorial design levels. If a vector of 2 levels is supplied, the first separates factor levels and label, and the second separates the different factors.}
+
+\item{buffer}{The type of buffer. One of edge, row, column, double row, double column, or block (coming soon).}
 
 \item{plot}{Logical (default \code{TRUE}). If \code{TRUE}, display a plot of the generated design. A plot can always be produced later using \code{\link[=autoplot]{autoplot()}}.}
 
