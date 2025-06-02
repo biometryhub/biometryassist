@@ -85,10 +85,10 @@
 <rect x='27.90' y='88.07' width='147.28' height='65.29' style='stroke-width: 0.21; stroke-linecap: butt; stroke-linejoin: miter; fill: #EDF7A3;' />
 <rect x='469.73' y='479.82' width='147.28' height='65.29' style='stroke-width: 0.21; stroke-linecap: butt; stroke-linejoin: miter; fill: #EDF7A3;' />
 <rect x='27.90' y='479.82' width='147.28' height='65.29' style='stroke-width: 0.21; stroke-linecap: butt; stroke-linejoin: miter; fill: #EDF7A3;' />
-<text x='248.81' y='189.93' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='67.07px' lengthAdjust='spacingAndGlyphs'>Irrigated_100</text>
-<text x='543.36' y='385.80' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='67.07px' lengthAdjust='spacingAndGlyphs'>Irrigated_100</text>
-<text x='543.36' y='59.35' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='67.07px' lengthAdjust='spacingAndGlyphs'>Irrigated_100</text>
-<text x='101.54' y='385.80' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='67.07px' lengthAdjust='spacingAndGlyphs'>Irrigated_100</text>
+<text x='248.81' y='189.93' text-anchor='middle' style='font-size: 11.38px; fill: #FFFFFF; font-family: sans;' textLength='67.07px' lengthAdjust='spacingAndGlyphs'>Irrigated_100</text>
+<text x='543.36' y='385.80' text-anchor='middle' style='font-size: 11.38px; fill: #FFFFFF; font-family: sans;' textLength='67.07px' lengthAdjust='spacingAndGlyphs'>Irrigated_100</text>
+<text x='543.36' y='59.35' text-anchor='middle' style='font-size: 11.38px; fill: #FFFFFF; font-family: sans;' textLength='67.07px' lengthAdjust='spacingAndGlyphs'>Irrigated_100</text>
+<text x='101.54' y='385.80' text-anchor='middle' style='font-size: 11.38px; fill: #FFFFFF; font-family: sans;' textLength='67.07px' lengthAdjust='spacingAndGlyphs'>Irrigated_100</text>
 <text x='248.81' y='320.51' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='67.07px' lengthAdjust='spacingAndGlyphs'>Irrigated_150</text>
 <text x='101.54' y='255.22' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='67.07px' lengthAdjust='spacingAndGlyphs'>Irrigated_150</text>
 <text x='396.09' y='320.51' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='67.07px' lengthAdjust='spacingAndGlyphs'>Irrigated_150</text>

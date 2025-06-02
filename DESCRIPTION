@@ -42,7 +42,6 @@ Imports:
     cowplot,
     curl,
     emmeans,
-    farver,
     ggplot2,
     lattice,
     multcompView,

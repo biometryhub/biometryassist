@@ -105,5 +105,25 @@ handle_deprecated_param <- function(old_param, new_param = NULL, custom_msg = NU
 }
 
 
-
+#' Determine if a Colour is Light
+#'
+#' Internal helper function to determine whether a colour is light or dark
+#' for appropriate font colour selection (black text on light backgrounds,
+#' white text on dark backgrounds).
+#'
+#' @param colour A colour specification (hex code, named colour, etc.)
+#' @return Logical. TRUE if the colour is light (luminance > 0.5), FALSE if dark.
+#'
+#' @details Uses standard luminance calculation: 0.299*R + 0.587*G + 0.114*B,
+#'   normalized to 0-1 scale. Coefficients reflect human eye sensitivity to
+#'   different colours (green > red > blue).
+#'
+#' @keywords internal
+is_light_colour <- function(colour) {
+    # Convert vector of colours to RGB matrix (columns = colours)
+    rgb_vals <- grDevices::col2rgb(colour)
+    # Calculate luminance for each colour
+    luminance <- (0.299 * rgb_vals[1, ] + 0.587 * rgb_vals[2, ] + 0.114 * rgb_vals[3, ]) / 255
+    return(luminance > 0.5)
+}
 

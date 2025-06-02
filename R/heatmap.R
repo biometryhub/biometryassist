@@ -68,7 +68,7 @@ heat_map <- function(data, value, x_axis, y_axis, grouping = NULL, raster = TRUE
         plt <- plt + ggplot2::geom_tile()
     }
 
-    plt <- plt + ggplot2::scale_fill_gradientn(colors = grDevices::hcl.colors(10, palette = palette))
+    plt <- plt + ggplot2::scale_fill_gradientn(colours = grDevices::hcl.colors(10, palette = palette))
 
     # Expand the axes appropriately for the data type
     if(is.numeric(data[[x_axis]])) {

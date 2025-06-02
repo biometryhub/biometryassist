@@ -115,10 +115,10 @@
 <text x='410.40' y='287.86' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='8.22px' lengthAdjust='spacingAndGlyphs'>C</text>
 <text x='108.31' y='240.38' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='8.22px' lengthAdjust='spacingAndGlyphs'>C</text>
 <text x='259.36' y='287.86' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='8.22px' lengthAdjust='spacingAndGlyphs'>C</text>
-<text x='561.44' y='430.32' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='8.22px' lengthAdjust='spacingAndGlyphs'>D</text>
-<text x='108.31' y='335.35' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='8.22px' lengthAdjust='spacingAndGlyphs'>D</text>
-<text x='259.36' y='382.83' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='8.22px' lengthAdjust='spacingAndGlyphs'>D</text>
-<text x='410.40' y='477.80' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='8.22px' lengthAdjust='spacingAndGlyphs'>D</text>
+<text x='561.44' y='430.32' text-anchor='middle' style='font-size: 11.38px; fill: #FFFFFF; font-family: sans;' textLength='8.22px' lengthAdjust='spacingAndGlyphs'>D</text>
+<text x='108.31' y='335.35' text-anchor='middle' style='font-size: 11.38px; fill: #FFFFFF; font-family: sans;' textLength='8.22px' lengthAdjust='spacingAndGlyphs'>D</text>
+<text x='259.36' y='382.83' text-anchor='middle' style='font-size: 11.38px; fill: #FFFFFF; font-family: sans;' textLength='8.22px' lengthAdjust='spacingAndGlyphs'>D</text>
+<text x='410.40' y='477.80' text-anchor='middle' style='font-size: 11.38px; fill: #FFFFFF; font-family: sans;' textLength='8.22px' lengthAdjust='spacingAndGlyphs'>D</text>
 <text x='108.31' y='50.44' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='7.59px' lengthAdjust='spacingAndGlyphs'>E</text>
 <text x='259.36' y='430.32' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='7.59px' lengthAdjust='spacingAndGlyphs'>E</text>
 <text x='410.40' y='382.83' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='7.59px' lengthAdjust='spacingAndGlyphs'>E</text>
