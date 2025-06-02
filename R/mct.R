@@ -278,6 +278,8 @@ print.mct <- function(x, ...) {
     invisible(x)
 }
 
+#' @importFrom stats formula
+#' @keywords internal
 validate_inputs <- function(sig, classify, model.obj, trans) {
     # Check significance level
     if (sig > 0.5) {
@@ -300,7 +302,7 @@ validate_inputs <- function(sig, classify, model.obj, trans) {
     }
 
     # Check if the response variable is transformed in the model formula
-    model_formula <- formula(model.obj)
+    model_formula <- stats::formula(model.obj)
     if(inherits(model.obj, "asreml")) {
         response_part <- model_formula[[1]][[2]]
     }

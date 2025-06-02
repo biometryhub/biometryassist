@@ -39,7 +39,7 @@ quiet <- function(x) {
                         "    |  Type 'citation('biometryassist')' for the citation details.      |",
                         paste0("    ", paste0(rep("~", times = 69), collapse = ""), "\n"), sep = "\n")
 
-        if(is_installed("crayon")) {
+        if(rlang::is_installed("crayon")) {
             packageStartupMessage(crayon::green(output), appendLF=TRUE)
         }
         else {

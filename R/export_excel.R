@@ -100,9 +100,28 @@ design_to_excel_layout <- function(design_df, value_column = "treatments",
     return(layout_df)
 }
 
-# Internal function for Excel export with colours (not exported)
+
+#' Export design and layout data to a colour-formatted Excel file
+#'
+#' Internal function to export experimental layout and raw data to an Excel file
+#' with treatment-based colour formatting.
+#'
+#' @param design_df A data frame containing the experimental design (raw data).
+#' @param layout_df A data frame representing the layout matrix of treatments.
+#' @param filename The name of the Excel file to be created.
+#' @param value_column The name of the column in `design_df` indicating treatment.
+#' @param palette A palette name or vector of colours used for treatments.
+#'
+#' @importFrom openxlsx createWorkbook addWorksheet writeData createStyle
+#' @importFrom openxlsx addStyle setColWidths saveWorkbook
+#' @keywords internal
 .export_to_excel <- function(design_df, layout_df, filename, value_column, palette) {
 
+    # Check if openxlsx is available
+    if (!requireNamespace("openxlsx", quietly = TRUE)) {
+        stop("Package 'openxlsx' is required for Excel export but is not installed.\n",
+             "Install it with: install.packages('openxlsx')")
+    }
     # Get unique treatments and setup colours
     unique_treatments <- sort(unique(design_df[[value_column]]))
     ntrt <- length(unique_treatments)
