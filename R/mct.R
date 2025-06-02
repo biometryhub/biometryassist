@@ -178,7 +178,7 @@ multiple_comparisons <- function(model.obj,
     handle_deprecated_param("pred", "classify", classify)
     handle_deprecated_param("order", "descending", descending)
 
-    vars <- validate_inputs(sig, classify, model.obj)
+    vars <- validate_inputs(sig, classify, model.obj, trans)
 
     # Handle deprecated parameter that's being removed
     handle_deprecated_param("pred.obj", NULL, "Predictions are now performed internally in the function.")
@@ -278,7 +278,7 @@ print.mct <- function(x, ...) {
     invisible(x)
 }
 
-validate_inputs <- function(sig, classify, model.obj) {
+validate_inputs <- function(sig, classify, model.obj, trans) {
     # Check significance level
     if (sig > 0.5) {
         warning("Significance level given by `sig` is high. Perhaps you meant ", 1-sig, "?", call. = FALSE)
@@ -297,6 +297,19 @@ validate_inputs <- function(sig, classify, model.obj) {
     if (any(vars %in% reserved_col_names)) {
         stop("Invalid column name. Please change the name of column(s): ",
              vars[vars %in% reserved_col_names], call. = FALSE)
+    }
+
+    # Check if the response variable is transformed in the model formula
+    model_formula <- formula(model.obj)
+    response_part <- model_formula[[2]]
+    if (is.call(response_part) & is.null(trans)) {
+        warning(call. = FALSE,
+            sprintf(
+                "The response variable appears to be transformed in the model formula: %s.",
+                deparse(response_part)
+            ), 
+            "\nPlease specify the 'trans' argument if you want back-transformed predictions."
+        )
     }
 
     return(vars)
