@@ -8,7 +8,7 @@
 #' @param label_rotation Enables rotation of the treatment group labels independently of the x axis labels within the plot.
 #' @param type A string specifying the type of plot to display. The default of 'point' will display a point estimate with error bars. The alternative, 'column' (or 'col'), will display a column graph with error bars.
 #' @param margin Logical (default `FALSE`). A value of `FALSE` will expand the plot to the edges of the plotting area i.e. remove white space between plot and axes.
-#' @param palette A string specifying the colour scheme to use for plotting or a vector of custom colours to use as the palette. Default is equivalent to "Spectral". Colour blind friendly palettes can also be provided via options `"colour blind"` (or `"color blind"`, both equivalent to `"viridis"`), `"magma"`, `"inferno"`, `"plasma"`, `"cividis"`, `"rocket"`, `"mako"` or `"turbo"`. Other palettes from [scales::brewer_pal()] are also possible.
+#' @param palette A string specifying the colour scheme to use for plotting or a vector of custom colours to use as the palette. Default is equivalent to "Spectral". Colour blind friendly palettes can also be provided via options `"colour blind"` (or `"colour blind"`, both equivalent to `"viridis"`), `"magma"`, `"inferno"`, `"plasma"`, `"cividis"`, `"rocket"`, `"mako"` or `"turbo"`. Other palettes from [scales::brewer_pal()] are also possible.
 #' @param row A variable to plot a column from `object` as rows.
 #' @param column A variable to plot a column from `object` as columns.
 #' @param block A variable to plot a column from `object` as blocks.
@@ -64,11 +64,11 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1,
         ggplot2::labs(x = "", y = paste0("Predicted ", ylab))
 
     if(type == "point") {
-        plot <- plot + ggplot2::geom_point(ggplot2::aes(y = {{ yval }}), color = "black", shape = 16, size = 2) +
+        plot <- plot + ggplot2::geom_point(ggplot2::aes(y = {{ yval }}), colour = "black", shape = 16, size = 2) +
             ggplot2::geom_errorbar(aes(ymin = low, ymax = up), width = 0.2)
     }
     else if(type %in% c("col", "column")) {
-        plot <- plot + ggplot2::geom_col(ggplot2::aes(y = {{ yval }}), color = "black", fill = "cornflowerblue", alpha = 0.75) +
+        plot <- plot + ggplot2::geom_col(ggplot2::aes(y = {{ yval }}), colour = "black", fill = "cornflowerblue", alpha = 0.75) +
             ggplot2::geom_errorbar(aes(ymin = low, ymax = up), width = 0.2)
     }
 
@@ -95,7 +95,7 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1,
 #' @rdname autoplot
 #'
 #' @importFrom farver decode_colour
-#' @importFrom grDevices colorRampPalette
+#' @importFrom grDevices colourRampPalette
 #' @importFrom ggplot2 ggplot geom_tile aes geom_text theme_bw scale_fill_manual scale_x_continuous scale_y_continuous scale_y_reverse
 #' @importFrom scales brewer_pal reverse_trans viridis_pal
 #' @importFrom stringi stri_sort
@@ -179,10 +179,9 @@ autoplot.design <- function(object, rotation = 0, size = 4,
         colour_palette <- c(colour_palette, "white")
     }
 
-    # Text color setup (existing code)
-    hcl <- farver::decode_colour(colour_palette, "rgb", "hcl")
+    # Text colour setup
     colours <- data.frame(treatments = levels(object[[trt_expr]]),
-                          text_col = ifelse(hcl[, "l"] > 50, "black", "white"))
+                          text_col = ifelse(is_light_colour(colour_palette), "black", "white"))
     colnames(colours)[1] <- trt_expr
     object <- merge(object, colours)
 
@@ -202,9 +201,9 @@ autoplot.design <- function(object, rotation = 0, size = 4,
     return(plt)
 }
 
-
+#' @keywords internal
 setup_colour_palette <- function(palette, ntrt) {
-    # Handle custom color palettes (vector of colors)
+    # Handle custom colour palettes (vector of colours)
     if(length(palette) > 1) {
         if(length(palette) != ntrt) {
             stop("palette needs to be a single string to choose a predefined palette, or ",
@@ -221,7 +220,7 @@ setup_colour_palette <- function(palette, ntrt) {
         return(grDevices::colorRampPalette(scales::brewer_pal(palette = "Spectral")(11))(ntrt))
     }
 
-    # ColorBrewer palettes
+    # colourBrewer palettes
     brewer_palettes <- c("brbg", "piyg", "prgn", "puor", "rdbu", "rdgy",
                          "rdylbu", "rdylgn", "spectral", "set3", "paired")
     if(palette %in% brewer_palettes) {
@@ -239,10 +238,10 @@ setup_colour_palette <- function(palette, ntrt) {
                                  "set3" = "Set3",
                                  "paired" = "Paired"
         )
-        return(grDevices::colorRampPalette(scales::brewer_pal(palette = palette_proper)(11))(ntrt))
+        return(grDevices::colourRampPalette(scales::brewer_pal(palette = palette_proper)(11))(ntrt))
     }
 
-    # Color blind friendly palettes (viridis family)
+    # colour blind friendly palettes (viridis family)
     viridis_patterns <- c("colou?r([[:punct:]]|[[:space:]]?)blind", "cb", "viridis")
     if(any(sapply(viridis_patterns, function(pattern) grepl(pattern, palette, ignore.case = TRUE)))) {
         return(scales::viridis_pal(option = "viridis")(ntrt))
@@ -255,11 +254,11 @@ setup_colour_palette <- function(palette, ntrt) {
     }
 
     # If we get here, the palette name is invalid
-    valid_options <- c("default", brewer_palettes, "colour blind", "color blind",
+    valid_options <- c("default", brewer_palettes, "colour blind", "colour blind",
                        "cb", viridis_options)
     stop("Invalid value for palette. Valid options are: ",
          paste(valid_options, collapse = ", "),
-         ", or a vector of ", ntrt, " custom colors.", call. = FALSE)
+         ", or a vector of ", ntrt, " custom colours.", call. = FALSE)
 }
 
 
