@@ -34,7 +34,7 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
         new_version <- newer_version()
     }
 
-    if(rlang::is_installed("asreml") && isFALSE(new_version) && isFALSE(force)) {
+    if(.check_package_available("asreml") && isFALSE(new_version) && isFALSE(force)) {
         if(!quiet) message("The latest version of ASReml-R available for your sysetm is already installed. To install anyway, set `force = TRUE`.")
         return(invisible(TRUE))
     }
@@ -72,7 +72,7 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
     }
 
     # If forcing installation, remove existing version to avoid errors on installation
-    if(force && rlang::is_installed("asreml") && os_ver$os != "linux") {
+    if(force && .check_package_available("asreml") && os_ver$os != "linux") {
         unloadNamespace("asreml")
         if("asreml" %in% .packages()) {
             detach("package:asreml", unload = TRUE, force = TRUE)
@@ -84,7 +84,7 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
     pkgs <- rownames(installed.packages(lib.loc = library))
     deps <- setdiff(c("data.table", "ggplot2", "jsonlite"), pkgs)
 
-    if(!rlang::is_installed("data.table", version = "1.14")) {
+    if(!.check_package_available("data.table", version = "1.14")) {
         deps <- c(deps, "data.table")
     }
 
@@ -97,7 +97,7 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
 
     manage_file(save_file, keep_file, filename)
 
-    if(rlang::is_installed("asreml")) {
+    if(.check_package_available("asreml")) {
         if(!quiet) message("ASReml-R successfully installed!")
         invisible(TRUE)
     }
@@ -206,7 +206,7 @@ newer_version <- function() {
                          online_versions$r_ver==os_ver$ver &
                          numeric_version(as.character(online_versions$asr_ver))==max(numeric_version(as.character(online_versions$asr_ver))))
 
-    if(rlang::is_installed("asreml")) {
+    if(.check_package_available("asreml")) {
         asr_desc <- utils::packageDescription("asreml")
         asr_date <- as.Date(substr(asr_desc$Packaged, 1, 10))
         asr_ver <- asr_desc$Version

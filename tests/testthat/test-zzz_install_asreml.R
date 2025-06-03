@@ -48,7 +48,7 @@ test_that("Force argument makes package install", {
     skip_on_cran()
     skip_on_ci()
     install_asreml(force = TRUE)
-    expect_equal(requireNamespace("asreml"), TRUE)
+    expect_equal(.check_package_available("asreml"), TRUE)
     expect_message(install_asreml(force = TRUE), NULL)
 })
 

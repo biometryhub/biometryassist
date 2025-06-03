@@ -119,7 +119,7 @@ test_that("save produces output", {
 
 test_that("Interaction terms work", {
     load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
-    skip_if_not(requireNamespace("asreml", quietly = TRUE))
+    skip_if_not(.check_package_available("asreml")
     quiet(library(asreml))
     output <- multiple_comparisons(model.asr, classify = "Nitrogen:Variety", pvals = T)
     expect_equal(output$predicted.value,
@@ -170,7 +170,7 @@ test_that("mct removes aliased treatments in aov", {
 
 
 test_that("mct handles aliased results in asreml with a warning", {
-    skip_if_not(requireNamespace("asreml", quietly = TRUE))
+    skip_if_not(.check_package_available("asreml")
     quiet(library(asreml))
     load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
     load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
@@ -221,7 +221,7 @@ test_that("Invalid column name causes an error", {
 })
 
 test_that("Including pred.obj object causes warning", {
-    skip_if_not(requireNamespace("asreml", quietly = TRUE))
+    skip_if_not(.check_package_available("asreml")
     quiet(library(asreml))
     load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
     expect_warning(multiple_comparisons(model.asr, pred.obj = pred.asr, classify = "Nitrogen"),
@@ -229,7 +229,7 @@ test_that("Including pred.obj object causes warning", {
 })
 
 test_that("Providing a random term in classify produces an error.", {
-    skip_if_not(requireNamespace("asreml", quietly = TRUE))
+    skip_if_not(.check_package_available("asreml")
     load(test_path("data", "oats_data2.Rdata"), envir = .GlobalEnv)
     expect_error(multiple_comparisons(model2.asr, classify = "Blocks"),
                  "All predicted values are aliased\\. Perhaps you need the `present` argument\\?")

@@ -45,7 +45,7 @@ export_design_to_excel <- function(design_df, value_column = "treatments",
                                    palette = "default") {
 
     # Check if openxlsx is available
-    if (!requireNamespace("openxlsx", quietly = TRUE)) {
+    if (!.check_package_available("openxlsx")) {
         stop("Package 'openxlsx' is required for Excel export but is not installed.\n",
              "Install it with: install.packages('openxlsx')")
     }
@@ -142,7 +142,7 @@ export_design_to_excel <- function(design_df, value_column = "treatments",
                         border = "TopBottomLeftRight",
                         borderColour = "black",
                         fgFill = colour,
-                        fontColour = ifelse(is_light_colour(colour), "black", "white")
+                        fontColour = ifelse(.is_light_colour(colour), "black", "white")
                     )
                     openxlsx::addStyle(wb, "Layout", coloured_style, rows = i, cols = j)
                 }

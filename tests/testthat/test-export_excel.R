@@ -61,3 +61,16 @@ test_that("export_design_to_excel uses custom palette", {
   expect_true(file.exists(tmpfile))
   unlink(tmpfile)
 })
+
+test_that("function fails gracefully when openxlsx is not available", {
+    with_mocked_bindings(
+        .check_package_available = function(pkg) FALSE,
+        {
+            expect_error(
+                export_design_to_excel(test_data),
+                "Package 'openxlsx' is required.*not installed"
+            )
+        }
+    )
+})
+

@@ -180,7 +180,7 @@ autoplot.design <- function(object, rotation = 0, size = 4,
 
     # Text colour setup
     colours <- data.frame(treatments = levels(object[[trt_expr]]),
-                          text_col = ifelse(is_light_colour(colour_palette), "black", "white"))
+                          text_col = ifelse(.is_light_colour(colour_palette), "black", "white"))
     colnames(colours)[1] <- trt_expr
     object <- merge(object, colours)
 
