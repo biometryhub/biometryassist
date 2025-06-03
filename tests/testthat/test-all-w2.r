@@ -1,9 +1,3 @@
-# filenames <- list.files("../W2 Analysis/", "*.csv")
-# for (i in seq_along(filenames)) {
-#     assign(sub("\\.csv$", '', filenames[i]), read.csv(paste0("../W2 Analysis/", filenames[i]), stringsAsFactors = T))
-# }
-# filenames <- sub("\\.csv$", '', filenames)
-# save(list = filenames, file = "tests/testthat/data/w2_data.Rdata")
 load(test_path("data", "w2_data.Rdata"), envir = .GlobalEnv)
 
 test_that("example 1 works", {
