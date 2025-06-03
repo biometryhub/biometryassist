@@ -1,51 +1,56 @@
-#' Create Excel Layout from Experimental Design
+#' Export Experimental Design Layout to Excel
 #'
 #' Converts an experimental design dataframe into a spatial layout matrix
-#' and optionally exports to Excel format with colour coding.
+#' and exports to Excel with optional colour coding by treatment.
 #'
 #' @param design_df A dataframe containing experimental design with 'row' and 'col' columns
 #' @param value_column Character string specifying which column to use for layout values (default: "treatments")
-#' @param filename Character string for Excel filename (optional, if provided will export to Excel)
-#' @param export_excel Logical, whether to export to Excel (default: FALSE)
-#' @param palette colour palette for Excel export. Can be a palette name (e.g., "default", "spectral", "viridis")
-#'                or a vector of custom colours. Only used when exporting to Excel. (default: "default")
+#' @param filename Character string for Excel filename (default: "experimental_design.xlsx")
+#' @param palette colour palette for treatments. Can be a palette name (see details) or vector of colours.
+#'   Set to NULL to disable colouring (default: "default")
 #'
-#' @return A dataframe representing the spatial layout, or invisibly returns layout if exporting to Excel
+#' @return Invisibly returns the layout dataframe
 #'
 #' @details
 #' This function takes an experimental design in long format (with row/col coordinates)
-#' and converts it to a matrix layout that matches the spatial arrangement of the experiment.
+#' and converts it to a matrix layout that matches the spatial arrangement of the experiment,
+#' then exports to Excel with formatting and optional colour coding.
 #'
-#' If export_excel is TRUE or filename is provided, the function will attempt to export
-#' to Excel format with colour coding based on the specified palette. This requires the
-#' 'openxlsx' package to be installed.
+#' Valid palette options include:
+#' \itemize{
+#'   \item "default" - Spectral palette
+#'   \item ColorBrewer palettes: "brbg", "piyg", "prgn", "puor", "rdbu", "rdgy", "rdylbu", "rdylgn", "spectral", "set3", "paired"
+#'   \item Viridis palettes: "viridis", "magma", "inferno", "cividis", "plasma", "rocket", "mako", "turbo"
+#'   \item colour blind friendly: "colour blind", "color blind", "cb" (uses viridis)
+#'   \item Custom vector of colours (must match number of unique treatments)
+#' }
+#'
+#' Requires the 'openxlsx' package to be installed.
 #'
 #' @examples
 #' \dontrun{
-#' # Create layout matrix only
-#' layout <- design_to_excel_layout(my_design, "treatments")
+#' # Export with default colours
+#' export_design_to_excel(my_design, "treatments", "my_design.xlsx")
 #'
-#' # Export to Excel with default colours
-#' design_to_excel_layout(my_design, "treatments",
-#'                        filename = "my_design.xlsx", export_excel = TRUE)
+#' # Export without colours
+#' export_design_to_excel(my_design, "treatments", "my_design.xlsx", palette = NULL)
 #'
-#' # Export to Excel with viridis palette
-#' design_to_excel_layout(my_design, "treatments",
-#'                        filename = "my_design.xlsx", export_excel = TRUE,
-#'                        palette = "viridis")
-#'
-#' # Export with custom colours
-#' design_to_excel_layout(my_design, "treatments",
-#'                        filename = "my_design.xlsx", export_excel = TRUE,
-#'                        palette = c("#FF0000", "#00FF00", "#0000FF"))
+#' # Export with custom palette
+#' export_design_to_excel(my_design, "treatments", "my_design.xlsx", palette = "viridis")
 #' }
 #'
 #' @export
-design_to_excel_layout <- function(design_df, value_column = "treatments",
-                                   filename = NULL, export_excel = FALSE,
+export_design_to_excel <- function(design_df, value_column = "treatments",
+                                   filename = "experimental_design.xlsx",
                                    palette = "default") {
 
+    # Check if openxlsx is available
+    if (!requireNamespace("openxlsx", quietly = TRUE)) {
+        stop("Package 'openxlsx' is required for Excel export but is not installed.\n",
+             "Install it with: install.packages('openxlsx')")
+    }
 
+    # If design_df is a list (e.g., from a design generation function), extract the design dataframe
     if(inherits(design_df, "list")) {
         design_df <- design_df$design
     }
@@ -68,7 +73,7 @@ design_to_excel_layout <- function(design_df, value_column = "treatments",
     layout_matrix <- matrix(design_sorted[[value_column]],
                             nrow = max_row,
                             ncol = max_col,
-                            byrow = FALSE)
+                            byrow = TRUE)
 
     # Convert to data frame
     layout_df <- as.data.frame(layout_matrix)
@@ -76,59 +81,6 @@ design_to_excel_layout <- function(design_df, value_column = "treatments",
     # Add meaningful row and column names
     rownames(layout_df) <- paste("Row", 1:max_row)
     colnames(layout_df) <- paste("Col", 1:max_col)
-
-    # Check if Excel export is requested
-    if (export_excel || !is.null(filename)) {
-        # Check if openxlsx is available
-        if (!requireNamespace("openxlsx", quietly = TRUE)) {
-            stop("Package 'openxlsx' is required for Excel export but is not installed.\n",
-                 "Install it with: install.packages('openxlsx')")
-        }
-
-        # Set default filename if not provided
-        if (is.null(filename)) {
-            filename <- "experimental_design.xlsx"
-        }
-
-        # Export to Excel with colours
-        .export_to_excel(design_df, layout_df, filename, value_column, palette)
-
-        message("Excel file saved as: ", filename)
-        return(invisible(layout_df))
-    }
-
-    return(layout_df)
-}
-
-
-#' Export design and layout data to a colour-formatted Excel file
-#'
-#' Internal function to export experimental layout and raw data to an Excel file
-#' with treatment-based colour formatting.
-#'
-#' @param design_df A data frame containing the experimental design (raw data).
-#' @param layout_df A data frame representing the layout matrix of treatments.
-#' @param filename The name of the Excel file to be created.
-#' @param value_column The name of the column in `design_df` indicating treatment.
-#' @param palette A palette name or vector of colours used for treatments.
-#'
-#' @importFrom openxlsx createWorkbook addWorksheet writeData createStyle
-#' @importFrom openxlsx addStyle setColWidths saveWorkbook
-#' @keywords internal
-.export_to_excel <- function(design_df, layout_df, filename, value_column, palette) {
-
-    # Check if openxlsx is available
-    if (!requireNamespace("openxlsx", quietly = TRUE)) {
-        stop("Package 'openxlsx' is required for Excel export but is not installed.\n",
-             "Install it with: install.packages('openxlsx')")
-    }
-    # Get unique treatments and setup colours
-    unique_treatments <- sort(unique(design_df[[value_column]]))
-    ntrt <- length(unique_treatments)
-    colours <- setup_colour_palette(palette, ntrt)
-
-    # Create colour mapping
-    colour_map <- setNames(colours, unique_treatments)
 
     # Create workbook
     wb <- openxlsx::createWorkbook()
@@ -141,7 +93,7 @@ design_to_excel_layout <- function(design_df, value_column = "treatments",
     openxlsx::writeData(wb, "Layout", layout_df, rowNames = TRUE)
     openxlsx::writeData(wb, "Raw_Data", design_df)
 
-    # Create base styles
+    # Apply basic formatting
     header_style <- openxlsx::createStyle(
         fontSize = 12,
         fontColour = "white",
@@ -151,36 +103,48 @@ design_to_excel_layout <- function(design_df, value_column = "treatments",
         textDecoration = "bold"
     )
 
+    cell_style <- openxlsx::createStyle(
+        halign = "center",
+        valign = "center",
+        border = "TopBottomLeftRight",
+        borderColour = "black"
+    )
+
     # Get dimensions for formatting
     rows <- nrow(layout_df) + 1
     cols <- ncol(layout_df) + 1
 
-    # Apply header styles
+    # Apply basic styles
     openxlsx::addStyle(wb, "Layout", header_style, rows = 1, cols = 1:cols)
     openxlsx::addStyle(wb, "Layout", header_style, rows = 1:rows, cols = 1)
+    openxlsx::addStyle(wb, "Layout", cell_style, rows = 2:rows, cols = 2:cols, gridExpand = TRUE)
 
-    # Create and apply coloured styles for each treatment
-    for (i in 1:length(unique_treatments)) {
-        treatment <- unique_treatments[i]
-        colour <- colours[i]
+    # Apply colour coding if palette is specified
+    if (!is.null(palette)) {
+        # Get unique treatments and generate colours
+        unique_treatments <- sort(unique(design_df[[value_column]]))
+        ntrt <- length(unique_treatments)
 
-        # Create style for this treatment
-        treatment_style <- openxlsx::createStyle(
-            halign = "center",
-            valign = "center",
-            border = "TopBottomLeftRight",
-            borderColour = "black",
-            fgFill = colour,
-            fontColour = ifelse(is_light_colour(colour), "black", "white")
-        )
+        colours <- setup_colour_palette(palette, ntrt)
 
-        # Find cells with this treatment value
-        for (row in 1:nrow(layout_df)) {
-            for (col in 1:ncol(layout_df)) {
-                if (layout_df[row, col] == treatment) {
-                    # Add 1 to row and col to account for headers
-                    openxlsx::addStyle(wb, "Layout", treatment_style,
-                                       rows = row + 1, cols = col + 1)
+        # Create colour mapping
+        colour_map <- setNames(colours, unique_treatments)
+
+        # Apply colours to cells
+        for (i in 2:rows) {
+            for (j in 2:cols) {
+                cell_value <- layout_df[i-1, j-1]
+                if (!is.na(cell_value)) {
+                    colour <- colour_map[[as.character(cell_value)]]
+                    coloured_style <- openxlsx::createStyle(
+                        halign = "center",
+                        valign = "center",
+                        border = "TopBottomLeftRight",
+                        borderColour = "black",
+                        fgFill = colour,
+                        fontColour = ifelse(is_light_colour(colour), "black", "white")
+                    )
+                    openxlsx::addStyle(wb, "Layout", coloured_style, rows = i, cols = j)
                 }
             }
         }
@@ -191,4 +155,7 @@ design_to_excel_layout <- function(design_df, value_column = "treatments",
 
     # Save workbook
     openxlsx::saveWorkbook(wb, filename, overwrite = TRUE)
+
+    message("Excel file saved as: ", filename)
+    return(invisible(layout_df))
 }
