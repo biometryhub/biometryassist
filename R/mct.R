@@ -1,3 +1,4 @@
+
 #' Perform Multiple Comparison Tests on a statistical model
 #'
 #' A function for comparing and ranking predicted means with Tukey's Honest Significant Difference (HSD) Test.
@@ -5,7 +6,7 @@
 #' @param model.obj An ASReml-R or aov model object. Will likely also work with `lme` ([nlme::lme()]), `lmerMod` ([lme4::lmer()]) models as well.
 #' @param classify Name of predictor variable as string.
 #' @param sig The significance level, numeric between 0 and 1. Default is 0.05.
-#' @param int.type The type of confidence interval to calculate. One of `ci`, `1se` or `2se`. Default is `ci`.
+#' @param int.type The type of confidence interval to calculate. One of `tukey`, `ci`, `1se` or `2se`. Default is `tukey`.
 #' @param trans Transformation that was applied to the response variable. One of `log`, `sqrt`, `logit`, `power` or `inverse`. Default is `NULL`.
 #' @param offset Numeric offset applied to response variable prior to transformation. Default is `NULL`. Use 0 if no offset was applied to the transformed data. See Details for more information.
 #' @param power Numeric power applied to response variable with power transformation. Default is `NULL`. See Details for more information.
@@ -39,11 +40,21 @@
 #' the model, not the inverse. For example, if adding 0.1 to values for a log
 #' transformation, add 0.1 in the `offset` argument.
 #'
-#' @details
 #' ## Power
 #' The power argument allows the specification of arbitrary powers to be
 #' back transformed, if they have been used to attempt to improve normality of
 #' residuals.
+#'
+#' ## Confidence Intervals
+#' The function provides several options for confidence intervals via the `int.type` argument:
+#'
+#' - **`tukey` (default)**: Tukey comparison intervals that are consistent with the multiple comparison test. These intervals are wider than regular confidence intervals and are designed so that non-overlapping intervals correspond to statistically significant differences in the Tukey HSD test. This ensures visual consistency between the intervals and letter groupings.
+#'
+#' - **`ci`**: Traditional confidence intervals for individual means. These estimate the precision of each individual mean but may not align with the multiple comparison results. Non-overlapping traditional confidence intervals do not necessarily indicate significant differences in multiple comparison tests.
+#'
+#' - **`1se`** and **`2se`**: Intervals of ±1 or ±2 standard errors around each mean.
+#'
+#' For multiple comparison contexts, Tukey comparison intervals are recommended as they provide visual consistency with the statistical test being performed and avoid the common confusion where traditional confidence intervals don't overlap but groups share the same significance letter.
 #'
 #' @returns A list containing a data frame with predicted means, standard errors,
 #'  confidence interval upper and lower bounds, and significant group
@@ -62,7 +73,7 @@
 #' # Display the ANOVA table for the model
 #' anova(model)
 #'
-#' # Determine ranking and groups according to Tukey's Test
+#' # Determine ranking and groups according to Tukey's Test (with Tukey intervals)
 #' pred.out <- multiple_comparisons(model, classify = "Species")
 #'
 #' # Display the predicted values table
@@ -71,6 +82,9 @@
 #' # Show the predicted values plot
 #' autoplot(pred.out, label_height = 0.5)
 #'
+#' # Use traditional confidence intervals instead of Tukey comparison intervals
+#' pred.out.ci <- multiple_comparisons(model, classify = "Species", int.type = "ci")
+#' pred.out.ci
 #'
 #' # AOV model example with transformation
 #' my_iris <- iris
@@ -107,7 +121,7 @@
 #'                     residual = ~ units,
 #'                     data = asreml::oats)
 #'
-#' wald(model.asr) #Nitrogen main effect significant
+#' wald(model.asr) # Nitrogen main effect significant
 #'
 #' #Determine ranking and groups according to Tukey's Test
 #' pred.out <- multiple_comparisons(model.obj = model.asr, classify = "Nitrogen",
@@ -157,7 +171,7 @@
 multiple_comparisons <- function(model.obj,
                                  classify,
                                  sig = 0.05,
-                                 int.type = "ci",
+                                 int.type = "tukey",
                                  trans = NULL,
                                  offset = NULL,
                                  power = NULL,
@@ -235,6 +249,11 @@ multiple_comparisons <- function(model.obj,
     # Save if requested
     if (save) {
         utils::write.csv(pp, file = paste0(savename, ".csv"), row.names = FALSE)
+    }
+
+    # Check for CI/letter group inconsistencies and warn if needed
+    if (groups && tolower(int.type) == "ci") {
+        check_ci_letter_consistency(pp)
     }
 
     # Add attributes
@@ -369,10 +388,11 @@ add_confidence_intervals <- function(pp, int.type, sig, ndf) {
     # Calculate confidence interval width
     pp$ci <- switch(
         tolower(int.type),
-        "ci" = stats::qt(p = sig, ndf, lower.tail = FALSE) * pp$std.error,
+        "tukey" = stats::qtukey(p = 1 - sig, nmeans = nrow(pp), df = ndf) / sqrt(2) * pp$std.error,
+        "ci" = stats::qt(p = sig/2, ndf, lower.tail = FALSE) * pp$std.error,
         "1se" = pp$std.error,
         "2se" = 2 * pp$std.error,
-        stop("Invalid int.type.")
+        stop("Invalid int.type. Use 'tukey', 'ci', '1se', or '2se'.")
     )
 
     return(pp)
@@ -485,4 +505,64 @@ add_attributes <- function(pp, ylab, crit_val, aliased_names) {
     }
 
     return(pp)
+}
+
+check_ci_letter_consistency <- function(pp) {
+    # Only run if both 'groups' and 'ci' intervals are being used and groups column exists
+    if (!("groups" %in% colnames(pp))) return(invisible(NULL))
+
+    n <- nrow(pp)
+    if (n < 2) return(invisible(NULL))  # Need at least 2 rows for comparison
+    
+    # Pre-extract vectors for faster access
+    low <- pp$low
+    up <- pp$up
+    treatment_names <- pp[[1]]  # First column is treatment
+    
+    # Pre-process group letters once
+    group_letters <- lapply(as.character(pp$groups), function(x) {
+        unique(strsplit(x, "")[[1]])  # unique() removes duplicates
+    })
+    
+    # Vectorized approach using outer() for overlap detection
+    # Create matrices for all pairwise comparisons
+    low_matrix <- matrix(low, nrow = n, ncol = n, byrow = TRUE)
+    up_matrix <- matrix(up, nrow = n, ncol = n, byrow = FALSE)
+    
+    # Check overlaps: CI_i overlaps CI_j if up_i >= low_j AND up_j >= low_i
+    overlap_matrix <- (t(up_matrix) >= low_matrix) & (up_matrix >= t(low_matrix))
+    
+    # Only check upper triangle (avoid duplicate comparisons)
+    upper_tri <- upper.tri(overlap_matrix)
+    non_overlapping <- !overlap_matrix & upper_tri
+    
+    # If no non-overlapping pairs, return early
+    if (!any(non_overlapping)) return(invisible(NULL))
+    
+    # Get indices of non-overlapping pairs
+    non_overlap_indices <- which(non_overlapping, arr.ind = TRUE)
+    
+    # Check letter sharing only for non-overlapping pairs
+    problematic <- character(0)
+    
+    for (k in seq_len(nrow(non_overlap_indices))) {
+        i <- non_overlap_indices[k, 1]
+        j <- non_overlap_indices[k, 2]
+        
+        # Check if groups share a letter (using pre-processed letters)
+        if (length(intersect(group_letters[[i]], group_letters[[j]])) > 0) {
+            problematic <- c(problematic, paste0(treatment_names[i], " vs ", treatment_names[j]))
+        }
+    }
+    
+    if (length(problematic) > 0) {
+        warning(
+            "Confidence intervals don't overlap but groups share significance letters for: ",
+            paste(problematic, collapse = ", "), ".\n",
+            "Consider using int.type = 'tukey' for visual consistency with multiple comparison results.",
+            call. = FALSE
+        )
+    }
+    
+    invisible(NULL)
 }
