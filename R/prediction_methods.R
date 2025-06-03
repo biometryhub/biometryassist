@@ -53,9 +53,13 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
     # Remove status column if present
     pp$status <- NULL
 
-    # Get denominator degrees of freedom
-    dat.ww <- quiet(asreml::wald(model.obj, ssType = "conditional", denDF = "default", trace = FALSE)$Wald)
-    dendf <- data.frame(Source = row.names(dat.ww), denDF = dat.ww$denDF)
+    if (!"dendf" %in% names(args)) {
+        dat.ww <- quiet(asreml::wald(model.obj, ssType = "conditional", denDF = "default", trace = FALSE)$Wald)
+        dendf <- data.frame(Source = row.names(dat.ww), denDF = dat.ww$denDF)
+    }
+    else {
+        dendf <- args$dendf
+    }
 
     vars <- unlist(strsplit(classify, "\\:"))
     ndf <- dendf$denDF[grepl(classify, dendf$Source) & nchar(classify) == nchar(as.character(dendf$Source))]

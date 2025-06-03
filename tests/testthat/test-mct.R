@@ -81,6 +81,20 @@ test_that("different interval types work", {
     vdiffr::expect_doppelganger("mct output 2se", autoplot(output2))
 })
 
+test_that("Testing asreml predictions", {
+    load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
+    expect_warning(output <- multiple_comparisons(model.asr,
+                                                  classify = "Nitrogen",
+                                                  pred.obj = pred.asr,
+                                                  dendf = dendf),
+                   "Argument `pred\\.obj` has been deprecated and will be removed in a future version\\. Predictions are now performed internally in the function\\.")
+    expect_equal(output$predicted.value,
+                 c(77.76, 100.15, 114.41, 123.23),
+                 tolerance = 5e-2)
+    expect_snapshot_output(output)
+    vdiffr::expect_doppelganger("asreml predictions", autoplot(output))
+})
+
 test_that("save produces output", {
     withr::local_file("pred_vals.csv")
     output <- multiple_comparisons(dat.aov, classify = "Species", save = TRUE, savename = "pred_vals")
