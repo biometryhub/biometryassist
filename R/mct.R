@@ -463,10 +463,10 @@ format_output <- function(pp, descending, vars, decimals) {
 }
 
 add_attributes <- function(pp, ylab, crit_val, aliased_names) {
-    # If there are brackets in the label, grab the text from inside
-    if (is.call(ylab)) {
-        ylab <- as.character(ylab)[2]
-    }
+    # # If there are brackets in the label, grab the text from inside
+    # if (is.call(ylab)) {
+    #     ylab <- as.character(ylab)[2]
+    # }
     attr(pp, "ylab") <- ylab
 
     # Add class

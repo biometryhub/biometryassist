@@ -1,28 +1,3 @@
-logit <- function (p, percents = range.p[2] > 1, adjust)
-{
-    range.p <- range(p, na.rm = TRUE)
-    if(percents) {
-        if(range.p[1] < 0 || range.p[1] > 100)
-            stop("p must be in the range 0 to 100")
-        p <- p/100
-        range.p <- range.p/100
-    }
-    else if(range.p[1] < 0 || range.p[1] > 1)
-        stop("p must be in the range 0 to 1")
-    a <- if(missing(adjust)) {
-        if(isTRUE(all.equal(range.p[1], 0)) || isTRUE(all.equal(range.p[2],
-                                                                 1)))
-            0.025
-        else 0
-    }
-    else adjust
-    if(missing(adjust) && a != 0)
-        warning(paste("proportions remapped to (", a, ", ",
-                      1 - a, ")", sep = ""))
-    a <- 1 - 2 * a
-    log((0.5 + a * (p - 0.5))/(1 - (0.5 + a * (p - 0.5))))
-}
-
 dat.aov <- aov(Petal.Width ~ Species, data = iris)
 
 test_that("mct produces output", {
@@ -331,8 +306,6 @@ test_that("autoplot can rotate axis and labels independently", {
                                 autoplot(output, rotation = 45, label_rotation = 90, hjust = 0, vjust = 0.5))
 })
 
-
-
 test_that("Autoplot can output column graphs", {
     output <- multiple_comparisons(dat.aov, classify = "Species")
     p1 <- autoplot(output, type = "column", label_height = 1)
@@ -341,5 +314,29 @@ test_that("Autoplot can output column graphs", {
     expect_in("GeomCol", class(p2$layers[[1]]$geom))
     expect_true(equivalent_ggplot2(p1, p2))
     vdiffr::expect_doppelganger("autoplot column", p1)
+})
+
+test_that("A warning is printed if a transformation is detected with no trans argument provided", {
+    dat.aov.log <- aov(log(Petal.Width) ~ Species, data = iris)
+    dat.aov.sqrt <- aov(sqrt(Petal.Width) ~ Species, data = iris)
+    dat.aov.logit <- aov(logit(1/Petal.Width) ~ Species, data = iris)
+    dat.aov.inverse <- aov((1/Petal.Width) ~ Species, data = iris)
+    dat.aov.power <- aov(Petal.Width^3 ~ Species, data = iris)
+
+    expect_warning(multiple_comparisons(dat.aov.log, classify = "Species"),
+                   "The response variable appears to be transformed in the model formula: log\\(Petal\\.Width\\)\\.
+Please specify the 'trans' argument if you want back-transformed predictions\\.")
+    expect_warning(multiple_comparisons(dat.aov.sqrt, classify = "Species"),
+                   "The response variable appears to be transformed in the model formula: sqrt\\(Petal\\.Width\\)\\.
+Please specify the 'trans' argument if you want back-transformed predictions\\.")
+    expect_warning(multiple_comparisons(dat.aov.logit, classify = "Species"),
+                   "The response variable appears to be transformed in the model formula: logit\\(1/Petal\\.Width\\)\\.
+Please specify the 'trans' argument if you want back-transformed predictions\\.")
+    expect_warning(multiple_comparisons(dat.aov.inverse, classify = "Species"),
+                   "The response variable appears to be transformed in the model formula: \\(1/Petal\\.Width\\)\\.
+Please specify the 'trans' argument if you want back-transformed predictions\\.")
+    expect_warning(multiple_comparisons(dat.aov.power, classify = "Species"),
+                   "The response variable appears to be transformed in the model formula: Petal\\.Width\\^3\\.
+Please specify the 'trans' argument if you want back-transformed predictions\\.")
 })
 

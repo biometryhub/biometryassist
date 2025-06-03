@@ -19,3 +19,36 @@ test_that("Warning prints if cran version is newer", {
     local_mocked_bindings(.compare_version = function(...) 1L)
     expect_warning(print(biometryassist:::.onAttach(pkg = "biometryassist")))
 })
+
+test_that("handle_deprecated_param warns when old param is provided and new param is given", {
+    test_fun <- function(old = 1, new = 2) {
+        handle_deprecated_param("old", "new")
+        old + new
+    }
+    expect_warning(test_fun(old = 5, new = 2), "deprecated.*use `new` instead")
+})
+
+test_that("handle_deprecated_param warns when old param is provided and no new param", {
+    test_fun <- function(old = 1) {
+        handle_deprecated_param("old")
+        old
+    }
+    expect_warning(test_fun(old = 5), "deprecated")
+})
+
+test_that("handle_deprecated_param includes custom message if provided", {
+    test_fun <- function(old = 1) {
+        handle_deprecated_param("old", custom_msg = "This is a custom message.")
+        old
+    }
+    expect_warning(test_fun(old = 5), "custom message")
+})
+
+test_that("handle_deprecated_param does not warn if old param is missing", {
+    test_fun <- function(old = 1) {
+        handle_deprecated_param("old", "new")
+        42
+    }
+    expect_silent(test_fun())
+})
+

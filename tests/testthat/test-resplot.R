@@ -72,23 +72,17 @@ test_that("Residual plots work for nlme", {
 })
 
 test_that("Residual plots work for sommer", {
-    skip_if_not_installed("sommer")
-    load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
-    library(sommer)
+    load(test_path("data", "sommer_models.Rdata"))
+
+    p1 <- resplot(model_mmer, call = TRUE)
+    p2 <- resplot(model_mmes, call = TRUE)
+
+    expect_type(p1, "list")
+    expect_type(p2, "list")
+    expect_s3_class(p1, "ggplot")
+    expect_s3_class(p2, "ggplot")
 
     skip_on_os("linux")
-    expect_message(dat.som <- mmer(yield ~ Nitrogen + Variety + Nitrogen:Variety,
-                                   random = ~ Blocks + Blocks:Wplots,
-                                   rcov = ~ units,
-                                   data = dat, verbose = FALSE),
-                   "This function has been deprecated\\. Please start using 'mmes' and its auxiliary functions")
-    dat.som2 <- mmes(yield ~ Nitrogen + Variety + Nitrogen:Variety,
-                     random = ~ Blocks + Blocks:Wplots,
-                     rcov = ~ units,
-                     data = dat, verbose = FALSE)
-
-    p1 <- resplot(dat.som, call = TRUE)
-    p2 <- resplot(dat.som2, call = TRUE)
     vdiffr::expect_doppelganger(title = "Resplot for sommer mmer", p1)
     vdiffr::expect_doppelganger(title = "Resplot for sommer mmes", p2)
 })
