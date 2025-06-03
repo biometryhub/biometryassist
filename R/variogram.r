@@ -35,7 +35,7 @@
 #' @export
 
 variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE,
-palette = "default", onepage = FALSE) {
+                      palette = "default", onepage = FALSE) {
 
     if(!(inherits(model.obj, "asreml"))) {
         stop("model.obj must be an asreml model object", call. = FALSE)
@@ -150,7 +150,7 @@ palette = "default", onepage = FALSE) {
         else {
             stop("Invalid value for palette.", call. = FALSE)
         }
-        output[[i]] <- cowplot::plot_grid(b, a, nrow = 2, scale = c(2, 1))
+        output[[i]] <- gridExtra::arrangeGrob(b, a, nrow = 2, heights = c(2, 1))
         if(!orig_row) {
             row <- NA
         }
@@ -165,16 +165,18 @@ palette = "default", onepage = FALSE) {
         # Add titles to all plots
         titled_plots <- list()
         for(j in seq_along(output)) {
-            title <- cowplot::ggdraw() +
-                cowplot::draw_label(groups[j],
-                                  fontface = 'bold',
-                                  x = 0.1,
-                                  hjust = 0)
-            titled_plots[[j]] <- cowplot::plot_grid(
-                title,
-                output[[j]],
+            title_grob <- grid::textGrob(groups[j], gp = grid::gpar(fontface = "bold"), x = 0.1, hjust = 0)
+            titled_plot <- gridExtra::arrangeGrob(
+                output[[j]][[1]],  # lattice plot
+                output[[j]][[2]],  # ggplot plot
                 nrow = 2,
-                rel_heights = c(0.1, 1)
+                heights = c(2, 1)
+            )
+            titled_plots[[j]] <- gridExtra::arrangeGrob(
+                title_grob,
+                titled_plot,
+                nrow = 2,
+                heights = c(0.1, 1)
             )
         }
 
@@ -194,11 +196,10 @@ palette = "default", onepage = FALSE) {
                 n_rows <- ceiling(n_plots_on_page/3)
 
                 # Create combined plot for current page
-                pages[[page]] <- cowplot::plot_grid(
-                    plotlist = titled_plots[start_idx:end_idx],
-                    ncol = n_cols,
-                    nrow = n_rows
-                )
+                pages[[page]] <- gridExtra::arrangeGrob(
+                grobs = titled_plots[start_idx:end_idx],
+                ncol = n_cols,
+                nrow = n_rows)
             }
 
             return(pages)
