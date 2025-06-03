@@ -31,6 +31,7 @@ ggplot2::autoplot
 #' @rdname autoplot
 #' @importFrom ggplot2 autoplot ggplot aes geom_errorbar geom_text geom_point theme_bw labs theme element_text facet_wrap
 #' @importFrom rlang ensym check_dots_used
+#' @importFrom stats as.formula
 #' @export
 #' @examples
 #' dat.aov <- aov(Petal.Width ~ Species, data = iris)
@@ -83,10 +84,10 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1,
     }
 
     if(exists("classify3")) {
-        plot <- plot + ggplot2::facet_wrap(as.formula(paste("~", classify2, "+", classify3)))
+        plot <- plot + ggplot2::facet_wrap(stats::as.formula(paste("~", classify2, "+", classify3)))
     }
     else if(exists("classify2")) {
-        plot <- plot + ggplot2::facet_wrap(as.formula(paste("~", classify2)))
+        plot <- plot + ggplot2::facet_wrap(stats::as.formula(paste("~", classify2)))
     }
     return(plot)
 }

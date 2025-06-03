@@ -7,6 +7,8 @@
 #' @param numeric Logical. Should p-values be returned as numeric? Default is FALSE (formatted).
 #' @param quiet Logical. Suppress model update messages and warnings? Default is FALSE.
 #'
+#' @importFrom stats as.formula pchisq
+#'
 #' @returns A data frame of terms and corresponding log-likelihood ratio test p-values.
 #' @export
 logl_test <- function(model.obj, rand.terms = NULL, resid.terms = NULL, decimals = 3, numeric = FALSE, quiet = FALSE) {
@@ -39,16 +41,11 @@ logl_test <- function(model.obj, rand.terms = NULL, resid.terms = NULL, decimals
         boundary.df$LogLRT.pvalue <- 1
     }
 
-    # Helper: suppress messages if quiet = TRUE
-    # qupdate <- function(...) {
-    #     if (quiet) suppressMessages(suppressWarnings(update(...))) else update(...)
-    # }
-
     # Helper: refit loop
     refit_until_converged <- function(model, max_iter = 10) {
         i <- 1
         while (!model$converge && i <= max_iter) {
-            model <- quiet(update(model, trace = !quiet))
+            model <- quiet(asreml::update.asreml(model, trace = !quiet))
             i <- i + 1
         }
         return(model)
@@ -59,7 +56,7 @@ logl_test <- function(model.obj, rand.terms = NULL, resid.terms = NULL, decimals
         df <- (length(full$vparameters) + length(full$coefficients$fixed)) -
             (length(reduced$vparameters) + length(reduced$coefficients$fixed))
         logl <- 2 * (full$loglik - reduced$loglik)
-        pval <- 1 - pchisq(logl, df)
+        pval <- 1 - stats::pchisq(logl, df)
         round(pval, decimals)
     }
 
@@ -68,7 +65,7 @@ logl_test <- function(model.obj, rand.terms = NULL, resid.terms = NULL, decimals
         boundary.rand <- intersect(rand.terms, boundary)
         if (length(boundary.rand) > 0) {
             rand.terms <- setdiff(rand.terms, boundary.rand)
-            model.obj <- quiet(update(model.obj, random = as.formula(paste("~ . -", paste(boundary.rand, collapse = " - "))), trace = !quiet))
+            model.obj <- quiet(asreml::update.asreml(model.obj, random = stats::as.formula(paste("~ . -", paste(boundary.rand, collapse = " - "))), trace = !quiet))
             model.obj <- refit_until_converged(model.obj)
         }
     }
@@ -89,12 +86,12 @@ logl_test <- function(model.obj, rand.terms = NULL, resid.terms = NULL, decimals
                 # Handle other residual structures - might need different logic
                 updated.resid <- gsub(paste0("\\b", term, "\\b"), "units", orig.resid)
             }
-            new.resid.formula <- as.formula(paste("~", updated.resid))
-            reduced.model <- quiet(update(model.obj, residual = new.resid.formula, trace = !quiet))
+            new.resid.formula <- stats::as.formula(paste("~", updated.resid))
+            reduced.model <- quiet(asreml::update.asreml(model.obj, residual = new.resid.formula, trace = !quiet))
         }
         else if (type == "random") {
-            new.rand.formula <- as.formula(paste("~ . -", term))
-            reduced.model <- quiet(update(model.obj, random = new.rand.formula, trace = !quiet))
+            new.rand.formula <- stats::as.formula(paste("~ . -", term))
+            reduced.model <- quiet(asreml::update.asreml(model.obj, random = new.rand.formula, trace = !quiet))
         }
 
         reduced.model <- refit_until_converged(reduced.model)
