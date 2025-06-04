@@ -1,9 +1,9 @@
 # save produces output
 
          Species predicted.value std.error  df groups   ci  low   up
-    1     setosa            0.25      0.03 147      a 0.07 0.18 0.31
-    2 versicolor            1.33      0.03 147      b 0.07 1.26 1.39
-    3  virginica            2.03      0.03 147      c 0.07 1.96 2.09
+    1     setosa            0.25      0.03 147      a 0.06 0.19 0.30
+    2 versicolor            1.33      0.03 147      b 0.06 1.27 1.38
+    3  virginica            2.03      0.03 147      c 0.06 1.97 2.08
 
 # mct removes aliased treatments in aov
 
@@ -11,34 +11,34 @@
 
 # mct handles aliased results in asreml with a warning
 
-       Nitrogen     Variety predicted.value std.error groups    ci   low     up
-    1     0_cwt     Victory           70.69      8.80      a 30.43 40.26 101.12
-    2     0_cwt Golden_rain           77.41      8.82     ab 30.49 46.92 107.90
-    3     0_cwt  Marvellous           86.25      8.80    abc 30.40 55.85 116.65
-    4   0.2_cwt     Victory           92.75      8.79    bcd 30.39 62.36 123.14
-    5   0.2_cwt  Marvellous          108.72      8.73     de 30.18 78.54 138.90
-    6   0.4_cwt     Victory          111.78      8.86    cde 30.64 81.14 142.42
-    7   0.4_cwt  Marvellous          113.38      8.87     de 30.65 82.73 144.03
-    8   0.4_cwt Golden_rain          115.33      8.94    cde 30.90 84.43 146.24
-    9   0.6_cwt     Victory          119.64      8.84      e 30.57 89.07 150.21
-    10  0.6_cwt Golden_rain          121.48      8.92     de 30.83 90.65 152.32
-    11  0.6_cwt  Marvellous          128.10      8.77      e 30.31 97.79 158.41
+       Nitrogen     Variety predicted.value std.error groups    ci    low     up
+    1     0_cwt     Victory           70.69      8.80      a 17.92  52.77  88.61
+    2     0_cwt Golden_rain           77.41      8.82     ab 17.96  59.45  95.37
+    3     0_cwt  Marvellous           86.25      8.80    abc 17.90  68.35 104.16
+    4   0.2_cwt     Victory           92.75      8.79    bcd 17.90  74.86 110.65
+    5   0.2_cwt  Marvellous          108.72      8.73     de 17.77  90.94 126.49
+    6   0.4_cwt     Victory          111.78      8.86    cde 18.04  93.74 129.83
+    7   0.4_cwt  Marvellous          113.38      8.87     de 18.05  95.33 131.43
+    8   0.4_cwt Golden_rain          115.33      8.94    cde 18.20  97.13 133.53
+    9   0.6_cwt     Victory          119.64      8.84      e 18.00 101.63 137.64
+    10  0.6_cwt Golden_rain          121.48      8.92     de 18.16 103.32 139.64
+    11  0.6_cwt  Marvellous          128.10      8.77      e 17.85 110.25 145.95
     
     Aliased level is: 0.2_cwt:Golden_rain 
 
 ---
 
-       Nitrogen     Variety predicted.value std.error groups    ci   low     up
-    1     0_cwt     Victory           70.17      9.28      a 31.51 38.66 101.68
-    2     0_cwt Golden_rain           72.86      9.22      a 31.30 41.55 104.16
-    3     0_cwt  Marvellous           88.36      9.25     ab 31.43 56.93 119.78
-    4   0.2_cwt  Marvellous          108.91      9.13     bc 30.99 77.91 139.90
-    5   0.4_cwt     Victory          109.53      9.31     bc 31.61 77.92 141.14
-    6   0.4_cwt Golden_rain          112.61      9.40     bc 31.91 80.71 144.52
-    7   0.6_cwt Golden_rain          115.99      9.20      c 31.25 84.74 147.25
-    8   0.4_cwt  Marvellous          116.22      9.37      c 31.81 84.40 148.03
-    9   0.6_cwt     Victory          116.85      9.34      c 31.73 85.12 148.57
-    10  0.6_cwt  Marvellous          128.99      9.20      c 31.24 97.75 160.23
+       Nitrogen     Variety predicted.value std.error groups    ci    low     up
+    1     0_cwt     Victory           70.17      9.28      a 18.90  51.27  89.08
+    2     0_cwt Golden_rain           72.86      9.22      a 18.78  54.08  91.64
+    3     0_cwt  Marvellous           88.36      9.25     ab 18.85  69.51 107.21
+    4   0.2_cwt  Marvellous          108.91      9.13     bc 18.59  90.31 127.50
+    5   0.4_cwt     Victory          109.53      9.31     bc 18.96  90.57 128.49
+    6   0.4_cwt Golden_rain          112.61      9.40     bc 19.14  93.47 131.76
+    7   0.6_cwt Golden_rain          115.99      9.20      c 18.75  97.24 134.74
+    8   0.4_cwt  Marvellous          116.22      9.37      c 19.08  97.13 135.30
+    9   0.6_cwt     Victory          116.85      9.34      c 19.03  97.81 135.88
+    10  0.6_cwt  Marvellous          128.99      9.20      c 18.74 110.25 147.73
     
     Aliased levels are: 0.2_cwt:Golden_rain and 0.2_cwt:Victory 
 
