@@ -8,7 +8,7 @@ multiple_comparisons(
   model.obj,
   classify,
   sig = 0.05,
-  int.type = "tukey",
+  int.type = "ci",
   trans = NULL,
   offset = NULL,
   power = NULL,
@@ -33,7 +33,7 @@ multiple_comparisons(
 
 \item{sig}{The significance level, numeric between 0 and 1. Default is 0.05.}
 
-\item{int.type}{The type of confidence interval to calculate. One of \code{tukey}, \code{ci}, \verb{1se} or \verb{2se}. Default is \code{tukey}.}
+\item{int.type}{The type of confidence interval to calculate. One of \code{ci}, \code{tukey}, \verb{1se} or \verb{2se}. Default is \code{ci}.}
 
 \item{trans}{Transformation that was applied to the response variable. One of \code{log}, \code{sqrt}, \code{logit}, \code{power} or \code{inverse}. Default is \code{NULL}.}
 
@@ -95,9 +95,8 @@ transformation, add 0.1 in the \code{offset} argument.
 The power argument allows the specification of arbitrary powers to be
 back transformed, if they have been used to attempt to improve normality of
 residuals.
-}
 
-\subsection{Confidence Intervals}{
+#' ## Confidence Intervals & Comparison Intervals
 
 The function provides several options for confidence intervals via the \code{int.type} argument:
 \itemize{
@@ -106,6 +105,29 @@ The function provides several options for confidence intervals via the \code{int
 \item \strong{\verb{1se}} and \strong{\verb{2se}}: Intervals of ±1 or ±2 standard errors around each mean.
 }
 
+By default, the function displays regular confidence intervals (\code{int.type = "ci"}),
+which estimate the precision of individual treatment means. However, when
+performing multiple comparisons, these regular confidence intervals may not
+align with the letter groupings from Tukey's HSD test. Specifically, you may
+observe non-overlapping confidence intervals for treatments that share the
+same letter group (indicating no significant difference).
+
+This occurs because regular confidence intervals and Tukey's HSD test serve
+different purposes:
+\itemize{
+\item Regular confidence intervals estimate individual mean precision
+\item Tukey's HSD controls the family-wise error rate across all pairwise comparisons
+}
+
+To resolve this visual inconsistency, you can use Tukey comparison intervals
+(\code{int.type = "tukey"}). These intervals are specifically designed for multiple
+comparisons and will be consistent with the letter groupings: non-overlapping
+Tukey intervals indicate significant differences, while overlapping intervals
+suggest no significant difference.
+
+The function will issue a message if it detects potential inconsistencies
+between non-overlapping confidence intervals and letter groupings, suggesting
+the use of Tukey intervals for clearer interpretation.
 For multiple comparison contexts, Tukey comparison intervals are recommended as they provide visual consistency with the statistical test being performed and avoid the common confusion where traditional confidence intervals don't overlap but groups share the same significance letter.
 }
 }
