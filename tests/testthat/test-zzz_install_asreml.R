@@ -28,6 +28,7 @@ test_that("find_existing_package works correctly", {
   # Test with matching files
   withr::with_tempdir({
     file.create("asreml_4.1.0.zip")
+    Sys.sleep(0.3)
     file.create("asreml_4.2.0.zip")
     result <- find_existing_package()
     expect_equal(basename(result), "asreml_4.2.0.zip")  # Should get the most recent one
@@ -148,7 +149,7 @@ test_that("newer_version handles no network gracefully", {
 
 test_that("install_asreml handles no internet connection", {
   skip_on_cran()
-  mockery::stub(install_asreml, "has_internet", function() FALSE)
+  mockery::stub(install_asreml, "curl::has_internet", function() FALSE)
   expect_error(
     install_asreml(),
     "No internet connection detected\\. Cannot download ASReml\\-R package\\."

@@ -6,8 +6,15 @@
 \usage{
 manage_file(save_file, keep_file, filename)
 }
+\arguments{
+\item{save_file}{Path to the downloaded file}
+
+\item{keep_file}{Whether/where to keep the file}
+
+\item{filename}{Original filename}
+}
 \value{
-logical; TRUE if file successfully moved, FALSE otherwise
+logical; TRUE if file successfully handled, FALSE otherwise
 }
 \description{
 Manage the downloaded file
