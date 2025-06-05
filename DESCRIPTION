@@ -54,6 +54,7 @@ Suggests:
     covr,
     crayon,
     knitr,
+    mockery,
     openxlsx,
     rmarkdown,
     testthat,

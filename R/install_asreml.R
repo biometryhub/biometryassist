@@ -11,7 +11,7 @@
 #' @details The ASReml-R package file is downloaded from a shortlink, and if `keep_file` is `TRUE`, the package archive file will be saved in the current directory. If a valid path is provided in `keep_file`, the file will be saved to that path, but all directories are assumed to exist and will not be created. If `keep_file` does not specify an existing, valid path, an error will be shown after package installation.
 #'
 #' @importFrom utils install.packages installed.packages download.file remove.packages tail
-#' @importFrom curl curl_fetch_disk has_internet()
+#' @importFrom curl curl_fetch_disk has_internet
 #' @importFrom rlang is_installed
 #'
 #' @export
@@ -72,7 +72,7 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
     }
 
     # Install dependencies if necessary
-    install_dependencies(quiet)
+    install_dependencies(quiet, library)
 
         # Install asreml
     install_result <- install_asreml_package(save_file, library, quiet, os_ver$os)
@@ -137,7 +137,6 @@ download_asreml_package <- function(url) {
 }
 
 #' Remove existing ASReml installation
-#' @param os Operating system
 #' @keywords internal
 remove_existing_asreml <- function() {
     tryCatch({
@@ -155,7 +154,7 @@ remove_existing_asreml <- function() {
 
 #' Install required dependencies
 #' @keywords internal
-install_dependencies <- function(quiet) {
+install_dependencies <- function(quiet, library) {
     required_deps <- c("data.table", "ggplot2", "jsonlite")
     installed_pkgs <- rownames(installed.packages(lib.loc = library))
     
