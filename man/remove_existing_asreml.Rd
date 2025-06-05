@@ -6,9 +6,6 @@
 \usage{
 remove_existing_asreml()
 }
-\arguments{
-\item{os}{Operating system}
-}
 \description{
 Remove existing ASReml installation
 }

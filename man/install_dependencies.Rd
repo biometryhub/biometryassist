@@ -4,7 +4,7 @@
 \alias{install_dependencies}
 \title{Install required dependencies}
 \usage{
-install_dependencies(quiet)
+install_dependencies(quiet, library)
 }
 \description{
 Install required dependencies
