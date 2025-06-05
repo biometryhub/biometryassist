@@ -11,7 +11,7 @@ test_that("get_r_os returns correct structure and values", {
   Darwin = "mac")
   expect_equal(result$os, expected_os)
   expect_match(result$ver, "\\d{2}")  # Should be something like "43" for R 4.3
-  expect_match(result$os_ver, paste0(expected_os, ifelse(result$arm, "-arm-", ""), "-\\d{2}$"))
+  expect_match(result$os_ver, paste0(expected_os, ifelse(result$arm, "-arm", ""), "-\\d{2}$"))
   skip_on_os(c("windows", "linux"))  # Skip ARM check on Windows and Linux
   expect_true(result$arm)  # Windows doesn't have ARM distinction in this context
 })
