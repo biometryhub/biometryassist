@@ -271,12 +271,9 @@ parse_version_table <- function(tables, headers) {
     
     for(i in seq_along(tables)) {
         tables[[i]] <- fix_tables(tables[[i]])
-        tables[[i]][["os"]] <- case_when(
-            grepl("Windows", tables[[i]][["Download"]], ignore.case = TRUE) ~ "win",
-            grepl("macOS", tables[[i]][["Download"]], ignore.case = TRUE) ~ "mac",
-            grepl("Ubuntu", tables[[i]][["Download"]], ignore.case = TRUE) ~ "linux",
-            TRUE ~ "centos"
-        )
+        tables[[i]][["os"]] <- ifelse(grepl("Windows", tables[[i]][["Download"]], ignore.case = TRUE), "win",
+                                       ifelse(grepl("macOS", tables[[i]][["Download"]], ignore.case = TRUE), "mac",
+                                              ifelse(grepl("Ubuntu", tables[[i]][["Download"]], ignore.case = TRUE), "linux", "centos")))
         tables[[i]][["arm"]] <- grepl("arm", tables[[i]][["Download"]], ignore.case = TRUE)
         tables[[i]][["r_ver"]] <- paste0(stringi::stri_match_first_regex(headers[i], "R version (\\d?)\\.(\\d?)")[2:3], collapse = "")
         tables[[i]][["asr_ver"]] <- stringi::stri_match_first_regex(tables[[i]][["File name"]], "asreml-?_?(\\d\\.\\d?\\.\\d?\\.\\d*)")[,2]
