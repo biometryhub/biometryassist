@@ -19,6 +19,16 @@ get_predictions <- function(model.obj, classify, pred.obj = NULL, ...) {
 #' @rdname predictions
 #'
 #' @keywords internal
+get_predictions.default <- function(model.obj, ...) {
+    supported_types <- c("aov", "lm", "lmerMod", "lmerModLmerTest",
+                         "asreml")
+    stop("model.obj must be a linear (mixed) model object. Currently supported model types are: ",
+         paste(supported_types, collapse = ", "), call. = FALSE)
+}
+
+#' @rdname predictions
+#'
+#' @keywords internal
 get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 
     args <- list(...)

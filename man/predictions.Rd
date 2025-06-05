@@ -3,6 +3,7 @@
 \name{predictions}
 \alias{predictions}
 \alias{get_predictions}
+\alias{get_predictions.default}
 \alias{get_predictions.asreml}
 \alias{get_predictions.lm}
 \alias{get_predictions.lmerMod}
@@ -10,6 +11,8 @@
 \title{Get Predictions for Statistical Models}
 \usage{
 get_predictions(model.obj, classify, pred.obj = NULL, ...)
+
+\method{get_predictions}{default}(model.obj, ...)
 
 \method{get_predictions}{asreml}(model.obj, classify, pred.obj = NULL, ...)
 

@@ -188,9 +188,13 @@ test_that("Invalid classify argument causes an error", {
                  "ABC is not a term in the model\\. Please check model specification\\.")
 })
 
-test_that("Significance values that are too high give a warning", {
+test_that("Significance values that are too high give a warning or error", {
     # dat.aov <- aov(Petal.Width ~ Species, data = iris)
     expect_warning(multiple_comparisons(dat.aov, classify = "Species", sig = 0.95),
+                   "Significance level given by `sig` is high. Perhaps you meant 0.05?")
+    expect_error(multiple_comparisons(dat.aov, classify = "Species", sig = 5),
+                   "Significance level given by `sig` is high. Perhaps you meant 0.05?")
+    expect_error(multiple_comparisons(dat.aov, classify = "Species", sig = 95),
                    "Significance level given by `sig` is high. Perhaps you meant 0.05?")
 })
 
@@ -274,7 +278,7 @@ test_that("nlme model produces an error", {
     suppressPackageStartupMessages(library(nlme))
     fm1 <- lme(distance ~ age, data = Orthodont)
     expect_error(multiple_comparisons(fm1, classify = "age"),
-                 "Models of type lme are not supported.")
+                 "model\\.obj must be a linear \\(mixed\\) model object\\. Currently supported model types are: aov, lm, lmerMod, lmerModLmerTest, asreml")
 })
 
 test_that("multiple_comparisons output has a class of 'mct'", {
