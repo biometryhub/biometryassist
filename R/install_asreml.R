@@ -329,38 +329,40 @@ newer_version <- function() {
 #' @keywords internal
 #' @importFrom askpass askpass
 create_mac_folder <- function() {
-    reprise_path <- "/Library/Application Support/Reprise/"
-    
-    # Only needed for macOS Big Sur and later
-    if(Sys.info()[["sysname"]] != "Darwin" || 
-       as.numeric(Sys.info()["release"]) < 21 || 
-       dir.exists(reprise_path)) {
-        return(TRUE)
+  reprise_path <- "/Library/Application Support/Reprise/"
+
+  is_mac <- identical(Sys.info()[["sysname"]], "Darwin")
+  major_release <- suppressWarnings(get_major_release())
+  reprise_exists <- dir.exists(reprise_path)
+
+  # Only create folder on macOS Big Sur (Darwin 20) or later
+  if (!is_mac || is.na(major_release) || major_release < 21 || reprise_exists) {
+    return(TRUE)
+  }
+
+  # Try to create directory
+  result <- tryCatch({
+    dir.create(reprise_path, recursive = TRUE)
+    TRUE
+  }, error = function(e) FALSE)
+
+  if (!result) {
+    message("The ASReml-R package uses Reprise license management and requires administrator privileges to create the folder '/Library/Application Support/Reprise'.")
+    input <- readline("Would you like to create this folder now (Yes/No)? ")
+
+    if (toupper(trimws(input)) %in% c("YES", "Y")) {
+      message("You should now be prompted for your account password.")
+      Sys.sleep(2)
+      system("sudo mkdir -p '/Library/Application Support/Reprise' && sudo chmod 777 '/Library/Application Support/Reprise'",
+             input = askpass::askpass("Please enter your user account password: "))
+    } else {
+      stop("ASReml-R cannot be installed until the folder '/Library/Application Support/Reprise' is created with appropriate permissions.\n",
+           "Please run: sudo mkdir -p '/Library/Application Support/Reprise' && sudo chmod 777 '/Library/Application Support/Reprise'", 
+           call. = FALSE)
     }
-    
-    # Try to create directory
-    result <- tryCatch({
-        dir.create(reprise_path, recursive = TRUE)
-        TRUE
-    }, error = function(e) FALSE)
-    
-    if(!result) {
-        message("The ASReml-R package uses Reprise license management and requires administrator privileges to create the folder '/Library/Application Support/Reprise'.")
-        input <- readline("Would you like to create this folder now (Yes/No)? ")
-        
-        if(toupper(trimws(input)) %in% c("YES", "Y")) {
-            message("You should now be prompted for your account password.")
-            Sys.sleep(2)
-            system("sudo mkdir -p '/Library/Application Support/Reprise' && sudo chmod 777 '/Library/Application Support/Reprise'",
-                   input = askpass::askpass("Please enter your user account password: "))
-        } else {
-            stop("ASReml-R cannot be installed until the folder '/Library/Application Support/Reprise' is created with appropriate permissions.\n",
-                 "Please run: sudo mkdir -p '/Library/Application Support/Reprise' && sudo chmod 777 '/Library/Application Support/Reprise'", 
-                 call. = FALSE)
-        }
-    }
-    
-    dir.exists(reprise_path)
+  }
+
+  dir.exists(reprise_path)
 }
 
 #' Manage the downloaded file
