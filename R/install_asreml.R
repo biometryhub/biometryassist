@@ -1,4 +1,4 @@
-#' Install or update the ASReml-R package
+use#' Install or update the ASReml-R package
 #'
 #' @description Helper functions for installing or updating the ASReml-R package, intended to reduce the difficulty of finding the correct version for your operating system and R version.
 #'
@@ -329,6 +329,14 @@ newer_version <- function() {
 #' @keywords internal
 #' @importFrom askpass askpass
 create_mac_folder <- function() {
+
+get_major_release <- function() {
+  rel <- Sys.info()[["release"]]
+  # Extract first number before dot, or fallback to full if no dot
+  if (is.null(rel) || is.na(rel)) return(NA_real_)
+  as.numeric(sub("^([0-9]+).*", "\\1", rel))
+}
+
   reprise_path <- "/Library/Application Support/Reprise/"
 
   is_mac <- identical(Sys.info()[["sysname"]], "Darwin")
