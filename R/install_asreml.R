@@ -45,7 +45,7 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
         if(!quiet) message("The latest version of ASReml-R available for your system is already installed. To install anyway, set `force = TRUE`.")
         return(invisible(TRUE))
     }
-    
+
     # Get OS and R version
     os_ver <- get_r_os()
     if(os_ver$os=="mac") {
@@ -56,13 +56,13 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
 
     # Look for existing package file, download if not found
     save_file <- find_existing_package()
-    
+
     if(is.null(save_file)) {
         # Download file with better error handling
         if(!quiet) {
             message("\nDownloading and installing ASReml-R. This may take some time, depending on internet speed...\n")
         }
-        
+
         save_file <- download_asreml_package(url)
     }
 
@@ -74,7 +74,7 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
     # Install dependencies if necessary
     install_dependencies(quiet, library)
 
-        # Install asreml
+    # Install asreml
     install_result <- install_asreml_package(save_file, library, quiet, os_ver$os)
 
     # Handle file cleanup/retention
@@ -104,7 +104,7 @@ find_existing_package <- function() {
     # More robust pattern for ASReml files
     pattern <- "^asreml[_-]?.*\\.(zip|tar\\.gz|tgz)$"
     dir_files <- list.files(pattern = pattern, ignore.case = TRUE)
-    
+
     result <- NULL
 
     if(length(dir_files) > 0) {
@@ -113,7 +113,7 @@ find_existing_package <- function() {
         latest_file <- rownames(file_info)[which.max(file_info$mtime)]
         result <- normalizePath(latest_file)
     }
-    
+
     return(result)
 }
 
@@ -121,7 +121,7 @@ find_existing_package <- function() {
 #' @keywords internal
 download_asreml_package <- function(url) {
     save_file <- tempfile("asreml_")
-    
+
     result <- tryCatch({
         response <- curl::curl_fetch_disk(url = url, path = save_file)
         filename <- basename(response$url)
@@ -157,14 +157,14 @@ remove_existing_asreml <- function() {
 install_dependencies <- function(quiet, library) {
     required_deps <- c("data.table", "ggplot2", "jsonlite")
     installed_pkgs <- rownames(installed.packages(lib.loc = library))
-    
+
     missing_deps <- setdiff(required_deps, installed_pkgs)
-    
+
     # Special check for data.table version
     if(!rlang::is_installed("data.table", version = "1.14")) {
         missing_deps <- unique(c(missing_deps, "data.table"))
     }
-    
+
     if(length(missing_deps) > 0) {
         if(!quiet) {
             message("Installing missing dependencies: ", paste(missing_deps, collapse = ", "))
@@ -182,11 +182,11 @@ install_dependencies <- function(quiet, library) {
 #' @keywords internal
 install_asreml_package <- function(save_file, library, quiet, os) {
     tryCatch({
-        install.packages(save_file, 
-                        lib = library, 
-                        repos = NULL, 
-                        verbose = !quiet, 
-                        type = if(os == "win") "binary" else "source")
+        install.packages(save_file,
+                         lib = library,
+                         repos = NULL,
+                         verbose = !quiet,
+                         type = if(os == "win") "binary" else "source")
         .check_package_available("asreml")
     }, error = function(e) {
         if(!quiet) warning("Installation failed: ", e$message)
@@ -224,24 +224,24 @@ get_r_os <- function() {
 #' @importFrom xml2 read_html xml_text xml_find_all
 #' @importFrom stringi stri_split_fixed
 get_version_table <- function(url = "https://asreml.kb.vsni.co.uk/asreml-r-4-download-success/?site_reference=VS9AF20") {
-    
+
     tryCatch({
         res <- xml2::read_html(url)
-        
+
         headers <- xml2::xml_text(xml2::xml_find_all(res, "//h3"))
         headers <- headers[grepl("^ASReml-?R? 4.*\\(All platforms\\)", headers)]
-        
+
         if(length(headers) == 0) {
             stop("URL doesn't seem to contain asreml version information.")
         }
-        
+
         tables <- xml2::xml_text(xml2::xml_find_all(res, xpath = "//table"))
         tables <- tables[grepl("macOS", tables)]
         tables <- stringi::stri_split_fixed(tables, "\n")
         tables <- lapply(tables, function(x) x[!is.na(x) & x != ""])
-        
+
         parse_version_table(tables, headers)
-        
+
     }, error = function(e) {
         warning("Failed to retrieve version information: ", e$message)
         data.frame()  # Return empty data frame on error
@@ -258,26 +258,26 @@ parse_version_table <- function(tables, headers) {
         first_row <- x[1:4]
         x <- as.data.frame(matrix(x[5:length(x)], ncol = 4, byrow = TRUE))
         colnames(x) <- first_row
-        
+
         # Parse dates
         date_col <- grep("Date", colnames(x))
         if(length(date_col) > 0) {
-            x[, date_col] <- as.Date(x[, date_col], 
-                                   tryFormats = c("%d %B %Y", "%d/%m/%Y", "%d %b %Y", "%d-%m-%Y"))
+            x[, date_col] <- as.Date(x[, date_col],
+                                     tryFormats = c("%d %B %Y", "%d/%m/%Y", "%d %b %Y", "%d-%m-%Y"))
         }
         x
     }
-    
+
     for(i in seq_along(tables)) {
         tables[[i]] <- fix_tables(tables[[i]])
         tables[[i]][["os"]] <- ifelse(grepl("Windows", tables[[i]][["Download"]], ignore.case = TRUE), "win",
-                                       ifelse(grepl("macOS", tables[[i]][["Download"]], ignore.case = TRUE), "mac",
-                                              ifelse(grepl("Ubuntu", tables[[i]][["Download"]], ignore.case = TRUE), "linux", "centos")))
+                                      ifelse(grepl("macOS", tables[[i]][["Download"]], ignore.case = TRUE), "mac",
+                                             ifelse(grepl("Ubuntu", tables[[i]][["Download"]], ignore.case = TRUE), "linux", "centos")))
         tables[[i]][["arm"]] <- grepl("arm", tables[[i]][["Download"]], ignore.case = TRUE)
         tables[[i]][["r_ver"]] <- paste0(stringi::stri_match_first_regex(headers[i], "R version (\\d?)\\.(\\d?)")[2:3], collapse = "")
         tables[[i]][["asr_ver"]] <- stringi::stri_match_first_regex(tables[[i]][["File name"]], "asreml-?_?(\\d\\.\\d?\\.\\d?\\.\\d*)")[,2]
     }
-    
+
     do.call("rbind", tables)
 }
 
@@ -289,25 +289,25 @@ parse_version_table <- function(tables, headers) {
 #' @keywords internal
 newer_version <- function() {
     online_versions <- get_version_table()
-    
+
     if(nrow(online_versions) == 0) {
         return(FALSE)  # Can't check, assume no update needed
     }
-    
+
     os_ver <- get_r_os()
-    
+
     # Find the newest version for this system
     newest <- subset(online_versions,
                      online_versions$os == os_ver$os &
-                     online_versions$arm == os_ver$arm &
-                     online_versions$r_ver == os_ver$ver)
-    
+                         online_versions$arm == os_ver$arm &
+                         online_versions$r_ver == os_ver$ver)
+
     if(nrow(newest) == 0) {
         return(FALSE)
     }
-    
+
     newest <- newest[which.max(numeric_version(as.character(newest$asr_ver))), ]
-    
+
     # Get current version info
     if(.check_package_available("asreml")) {
         asr_desc <- utils::packageDescription("asreml")
@@ -317,10 +317,10 @@ newer_version <- function() {
         asr_date <- as.Date("1900-01-01")
         asr_ver <- "0"
     }
-    
+
     # Check if newer version is available
-    (newest$`Date published` > asr_date + 7) && 
-    (numeric_version(as.character(newest$asr_ver)) > numeric_version(as.character(asr_ver)))
+    (newest$`Date published` > asr_date + 7) &&
+        (numeric_version(as.character(newest$asr_ver)) > numeric_version(as.character(asr_ver)))
 }
 
 #' Create the folder MacOS needs for licensing
@@ -330,47 +330,47 @@ newer_version <- function() {
 #' @importFrom askpass askpass
 create_mac_folder <- function() {
 
-get_major_release <- function() {
-  rel <- Sys.info()[["release"]]
-  # Extract first number before dot, or fallback to full if no dot
-  if (is.null(rel) || is.na(rel)) return(NA_real_)
-  as.numeric(sub("^([0-9]+).*", "\\1", rel))
-}
-
-  reprise_path <- "/Library/Application Support/Reprise/"
-
-  is_mac <- identical(Sys.info()[["sysname"]], "Darwin")
-  major_release <- suppressWarnings(get_major_release())
-  reprise_exists <- dir.exists(reprise_path)
-
-  # Only create folder on macOS Big Sur (Darwin 20) or later
-  if (!is_mac || is.na(major_release) || major_release < 21 || reprise_exists) {
-    return(TRUE)
-  }
-
-  # Try to create directory
-  result <- tryCatch({
-    dir.create(reprise_path, recursive = TRUE)
-    TRUE
-  }, error = function(e) FALSE)
-
-  if (!result) {
-    message("The ASReml-R package uses Reprise license management and requires administrator privileges to create the folder '/Library/Application Support/Reprise'.")
-    input <- readline("Would you like to create this folder now (Yes/No)? ")
-
-    if (toupper(trimws(input)) %in% c("YES", "Y")) {
-      message("You should now be prompted for your account password.")
-      Sys.sleep(2)
-      system("sudo mkdir -p '/Library/Application Support/Reprise' && sudo chmod 777 '/Library/Application Support/Reprise'",
-             input = askpass::askpass("Please enter your user account password: "))
-    } else {
-      stop("ASReml-R cannot be installed until the folder '/Library/Application Support/Reprise' is created with appropriate permissions.\n",
-           "Please run: sudo mkdir -p '/Library/Application Support/Reprise' && sudo chmod 777 '/Library/Application Support/Reprise'", 
-           call. = FALSE)
+    get_major_release <- function() {
+        rel <- Sys.info()[["release"]]
+        # Extract first number before dot, or fallback to full if no dot
+        if (is.null(rel) || is.na(rel)) return(NA_real_)
+        as.numeric(sub("^([0-9]+).*", "\\1", rel))
     }
-  }
 
-  dir.exists(reprise_path)
+    reprise_path <- "/Library/Application Support/Reprise/"
+
+    is_mac <- identical(Sys.info()[["sysname"]], "Darwin")
+    major_release <- suppressWarnings(get_major_release())
+    reprise_exists <- dir.exists(reprise_path)
+
+    # Only create folder on macOS Big Sur (Darwin 20) or later
+    if (!is_mac || is.na(major_release) || major_release < 21 || reprise_exists) {
+        return(TRUE)
+    }
+
+    # Try to create directory
+    result <- tryCatch({
+        dir.create(reprise_path, recursive = TRUE)
+        TRUE
+    }, error = function(e) FALSE)
+
+    if (!result) {
+        message("The ASReml-R package uses Reprise license management and requires administrator privileges to create the folder '/Library/Application Support/Reprise'.")
+        input <- readline("Would you like to create this folder now (Yes/No)? ")
+
+        if (toupper(trimws(input)) %in% c("YES", "Y")) {
+            message("You should now be prompted for your account password.")
+            Sys.sleep(2)
+            system("sudo mkdir -p '/Library/Application Support/Reprise' && sudo chmod 777 '/Library/Application Support/Reprise'",
+                   input = askpass::askpass("Please enter your user account password: "))
+        } else {
+            stop("ASReml-R cannot be installed until the folder '/Library/Application Support/Reprise' is created with appropriate permissions.\n",
+                 "Please run: sudo mkdir -p '/Library/Application Support/Reprise' && sudo chmod 777 '/Library/Application Support/Reprise'",
+                 call. = FALSE)
+        }
+    }
+
+    dir.exists(reprise_path)
 }
 
 #' Manage the downloaded file
@@ -381,13 +381,13 @@ get_major_release <- function() {
 #' @returns logical; TRUE if file successfully handled, FALSE otherwise
 #' @keywords internal
 manage_file <- function(save_file, keep_file, filename) {
-    
+
     # Remove file if not keeping
     if(isFALSE(keep_file)) {
         unlink(save_file)
         return(TRUE)
     }
-    
+
     # Determine destination path
     if(isTRUE(keep_file)) {
         dest_path <- filename  # Current directory
@@ -398,7 +398,7 @@ manage_file <- function(save_file, keep_file, filename) {
         unlink(save_file)
         return(FALSE)
     }
-    
+
     # Try to move/copy the file
     success <- tryCatch({
         file.rename(save_file, dest_path)
@@ -408,6 +408,6 @@ manage_file <- function(save_file, keep_file, filename) {
         unlink(save_file)
         FALSE
     })
-    
+
     return(success)
 }
