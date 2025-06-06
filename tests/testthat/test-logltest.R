@@ -473,8 +473,8 @@ test_that("logl_test handles zero p-values with numeric = TRUE", {
   }
   
   with_mocked_bindings(
-    summary.asreml = mock_summary_asreml,
-    `asreml::update.asreml` = mock_update_asreml,
+    summary.asreml = mock_summary,
+    `asreml::update.asreml` = mock_update,
     quiet = mock_quiet,
     .package = "base",
     {
