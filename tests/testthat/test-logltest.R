@@ -463,3 +463,34 @@ test_that("logl_test integration test", {
     # All should have character p-values (numeric = FALSE)
     expect_true(is.character(result$LogLRT.pvalue))
 })
+
+test_that("logl_test handles zero p-values with numeric = TRUE", {
+  mock_model <- create_mock_asreml_model()
+  
+  # Create a mock loglik_test function that returns 0 p-values
+  mock_loglik_test_zero <- function(full, reduced, decimals = 3) {
+    return(0)  # Return exactly 0 to trigger the replacement logic
+  }
+  
+  with_mocked_bindings(
+    summary.asreml = mock_summary_asreml,
+    `asreml::update.asreml` = mock_update_asreml,
+    quiet = mock_quiet,
+    .package = "base",
+    {
+      # Use stub to replace the internal loglik_test function
+      stub(logl_test, "loglik_test", mock_loglik_test_zero)
+      
+      result <- logl_test(mock_model,
+                         rand.terms = c("Block"),
+                         decimals = 5,
+                         numeric = TRUE)  # This triggers the else branch
+      
+      # Check that zero p-values were replaced
+      expected_min_pval <- max(as.numeric("1e-5"), .Machine$double.eps)
+      expect_equal(result$LogLRT.pvalue, expected_min_pval)
+      expect_true(is.numeric(result$LogLRT.pvalue))
+      expect_true(result$LogLRT.pvalue > 0)
+    }
+  )
+})
