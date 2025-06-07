@@ -2,7 +2,7 @@ test_that("get_r_os returns correct structure and values", {
   result <- get_r_os()
   expect_type(result, "list")
   expect_named(result, c("os_ver", "os", "ver", "arm"))
-  
+
   # Check OS detection
   sys_info <- Sys.info()
   expected_os <- switch(sys_info[['sysname']],
@@ -18,13 +18,13 @@ test_that("get_r_os returns correct structure and values", {
 
 test_that("find_existing_package works correctly", {
   skip_on_cran()
-  
+
   # Test with no files
   withr::with_tempdir({
     result <- find_existing_package()
     expect_null(result)
   })
-  
+
   # Test with matching files
   withr::with_tempdir({
     file.create("asreml_4.1.0.zip")
@@ -33,7 +33,7 @@ test_that("find_existing_package works correctly", {
     result <- find_existing_package()
     expect_equal(basename(result), "asreml_4.2.0.zip")  # Should get the most recent one
   })
-  
+
   # Test with non-matching files
   withr::with_tempdir({
     file.create("other_package.zip")
@@ -117,7 +117,7 @@ test_that("parse_version_table handles edge cases", {
   # Test with empty input
   result <- parse_version_table(list(), character(0))
   expect_null(result)
-  
+
   # Test with malformed table data
   bad_tables <- list(c("header1", "header2"))  # Too few columns
   expect_error(parse_version_table(bad_tables, "ASReml-R 4.2 (All platforms)"))
@@ -127,10 +127,10 @@ test_that("parse_version_table handles edge cases", {
 test_that("get_version_table works with internet", {
   skip_on_cran()
   skip_if_not(curl::has_internet(), "No internet connection")
-  
+
   # Test with default URL
   result <- get_version_table()
-  
+
   if(nrow(result) > 0) {
     expected_cols <- c("os", "arm", "r_ver", "asr_ver")
     expect_true(all(expected_cols %in% colnames(result)))
@@ -184,18 +184,18 @@ test_that("ASReml installation integration test", {
   skip_on_cran()
   skip_on_os(c("windows", "mac"))
   skip_if_offline()
-  
+
   # Create temporary library directory
   temp_lib <- file.path(tempdir(), "test_lib")
   dir.create(temp_lib, showWarnings = FALSE, recursive = TRUE)
-  
+
   on.exit({
     # Clean up
     if(dir.exists(temp_lib)) {
       unlink(temp_lib, recursive = TRUE)
     }
   })
-  
+
   # Test quiet installation
   result <- tryCatch({
     install_asreml(library = temp_lib, quiet = TRUE, check_version = FALSE)
@@ -204,7 +204,7 @@ test_that("ASReml installation integration test", {
     # This is expected in test environment
     FALSE
   })
-  
+
   expect_type(result, "logical")
 })
 
@@ -283,6 +283,13 @@ test_that("install_asreml_package handles installation failures", {
   expect_false(result)
 })
 
+test_that("Invalid library option will fail", {
+    skip_on_cran()
+    expect_error(install_asreml(library = "abc"),
+                 "'library' must be a valid directory path\\. Provided\\: abc"
+    )
+})
+
 # test_that("functions handle malformed inputs gracefully", {
 #   # Test version comparison with missing package description
 #   mockery::stub(newer_version, ".check_package_available", function(pkg) TRUE)
@@ -333,7 +340,7 @@ test_that("install_asreml_package handles installation failures", {
 #     skip_on_cran()
 #     skip_on_ci()
 #     install_asreml(quiet = TRUE)
-#     expect_message(install_asreml(), 
+#     expect_message(install_asreml(),
 #                    "The latest version of ASReml-R available for your sysetm is already installed\\. To install anyway, set `force = TRUE`\\.")
 # })
 
