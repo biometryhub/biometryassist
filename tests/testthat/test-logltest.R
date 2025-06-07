@@ -465,32 +465,35 @@ test_that("logl_test integration test", {
 })
 
 test_that("logl_test handles zero p-values with numeric = TRUE", {
-  mock_model <- create_mock_asreml_model()
-  
-  # Create a mock loglik_test function that returns 0 p-values
-  mock_loglik_test_zero <- function(full, reduced, decimals = 3) {
-    return(0)  # Return exactly 0 to trigger the replacement logic
-  }
-  
-  with_mocked_bindings(
-    summary.asreml = mock_summary,
-    `asreml::update.asreml` = mock_update,
-    quiet = mock_quiet,
-    .package = "base",
-    {
-      # Use stub to replace the internal loglik_test function
-      stub(logl_test, "loglik_test", mock_loglik_test_zero)
-      
-      result <- logl_test(mock_model,
-                         rand.terms = c("Block"),
-                         decimals = 5,
-                         numeric = TRUE)  # This triggers the else branch
-      
-      # Check that zero p-values were replaced
-      expected_min_pval <- max(as.numeric("1e-5"), .Machine$double.eps)
-      expect_equal(result$LogLRT.pvalue, expected_min_pval)
-      expect_true(is.numeric(result$LogLRT.pvalue))
-      expect_true(result$LogLRT.pvalue > 0)
-    }
-  )
+    mock_model <- create_mock_asreml_model()
+
+    # Create reduced model with identical loglik to force zero p-value
+    reduced_model <- mock_model
+    reduced_model$loglik <- mock_model$loglik  # Same loglik = zero LRT statistic
+    reduced_model$vparameters <- mock_model$vparameters  # Same parameters
+    reduced_model$coefficients <- mock_model$coefficients  # Same coefficients
+
+    # Mock functions
+    mock_summary <- mock(list(varcomp = attr(mock_model, "summary_varcomp")))
+    mock_update <- mock(reduced_model, cycle = TRUE)
+    mock_quiet_fn <- mock(reduced_model, cycle = TRUE)
+
+    # Mock pchisq to return 1 (which gives p-value of 0)
+    mock_pchisq <- mock(1, cycle = TRUE)
+
+    mockery::stub(logl_test, 'summary', mock_summary)
+    mockery::stub(logl_test, 'asreml::update.asreml', mock_update)
+    mockery::stub(logl_test, 'quiet', mock_quiet_fn)
+    mockery::stub(logl_test, 'stats::pchisq', mock_pchisq)
+
+    result <- logl_test(mock_model,
+                        rand.terms = c("Block"),
+                        decimals = 5,
+                        numeric = TRUE)
+
+    # Check that zero p-values were replaced
+    expected_min_pval <- max(as.numeric("1e-5"), .Machine$double.eps)
+    expect_equal(result$LogLRT.pvalue, expected_min_pval)
+    expect_true(is.numeric(result$LogLRT.pvalue))
+    expect_true(result$LogLRT.pvalue > 0)
 })
