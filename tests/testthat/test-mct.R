@@ -193,9 +193,9 @@ test_that("Significance values that are too high give a warning or error", {
     expect_warning(multiple_comparisons(dat.aov, classify = "Species", sig = 0.95),
                    "Significance level given by `sig` is high. Perhaps you meant 0.05?")
     expect_error(multiple_comparisons(dat.aov, classify = "Species", sig = 5),
-                   "Significance level given by `sig` is high. Perhaps you meant 0.05?")
+                 "Significance level given by `sig` is high. Perhaps you meant 0.05?")
     expect_error(multiple_comparisons(dat.aov, classify = "Species", sig = 95),
-                   "Significance level given by `sig` is high. Perhaps you meant 0.05?")
+                 "Significance level given by `sig` is high. Perhaps you meant 0.05?")
 })
 
 test_that("Use of pred argument gives warning", {
@@ -356,5 +356,33 @@ Please specify the 'trans' argument if you want back-transformed predictions\\."
     expect_warning(multiple_comparisons(dat.aov.power, classify = "Species"),
                    "The response variable appears to be transformed in the model formula: Petal\\.Width\\^3\\.
 Please specify the 'trans' argument if you want back-transformed predictions\\.")
+})
+
+
+# Test aliased output prints
+test_that("print.mct with no aliased attribute", {
+    dat.aov <- aov(Petal.Width ~ Species, data = iris)
+    output <- multiple_comparisons(dat.aov, classify = "Species", plot = FALSE)
+    attr(output, "aliased") <- "ABC"
+
+    expect_true("aliased" %in% names(attributes(output)))
+    expect_length(attr(output, "aliased"), 1)
+    expect_output(print(output),
+                  "Aliased level is: ABC")
+
+    attr(output, "aliased") <- c("ABC", "DEF")
+
+    expect_length(attr(output, "aliased"), 2)
+    expect_true("aliased" %in% names(attributes(output)))
+    expect_output(print(output),
+                  "Aliased levels are: ABC and DEF")
+
+    attr(output, "aliased") <- c("ABC", "DEF", "GHI")
+
+    expect_length(attr(output, "aliased"), 3)
+    expect_true("aliased" %in% names(attributes(output)))
+    expect_output(print(output),
+                  "Aliased levels are: ABC, DEF and GHI")
+
 })
 
