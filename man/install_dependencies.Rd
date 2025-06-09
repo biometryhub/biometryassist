@@ -4,7 +4,10 @@
 \alias{install_dependencies}
 \title{Install required dependencies}
 \usage{
-install_dependencies(quiet, library)
+install_dependencies(quiet, library, verbose = FALSE)
+}
+\arguments{
+\item{verbose}{Logical for verbose output}
 }
 \description{
 Install required dependencies

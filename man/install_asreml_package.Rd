@@ -4,7 +4,7 @@
 \alias{install_asreml_package}
 \title{Install the ASReml package}
 \usage{
-install_asreml_package(save_file, library, quiet, os)
+install_asreml_package(save_file, library, quiet, os, verbose = FALSE)
 }
 \arguments{
 \item{save_file}{Path to package file}
@@ -14,6 +14,8 @@ install_asreml_package(save_file, library, quiet, os)
 \item{quiet}{Whether to suppress messages}
 
 \item{os}{Operating system}
+
+\item{verbose}{Logical for verbose output}
 }
 \value{
 TRUE if successful, FALSE otherwise

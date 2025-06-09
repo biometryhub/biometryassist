@@ -4,7 +4,10 @@
 \alias{download_asreml_package}
 \title{Download asreml package file}
 \usage{
-download_asreml_package(url)
+download_asreml_package(url, verbose = FALSE)
+}
+\arguments{
+\item{verbose}{Logical for verbose output}
 }
 \description{
 Download asreml package file

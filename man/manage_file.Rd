@@ -4,7 +4,7 @@
 \alias{manage_file}
 \title{Manage the downloaded file}
 \usage{
-manage_file(save_file, keep_file, filename)
+manage_file(save_file, keep_file, filename, verbose = FALSE)
 }
 \arguments{
 \item{save_file}{Path to the downloaded file}
@@ -12,6 +12,8 @@ manage_file(save_file, keep_file, filename)
 \item{keep_file}{Whether/where to keep the file}
 
 \item{filename}{Original filename}
+
+\item{verbose}{Logical for verbose output}
 }
 \value{
 logical; TRUE if file successfully handled, FALSE otherwise

@@ -1,9 +1,9 @@
-use#' Install or update the ASReml-R package
+#' Install or update the ASReml-R package
 #'
 #' @description Helper functions for installing or updating the ASReml-R package, intended to reduce the difficulty of finding the correct version for your operating system and R version.
 #'
 #' @param library Library location to install ASReml-R. Uses first option in `.libPaths()` by default.
-#' @param quiet Logical (default `FALSE`). Should package be installed quietly?
+#' @param quiet Logical or character (default `FALSE`). Controls output verbosity. `FALSE` shows normal messages, `TRUE` suppresses messages, `"verbose"` shows detailed debugging information.
 #' @param force Logical (default `FALSE`). Force ASReml-R to install. Useful for upgrading if it is already installed.
 #' @param keep_file Should the downloaded asreml package file be kept? Default is `FALSE`. `TRUE` downloads to current directory. A file path can also be provided to save to another directory. See `Details` for more information.
 #' @param check_version Logical (default `TRUE`). Should function check if there is a newer version of asreml available before attempting to download and install?
@@ -25,67 +25,113 @@ use#' Install or update the ASReml-R package
 #'
 #' # Example 2: install asreml and save file for later
 #' install_asreml(keep_file = TRUE)
+#'
+#' # Example 3: install with verbose debugging
+#' install_asreml(quiet = "verbose")
 #' }
 #'
 install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALSE, keep_file = FALSE, check_version = TRUE) {
 
+    # Helper function to handle verbose messaging
+    verbose_msg <- function(msg) {
+        if (identical(quiet, "verbose")) {
+            message("[DEBUG] ", msg)
+        }
+    }
+
+    # Helper function to handle normal messaging
+    normal_msg <- function(msg) {
+        if (!isTRUE(quiet)) {
+            message(msg)
+        }
+    }
+
+    verbose_msg("Starting ASReml-R installation process")
+    verbose_msg(paste("Library path:", library))
+    verbose_msg(paste("Force install:", force))
+    verbose_msg(paste("Check version:", check_version))
+    verbose_msg(paste("Keep file:", keep_file))
+
     # Validate library parameter
+    verbose_msg("Validating library parameter")
     if (!is.character(library) || length(library) != 1 || !dir.exists(library)) {
         stop("'library' must be a valid directory path. Provided: ", library, call. = FALSE)
     }
 
     # Check internet connectivity
+    verbose_msg("Checking internet connectivity")
     if (!curl::has_internet()) {
         stop("No internet connection detected. Cannot download ASReml-R package.", call. = FALSE)
     }
+    verbose_msg("Internet connection confirmed")
 
+    verbose_msg("Checking for newer version availability")
     new_version <- if(check_version) newer_version() else FALSE
+    verbose_msg(paste("Newer version available:", new_version))
 
     if(.check_package_available("asreml") && isFALSE(new_version) && isFALSE(force)) {
-        if(!quiet) message("The latest version of ASReml-R available for your system is already installed. To install anyway, set `force = TRUE`.")
+        verbose_msg("Latest version already installed and force=FALSE")
+        normal_msg("The latest version of ASReml-R available for your system is already installed. To install anyway, set `force = TRUE`.")
         return(invisible(TRUE))
     }
 
     # Get OS and R version
+    verbose_msg("Detecting operating system and R version")
     os_ver <- get_r_os()
+    verbose_msg(paste("Detected OS:", os_ver$os))
+    verbose_msg(paste("Detected R version:", os_ver$ver))
+    verbose_msg(paste("ARM architecture:", os_ver$arm))
+    verbose_msg(paste("OS version string:", os_ver$os_ver))
+
     if(os_ver$os=="mac") {
+        verbose_msg("macOS detected - checking/creating Mac folder")
         create_mac_folder()
     }
 
     url <- paste0("https://link.biometryhubwaite.com/", os_ver$os_ver)
+    verbose_msg(paste("Download URL:", url))
 
     # Look for existing package file, download if not found
+    verbose_msg("Looking for existing package file")
     save_file <- find_existing_package()
 
     if(is.null(save_file)) {
+        verbose_msg("No existing package file found - downloading")
         # Download file with better error handling
-        if(!quiet) {
-            message("\nDownloading and installing ASReml-R. This may take some time, depending on internet speed...\n")
-        }
-
-        save_file <- download_asreml_package(url)
+        normal_msg("\nDownloading and installing ASReml-R. This may take some time, depending on internet speed...\n")
+        save_file <- download_asreml_package(url, verbose = identical(quiet, "verbose"))
+        verbose_msg(paste("Downloaded package to:", save_file))
+    } else {
+        verbose_msg(paste("Using existing package file:", save_file))
     }
 
     # If forcing installation, remove existing version to avoid errors on installation
     if(force && .check_package_available("asreml") && os_ver$os != "linux") {
-        remove_existing_asreml()
+        verbose_msg("Force=TRUE and existing package found - removing existing installation")
+        remove_existing_asreml(verbose = identical(quiet, "verbose"))
     }
 
     # Install dependencies if necessary
-    install_dependencies(quiet, library)
+    verbose_msg("Checking and installing dependencies")
+    install_dependencies(quiet, library, verbose = identical(quiet, "verbose"))
 
     # Install asreml
-    install_result <- install_asreml_package(save_file, library, quiet, os_ver$os)
+    verbose_msg("Installing ASReml-R package")
+    install_result <- install_asreml_package(save_file, library, quiet, os_ver$os, verbose = identical(quiet, "verbose"))
+    verbose_msg(paste("Installation result:", install_result))
 
     # Handle file cleanup/retention
-    manage_file(save_file, keep_file, basename(save_file))
+    verbose_msg("Managing downloaded file")
+    manage_file(save_file, keep_file, basename(save_file), verbose = identical(quiet, "verbose"))
 
     if(install_result & .check_package_available("asreml")) {
-        if(!quiet) message("ASReml-R successfully installed!")
+        verbose_msg("Installation successful - ASReml-R is available")
+        normal_msg("ASReml-R successfully installed!")
         invisible(TRUE)
     }
     else {
-        if(!quiet) warning("There was a problem with installation and ASReml-R was not successfully installed.")
+        verbose_msg("Installation failed - ASReml-R is not available")
+        if(!isTRUE(quiet)) warning("There was a problem with installation and ASReml-R was not successfully installed.")
         invisible(FALSE)
     }
 }
@@ -118,17 +164,27 @@ find_existing_package <- function() {
 }
 
 #' Download asreml package file
+#' @param verbose Logical for verbose output
 #' @keywords internal
-download_asreml_package <- function(url) {
+download_asreml_package <- function(url, verbose = FALSE) {
+    if (verbose) message("[DEBUG] Creating temporary file for download")
     save_file <- tempfile("asreml_")
 
     result <- tryCatch({
+        if (verbose) message("[DEBUG] Initiating download from: ", url)
         response <- curl::curl_fetch_disk(url = url, path = save_file)
+        if (verbose) message("[DEBUG] Download completed, response URL: ", response$url)
+
         filename <- basename(response$url)
+        if (verbose) message("[DEBUG] Extracted filename: ", filename)
+
         final_path <- file.path(dirname(save_file), filename)
+        if (verbose) message("[DEBUG] Renaming to final path: ", final_path)
+
         file.rename(save_file, final_path)
         normalizePath(final_path)
     }, error = function(e) {
+        if (verbose) message("[DEBUG] Download failed with error: ", e$message)
         stop("Failed to download ASReml-R package: ", e$message)
         NULL
     })
@@ -137,39 +193,59 @@ download_asreml_package <- function(url) {
 }
 
 #' Remove existing ASReml installation
+#' @param verbose Logical for verbose output
 #' @keywords internal
-remove_existing_asreml <- function() {
+remove_existing_asreml <- function(verbose = FALSE) {
     tryCatch({
+        if (verbose) message("[DEBUG] Checking if asreml namespace is loaded")
         if("asreml" %in% loadedNamespaces()) {
+            if (verbose) message("[DEBUG] Unloading asreml namespace")
             unloadNamespace("asreml")
         }
+        if (verbose) message("[DEBUG] Checking if asreml package is attached")
         if("asreml" %in% .packages()) {
+            if (verbose) message("[DEBUG] Detaching asreml package")
             detach("package:asreml", unload = TRUE, force = TRUE)
         }
+        if (verbose) message("[DEBUG] Removing asreml package")
         suppressMessages(remove.packages("asreml"))
+        if (verbose) message("[DEBUG] Successfully removed existing asreml package")
     }, error = function(e) {
+        if (verbose) message("[DEBUG] Error removing existing package: ", e$message)
         warning("Could not remove existing asreml package: ", e$message)
     })
 }
 
 #' Install required dependencies
+#' @param verbose Logical for verbose output
 #' @keywords internal
-install_dependencies <- function(quiet, library) {
+install_dependencies <- function(quiet, library, verbose = FALSE) {
+    if (verbose) message("[DEBUG] Checking required dependencies")
     required_deps <- c("data.table", "ggplot2", "jsonlite")
+    if (verbose) message("[DEBUG] Required dependencies: ", paste(required_deps, collapse = ", "))
+
     installed_pkgs <- rownames(installed.packages(lib.loc = library))
+    if (verbose) message("[DEBUG] Currently installed packages: ", length(installed_pkgs), " packages")
 
     missing_deps <- setdiff(required_deps, installed_pkgs)
+    if (verbose) message("[DEBUG] Missing dependencies: ", paste(missing_deps, collapse = ", "))
 
     # Special check for data.table version
+    if (verbose) message("[DEBUG] Checking data.table version requirement (>=1.14)")
     if(!rlang::is_installed("data.table", version = "1.14")) {
+        if (verbose) message("[DEBUG] data.table version requirement not met")
         missing_deps <- unique(c(missing_deps, "data.table"))
     }
 
     if(length(missing_deps) > 0) {
-        if(!quiet) {
+        if (verbose) message("[DEBUG] Installing missing dependencies: ", paste(missing_deps, collapse = ", "))
+        if(!isTRUE(quiet)) {
             message("Installing missing dependencies: ", paste(missing_deps, collapse = ", "))
         }
         install.packages(missing_deps, lib = library, repos = "https://cloud.r-project.org")
+        if (verbose) message("[DEBUG] Dependency installation completed")
+    } else {
+        if (verbose) message("[DEBUG] All dependencies already satisfied")
     }
 }
 
@@ -178,18 +254,29 @@ install_dependencies <- function(quiet, library) {
 #' @param library Library path
 #' @param quiet Whether to suppress messages
 #' @param os Operating system
+#' @param verbose Logical for verbose output
 #' @returns TRUE if successful, FALSE otherwise
 #' @keywords internal
-install_asreml_package <- function(save_file, library, quiet, os) {
+install_asreml_package <- function(save_file, library, quiet, os, verbose = FALSE) {
+    if (verbose) message("[DEBUG] Starting ASReml package installation")
+    if (verbose) message("[DEBUG] Package file: ", save_file)
+    if (verbose) message("[DEBUG] Library path: ", library)
+    if (verbose) message("[DEBUG] Operating system: ", os)
+    if (verbose) message("[DEBUG] Installation type: ", if(os == "win") "binary" else "source")
+
     tryCatch({
         install.packages(save_file,
                          lib = library,
                          repos = NULL,
-                         verbose = !quiet,
+                         verbose = !isTRUE(quiet),
                          type = if(os == "win") "binary" else "source")
-        .check_package_available("asreml")
+        if (verbose) message("[DEBUG] install.packages() completed, checking if package is available")
+        result <- .check_package_available("asreml")
+        if (verbose) message("[DEBUG] Package availability check result: ", result)
+        result
     }, error = function(e) {
-        if(!quiet) warning("Installation failed: ", e$message)
+        if (verbose) message("[DEBUG] Installation error: ", e$message)
+        if(!isTRUE(quiet)) warning("Installation failed: ", e$message)
         FALSE
     })
 }
@@ -378,12 +465,16 @@ create_mac_folder <- function() {
 #' @param save_file Path to the downloaded file
 #' @param keep_file Whether/where to keep the file
 #' @param filename Original filename
+#' @param verbose Logical for verbose output
 #' @returns logical; TRUE if file successfully handled, FALSE otherwise
 #' @keywords internal
-manage_file <- function(save_file, keep_file, filename) {
+manage_file <- function(save_file, keep_file, filename, verbose = FALSE) {
+    if (verbose) message("[DEBUG] Managing downloaded file: ", save_file)
+    if (verbose) message("[DEBUG] Keep file setting: ", keep_file)
 
     # Remove file if not keeping
     if(isFALSE(keep_file)) {
+        if (verbose) message("[DEBUG] Removing downloaded file (keep_file=FALSE)")
         unlink(save_file)
         return(TRUE)
     }
@@ -391,9 +482,12 @@ manage_file <- function(save_file, keep_file, filename) {
     # Determine destination path
     if(isTRUE(keep_file)) {
         dest_path <- filename  # Current directory
+        if (verbose) message("[DEBUG] Saving file to current directory: ", dest_path)
     } else if(is.character(keep_file) && length(keep_file) == 1 && dir.exists(keep_file)) {
         dest_path <- file.path(keep_file, filename)
+        if (verbose) message("[DEBUG] Saving file to specified directory: ", dest_path)
     } else {
+        if (verbose) message("[DEBUG] Invalid keep_file argument, removing file")
         warning("Invalid keep_file argument. File not saved.", call. = FALSE)
         unlink(save_file)
         return(FALSE)
@@ -402,8 +496,10 @@ manage_file <- function(save_file, keep_file, filename) {
     # Try to move/copy the file
     success <- tryCatch({
         file.rename(save_file, dest_path)
+        if (verbose) message("[DEBUG] Successfully moved file to: ", dest_path)
         TRUE
     }, error = function(e) {
+        if (verbose) message("[DEBUG] Failed to move file: ", e$message)
         warning("Could not save ASReml file to specified location: ", e$message, call. = FALSE)
         unlink(save_file)
         FALSE

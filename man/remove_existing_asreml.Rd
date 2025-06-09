@@ -4,7 +4,10 @@
 \alias{remove_existing_asreml}
 \title{Remove existing ASReml installation}
 \usage{
-remove_existing_asreml()
+remove_existing_asreml(verbose = FALSE)
+}
+\arguments{
+\item{verbose}{Logical for verbose output}
 }
 \description{
 Remove existing ASReml installation
