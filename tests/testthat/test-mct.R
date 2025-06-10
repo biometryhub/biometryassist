@@ -386,3 +386,50 @@ test_that("print.mct with no aliased attribute", {
 
 })
 
+test_that("get_predictions.lme returns expected structure and values", {
+  skip_if_not_installed("nlme")
+  suppressPackageStartupMessages(library(nlme))
+  fm1 <- lme(distance ~ age, random = ~ 1 | Subject, data = Orthodont)
+  result <- get_predictions(fm1, classify = "age")
+  expect_type(result, "list")
+  expect_true(all(c("predictions", "sed", "df", "ylab", "aliased_names") %in% names(result)))
+  expect_true(is.data.frame(result$predictions))
+  expect_true(is.matrix(result$sed))
+  expect_true(is.numeric(result$df))
+  expect_true(is.character(result$ylab) || is.symbol(result$ylab))
+  expect_null(result$aliased_names)
+  expect_true("predicted.value" %in% names(result$predictions))
+  expect_true("std.error" %in% names(result$predictions))
+})
+
+test_that("get_predictions.gls returns expected structure and values", {
+  skip_if_not_installed("nlme")
+  suppressPackageStartupMessages(library(nlme))
+  fm2 <- gls(distance ~ age, data = Orthodont)
+  result <- get_predictions(fm2, classify = "age")
+  expect_type(result, "list")
+  expect_true(all(c("predictions", "sed", "df", "ylab", "aliased_names") %in% names(result)))
+  expect_true(is.data.frame(result$predictions))
+  expect_true(is.matrix(result$sed))
+  expect_true(is.numeric(result$df))
+  expect_true(is.character(result$ylab) || is.symbol(result$ylab))
+  expect_null(result$aliased_names)
+  expect_true("predicted.value" %in% names(result$predictions))
+  expect_true("std.error" %in% names(result$predictions))
+})
+
+test_that("get_predictions.lme errors for invalid classify", {
+  skip_if_not_installed("nlme")
+  suppressPackageStartupMessages(library(nlme))
+  fm1 <- lme(distance ~ age, random = ~ 1 | Subject, data = Orthodont)
+  expect_error(get_predictions(fm1, classify = "not_a_term"),
+               "not_a_term is not a term in the model. Please check model specification.")
+})
+
+test_that("get_predictions.gls errors for invalid classify", {
+  skip_if_not_installed("nlme")
+  suppressPackageStartupMessages(library(nlme))
+  fm2 <- gls(distance ~ age, data = Orthodont)
+  expect_error(get_predictions(fm2, classify = "not_a_term"),
+               "not_a_term is not a term in the model. Please check model specification.")
+})
