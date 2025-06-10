@@ -1,11 +1,10 @@
-## Resubmission
+## Submission
 
-This resubmission is  because the previous version was uploaded with the incorrect comments.
-This version fixes breaking changes introduced by version 1.0.8 of predictmeans, to be submitted to CRAN shortly.
+Resubmission with incremented version number. One of the functions I was intending to submit with previous (1.2.0) update was excluded via .Rbuildignore - now included.
 
 ## Test environments
-* Local Windows 10 install, R 4.2.2
-* Ubuntu 22.04 (Virtual Machine), R 4.2.2
+* Local Windows 10 install, R 4.4.0
+* Ubuntu 22.04 (Virtual Machine), R 4.4.0
 * Rhub `check_for_cran()`
 * Github Actions:
     - macOS: r-release
@@ -19,7 +18,4 @@ There was 1 NOTE:
 
 * checking package dependencies ... NOTE
   Packages which this enhances but not available for checking:
-    'asreml', 'ARTool', 'sommer'
-
-  
-  
+    'asreml'

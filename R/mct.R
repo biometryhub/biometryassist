@@ -1,4 +1,4 @@
-#' Multiple Comparison Tests
+#' Perform Multiple Comparison Tests on a statistical model
 #'
 #' A function for comparing and ranking predicted means with Tukey's Honest Significant Difference (HSD) Test.
 #'
@@ -23,7 +23,7 @@
 #'
 #' @importFrom multcompView multcompLetters
 #' @importFrom emmeans emmeans
-#' @importFrom stats model.frame predict qtukey qt terms
+#' @importFrom stats model.frame predict qtukey qt terms var
 #' @importFrom utils packageVersion
 #'
 #' @details Some transformations require that data has a small offset applied, otherwise it will cause errors (for example taking a log of 0, or square root of negative values). In order to correctly reverse this offset, if the `trans` argument is supplied, an offset value must also be supplied. If there was no offset required for a transformation, then use a value of 0 for the `offset` argument.
@@ -193,7 +193,7 @@ multiple_comparisons <- function(model.obj,
         }
 
         #For use with asreml 4+
-        if(utils::packageVersion("asreml") > 4) {
+        if(utils::packageVersion("asreml") > "4") {
             pp <- pred.obj$pvals
             sed <- pred.obj$sed
         }
@@ -470,11 +470,21 @@ multiple_comparisons <- function(model.obj,
         attr(pp.tab, 'aliased') <- as.character(aliased_names)
     }
 
+    # Add the critical value as an attribute
+    if(stats::var(as.vector(crit.val), na.rm = TRUE) < 1e-10) {
+        attr(pp.tab, 'HSD') <- crit.val[1,2]
+    }
+    else {
+        attr(pp.tab, 'HSD') <- crit.val
+    }
+
+    rownames(pp.tab) <- NULL
+
     return(pp.tab)
 }
 
 
-#' Print method for multiple_comparisons
+#' Print output of multiple_comparisons
 #'
 #' @param x An mct object to print to the console.
 #' @param ... Other arguments

@@ -2,7 +2,7 @@
 % Please edit documentation in R/mct.R
 \name{multiple_comparisons}
 \alias{multiple_comparisons}
-\title{Multiple Comparison Tests}
+\title{Perform Multiple Comparison Tests on a statistical model}
 \usage{
 multiple_comparisons(
   model.obj,

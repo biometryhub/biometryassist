@@ -14,7 +14,7 @@ coverage](https://codecov.io/gh/biometryhub/biometryassist/branch/main/graph/bad
 status](https://github.com/biometryhub/biometryassist/workflows/R-CMD-check/badge.svg)](https://github.com/biometryhub/biometryassist/actions)
 [![minimal R
 version](https://img.shields.io/badge/R%3E%3D-4.0.0-6666ff.svg)](https://cran.r-project.org/)
-[![packageversion](https://img.shields.io/badge/Package%20version-1.1.2-orange.svg?style=flat-square)](https://github.com/biometryhub/biometryassist/commits/main)
+[![packageversion](https://img.shields.io/badge/Package%20version-1.2.1-orange.svg?style=flat-square)](https://github.com/biometryhub/biometryassist/commits/main)
 [![Licence](https://img.shields.io/github/license/mashape/apistatus.svg)](https://choosealicense.com/licenses/mit/)
 [![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fbiometryhub%2Fbiometryassist&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=hits&edge_flat=false)](https://hits.seeyoufarm.com)
 <!-- badges: end -->
@@ -33,7 +33,7 @@ longer maintained, but can still be found at
 ## Installation
 
 As of version 1.0.0 the biometryassist package is now [on
-CRAN](https://cran.r-project.org/package=biometryassist) 🙌. That means
+CRAN](https://cran.r-project.org/package=biometryassist) 🙌 That means
 that installation is as easy as running:
 
 ``` r
@@ -42,16 +42,16 @@ install.packages("biometryassist")
 
 ### Development version
 
-⚠️**Warning**: The development version is unstable and liable to change
+⚠ **Warning**: The development version is unstable and liable to change
 more often than the CRAN version. It may have bugs fixed, but there may
-be other currently unknown bugs introduced. ⚠️
+be other currently unknown bugs introduced. ⚠
 
 Use the following code to install the latest development version of this
 package.
 
 ``` r
 if(!require("remotes")) install.packages("remotes") 
-remotes::install_github("biometryhub/biometryassist@dev", upgrade = FALSE)
+remotes::install_github("biometryhub/biometryassist@dev")
 ```
 
 ## Using the package

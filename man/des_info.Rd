@@ -2,7 +2,7 @@
 % Please edit documentation in R/des_info.R
 \name{des_info}
 \alias{des_info}
-\title{Produces graph of design layout, skeletal ANOVA table and data frame with complete design}
+\title{Produce a graph of design layout, skeletal ANOVA table and data frame with complete design}
 \usage{
 des_info(
   design.obj,
@@ -48,7 +48,7 @@ des_info(
 
 \item{size}{Increase or decrease the text size within the plot for treatment labels. Numeric with default value of 4.}
 
-\item{margin}{Logical (default FALSE). Expand the plot to the edges of the plotting area i.e. remove white space between plot and axes.}
+\item{margin}{Logical (default FALSE). Setting to \code{TRUE} will add a margin (white space) between plot and axes.}
 
 \item{save}{One of \code{FALSE} (default)/\code{"none"}, \code{TRUE}/\code{"both"}, \code{"plot"} or \code{"workbook"}. Specifies which output to save.}
 
@@ -66,7 +66,7 @@ des_info(
 A list containing a data frame with the complete design, a ggplot object with plot layout, the seed (if \code{return.seed = TRUE}), and the \code{satab} object, allowing repeat output of the \code{satab} table via \code{cat(output$satab)}.
 }
 \description{
-Produces graph of design layout, skeletal ANOVA table and data frame with complete design
+Produce a graph of design layout, skeletal ANOVA table and data frame with complete design
 }
 \details{
 If \code{save = TRUE} (or \code{"both"}), both the plot and the workbook will be saved to the current working directory, with filename given by \code{savename}. If one of either \code{"plot"} or \code{"workbook"} is specified, only that output is saved. If \code{save = FALSE} (the default, or equivalently \code{"none"}), nothing will be output.

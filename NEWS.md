@@ -1,3 +1,33 @@
+# biometryassist 1.2.1
+
+## Bug Fixes
+
+- The new `summary_graph()` function was accidentally left out of the CRAN submission.
+
+# biometryassist 1.2.0
+
+## Major changes
+
+- Introduced the `summary_graph()` (#75) and `heat_map()` (#19) functions 
+- Enabled arbitrary `row`, `column`, `block` and `treatment` columns to be provided in the `autoplot.design()` function, to enable more general plotting of designs. (#28)
+
+## Minor changes
+
+- Implemented the ability to plot designs with buffer plots. (#68)
+- Changed `install_asreml()` to check if there is a later version before downloading.
+- Enabled non-standard evaluation input of column names in `autoplot.design()`.
+
+
+# biometryassist 1.1.3
+
+## Bug fixes
+
+- Better checking of column names in data provided to `multiple_comparisons()` to prevent breaking. (#53)
+- Updated install_asreml() to work with ARM chip macOS devices. (#54)
+- Wrote a vignette with instructions for installing ASReml-R. (#55)
+- Fixed variogram to enable it to work with dsum models (i.e. MET models). (#61)
+
+
 # biometryassist 1.1.2
 
 ## Bug fixes

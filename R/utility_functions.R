@@ -16,41 +16,20 @@ quiet <- function(x) {
 }
 
 
-#' Create a grob from a plot to work with grid graphics
-#'
-#' @param plot The plot to coerce to a grob.
-#' @param device The device type to use.
-#'
-#' @return A recordedGrob object (invisibly) which can be plotted with grid graphics.
-#' @keywords internal
-as_grob <- function(plot, device = ifelse("ragg" %in% rownames(installed.packages()), "agg", "pdf")) {
-    if (is.null(device)) {
-        device <- null_dev_env$current
-    }
-    grid::recordGrob(
-        tryCatch(
-            print(plot, newpage=FALSE),
-            error = function(e) {
-                grid::grid.text(e$message)
-            }
-        ), list(plot = plot, device = device))
-}
-
-
 ######################################################
 # Start up function
 # this function is executed once the package is loaded
 ######################################################
 
-#' @importFrom utils available.packages packageVersion
+#' @importFrom utils available.packages packageVersion compareVersion
 #' @importFrom rlang is_interactive is_installed
 .onAttach <- function(library, pkg)
 {
-    installed_version <- utils::packageVersion('biometryassist')
+    local_version <- utils::packageVersion('biometryassist')
 
-    if(rlang::is_interactive() && !isFALSE(rlang::peek_option("biometryassist.check"))) {# && Sys.time() > (last_load + 1)) {
-        output <- paste("    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
-                        paste("    |  ", pkg, " version ", installed_version, "                                     |",sep=""),
+    if(rlang::is_interactive() && !isFALSE(rlang::peek_option("biometryassist.check"))) {
+        output <- paste(paste0("    ", paste0(rep("~", times = 69), collapse = "")),
+                        paste("    |  ", pkg, " version ", local_version, "                                     |",sep=""),
                         "    |  Authors: Sharon Nielsen, Sam Rogers, Annie Conway                |",
                         "    |  Developed at the University of Adelaide with funding provided    |",
                         "    |  by the Australian Grains Research and Development Corporation.   |",
@@ -58,9 +37,9 @@ as_grob <- function(plot, device = ifelse("ragg" %in% rownames(installed.package
                         "    |                                                                   |",
                         "    |  If you have used this package in your work, please cite it.      |",
                         "    |  Type 'citation('biometryassist')' for the citation details.      |",
-                        "    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n", sep = "\n")
+                        paste0("    ", paste0(rep("~", times = 69), collapse = ""), "\n"), sep = "\n")
 
-        if(rlang::is_installed("crayon")) {
+        if(is_installed("crayon")) {
             packageStartupMessage(crayon::green(output), appendLF=TRUE)
         }
         else {
@@ -68,7 +47,7 @@ as_grob <- function(plot, device = ifelse("ragg" %in% rownames(installed.package
         }
 
         # check which version is more recent
-        current_version <- tryCatch(
+        cran_version <- tryCatch(
             {
                 packages <- utils::available.packages()
                 ver <- packages["biometryassist","Version"]
@@ -78,23 +57,21 @@ as_grob <- function(plot, device = ifelse("ragg" %in% rownames(installed.package
             }
         )
 
-        if(!is.na(current_version) && current_version > installed_version) { # installed version < current version on CRAN
-            warning("    biometryassist version ", current_version, " is now available.\n",
+        if(compare_version(cran_version, as.character(local_version)) == 1) { # current version on CRAN newer than installed
+            warning("    biometryassist version ", cran_version, " is now available.\n",
                     "    Please update biometryassist by running\n",
                     "    install.packages('biometryassist')", call. = FALSE)
         }
-        # else {
-        #   output2 <- paste("    The latest version of this package is available at",
-        #                    "    https://github.com/biometryhub/biometryassist. To update type:",
-        #                    "    remotes::install_github('biometryhub/biometryassist')", sep = "\n")
-        #
-        #   if(rlang::is_installed("crayon")) {
-        #     packageStartupMessage(crayon::green(output2),appendLF=TRUE)
-        #   }
-        #   else {
-        #     packageStartupMessage(output2,appendLF=TRUE)
-        #   }
-        # }
     }
     invisible()
+}
+
+#' Function to compare package version for mocking
+#'
+#' @param a,b Character strings representing package version numbers.
+#'
+#' @return Numeric. `0` if the numbers are equal, `-1` if `b` is later and `1` if `a` is later
+#' @keywords internal
+compare_version <- function(a, b) {
+    return(utils::compareVersion(as.character(a), as.character(b)))
 }

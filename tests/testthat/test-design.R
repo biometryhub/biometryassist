@@ -685,7 +685,7 @@ test_that("Various colour blind spellings and options", {
 
 })
 
-test_that("Alternative palattes work", {
+test_that("Alternative palettes work", {
     # CRD
     d1 <- design("crd", treatments = LETTERS[1:11], reps = 4,
                  nrows = 11, ncols = 4, seed = 42, quiet = TRUE, plot = FALSE)
@@ -696,12 +696,12 @@ test_that("Alternative palattes work", {
                  seed = 42, quiet = TRUE, plot = FALSE)
 
 
-    vdiffr::expect_doppelganger(title = "CRD RdBu palatte", autoplot(d1, palette = "RdBu"))
-    vdiffr::expect_doppelganger(title = "CRD Set3 palatte", autoplot(d1, palette = "Set3"))
-    vdiffr::expect_doppelganger(title = "CRD Paired palatte", autoplot(d1, palette = "Paired"))
-    vdiffr::expect_doppelganger(title = "RCBD RdBu palatte", autoplot(d2, palette = "RdBu"))
-    vdiffr::expect_doppelganger(title = "RCBD Set3 palatte", autoplot(d2, palette = "Set3"))
-    vdiffr::expect_doppelganger(title = "RCBD Paired palatte", autoplot(d2, palette = "Paired"))
+    vdiffr::expect_doppelganger(title = "CRD RdBu palette", autoplot(d1, palette = "RdBu"))
+    vdiffr::expect_doppelganger(title = "CRD Set3 palette", autoplot(d1, palette = "Set3"))
+    vdiffr::expect_doppelganger(title = "CRD Paired palette", autoplot(d1, palette = "Paired"))
+    vdiffr::expect_doppelganger(title = "RCBD RdBu palette", autoplot(d2, palette = "RdBu"))
+    vdiffr::expect_doppelganger(title = "RCBD Set3 palette", autoplot(d2, palette = "Set3"))
+    vdiffr::expect_doppelganger(title = "RCBD Paired palette", autoplot(d2, palette = "Paired"))
 })
 
 test_that("Invalid palette option produces error", {
@@ -714,4 +714,119 @@ test_that("Invalid palette option produces error", {
     expect_error(autoplot(d1, palette = "spectral"), "Invalid value for palette.")
 })
 
+test_that("Adding buffers to plots works", {
+    # CRD
+    d1 <- design("crd", treatments = LETTERS[1:11], reps = 4,
+                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE, plot = FALSE)
+
+    expect_equal(length(unique(d1$design$row)), 11)
+    expect_equal(length(unique(d1$design$col)), 4)
+    vdiffr::expect_doppelganger(title = "Row buffers",
+                                autoplot(d1, buffer = "row"))
+    vdiffr::expect_doppelganger(title = "Column buffers",
+                                autoplot(d1, buffer = "column"))
+    vdiffr::expect_doppelganger(title = "Edge buffers",
+                                autoplot(d1, buffer = "edge"))
+    vdiffr::expect_doppelganger(title = "Double row buffers",
+                                autoplot(d1, buffer = "double row"))
+    vdiffr::expect_doppelganger(title = "Double Column buffers",
+                                autoplot(d1, buffer = "double column"))
+})
+
+test_that("Adding buffers to plots works for RCBD", {
+    # RCBD
+    d2 <- design("rcbd", treatments = LETTERS[1:11], reps = 4,
+                 nrows = 11, ncols = 4, brows = 11, bcols = 1,
+                 seed = 42, quiet = TRUE, plot = FALSE)
+
+    expect_equal(length(unique(d2$design$row)), 11)
+    expect_equal(length(unique(d2$design$col)), 4)
+    vdiffr::expect_doppelganger(title = "Row buffers RCBD",
+                                autoplot(d2, buffer = "row"))
+    vdiffr::expect_doppelganger(title = "Column buffers RCBD",
+                                autoplot(d2, buffer = "column"))
+    vdiffr::expect_doppelganger(title = "Edge buffers RCBD",
+                                autoplot(d2, buffer = "edge"))
+    vdiffr::expect_doppelganger(title = "Double row buffers RCBD",
+                                autoplot(d2, buffer = "double row"))
+    vdiffr::expect_doppelganger(title = "Double Column buffers RCBD",
+                                autoplot(d2, buffer = "double column"))
+})
+
+test_that("Invalid buffer options produce an error", {
+    # RCBD
+    d2 <- design("rcbd", treatments = LETTERS[1:11], reps = 4,
+                 nrows = 11, ncols = 4, brows = 11, bcols = 1,
+                 seed = 42, quiet = TRUE, plot = FALSE)
+
+    expect_error(autoplot(d2, buffer = "block"), "Block buffers are not yet supported\\.")
+    expect_error(autoplot(d2, buffer = "abc"), "Invalid buffer option: abc")
+})
+
+# test_that("Buffers are produced when abreviations are given", {
+#     # CRD
+#     d1 <- design("crd", treatments = LETTERS[1:11], reps = 4,
+#                  nrows = 11, ncols = 4, seed = 42, quiet = TRUE, plot = FALSE)
 #
+#     withr:::local_file("full_argument.png")
+#     withr:::local_file("abbr_argument.png")
+#     ggsave(plot = autoplot(d1, buffer = "row"), filename = "full_argument.svg", width = 5, height = 3)
+#     ggsave(plot = autoplot(d1, buffer = "r"), filename = "abbr_argument.png", width = 5, height = 3)
+#     compare_file_binary("full_argument.png", "abbr_argument.png")
+#
+#     withr:::local_file("full_argument.png")
+#     withr:::local_file("abbr_argument.png")
+#     ggsave(plot = autoplot(d1, buffer = "row"), filename = "full_argument.png", width = 5, height = 3)
+#     ggsave(plot = autoplot(d1, buffer = "rows"), filename = "abbr_argument.png", width = 5, height = 3)
+#     compare_file_binary("full_argument.png", "abbr_argument.png")
+#
+#     withr:::local_file("full_argument.png")
+#     withr:::local_file("abbr_argument.png")
+#     ggsave(plot = autoplot(d1, buffer = "column"), filename = "full_argument.png", width = 5, height = 3)
+#     ggsave(plot = autoplot(d1, buffer = "columns"), filename = "abbr_argument.png", width = 5, height = 3)
+#     compare_file_binary("full_argument.png", "abbr_argument.png")
+#
+#     withr:::local_file("full_argument.png")
+#     withr:::local_file("abbr_argument.png")
+#     ggsave(plot = autoplot(d1, buffer = "column"), filename = "full_argument.png", width = 5, height = 3)
+#     ggsave(plot = autoplot(d1, buffer = "col"), filename = "abbr_argument.png", width = 5, height = 3)
+#     compare_file_binary("full_argument.png", "abbr_argument.png")
+#
+#     withr:::local_file("full_argument.png")
+#     withr:::local_file("abbr_argument.png")
+#     ggsave(plot = autoplot(d1, buffer = "column"), filename = "full_argument.png", width = 5, height = 3)
+#     ggsave(plot = autoplot(d1, buffer = "cols"), filename = "abbr_argument.png", width = 5, height = 3)
+#     compare_file_binary("full_argument.png", "abbr_argument.png")
+#
+#     withr:::local_file("full_argument.png")
+#     withr:::local_file("abbr_argument.png")
+#     ggsave(plot = autoplot(d1, buffer = "column"), filename = "full_argument.png", width = 5, height = 3)
+#     ggsave(plot = autoplot(d1, buffer = "c"), filename = "abbr_argument.png", width = 5, height = 3)
+#     compare_file_binary("full_argument.png", "abbr_argument.png")
+#
+# })
+
+test_that("Ability to provide arbitrary column names for plotting works", {
+    des <- expand.grid(ro = 1:4, co = 1:5)
+    des$bl <- des$co
+    set.seed(42)
+    des$treat <- sample(rep(LETTERS[1:4], times = 5))
+    class(des) <- c("design", class(des))
+    vdiffr::expect_doppelganger(title = "Quoted column names without blocks",
+                                autoplot(des, row = "ro", column = "co", treatments = "treat"))
+    vdiffr::expect_doppelganger(title = "Quoted column names with blocks",
+                                autoplot(des, row = "ro", column = "co", treatments = "treat"))
+})
+
+test_that("Arbitrary unquoted column names for plotting works", {
+    des <- expand.grid(ro = 1:4, co = 1:5)
+    des$bl <- des$ro
+    set.seed(42)
+    des$treat <- sample(rep(LETTERS[1:5], times = 4))
+    class(des) <- c("design", class(des))
+    vdiffr::expect_doppelganger(title = "NSE of column names without blocks",
+                                autoplot(des, row = ro, column = co, treatments = treat))
+    vdiffr::expect_doppelganger(title = "NSE of column names with blocks",
+                                autoplot(des, row = ro, column = co, block = bl, treatments = treat))
+})
+

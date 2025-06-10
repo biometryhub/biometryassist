@@ -2,7 +2,7 @@
 % Please edit documentation in R/variogram.r
 \name{variogram}
 \alias{variogram}
-\title{Variogram plots for spatial models.}
+\title{Display variogram plots for spatial models}
 \usage{
 variogram(
   model.obj,
@@ -21,7 +21,7 @@ variogram(
 
 \item{horizontal}{Logical (default \code{TRUE}). The direction the plots are arranged. The default \code{TRUE} places the plots above and below, while \code{FALSE} will place them side by side.}
 
-\item{palette}{A string specifying the colour scheme to use for plotting. The default value (\code{"default"}) is equivalent to \code{"rainbow"}. Colour blind friendly palettes can also be provided via options \code{"colo(u)r blind"} (both equivalent to \code{"viridis"}), \code{"magma"}, \code{"inferno"}, \code{"plasma"}, \code{"cividis"}, \code{"rocket"}, \code{"mako"} or \code{"turbo"}. The \code{"Spectral"} palette from \code{\link[scales:brewer_pal]{scales::brewer_pal()}} is also possible.}
+\item{palette}{A string specifying the colour scheme to use for plotting. The default value (\code{"default"}) is equivalent to \code{"rainbow"}. Colour blind friendly palettes can also be provided via options \code{"colo(u)r blind"} (both equivalent to \code{"viridis"}), \code{"magma"}, \code{"inferno"}, \code{"plasma"}, \code{"cividis"}, \code{"rocket"}, \code{"mako"} or \code{"turbo"}. The \code{"Spectral"} palette from \code{\link[scales:pal_brewer]{scales::brewer_pal()}} is also possible.}
 }
 \value{
 A \code{ggplot2} object.
@@ -42,7 +42,7 @@ variogram(model.asr)
 }
 }
 \references{
-S. P. Kaluzny, S. C. Vega, T. P. Cardoso, A. A. Shelly, "S+SpatialStats: User’s Manual for Windows® and UNIX®" \emph{Springer New York}, 2013, p. 68, https://books.google.com.au/books?id=iADkBwAAQBAJ.
+S. P. Kaluzny, S. C. Vega, T. P. Cardoso, A. A. Shelly, "S+SpatialStats: User’s Manual for Windows® and UNIX®" \emph{Springer New York}, 2013, p. 68, https://books.google.com.au/books?id=iADkBwvario_pointsQBAJ.
 
 A. R. Gilmour, B. R. Cullis, A. P. Verbyla, "Accounting for Natural and Extraneous Variation in the Analysis of Field Experiments." \emph{Journal of Agricultural, Biological, and Environmental Statistics 2, no. 3}, 1997, pp. 269–93, https://doi.org/10.2307/1400446.
 }

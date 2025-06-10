@@ -25,10 +25,12 @@ test_that("Old mod.obj argument produces a warning", {
 })
 
 test_that("Residual plots work for asreml", {
+    skip_on_cran()
     skip_if_not(requireNamespace("asreml", quietly = TRUE))
 
-    dat.asr <- quiet(asreml::asreml(Petal.Length ~ Petal.Width, data = iris, trace = FALSE))
-    p1_single <- resplot(dat.asr, shapiro = FALSE, call = T)
+    # dat.asr <- quiet(asreml::asreml(Petal.Length ~ Petal.Width, data = iris, trace = FALSE))
+    load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
+    p1_single <- resplot(model.asr, shapiro = FALSE, call = T)
 
     final.m.asr <- readRDS(test_path("data", "complex_model.rds"))
     p1_multi <- suppressWarnings(resplot(final.m.asr))

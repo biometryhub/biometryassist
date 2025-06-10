@@ -40,7 +40,7 @@ The goal of biometryassist is to provide functions to aid in the Design and Anal
 
 ## Installation
 
-As of version 1.0.0 the biometryassist package is now [on CRAN](https://cran.r-project.org/package=biometryassist) `r emo::ji("raised_hands")`.
+As of version 1.0.0 the biometryassist package is now [on CRAN](https://cran.r-project.org/package=biometryassist) 🙌
 That means that installation is as easy as running:
 
 ```{r installing_cran, eval=FALSE}
@@ -50,13 +50,14 @@ install.packages("biometryassist")
 
 ### Development version
 
-`r emo::ji("warning")`**Warning**: The development version is unstable and liable to change more often than the CRAN version. It may have bugs fixed, but there may be other currently unknown bugs introduced. `r emo::ji("warning")`
+⚠ **Warning**: The development version is unstable and liable to change more often than the CRAN version. It may have bugs fixed, but there may be other currently unknown bugs introduced. ⚠
+
 
 Use the following code to install the latest development version of this package.
 
 ```{r eval=F}
 if(!require("remotes")) install.packages("remotes") 
-remotes::install_github("biometryhub/biometryassist@dev", upgrade = FALSE)
+remotes::install_github("biometryhub/biometryassist@dev")
 ```
 
 

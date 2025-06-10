@@ -2,7 +2,7 @@
 % Please edit documentation in R/design.R
 \name{design}
 \alias{design}
-\title{Produces an experimental design with graph of design layout and skeletal ANOVA table}
+\title{Create a complete experimental design with graph of design layout and skeletal ANOVA table}
 \usage{
 design(
   type,
@@ -29,11 +29,11 @@ design(
 )
 }
 \arguments{
-\item{type}{The type of design. Supported design types are \code{crd}, \code{rcbd}, \code{lsd}, \verb{crossed:<type>} where \verb{<type>} is one of the previous types and \code{split}. See Details for more information.}
+\item{type}{The type of design. Supported design types are \code{crd}, \code{rcbd}, \code{lsd}, \verb{crossed:<type>} where \verb{<type>} is one of the previous types, and \code{split}. See Details for more information.}
 
 \item{treatments}{A vector containing the treatment names or labels.}
 
-\item{reps}{The number of replicates. Not required for Latin Squared Designs.}
+\item{reps}{The number of replicates. Ignored for Latin Square Designs.}
 
 \item{nrows}{The number of rows in the design.}
 
@@ -45,7 +45,7 @@ design(
 
 \item{byrow}{For split-plot only. Logical (default \code{TRUE}). Provides a way to arrange plots within whole-plots when there are multiple possible arrangements.}
 
-\item{sub_treatments}{A vector of treatments for subplots in a split plot design.}
+\item{sub_treatments}{A vector of treatments for sub-plots in a split plot design.}
 
 \item{fac.names}{Allows renaming of the \code{A} level of factorial designs (i.e. those using \code{\link[agricolae:design.ab]{agricolae::design.ab()}}) by passing (optionally named) vectors of new labels to be applied to the factors within a list. See examples and details for more information.}
 
@@ -61,7 +61,7 @@ design(
 
 \item{save}{One of \code{FALSE} (default)/\code{"none"}, \code{TRUE}/\code{"both"}, \code{"plot"} or \code{"workbook"}. Specifies which output to save.}
 
-\item{savename}{A filename for the design to be saved to. Default is the type of the design combined with "_design".}
+\item{savename}{A file name for the design to be saved to. Default is the type of the design combined with "_design".}
 
 \item{plottype}{The type of file to save the plot as. Usually one of \code{"pdf"}, \code{"png"}, or \code{"jpg"}. See \code{\link[ggplot2:ggsave]{ggplot2::ggsave()}} for all possible options.}
 
@@ -75,7 +75,7 @@ design(
 A list containing a data frame with the complete design (\verb{$design}), a ggplot object with plot layout (\verb{$plot.des}), the seed (\verb{$seed}, if \code{return.seed = TRUE}), and the \code{satab} object (\verb{$satab}), allowing repeat output of the \code{satab} table via \code{cat(output$satab)}.
 }
 \description{
-Produces an experimental design with graph of design layout and skeletal ANOVA table
+Create a complete experimental design with graph of design layout and skeletal ANOVA table
 }
 \details{
 The designs currently supported by \code{type} are Completely Randomised designs (\code{crd}), Randomised Complete Block designs (\code{rcbd}), Latin Square Designs (\code{lsd}), Factorial with crossed structure (use \verb{crossed:<type>} where \verb{<type>} is one of the previous types e.g. \code{crossed:crd}) and Split Plot designs (\code{split}). Nested factorial designs are supported through manual setup, see Examples.
@@ -84,7 +84,7 @@ If \code{save = TRUE} (or \code{"both"}), both the plot and the workbook will be
 
 \code{fac.names} can be supplied to provide more intuitive names for factors and their levels in factorial and split plot designs. They can be specified in a list format, for example \code{fac.names = list(A_names = c("a", "b", "c"), B_names = c("x", "y", "z"))}. This will result a design output with a column named \code{A_names} with levels \verb{a, b, c} and another named \code{B_names} with levels \verb{x, y, z}. Labels can also be supplied as a character vector (e.g. \code{c("A", "B")}) which will result in only the treatment column names being renamed. Only the first two elements of the list will be used, except in the case of a 3-way factorial design.
 
-\code{...} allows extra arguments to be passed to ggsave for output of the plot. The details of possible arguments can be found in  \code{\link[ggplot2:ggsave]{ggplot2::ggsave()}}.
+\code{...} allows extra arguments to be passed to \code{ggsave()} for output of the plot. The details of possible arguments can be found in  \code{\link[ggplot2:ggsave]{ggplot2::ggsave()}}.
 }
 \examples{
 # Completely Randomised Design

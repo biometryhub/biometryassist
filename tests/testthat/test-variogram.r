@@ -40,4 +40,17 @@ test_that("vario produces an error for residuals with units", {
     expect_error(variogram(model3.asr), "Residual term must include spatial component.")
 })
 
+test_that("variogram works with dsum models", {
+    vg <- vario_df(model4.asr)
+    expect_equal(colnames(vg), c("Row", "Column", "gamma", "np", "groups"))
+    expect_equal(unique(vg$groups), c("2020", "2021"))
+    expect_s3_class(vg, c("variogram", "data.frame"))
+    expect_type(vg, "list")
 
+    # variogram plots for each year
+    skip_on_os(c("windows", "mac"))
+    vdiffr::expect_doppelganger(title = "Variogram dsum",
+                                variogram(model4.asr)[[1]])
+    vdiffr::expect_doppelganger(title = "Variogram dsum 2",
+                                variogram(model4.asr)[[2]])
+})
