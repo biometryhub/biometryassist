@@ -20,8 +20,7 @@ get_predictions <- function(model.obj, classify, pred.obj = NULL, ...) {
 #'
 #' @keywords internal
 get_predictions.default <- function(model.obj, ...) {
-    supported_types <- c("aov", "lm", "lmerMod", "lmerModLmerTest",
-                         "asreml")
+    supported_types <- c("aov", "lm", "lmerMod", "lmerModLmerTest", "asreml", "lme", "gls")
     stop("model.obj must be a linear (mixed) model object. Currently supported model types are: ",
          paste(supported_types, collapse = ", "), call. = FALSE)
 }
@@ -211,3 +210,106 @@ process_aliased <- function(pp, sed, classify, exclude_cols = c("predicted.value
         aliased_names = aliased_names
     ))
 }
+
+#' @rdname predictions
+#'
+#' @keywords internal
+get_predictions.lme <- function(model.obj, classify, ...) {
+    # Check if classify is in model terms
+    fixed_terms <- attr(stats::terms(model.obj$terms), 'term.labels')
+    if(classify %!in% fixed_terms) {
+        stop(classify, " is not a term in the model. Please check model specification.", call. = FALSE)
+    }
+
+    # Set emmeans options
+    on.exit(options(emmeans = emmeans::emm_defaults))
+    emmeans::emm_options("msg.interaction" = FALSE, "msg.nesting" = FALSE)
+
+    # Generate predictions
+    pred.out <- emmeans::emmeans(model.obj, as.formula(paste("~", classify)))
+
+    # Extract standard errors and predictions
+    sed <- pred.out@misc$sigma * sqrt(outer(1 / pred.out@grid$.wgt., 1 / pred.out@grid$.wgt., "+"))
+    pred.out <- as.data.frame(pred.out)
+    pred.out <- pred.out[, !grepl("CL", names(pred.out))]
+
+    # Rename columns for consistency
+    pp <- pred.out
+    names(pp)[names(pp) == "emmean"] <- "predicted.value"
+    names(pp)[names(pp) == "SE"] <- "std.error"
+
+    # Set diagonals to NA
+    diag(sed) <- NA
+
+    # Process aliased treatments
+    aliased_result <- process_aliased(pp, sed, classify)
+    pp <- aliased_result$predictions
+    sed <- aliased_result$sed
+    aliased_names <- aliased_result$aliased_names
+
+    # Get degrees of freedom
+    ndf <- pp$df[1]
+
+    # Get response variable for plot label
+    ylab <- model.obj$terms[[2]]
+
+    return(list(
+        predictions = pp,
+        sed = sed,
+        df = ndf,
+        ylab = ylab,
+        aliased_names = aliased_names
+    ))
+}
+
+#' @rdname predictions
+#'
+#' @keywords internal
+get_predictions.gls <- function(model.obj, classify, ...) {
+    # Check if classify is in model terms
+    fixed_terms <- attr(stats::terms(model.obj$terms), 'term.labels')
+    if(classify %!in% fixed_terms) {
+        stop(classify, " is not a term in the model. Please check model specification.", call. = FALSE)
+    }
+
+    # Set emmeans options
+    on.exit(options(emmeans = emmeans::emm_defaults))
+    emmeans::emm_options("msg.interaction" = FALSE, "msg.nesting" = FALSE)
+
+    # Generate predictions
+    pred.out <- emmeans::emmeans(model.obj, as.formula(paste("~", classify)))
+
+    # Extract standard errors and predictions
+    sed <- pred.out@misc$sigma * sqrt(outer(1 / pred.out@grid$.wgt., 1 / pred.out@grid$.wgt., "+"))
+    pred.out <- as.data.frame(pred.out)
+    pred.out <- pred.out[, !grepl("CL", names(pred.out))]
+
+    # Rename columns for consistency
+    pp <- pred.out
+    names(pp)[names(pp) == "emmean"] <- "predicted.value"
+    names(pp)[names(pp) == "SE"] <- "std.error"
+
+    # Set diagonals to NA
+    diag(sed) <- NA
+
+    # Process aliased treatments
+    aliased_result <- process_aliased(pp, sed, classify)
+    pp <- aliased_result$predictions
+    sed <- aliased_result$sed
+    aliased_names <- aliased_result$aliased_names
+
+    # Get degrees of freedom
+    ndf <- pp$df[1]
+
+    # Get response variable for plot label
+    ylab <- model.obj$terms[[2]]
+
+    return(list(
+        predictions = pp,
+        sed = sed,
+        df = ndf,
+        ylab = ylab,
+        aliased_names = aliased_names
+    ))
+}
+
