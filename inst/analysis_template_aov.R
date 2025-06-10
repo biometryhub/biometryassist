@@ -37,8 +37,6 @@ resplot(dat.aov)
 anova(dat.aov)
 
 # Predict the means from the model
-# Apply Tukey's to the means
-
 pred.out <- multiple_comparisons(model.obj = dat.aov, classify = "trt")
 pred.out
 
