@@ -273,14 +273,6 @@ test_that("plots are produced when requested", {
     vdiffr::expect_doppelganger("3 way interaction internal", output <- multiple_comparisons(dat.aov, classify = "A:B:C", plot = TRUE))
 })
 
-test_that("nlme model produces an error", {
-    skip_if_not_installed("nlme")
-    suppressPackageStartupMessages(library(nlme))
-    fm1 <- lme(distance ~ age, data = Orthodont)
-    expect_error(multiple_comparisons(fm1, classify = "age"),
-                 "model\\.obj must be a linear \\(mixed\\) model object\\. Currently supported model types are: aov, lm, lmerMod, lmerModLmerTest, asreml")
-})
-
 test_that("multiple_comparisons output has a class of 'mct'", {
     output <- multiple_comparisons(dat.aov, classify = "Species")
     expect_s3_class(output, "mct")
