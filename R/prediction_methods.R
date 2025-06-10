@@ -28,6 +28,15 @@ get_predictions.default <- function(model.obj, ...) {
 #' @rdname predictions
 #'
 #' @keywords internal
+get_predictions.glm <- function(model.obj, ...) {
+    supported_types <- c("aov", "lm", "lmerMod", "lmerModLmerTest", "asreml", "lme", "gls")
+    stop("model.obj must be a linear (mixed) model object. Currently supported model types are: ",
+         paste(supported_types, collapse = ", "), call. = FALSE)
+}
+
+#' @rdname predictions
+#'
+#' @keywords internal
 get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 
     args <- list(...)
@@ -120,7 +129,9 @@ get_predictions.lm <- function(model.obj, classify, ...) {
     names(pp)[names(pp) == "SE"] <- "std.error"
 
     # Set diagonals to NA
-    diag(sed) <- NA
+    if(all(dim(sed) > 1)) {
+        diag(sed) <- NA
+    }
 
     # Process aliased treatments
     aliased_result <- process_aliased(pp, sed, classify)
@@ -164,52 +175,6 @@ get_predictions.lmerModLmerTest <- function(model.obj, classify, ...) {
     get_predictions.lmerMod(model.obj, classify, ...)
 }
 
-#' Process aliased treatments in predictions
-#'
-#' @param pp Data frame of predictions
-#' @param sed Standard error of differences matrix
-#' @param classify Name of predictor variable
-#' @param exclude_cols Column names to exclude when processing aliased names
-#'
-#' @return List containing processed predictions, sed matrix and aliased names
-#' @keywords internal
-process_aliased <- function(pp, sed, classify, exclude_cols = c("predicted.value", "std.error", "df", "Names")) {
-    aliased_names <- NULL
-
-    if(anyNA(pp$predicted.value)) {
-        aliased <- which(is.na(pp$predicted.value))
-        # Get aliased treatment levels
-        aliased_names <- pp[aliased, !names(pp) %in% exclude_cols]
-
-        # Convert to character vector
-        if(is.data.frame(aliased_names)) {
-            aliased_names <- apply(aliased_names, 1, paste, collapse = ":")
-        }
-
-        # Create warning message
-        warn_string <- if(length(aliased_names) > 1) {
-            paste0("Some levels of ", classify, " are aliased. They have been removed from predicted output.\n",
-                  "  Aliased levels are: ", paste(aliased_names, collapse = ", "),
-                  ".\n  These levels are saved in the output object.")
-        } else {
-            paste0("A level of ", classify, " is aliased. It has been removed from predicted output.\n",
-                  "  Aliased level is: ", aliased_names,
-                  ".\n  This level is saved as an attribute of the output object.")
-        }
-
-        # Remove aliased values
-        pp <- pp[!is.na(pp$predicted.value), ]
-        pp <- droplevels(pp)
-        sed <- sed[-aliased, -aliased]
-        warning(warn_string, call. = FALSE)
-    }
-
-    return(list(
-        predictions = pp,
-        sed = sed,
-        aliased_names = aliased_names
-    ))
-}
 
 #' @rdname predictions
 #'
@@ -239,7 +204,9 @@ get_predictions.lme <- function(model.obj, classify, ...) {
     names(pp)[names(pp) == "SE"] <- "std.error"
 
     # Set diagonals to NA
-    diag(sed) <- NA
+    if(all(dim(sed) > 1)) {
+        diag(sed) <- NA
+    }
 
     # Process aliased treatments
     aliased_result <- process_aliased(pp, sed, classify)
@@ -290,7 +257,9 @@ get_predictions.gls <- function(model.obj, classify, ...) {
     names(pp)[names(pp) == "SE"] <- "std.error"
 
     # Set diagonals to NA
-    diag(sed) <- NA
+    if(all(dim(sed) > 1)) {
+        diag(sed) <- NA
+    }
 
     # Process aliased treatments
     aliased_result <- process_aliased(pp, sed, classify)
@@ -313,3 +282,49 @@ get_predictions.gls <- function(model.obj, classify, ...) {
     ))
 }
 
+#' Process aliased treatments in predictions
+#'
+#' @param pp Data frame of predictions
+#' @param sed Standard error of differences matrix
+#' @param classify Name of predictor variable
+#' @param exclude_cols Column names to exclude when processing aliased names
+#'
+#' @return List containing processed predictions, sed matrix and aliased names
+#' @keywords internal
+process_aliased <- function(pp, sed, classify, exclude_cols = c("predicted.value", "std.error", "df", "Names")) {
+    aliased_names <- NULL
+
+    if(anyNA(pp$predicted.value)) {
+        aliased <- which(is.na(pp$predicted.value))
+        # Get aliased treatment levels
+        aliased_names <- pp[aliased, !names(pp) %in% exclude_cols]
+
+        # Convert to character vector
+        if(is.data.frame(aliased_names)) {
+            aliased_names <- apply(aliased_names, 1, paste, collapse = ":")
+        }
+
+        # Create warning message
+        warn_string <- if(length(aliased_names) > 1) {
+            paste0("Some levels of ", classify, " are aliased. They have been removed from predicted output.\n",
+                  "  Aliased levels are: ", paste(aliased_names, collapse = ", "),
+                  ".\n  These levels are saved in the output object.")
+        } else {
+            paste0("A level of ", classify, " is aliased. It has been removed from predicted output.\n",
+                  "  Aliased level is: ", aliased_names,
+                  ".\n  This level is saved as an attribute of the output object.")
+        }
+
+        # Remove aliased values
+        pp <- pp[!is.na(pp$predicted.value), ]
+        pp <- droplevels(pp)
+        sed <- sed[-aliased, -aliased]
+        warning(warn_string, call. = FALSE)
+    }
+
+    return(list(
+        predictions = pp,
+        sed = sed,
+        aliased_names = aliased_names
+    ))
+}

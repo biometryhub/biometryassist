@@ -391,7 +391,7 @@ process_treatment_names <- function(pp, classify, vars) {
 
 calculate_differences <- function(pp, sed, ndf, sig) {
     # Calculate the critical value
-    crit_val <- 1 / sqrt(2) * stats::qtukey((1 - sig), nrow(pp), ndf) * sed
+    crit_val <- 1 / sqrt(2) * stats::qtukey(sig, nrow(pp), ndf) * sed
 
     # Determine pairs that are significantly different
     diffs <- abs(outer(pp$predicted.value, pp$predicted.value, "-")) > crit_val

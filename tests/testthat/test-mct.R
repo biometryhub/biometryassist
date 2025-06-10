@@ -95,6 +95,36 @@ test_that("Testing asreml predictions", {
     vdiffr::expect_doppelganger("asreml predictions", autoplot(output))
 })
 
+test_that("Testing asreml predictions", {
+    load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
+    expect_warning(output <- multiple_comparisons(model.asr,
+                                                  classify = "Nitrogen",
+                                                  pred.obj = pred.asr,
+                                                  dendf = dendf),
+                   "Argument `pred\\.obj` has been deprecated and will be removed in a future version\\. Predictions are now performed internally in the function\\.")
+    expect_equal(output$predicted.value,
+                 c(77.76, 100.15, 114.41, 123.23),
+                 tolerance = 5e-2)
+    expect_snapshot_output(output)
+    vdiffr::expect_doppelganger("asreml predictions", autoplot(output))
+})
+
+test_that("Testing aliased predictions output", {
+    load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
+    pred.asr$pvals$predicted.value <- NA
+    pred.asr$pvals$std.error <- NA
+
+    expect_error(
+    expect_warning(
+        output <- multiple_comparisons(model.asr,
+                                                  classify = "Nitrogen",
+                                                  pred.obj = pred.asr,
+                                                  dendf = dendf),
+                   "Argument `pred\\.obj` has been deprecated and will be removed in a future version\\. Predictions are now performed internally in the function\\."),
+               "All predicted values are aliased\\. Perhaps you need the `present` argument?"
+        )
+})
+
 test_that("save produces output", {
     withr::local_file("pred_vals.csv")
     output <- multiple_comparisons(dat.aov, classify = "Species", save = TRUE, savename = "pred_vals")
@@ -381,55 +411,32 @@ test_that("print.mct with no aliased attribute", {
 test_that("get_predictions.lme returns expected structure and values", {
   skip_if_not_installed("nlme")
   suppressPackageStartupMessages(library(nlme))
-  fm1 <- lme(distance ~ age, random = ~ 1 | Subject, data = Orthodont)
-  result <- get_predictions(fm1, classify = "age")
+  dat.lme <- lme(yield ~ Nitrogen*Variety, random =  ~ 1|Blocks, data = dat)
+  result <- multiple_comparisons(dat.lme, classify = "Nitrogen")
   expect_type(result, "list")
-  expect_true(all(c("predictions", "sed", "df", "ylab", "aliased_names") %in% names(result)))
-  expect_true(is.data.frame(result$predictions))
-  expect_true(is.matrix(result$sed))
+  expect_s3_class(result, "mct")
+  expect_contains(c("Nitrogen", "predicted.value", "std.error",
+                    "df", "groups", "ci" ,"low", "up"),
+                  names(result))
+  expect_true(is.numeric(result$predicted.value))
+  expect_true(all(!is.na(result$std.error)))
   expect_true(is.numeric(result$df))
-  expect_true(is.character(result$ylab) || is.symbol(result$ylab))
+  expect_true(is.character(attr(result, "ylab")) || is.symbol(attr(result, "ylab")))
   expect_null(result$aliased_names)
-  expect_true("predicted.value" %in% names(result$predictions))
-  expect_true("std.error" %in% names(result$predictions))
-})
-
-test_that("get_predictions.gls returns expected structure and values", {
-  skip_if_not_installed("nlme")
-  suppressPackageStartupMessages(library(nlme))
-  fm2 <- gls(distance ~ age, data = Orthodont)
-  result <- get_predictions(fm2, classify = "age")
-  expect_type(result, "list")
-  expect_true(all(c("predictions", "sed", "df", "ylab", "aliased_names") %in% names(result)))
-  expect_true(is.data.frame(result$predictions))
-  expect_true(is.matrix(result$sed))
-  expect_true(is.numeric(result$df))
-  expect_true(is.character(result$ylab) || is.symbol(result$ylab))
-  expect_null(result$aliased_names)
-  expect_true("predicted.value" %in% names(result$predictions))
-  expect_true("std.error" %in% names(result$predictions))
 })
 
 test_that("get_predictions.lme errors for invalid classify", {
   skip_if_not_installed("nlme")
   suppressPackageStartupMessages(library(nlme))
   fm1 <- lme(distance ~ age, random = ~ 1 | Subject, data = Orthodont)
-  expect_error(get_predictions(fm1, classify = "not_a_term"),
-               "not_a_term is not a term in the model. Please check model specification.")
-})
-
-test_that("get_predictions.gls errors for invalid classify", {
-  skip_if_not_installed("nlme")
-  suppressPackageStartupMessages(library(nlme))
-  fm2 <- gls(distance ~ age, data = Orthodont)
-  expect_error(get_predictions(fm2, classify = "not_a_term"),
+  expect_error(multiple_comparisons(fm1, classify = "not_a_term"),
                "not_a_term is not a term in the model. Please check model specification.")
 })
 
 test_that("get_predictions errors for unsupported model types", {
-  model.glm <- glm(Sepal.Length ~ Species, data = iris, family = poisson)
+  model.glm <- suppressWarnings(glm(Sepal.Length ~ Species, data = iris, family = poisson))
   expect_error(
-    get_predictions(model.glm, classify = "Species"),
-    "model.obj must be a linear \\(mixed\\) model object. Currently supported model types are:"
+    multiple_comparisons(model.glm, classify = "Species"),
+    "model\\.obj must be a linear \\(mixed\\) model object\\. Currently supported model types are: aov, lm, lmerMod, lmerModLmerTest, asreml, lme, gls"
   )
 })
