@@ -92,3 +92,34 @@ test_that("use_template input validation works", {
   expect_error(use_template(overwrite = c(TRUE, FALSE)), "must be TRUE or FALSE")
   expect_error(use_template(output_name = c("a", "b")), "must be a single character string")
 })
+
+test_that("use_template opens existing file if open = TRUE and does not overwrite", {
+  skip_on_cran()
+  withr::with_tempdir({
+    # Create an existing file
+    writeLines("existing content", "analysis_script.R")
+    # Remove 'opened' if it exists from previous tests
+    if (exists("opened", envir = .GlobalEnv)) rm(opened, envir = .GlobalEnv)
+    # Mock file.edit in the correct environment
+    mockery::stub(use_template, "utils::file.edit", function(path) { assign("opened", path, envir = .GlobalEnv); TRUE })
+    expect_message(
+      use_template(open = TRUE, overwrite = FALSE),
+      "already exists"
+    )
+    expect_true(exists("opened", envir = .GlobalEnv))
+    expect_equal(normalizePath(get("opened", envir = .GlobalEnv)), normalizePath("analysis_script.R"))
+    rm(opened, envir = .GlobalEnv)
+  })
+})
+
+test_that("use_template errors if file.copy fails", {
+  skip_on_cran()
+  withr::with_tempdir({
+    # Mock file.copy to always fail
+    mockery::stub(use_template, "file.copy", function(...) FALSE)
+    expect_error(
+      use_template(open = FALSE),
+      "Failed to copy template to"
+    )
+  })
+})
