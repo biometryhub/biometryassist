@@ -167,6 +167,7 @@ test_that("onepage produces plots with up to 6 on a page", {
 })
 
 test_that("onepage_col produces plots with up to 6 on a page", {
+    load(test_path("data", "asreml_model.Rdata"))
     p1 <- suppressWarnings(resplot(complex_model.asr, onepage = TRUE, onepage_cols = 3))
     p2 <- suppressWarnings(resplot(complex_model.asr, onepage = TRUE, onepage_cols = 2))
 
