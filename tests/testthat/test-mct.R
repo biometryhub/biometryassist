@@ -425,3 +425,11 @@ test_that("get_predictions.gls errors for invalid classify", {
   expect_error(get_predictions(fm2, classify = "not_a_term"),
                "not_a_term is not a term in the model. Please check model specification.")
 })
+
+test_that("get_predictions errors for unsupported model types", {
+  model.glm <- glm(Sepal.Length ~ Species, data = iris, family = poisson)
+  expect_error(
+    get_predictions(model.glm, classify = "Species"),
+    "model.obj must be a linear \\(mixed\\) model object. Currently supported model types are:"
+  )
+})
