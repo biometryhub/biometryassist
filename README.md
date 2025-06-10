@@ -13,10 +13,11 @@ coverage](https://codecov.io/gh/biometryhub/biometryassist/branch/main/graph/bad
 [![R build
 status](https://github.com/biometryhub/biometryassist/workflows/R-CMD-check/badge.svg)](https://github.com/biometryhub/biometryassist/actions)
 [![minimal R
-version](https://img.shields.io/badge/R%3E%3D-4.0.0-6666ff.svg)](https://cran.r-project.org/)
-[![packageversion](https://img.shields.io/badge/Package%20version-1.2.1-orange.svg?style=flat-square)](https://github.com/biometryhub/biometryassist/commits/main)
+version](https://img.shields.io/badge/R%3E%3D-4.1.0-6666ff.svg)](https://cran.r-project.org/)
+[![packageversion](https://img.shields.io/badge/Package%20version-1.3.0-orange.svg?style=flat-square)](https://github.com/biometryhub/biometryassist/commits/main)
 [![Licence](https://img.shields.io/github/license/mashape/apistatus.svg)](https://choosealicense.com/licenses/mit/)
-[![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fbiometryhub%2Fbiometryassist&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=hits&edge_flat=false)](https://hits.seeyoufarm.com)
+[![](https://cranlogs.r-pkg.org/badges/biometryassist)](https://cran.r-project.org/package=biometryassist)
+![Badge](https://hitscounter.dev/api/hit?url=https%3A%2F%2Fbiometryhub.github.io%2Fbiometryassist&label=Hits&icon=arrow-down-circle&color=%23198754)
 <!-- badges: end -->
 
 The goal of biometryassist is to provide functions to aid in the Design

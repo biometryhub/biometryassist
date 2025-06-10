@@ -9,7 +9,8 @@ variogram(
   row = NA,
   column = NA,
   horizontal = TRUE,
-  palette = "default"
+  palette = "default",
+  onepage = FALSE
 )
 }
 \arguments{
@@ -22,6 +23,9 @@ variogram(
 \item{horizontal}{Logical (default \code{TRUE}). The direction the plots are arranged. The default \code{TRUE} places the plots above and below, while \code{FALSE} will place them side by side.}
 
 \item{palette}{A string specifying the colour scheme to use for plotting. The default value (\code{"default"}) is equivalent to \code{"rainbow"}. Colour blind friendly palettes can also be provided via options \code{"colo(u)r blind"} (both equivalent to \code{"viridis"}), \code{"magma"}, \code{"inferno"}, \code{"plasma"}, \code{"cividis"}, \code{"rocket"}, \code{"mako"} or \code{"turbo"}. The \code{"Spectral"} palette from \code{\link[scales:pal_brewer]{scales::brewer_pal()}} is also possible.}
+
+\item{onepage}{Logical (default FALSE). If TRUE and there are multiple groups,
+combines up to 6 plots onto a single page using a grid layout.}
 }
 \value{
 A \code{ggplot2} object.

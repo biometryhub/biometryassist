@@ -7,7 +7,7 @@
 satab(design.obj)
 }
 \arguments{
-\item{design.obj}{An \code{agricolae} design object.}
+\item{design.obj}{A modified \code{agricolae} design object as output from des_info.}
 }
 \value{
 Prints skeletal ANOVA table to console output.

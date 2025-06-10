@@ -11,7 +11,7 @@
 #' @importFrom ggplot2 ggplot aes geom_boxplot stat_summary facet_wrap geom_point labs theme_bw
 #' @importFrom rlang ensym ensyms as_string
 #'
-#' @return A ggplot2 plot object
+#' @returns A ggplot2 plot object
 #' @export
 #'
 #' @details

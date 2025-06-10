@@ -14,6 +14,14 @@ test_that("heat_map produces a ggplot object", {
     expect_s3_class(hm, "ggplot")
 })
 
+test_that("heat_map works if columns are factors", {
+    dat$x1 <- factor(dat$x)
+    dat$y1 <- factor(dat$y)
+    hm <- heat_map(dat, value, x1, y1)
+    expect_s3_class(hm, "gg")
+    expect_s3_class(hm, "ggplot")
+})
+
 test_that("heat_map produces an image", {
     vdiffr::expect_doppelganger(title = "Heatmap of generated data",
                                 heat_map(dat, value, x, y))

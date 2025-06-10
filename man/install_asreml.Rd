@@ -9,7 +9,8 @@ install_asreml(
   library = .libPaths()[1],
   quiet = FALSE,
   force = FALSE,
-  keep_file = FALSE
+  keep_file = FALSE,
+  check_version = TRUE
 )
 
 update_asreml(...)
@@ -17,11 +18,13 @@ update_asreml(...)
 \arguments{
 \item{library}{Library location to install ASReml-R. Uses first option in \code{.libPaths()} by default.}
 
-\item{quiet}{Logical (default \code{FALSE}). Should package be installed quietly?}
+\item{quiet}{Logical or character (default \code{FALSE}). Controls output verbosity. \code{FALSE} shows normal messages, \code{TRUE} suppresses messages, \code{"verbose"} shows detailed debugging information.}
 
 \item{force}{Logical (default \code{FALSE}). Force ASReml-R to install. Useful for upgrading if it is already installed.}
 
 \item{keep_file}{Should the downloaded asreml package file be kept? Default is \code{FALSE}. \code{TRUE} downloads to current directory. A file path can also be provided to save to another directory. See \code{Details} for more information.}
+
+\item{check_version}{Logical (default \code{TRUE}). Should function check if there is a newer version of asreml available before attempting to download and install?}
 
 \item{...}{other arguments passed to \code{install_asreml()}}
 }
@@ -41,6 +44,9 @@ install_asreml()
 
 # Example 2: install asreml and save file for later
 install_asreml(keep_file = TRUE)
+
+# Example 3: install with verbose debugging
+install_asreml(quiet = "verbose")
 }
 
 }

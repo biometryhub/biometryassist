@@ -11,6 +11,7 @@
 #' @param sub_treatments A vector of treatments for sub-plots in a split plot design.
 #' @param fac.names Allows renaming of the `A` level of factorial designs (i.e. those using [agricolae::design.ab()]) by passing (optionally named) vectors of new labels to be applied to the factors within a list. See examples and details for more information.
 #' @param fac.sep The separator used by `fac.names`. Used to combine factorial design levels. If a vector of 2 levels is supplied, the first separates factor levels and label, and the second separates the different factors.
+#' @param buffer A string specifying the buffer plots to include for plotting. Default is `NULL` (no buffers plotted). Other options are "edge" (outer edge of trial area), "rows" (between rows), "columns" (between columns), "double row" (a buffer row each side of a treatment row) or "double column" (a buffer row each side of a treatment column). "blocks" (a buffer around each treatment block) will be implemented in a future release.
 #' @param plot Logical (default `TRUE`). If `TRUE`, display a plot of the generated design. A plot can always be produced later using [autoplot()].
 #' @param rotation Rotate the text output as Treatments within the plot. Allows for easier reading of long treatment labels. Takes positive and negative values being number of degrees of rotation from horizontal.
 #' @param size Increase or decrease the text size within the plot for treatment labels. Numeric with default value of 4.
@@ -33,7 +34,7 @@
 #'
 #' @export
 #'
-#' @return A list containing a data frame with the complete design (`$design`), a ggplot object with plot layout (`$plot.des`), the seed (`$seed`, if `return.seed = TRUE`), and the `satab` object (`$satab`), allowing repeat output of the `satab` table via `cat(output$satab)`.
+#' @returns A list containing a data frame with the complete design (`$design`), a ggplot object with plot layout (`$plot.des`), the seed (`$seed`, if `return.seed = TRUE`), and the `satab` object (`$satab`), allowing repeat output of the `satab` table via `cat(output$satab)`.
 #'
 #' @examples
 #' # Completely Randomised Design
@@ -91,6 +92,7 @@ design <- function(type,
                    sub_treatments = NULL,
                    fac.names = NULL,
                    fac.sep = c("", " "),
+                   buffer = NULL,
                    plot = TRUE,
                    rotation = 0,
                    size = 4,
@@ -104,19 +106,19 @@ design <- function(type,
 
     # Some error checking of inputs before creating design
     if(!is.na(brows) & brows > nrows) {
-        stop("brows must not be larger than nrows")
+        stop("brows must not be larger than nrows", call. = FALSE)
     }
 
     if(!is.na(bcols) & bcols > ncols) {
-        stop("bcols must not be larger than ncols")
+        stop("bcols must not be larger than ncols", call. = FALSE)
     }
 
     if(!is.numeric(size)) {
-        stop("size must be numeric")
+        stop("size must be numeric", call. = FALSE)
     }
 
     if((!is.logical(seed) | is.na(seed)) & !is.numeric(seed)) {
-        stop("seed must be numeric or TRUE/FALSE")
+        stop("seed must be numeric or TRUE/FALSE", call. = FALSE)
     }
 
     dim <- nrows*ncols
@@ -149,7 +151,7 @@ design <- function(type,
 
     else if(tolower(type) == "split") {
         if(is.null(sub_treatments) | anyNA(sub_treatments)) {
-            stop("sub_treatments are required for a split plot design")
+            stop("sub_treatments are required for a split plot design", call. = FALSE)
         }
         trs <- length(treatments)*length(sub_treatments)*reps
         outdesign <- agricolae::design.split(trt1 = treatments,
@@ -163,11 +165,11 @@ design <- function(type,
         savename <- gsub(":", "_", savename)
 
         if(type_split[2] %!in% c("crd", "rcbd", "lsd")) {
-            stop("Crossed designs of type '", type_split[2], "' are not supported")
+            stop("Crossed designs of type '", type_split[2], "' are not supported", call. = FALSE)
         }
 
         if(length(treatments) > 3) {
-            stop("Crossed designs with more than three treatment factors are not supported")
+            stop("Crossed designs with more than three treatment factors are not supported", call. = FALSE)
         }
         trs <- ifelse(tolower(type_split[2])=="lsd", prod(treatments)^2, prod(treatments)*reps)
 
@@ -178,24 +180,31 @@ design <- function(type,
     }
 
     else {
-        stop("Designs of type '", type, "' are not supported")
+        stop("Designs of type '", type, "' are not supported", call. = FALSE)
     }
 
     if(dim > trs) {
-        warning("Area provided is larger than treatments applied. Please check inputs.")
+        warning("Area provided is larger than treatments applied. Please check inputs.", call. = FALSE)
     }
 
     if(dim < trs) {
-        warning("Area provided is smaller than treatments applied. Please check inputs.")
+        warning("Area provided is smaller than treatments applied. Please check inputs.", call. = FALSE)
     }
 
     output <- des_info(design.obj = outdesign, nrows = nrows, ncols = ncols,
                        brows = brows, bcols = bcols, byrow = byrow,
-                       fac.names = fac.names, fac.sep = fac.sep, plot = plot,
-                       rotation = rotation, size = size, margin = margin,
+                       fac.names = fac.names, fac.sep = fac.sep, buffer = buffer,
+                       plot = plot, rotation = rotation, size = size, margin = margin,
                        save = save, savename = savename, plottype = plottype,
                        return.seed = seed, quiet = quiet, ...)
 
     class(output) <- c("design", class(output))
+
+    # After creating the basic design, add buffers if requested
+    if (!is.null(buffer)) {
+        has_blocks <- any(grepl("block", tolower(names(output$design))))
+        output$design <- create_buffers(output$design, buffer, blocks = has_blocks)
+    }
+
     return(output)
 }

@@ -7,9 +7,10 @@
 #' @param column A column variable.
 #' @param horizontal Logical (default `TRUE`). The direction the plots are arranged. The default `TRUE` places the plots above and below, while `FALSE` will place them side by side.
 #' @param palette A string specifying the colour scheme to use for plotting. The default value (`"default"`) is equivalent to `"rainbow"`. Colour blind friendly palettes can also be provided via options `"colo(u)r blind"` (both equivalent to `"viridis"`), `"magma"`, `"inferno"`, `"plasma"`, `"cividis"`, `"rocket"`, `"mako"` or `"turbo"`. The `"Spectral"` palette from [scales::brewer_pal()] is also possible.
+#' @param onepage Logical (default FALSE). If TRUE and there are multiple groups,
+#'   combines up to 6 plots onto a single page using a grid layout.
 #'
-#'
-#' @return A `ggplot2` object.
+#' @returns A `ggplot2` object.
 #'
 #' @importFrom pracma interp2
 #' @importFrom grDevices rainbow
@@ -33,14 +34,15 @@
 #' }
 #' @export
 
-variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palette = "default") {
+variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE,
+palette = "default", onepage = FALSE) {
 
     if(!(inherits(model.obj, "asreml"))) {
-        stop("model.obj must be an asreml model object")
+        stop("model.obj must be an asreml model object", call. = FALSE)
     }
 
     if(attr(model.obj$formulae$residual,"term.labels") == "units") {
-        stop("Residual term must include spatial component.")
+        stop("Residual term must include spatial component.", call. = FALSE)
     }
 
     vario_points <- vario_df(model.obj, row, column)
@@ -86,7 +88,7 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
         a <- ggplot2::ggplot(gdat, ggplot2::aes(x = y, y = x, z = z)) +
             ggplot2::geom_tile(alpha = 0.6, ggplot2::aes(fill = z)) +
             ggplot2::coord_equal() +
-            ggplot2::geom_contour(color = "white", alpha = 0.5) +
+            ggplot2::geom_contour(colour = "white", alpha = 0.5) +
             ggplot2::theme_bw(base_size = 8) +
             ggplot2::scale_y_continuous(expand = c(0, 0), breaks = seq(1, max(gdat$x), 2)) +
             ggplot2::scale_x_continuous(expand = c(0, 0), breaks = seq(1, max(gdat$y), 2)) +
@@ -146,7 +148,7 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
                                     col.regions = scales::brewer_pal(palette = palette)(11))
         }
         else {
-            stop("Invalid value for palette.")
+            stop("Invalid value for palette.", call. = FALSE)
         }
         output[[i]] <- cowplot::plot_grid(b, a, nrow = 2, scale = c(2, 1))
         if(!orig_row) {
@@ -159,16 +161,52 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
 
     if(n_groups > 1) {
         names(output) <- groups
-        for (j in seq_along(output)) {
-            title <- cowplot::ggdraw() + cowplot::draw_label(groups[j],
-                                           fontface = 'bold',
-                                           x = 0.1,
-                                           hjust = 0)
-            output[[j]] <- cowplot::plot_grid(title, output[[j]], nrow = 2, rel_heights = c(0.1, 1))
+
+        # Add titles to all plots
+        titled_plots <- list()
+        for(j in seq_along(output)) {
+            title <- cowplot::ggdraw() +
+                cowplot::draw_label(groups[j],
+                                  fontface = 'bold',
+                                  x = 0.1,
+                                  hjust = 0)
+            titled_plots[[j]] <- cowplot::plot_grid(
+                title,
+                output[[j]],
+                nrow = 2,
+                rel_heights = c(0.1, 1)
+            )
         }
-        return(output)
-    }
-    else {
+
+        if(onepage) {
+            # Calculate number of pages needed
+            n_pages <- ceiling(n_groups/6)
+            pages <- vector("list", n_pages)
+
+            for(page in 1:n_pages) {
+                # Get index range for current page
+                start_idx <- (page-1)*6 + 1
+                end_idx <- min(page*6, n_groups)
+
+                # Calculate grid dimensions for current page
+                n_plots_on_page <- end_idx - start_idx + 1
+                n_cols <- min(3, n_plots_on_page)
+                n_rows <- ceiling(n_plots_on_page/3)
+
+                # Create combined plot for current page
+                pages[[page]] <- cowplot::plot_grid(
+                    plotlist = titled_plots[start_idx:end_idx],
+                    ncol = n_cols,
+                    nrow = n_rows
+                )
+            }
+
+            return(pages)
+        }
+        else {
+            return(titled_plots)
+        }
+    } else {
         return(output[[1]])
     }
 }
@@ -177,7 +215,7 @@ variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE, palet
 #'
 #' @param model.obj An asreml model
 #'
-#' @return A data frame with the variogram for a model. The data frame contains the spatial coordinates (typically row and column), the `gamma` for that position and the number of points with the separation.
+#' @returns A data frame with the variogram for a model. The data frame contains the spatial coordinates (typically row and column), the `gamma` for that position and the number of points with the separation.
 #' @keywords internal
 #'
 #'
@@ -254,10 +292,10 @@ vario_df <- function(model.obj, Row = NA, Column = NA) {
                     row <- Row[val_index] + offset[1]
                     col <- Column[val_index] + offset[2]
 
-                    if (0 < row && row <= nrows && 0 < col && col <= ncols && !is.na(Resid[val_index])) {
+                    if(0 < row && row <= nrows && 0 < col && col <= ncols && !is.na(Resid[val_index])) {
                         other <- Resid[Row == row & Column == col]
 
-                        if (!is.na(other)) {
+                        if(!is.na(other)) {
                             gamma <- gamma + (Resid[val_index] - other)^2
                             np <- np + 1
                         }
@@ -268,7 +306,7 @@ vario_df <- function(model.obj, Row = NA, Column = NA) {
             np <- np / 2
             gamma <- gamma / 2
 
-            if (np > 0) {
+            if(np > 0) {
                 gamma <- gamma / (2*np)
             }
 

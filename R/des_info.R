@@ -7,6 +7,7 @@
 #' @param bcols For RCBD only. The number of columns in a block.
 #' @param byrow For split-plot only. Logical (default: `TRUE`). Provides a way to arrange plots within whole-plots when there are multiple possible arrangements.
 #' @param fac.sep The separator used by `fac.names`. Used to combine factorial design levels. If a vector of 2 levels is supplied, the first separates factor levels and label, and the second separates the different factors.
+#' @param buffer The type of buffer. One of edge, row, column, double row, double column, or block (coming soon).
 #' @param fac.names Allows renaming of the `A` level of factorial designs (i.e. those using [agricolae::design.ab()]) by passing (optionally named) vectors of new labels to be applied to the factors within a list. See examples and details for more information.
 #' @param plot Logical (default `TRUE`). If `TRUE`, display a plot of the generated design. A plot can always be produced later using [autoplot()].
 #' @param rotation Rotate the text output as Treatments within the plot. Allows for easier reading of long treatment labels. Takes positive and negative values being number of degrees of rotation from horizontal.
@@ -29,7 +30,7 @@
 #' @importFrom utils write.csv
 #' @importFrom rlang check_dots_used
 #'
-#' @return A list containing a data frame with the complete design, a ggplot object with plot layout, the seed (if `return.seed = TRUE`), and the `satab` object, allowing repeat output of the `satab` table via `cat(output$satab)`.
+#' @returns A list containing a data frame with the complete design, a ggplot object with plot layout, the seed (if `return.seed = TRUE`), and the `satab` object, allowing repeat output of the `satab` table via `cat(output$satab)`.
 #'
 #' @examples
 #' library(agricolae)
@@ -89,6 +90,7 @@ des_info <- function(design.obj,
                      byrow = TRUE,
                      fac.names = NULL,
                      fac.sep = c("", " "),
+                     buffer = NULL,
                      plot = TRUE,
                      rotation = 0,
                      size = 4,
@@ -105,11 +107,11 @@ des_info <- function(design.obj,
 
     # Check brows and bcols supplied if necessary
     if(design.obj$parameters$design == "rcbd" & anyNA(c(brows, bcols))) {
-        stop("Design has blocks so brows and bcols must be supplied.")
+        stop("Design has blocks so brows and bcols must be supplied.", call. = FALSE)
     }
     else if(design.obj$parameters$design == "factorial") {
         if(design.obj$parameters$applied == "rcbd" & anyNA(c(brows, bcols))) {
-            stop("Design has blocks so brows and bcols must be supplied.")
+            stop("Design has blocks so brows and bcols must be supplied.", call. = FALSE)
         }
 
         # If factorial design, and names are supplied, use them
@@ -160,7 +162,7 @@ des_info <- function(design.obj,
     }
     else if(design.obj$parameters$design == "split") {
         if(design.obj$parameters$applied == "rcbd" & anyNA(c(brows, bcols))) {
-            stop("Design has blocks so brows and bcols must be supplied.")
+            stop("Design has blocks so brows and bcols must be supplied.", call. = FALSE)
         }
 
         # If names are supplied, use them
@@ -192,10 +194,10 @@ des_info <- function(design.obj,
                         warning(names(fac.names)[2], " must contain the correct number of elements. Elements have not been applied.", call. = FALSE)
                     }
 
-                    colnames(design.obj$book)[4:5] <- names(fac.names)[1:2]
+                    colnames(design.obj$book)[colnames(design.obj$book) %in% c("treatments", "sub_treatments")] <- names(fac.names)[1:2]
                 }
                 else if(is.character(fac.names)) {
-                    colnames(design.obj$book)[4:5] <- fac.names[1:2]
+                    colnames(design.obj$book)[colnames(design.obj$book) %in% c("treatments", "sub_treatments")] <- fac.names[1:2]
                 }
             }
         }
@@ -439,16 +441,22 @@ des_info <- function(design.obj,
 
     if(design == "split") {
         des <- design.obj$book
-        spfacs <- c("plots", "splots", "block")
+
+        numsp <- max(as.numeric(des$splots))
+        lenblk <- as.vector(table(des$block)[1])
+        numwp <- lenblk/numsp
+        des$wplots <- rep(rep(1:numwp, each = numsp), max(as.numeric(des$block)))
+        des <- des[, c(1, 3, 6, 2, 4, 5)]
+
+        spfacs <- c("plots", "block", "wplots", "splots")
 
         trtNams <- names(des[!is.element(names(des), spfacs)])
-
+        design.obj$book <- des
 
         des$treatments <- factor(paste(des[, trtNams[1]], des[, trtNams[2]], sep = "_"))
 
         # Number of treatments
         ntrt <- nlevels(des$treatments)
-
 
         # Calculate direction of blocking
         xx <- c()
@@ -516,6 +524,8 @@ des_info <- function(design.obj,
             plan$block <- NULL
         } # 5
 
+        colnames(des)[colnames(des)=="wplots"] <- "wholeplots"
+        colnames(des)[colnames(des)=="splots"] <- "subplots"
         des <- cbind(plan, des)
         # Order by column within blocks, rather than row default
         if(!byrow) {
@@ -527,6 +537,12 @@ des_info <- function(design.obj,
 
     info <- list(design = des)
     class(des) <- c("design", class(des))
+
+    # After creating the basic design, add buffers if requested
+    if (!is.null(buffer)) {
+        has_blocks <- any(grepl("block", tolower(names(des))))
+        des <- create_buffers(des, type = buffer, blocks = has_blocks)
+    }
 
     if(plot) {
         info$plot.des <- autoplot(des, rotation = rotation, size = size, margin = margin)
@@ -556,7 +572,7 @@ des_info <- function(design.obj,
             # Do nothing
         }
         else {
-            stop("save must be one of 'none'/FALSE, 'both'/TRUE, 'plot', or 'workbook'.")
+            stop("save must be one of 'none'/FALSE, 'both'/TRUE, 'plot', or 'workbook'.", call. = FALSE)
         }
     }
     else if(save) {

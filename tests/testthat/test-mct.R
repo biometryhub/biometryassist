@@ -1,28 +1,3 @@
-logit <- function (p, percents = range.p[2] > 1, adjust)
-{
-    range.p <- range(p, na.rm = TRUE)
-    if (percents) {
-        if (range.p[1] < 0 || range.p[1] > 100)
-            stop("p must be in the range 0 to 100")
-        p <- p/100
-        range.p <- range.p/100
-    }
-    else if (range.p[1] < 0 || range.p[1] > 1)
-        stop("p must be in the range 0 to 1")
-    a <- if (missing(adjust)) {
-        if (isTRUE(all.equal(range.p[1], 0)) || isTRUE(all.equal(range.p[2],
-                                                                 1)))
-            0.025
-        else 0
-    }
-    else adjust
-    if (missing(adjust) && a != 0)
-        warning(paste("proportions remapped to (", a, ", ",
-                      1 - a, ")", sep = ""))
-    a <- 1 - 2 * a
-    log((0.5 + a * (p - 0.5))/(1 - (0.5 + a * (p - 0.5))))
-}
-
 dat.aov <- aov(Petal.Width ~ Species, data = iris)
 
 test_that("mct produces output", {
@@ -106,6 +81,20 @@ test_that("different interval types work", {
     vdiffr::expect_doppelganger("mct output 2se", autoplot(output2))
 })
 
+test_that("Testing asreml predictions", {
+    load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
+    expect_warning(output <- multiple_comparisons(model.asr,
+                                                  classify = "Nitrogen",
+                                                  pred.obj = pred.asr,
+                                                  dendf = dendf),
+                   "Argument `pred\\.obj` has been deprecated and will be removed in a future version\\. Predictions are now performed internally in the function\\.")
+    expect_equal(output$predicted.value,
+                 c(77.76, 100.15, 114.41, 123.23),
+                 tolerance = 5e-2)
+    expect_snapshot_output(output)
+    vdiffr::expect_doppelganger("asreml predictions", autoplot(output))
+})
+
 test_that("save produces output", {
     withr::local_file("pred_vals.csv")
     output <- multiple_comparisons(dat.aov, classify = "Species", save = TRUE, savename = "pred_vals")
@@ -119,7 +108,7 @@ test_that("save produces output", {
 
 test_that("Interaction terms work", {
     load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
-    skip_if_not(requireNamespace("asreml", quietly = TRUE))
+    skip_if_not(.check_package_available("asreml"))
     quiet(library(asreml))
     output <- multiple_comparisons(model.asr, classify = "Nitrogen:Variety", pvals = T)
     expect_equal(output$predicted.value,
@@ -170,25 +159,23 @@ test_that("mct removes aliased treatments in aov", {
 
 
 test_that("mct handles aliased results in asreml with a warning", {
-    skip_if_not(requireNamespace("asreml", quietly = TRUE))
+    skip_if_not(.check_package_available("asreml"))
     quiet(library(asreml))
     load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
     load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
     expect_warning(
-        expect_snapshot_output(
-            multiple_comparisons(model.asr, classify = "Nitrogen:Variety")
-        ),
+        output <- multiple_comparisons(model.asr, classify = "Nitrogen:Variety"),
         "Aliased level is: 0\\.2_cwt:Golden_rain\\."
     )
+    expect_snapshot_output(output)
 
     load(test_path("data", "oats_data2.Rdata"), envir = .GlobalEnv)
 
     expect_warning(
-        expect_snapshot_output(
-            multiple_comparisons(model2.asr, classify = "Nitrogen:Variety")
-        ),
+        output <- multiple_comparisons(model2.asr, classify = "Nitrogen:Variety"),
         "Some levels of Nitrogen:Variety are aliased\\. They have been removed from predicted output\\."
     )
+    expect_snapshot_output(output)
     expect_warning(multiple_comparisons(model2.asr, classify = "Nitrogen:Variety"),
                    "Aliased levels are: 0\\.2_cwt:Golden_rain, 0\\.2_cwt:Victory\\.")
 })
@@ -201,15 +188,19 @@ test_that("Invalid classify argument causes an error", {
                  "ABC is not a term in the model\\. Please check model specification\\.")
 })
 
-test_that("Significance values that are too high give a warning", {
+test_that("Significance values that are too high give a warning or error", {
     # dat.aov <- aov(Petal.Width ~ Species, data = iris)
     expect_warning(multiple_comparisons(dat.aov, classify = "Species", sig = 0.95),
                    "Significance level given by `sig` is high. Perhaps you meant 0.05?")
+    expect_error(multiple_comparisons(dat.aov, classify = "Species", sig = 5),
+                 "Significance level given by `sig` is high. Perhaps you meant 0.05?")
+    expect_error(multiple_comparisons(dat.aov, classify = "Species", sig = 95),
+                 "Significance level given by `sig` is high. Perhaps you meant 0.05?")
 })
 
 test_that("Use of pred argument gives warning", {
     # dat.aov <- aov(Petal.Width ~ Species, data = iris)
-    expect_warning(multiple_comparisons(dat.aov, pred = "Species"),
+    expect_warning(multiple_comparisons(dat.aov, classify = "Species", pred = "Species"),
                    "Argument `pred` has been deprecated and will be removed in a future version. Please use `classify` instead.")
 })
 
@@ -223,7 +214,7 @@ test_that("Invalid column name causes an error", {
 })
 
 test_that("Including pred.obj object causes warning", {
-    skip_if_not(requireNamespace("asreml", quietly = TRUE))
+    skip_if_not(.check_package_available("asreml"))
     quiet(library(asreml))
     load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
     expect_warning(multiple_comparisons(model.asr, pred.obj = pred.asr, classify = "Nitrogen"),
@@ -231,7 +222,7 @@ test_that("Including pred.obj object causes warning", {
 })
 
 test_that("Providing a random term in classify produces an error.", {
-    skip_if_not(requireNamespace("asreml", quietly = TRUE))
+    skip_if_not(.check_package_available("asreml"))
     load(test_path("data", "oats_data2.Rdata"), envir = .GlobalEnv)
     expect_error(multiple_comparisons(model2.asr, classify = "Blocks"),
                  "All predicted values are aliased\\. Perhaps you need the `present` argument\\?")
@@ -287,7 +278,7 @@ test_that("nlme model produces an error", {
     suppressPackageStartupMessages(library(nlme))
     fm1 <- lme(distance ~ age, data = Orthodont)
     expect_error(multiple_comparisons(fm1, classify = "age"),
-                 "Models of type lme are not supported.")
+                 "model\\.obj must be a linear \\(mixed\\) model object\\. Currently supported model types are: aov, lm, lmerMod, lmerModLmerTest, asreml")
 })
 
 test_that("multiple_comparisons output has a class of 'mct'", {
@@ -295,6 +286,27 @@ test_that("multiple_comparisons output has a class of 'mct'", {
     expect_s3_class(output, "mct")
 })
 
+test_that("Setting groups to FALSE disables letter groups", {
+    output <- multiple_comparisons(dat.aov, classify = "Species")
+    expect_true("groups" %in% colnames(output))
+    expect_equal(output$groups, c("a", "b", "c"))
+
+    output <- multiple_comparisons(dat.aov, classify = "Species", groups = FALSE)
+    expect_false("groups" %in% colnames(output))
+
+    output <- multiple_comparisons(dat.aov, classify = "Species", letters = FALSE)
+    expect_false("groups" %in% colnames(output))
+
+    vdiffr::expect_doppelganger("No letter groups",
+                                autoplot(output))
+})
+
+test_that("Check for letters as an alias of groups", {
+    expect_warning(output <- multiple_comparisons(dat.aov, classify = "Species",
+                                                  groups = FALSE, letters = TRUE),
+                   "Both 'groups' and 'letters' provided\\. Using 'groups'\\.")
+    expect_false("groups" %in% colnames(output))
+})
 
 test_that("autoplot can rotate axis and labels independently", {
     output <- multiple_comparisons(dat.aov, classify = "Species")
@@ -312,44 +324,65 @@ test_that("autoplot can rotate axis and labels independently", {
                                 autoplot(output, rotation = 45, label_rotation = 90, hjust = 0, vjust = 0.5))
 })
 
+test_that("Autoplot can output column graphs", {
+    output <- multiple_comparisons(dat.aov, classify = "Species")
+    p1 <- autoplot(output, type = "column", label_height = 1)
+    p2 <- autoplot(output, type = "col", label_height = 1)
+    expect_in("GeomCol", class(p1$layers[[1]]$geom))
+    expect_in("GeomCol", class(p2$layers[[1]]$geom))
+    expect_true(equivalent_ggplot2(p1, p2))
+    vdiffr::expect_doppelganger("autoplot column", p1)
+})
+
+test_that("A warning is printed if a transformation is detected with no trans argument provided", {
+    dat.aov.log <- aov(log(Petal.Width) ~ Species, data = iris)
+    dat.aov.sqrt <- aov(sqrt(Petal.Width) ~ Species, data = iris)
+    dat.aov.logit <- aov(logit(1/Petal.Width) ~ Species, data = iris)
+    dat.aov.inverse <- aov((1/Petal.Width) ~ Species, data = iris)
+    dat.aov.power <- aov(Petal.Width^3 ~ Species, data = iris)
+
+    expect_warning(multiple_comparisons(dat.aov.log, classify = "Species"),
+                   "The response variable appears to be transformed in the model formula: log\\(Petal\\.Width\\)\\.
+Please specify the 'trans' argument if you want back-transformed predictions\\.")
+    expect_warning(multiple_comparisons(dat.aov.sqrt, classify = "Species"),
+                   "The response variable appears to be transformed in the model formula: sqrt\\(Petal\\.Width\\)\\.
+Please specify the 'trans' argument if you want back-transformed predictions\\.")
+    expect_warning(multiple_comparisons(dat.aov.logit, classify = "Species"),
+                   "The response variable appears to be transformed in the model formula: logit\\(1/Petal\\.Width\\)\\.
+Please specify the 'trans' argument if you want back-transformed predictions\\.")
+    expect_warning(multiple_comparisons(dat.aov.inverse, classify = "Species"),
+                   "The response variable appears to be transformed in the model formula: \\(1/Petal\\.Width\\)\\.
+Please specify the 'trans' argument if you want back-transformed predictions\\.")
+    expect_warning(multiple_comparisons(dat.aov.power, classify = "Species"),
+                   "The response variable appears to be transformed in the model formula: Petal\\.Width\\^3\\.
+Please specify the 'trans' argument if you want back-transformed predictions\\.")
+})
 
 
+# Test aliased output prints
+test_that("print.mct with no aliased attribute", {
+    dat.aov <- aov(Petal.Width ~ Species, data = iris)
+    output <- multiple_comparisons(dat.aov, classify = "Species", plot = FALSE)
+    attr(output, "aliased") <- "ABC"
 
+    expect_true("aliased" %in% names(attributes(output)))
+    expect_length(attr(output, "aliased"), 1)
+    expect_output(print(output),
+                  "Aliased level is: ABC")
 
+    attr(output, "aliased") <- c("ABC", "DEF")
 
+    expect_length(attr(output, "aliased"), 2)
+    expect_true("aliased" %in% names(attributes(output)))
+    expect_output(print(output),
+                  "Aliased levels are: ABC and DEF")
 
+    attr(output, "aliased") <- c("ABC", "DEF", "GHI")
 
+    expect_length(attr(output, "aliased"), 3)
+    expect_true("aliased" %in% names(attributes(output)))
+    expect_output(print(output),
+                  "Aliased levels are: ABC, DEF and GHI")
 
-
-
-
-# test_that("sommer model works", {
-#     skip_if_not_installed("sommer")
-#     quiet(library(sommer))
-#     data("DT_yatesoats")
-#     dat.sommer <- mmer(Y ~ N*V, random = ~B + B/MP, data = DT_yatesoats, verbose = FALSE)
-#     output <- multiple_comparisons(dat.sommer, classify = "N")
-#     expect_identical(output$predicted.value, c(0.25, 1.33, 2.03))
-#     skip_if(interactive())
-#     vdiffr::expect_doppelganger("mct output", output$predicted_plot)
-# })
-
-# skip if not local/asreml installed
-# model.asr <- asreml(yield ~ Nitrogen + Variety + Nitrogen:Variety,
-#                     random = ~ Blocks + Blocks:Wplots,
-#                     residual = ~ units,
-#                     data = asreml::oats)
-#
-# pred.asr <- predict(model.asr, classify = "Nitrogen:Variety", sed = TRUE)
-
-# multiple_comparisons(model.obj = model.asr, pred.obj = pred.asr, classify = "Nitrogen:Variety", label_height = 0.1)
-
-# model.asr <- asreml(log(yield) ~ Nitrogen + Variety + Nitrogen:Variety,
-#                     random = ~ Blocks + Blocks:Wplots,
-#                     residual = ~ units,
-#                     data = asreml::oats)
-#
-# pred.asr <- predict(model.asr, classify = "Nitrogen", sed = TRUE)
-#
-# multiple_comparisons(model.obj = model.asr, pred.obj = pred.asr, classify = "Nitrogen", trans = "log", offset = 0, label_height = 0.1)
+})
 

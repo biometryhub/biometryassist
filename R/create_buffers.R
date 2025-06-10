@@ -6,7 +6,7 @@
 #'
 #' @importFrom stats setNames aggregate
 #'
-#' @return The original data frame, updated to include buffers
+#' @returns The original data frame, updated to include buffers
 #' @keywords internal
 create_buffers <- function(design, type, blocks = FALSE) {
     nrow <- max(design$row)
@@ -81,7 +81,7 @@ create_buffers <- function(design, type, blocks = FALSE) {
     }
     # Match block, blocks, or b
     else if(grepl("(^blocks?$|^b$)", tolower(type))) {
-        stop("Block buffers are not yet supported.")
+        stop("Block buffers are not yet supported.", call. = FALSE)
     }
     else {
         stop("Invalid buffer option: ", type, call. = FALSE)
@@ -106,6 +106,24 @@ create_buffers <- function(design, type, blocks = FALSE) {
     design <- rbind(design, buffers)
 
     return(design)
+}
+
+#' Add buffers to an existing design
+#'
+#' @param design_obj A design object (with class "design") from the design() function
+#' @param type The type of buffer to add
+#' @returns The modified design object with buffers added
+#' @export
+add_buffers <- function(design_obj, type) {
+    stopifnot(inherits(design_obj, "design"))
+
+    # Determine if design has blocks
+    has_blocks <- any(grepl("block", tolower(names(design_obj$design))))
+
+    # Create buffers and update the design dataframe
+    design_obj$design <- create_buffers(design_obj$design, type, blocks = has_blocks)
+
+    return(design_obj)
 }
 
 

@@ -22,11 +22,6 @@ test_that("Summary graph works for three explanatory variables", {
 
 })
 
-test_that("Summary graph works for three explanatory variables", {
-    vdiffr::expect_doppelganger(title = "Summary graph of npk yield by N, P and K",
-                                summary_graph(npk, "yield", c("N", "P", "K"), "lb/plot"))
-
-})
 
 test_that("Errors are produced for invalid input", {
     expect_error(summary_graph("abc", "def", "ghi", "jkl"), "abc is not a data frame\\.")

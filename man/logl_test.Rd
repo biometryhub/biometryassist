@@ -16,41 +16,19 @@ logl_test(
 \arguments{
 \item{model.obj}{An ASReml-R model object}
 
-\item{rand.terms}{Random terms from the model. Default is NULL.}
+\item{rand.terms}{Character vector of random terms to test. Default is NULL.}
 
-\item{resid.terms}{Residual terms from the model. Default is NULL.}
+\item{resid.terms}{Character vector of residual terms to test. Default is NULL.}
 
-\item{decimals}{Controls rounding of decimal places in output. Default is 3 decimal places.}
+\item{decimals}{Number of decimal places to round p-values. Default is 3.}
 
-\item{numeric}{Return p-values as numeric? Default is that they are characters, where very small values shown as less than a small number. See \code{details} for more.}
+\item{numeric}{Logical. Should p-values be returned as numeric? Default is FALSE (formatted).}
 
-\item{quiet}{Logical (default: \code{FALSE}). Hide warnings and messages?}
+\item{quiet}{Logical. Suppress model update messages and warnings? Default is FALSE.}
 }
 \value{
-A dataframe containing the results of the test.
+A data frame of terms and corresponding log-likelihood ratio test p-values.
 }
 \description{
 Conduct a log-likelihood test for comparing terms in ASReml-R models
-}
-\details{
-Typically p-values cannot be 0, and are usually just below some threshold of accuracy in calculation of probability.
-}
-\examples{
-\dontrun{
-library(asreml)
-dat <- asreml::oats
-dat <- dat[order(dat$Row, dat$Column),]
-
-#Fit ASReml Model
-model.asr <- asreml(yield ~ Nitrogen + Variety + Nitrogen:Variety,
-                    random = ~ Blocks + Blocks:Wplots,
-                    residual = ~ ar1(Row):ar1(Column),
-                    data = dat)
-oats.logl <- logl_test(
-  model.obj = model.asr, rand.terms = c("Blocks", "Blocks:Wplots"),
-  resid.terms = c("ar1(Row)", "ar1(Column)")
-)
-oats.logl
-}
-
 }
