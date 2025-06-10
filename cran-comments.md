@@ -1,6 +1,6 @@
 ## Submission
 
-Updates to fix bugs accidentally introduced in the previous release.
+Updates to fix bugs accidentally introduced in the previous release. Resubmission to fix failing test.
 
 ## Test environments
 * Local Windows 10 install, R 4.5.0
