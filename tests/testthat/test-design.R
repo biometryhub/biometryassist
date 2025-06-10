@@ -26,7 +26,11 @@ test_that("RCBD with row-wise blocks are supported", {
     # RCBD with row-wise blocks
     d2.1 <- design("rcbd", treatments = LETTERS[1:6], reps = 4,
                    nrows = 4, ncols = 6, brows = 1, bcols = 6, seed = 42, quiet = TRUE)
-
+    
+    expect_equal(names(d2.1), c("design", "plot.des", "satab", "seed"))
+    expect_equal(d2.1$seed, 42)
+    expect_equal(d2.1$design$block, factor(d2.1$design$row))
+    expect_equal(d2.1$satab[6], "Residual                                15\n")
     vdiffr::expect_doppelganger(title = "RCBD with row blocks", autoplot(d2.1))
 
 })
@@ -35,6 +39,9 @@ test_that("RCBD with square blocks are supported", {
     d2.2 <- design("rcbd", treatments = LETTERS[1:6], reps = 4,
                    nrows = 6, ncols = 4, brows = 3, bcols = 2, seed = 42, quiet = TRUE)
 
+    expect_equal(names(d2.2), c("design", "plot.des", "satab", "seed"))
+    expect_equal(d2.2$seed, 42)
+    expect_equal(d2.2$satab[6], "Residual                                15\n")
     vdiffr::expect_doppelganger(title = "RCBD with square blocks", autoplot(d2.2))
 })
 
