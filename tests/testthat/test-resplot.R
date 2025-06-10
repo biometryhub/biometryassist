@@ -139,6 +139,7 @@ test_that("onepage is ignored for single plots", {
 
 test_that("onepage produces plots with up to 6 on a page", {
     load(test_path("data", "multi_dsum.Rdata"))
+    load(test_path("data", "asreml_model.Rdata"))
     p1 <- suppressWarnings(resplot(complex_model.asr))
     p2 <- suppressWarnings(resplot(complex_model.asr, onepage = TRUE))
     p3 <- resplot(model_dsum, onepage = TRUE)
