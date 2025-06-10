@@ -186,7 +186,6 @@ download_asreml_package <- function(url, verbose = FALSE) {
     }, error = function(e) {
         if (verbose) message("[DEBUG] Download failed with error: ", e$message)
         stop("Failed to download ASReml-R package: ", e$message)
-        NULL
     })
 
     return(result)
@@ -393,7 +392,8 @@ newer_version <- function() {
         return(FALSE)
     }
 
-    newest <- newest[which.max(numeric_version(as.character(newest$asr_ver))), ]
+    nv <- max(numeric_version(as.character(newest$asr_ver)))
+    newest <- newest[which(newest$asr_ver==nv), ]
 
     # Get current version info
     if(.check_package_available("asreml")) {
@@ -406,8 +406,10 @@ newer_version <- function() {
     }
 
     # Check if newer version is available
-    (newest$`Date published` > asr_date + 7) &&
+    result <- (newest$`Date published` > asr_date + 7) &&
         (numeric_version(as.character(newest$asr_ver)) > numeric_version(as.character(asr_ver)))
+
+    return(result)
 }
 
 #' Create the folder MacOS needs for licensing

@@ -123,3 +123,36 @@ test_that("use_template errors if file.copy fails", {
     )
   })
 })
+
+test_that("list_templates returns character(0) if template_dir is empty", {
+  # Mock system.file to return "" (simulates package not installed or no templates dir)
+  mockery::stub(list_templates, "system.file", function(...) "")
+  expect_equal(list_templates(), character(0))
+})
+
+test_that("list_templates returns empty and messages if no templates found", {
+  # Create a temp dir with no template files
+  withr::with_tempdir({
+    dir.create("templates")
+    mockery::stub(list_templates, "system.file", function(...) file.path(getwd(), "templates"))
+    expect_message(
+      result <- list_templates(),
+      "No templates found in biometryassist package"
+    )
+    expect_equal(result, character(0))
+  })
+})
+
+test_that("list_templates returns template files if present", {
+  # Create a temp dir with some template files
+  withr::with_tempdir({
+    dir.create("templates")
+    file.create(file.path("templates", "my_template.R"))
+    file.create(file.path("templates", "my_template.Rmd"))
+    file.create(file.path("templates", "not_a_template.txt"))
+    mockery::stub(list_templates, "system.file", function(...) file.path(getwd(), "templates"))
+    result <- list_templates()
+    expect_true(all(c("my_template.R", "my_template.Rmd") %in% result))
+    expect_false("not_a_template.txt" %in% result)
+  })
+})

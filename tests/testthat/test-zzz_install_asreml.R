@@ -147,6 +147,79 @@ test_that("newer_version handles no network gracefully", {
     expect_false(result)
 })
 
+test_that("newer_version returns FALSE if online_versions is empty", {
+    mockery::stub(newer_version, "get_version_table", function() data.frame())
+    expect_false(newer_version())
+})
+
+test_that("newer_version returns FALSE if no matching OS/version in online_versions", {
+    fake_versions <- data.frame(
+        os = "win", arm = FALSE, r_ver = "43", asr_ver = "4.2.0",
+        `Date published` = as.Date("2023-01-01")
+    )
+    mockery::stub(newer_version, "get_version_table", function() fake_versions)
+    mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
+    expect_false(newer_version())
+})
+
+test_that("newer_version returns FALSE if installed version is up-to-date", {
+    fake_versions <- data.frame(
+        os = "linux",
+        arm = FALSE,
+        r_ver = "44",
+        asr_ver = "4.2.0",
+        `Date published` = as.Date("2023-01-01"),
+        stringsAsFactors = FALSE
+    )
+    mockery::stub(newer_version, "get_version_table", function() fake_versions)
+    mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
+    mockery::stub(newer_version, ".check_package_available", function(pkg) TRUE)
+    mockery::stub(newer_version, "utils::packageDescription", function(pkg) list(Packaged = "2023-01-10", Version = "4.2.0"))
+    expect_false(newer_version())
+})
+
+test_that("newer_version returns TRUE if online version is newer and published > 7 days after installed", {
+    fake_versions <- data.frame(
+        os = "linux", arm = FALSE, r_ver = "44", asr_ver = "4.3.0",
+        Date = as.Date("2023-02-01")
+    )
+    colnames(fake_versions)[5] <- "Date published"
+    mockery::stub(newer_version, "get_version_table", function() fake_versions)
+    mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
+    mockery::stub(newer_version, ".check_package_available", function(pkg) TRUE)
+    mockery::stub(newer_version, "utils::packageDescription", function(pkg) list(
+        Packaged = "2023-01-01", Version = "4.2.0"
+    ))
+    expect_true(newer_version())
+})
+
+test_that("newer_version returns TRUE if asreml is not installed", {
+    fake_versions <- data.frame(
+        os = "linux", arm = FALSE, r_ver = "44", asr_ver = "4.2.0",
+        `Date published` = as.Date("2023-01-01")
+    )
+    colnames(fake_versions)[5] <- "Date published"
+    mockery::stub(newer_version, "get_version_table", function() fake_versions)
+    mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
+    mockery::stub(newer_version, ".check_package_available", function(pkg) FALSE)
+    expect_true(newer_version())
+})
+
+test_that("newer_version handles missing Packaged or Version gracefully", {
+    fake_versions <- data.frame(
+        os = "linux", arm = FALSE, r_ver = "44", asr_ver = "4.3.0",
+        `Date published` = as.Date("2023-02-01")
+    )
+    colnames(fake_versions)[5] <- "Date published"
+    mockery::stub(newer_version, "get_version_table", function() fake_versions)
+    mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
+    mockery::stub(newer_version, ".check_package_available", function(pkg) TRUE)
+    mockery::stub(newer_version, "utils::packageDescription", function(pkg) list(
+        Packaged = NULL, Version = NULL
+    ))
+    expect_true(newer_version())
+})
+
 test_that("install_asreml handles no internet connection", {
     skip_on_cran()
     mockery::stub(install_asreml, "curl::has_internet", function() FALSE)
@@ -401,7 +474,7 @@ test_that("install_dependencies verbose parameter works", {
     mockery::stub(install_dependencies, "rlang::is_installed", function(...) FALSE)
     mockery::stub(install_dependencies, "install.packages", function(...) {})
 
-    # Test verbose = TRUE produces debug messages
+    # Test verbose = TRUE produces debug messages for missing dependencies
     expect_message(
         install_dependencies(quiet = FALSE, library = tempdir(), verbose = TRUE),
         "\\[DEBUG\\] Checking required dependencies"
@@ -416,6 +489,16 @@ test_that("install_dependencies verbose parameter works", {
     expect_no_message(
         install_dependencies(quiet = FALSE, library = tempdir(), verbose = FALSE),
         message = "\\[DEBUG\\]"
+    )
+
+    # ---- NEW: Test all dependencies present triggers "All dependencies already satisfied" ----
+    mockery::stub(install_dependencies, "installed.packages", function(...) {
+        matrix(c("data.table", "ggplot2", "jsonlite"), ncol = 1, dimnames = list(c("data.table", "ggplot2", "jsonlite"), "Package"))
+    })
+    mockery::stub(install_dependencies, "rlang::is_installed", function(...) TRUE)
+    expect_message(
+        install_dependencies(quiet = FALSE, library = tempdir(), verbose = TRUE),
+        "\\[DEBUG\\] All dependencies already satisfied"
     )
 })
 
@@ -445,6 +528,17 @@ test_that("install_asreml_package verbose parameter works", {
         install_asreml_package(temp_file, tempdir(), FALSE, "linux", verbose = FALSE),
         message = "\\[DEBUG\\]"
     )
+
+    # ---- NEW: Test error handling with verbose ----
+    mockery::stub(install_asreml_package, "install.packages", function(...) stop("Installation failed"))
+    expect_warning(
+        expect_message(
+            result <- install_asreml_package(temp_file, tempdir(), FALSE, "linux", verbose = TRUE),
+            "\\[DEBUG\\] Installation error: Installation failed"
+        ),
+        "Installation failed"
+    )
+    expect_false(result)
 })
 
 test_that("manage_file verbose parameter works", {
@@ -460,7 +554,6 @@ test_that("manage_file verbose parameter works", {
             manage_file(test_file, FALSE, "test.zip", verbose = TRUE),
             "\\[DEBUG\\] Managing downloaded file:"
         )
-
         expect_message(
             manage_file(test_file, FALSE, "test.zip", verbose = TRUE),
             "\\[DEBUG\\] Removing downloaded file"
@@ -472,10 +565,55 @@ test_that("manage_file verbose parameter works", {
         test_file <- tempfile("test_asreml_")
         writeLines("test content", test_file)
 
-        # Test verbose = FALSE produces no debug messages
-        expect_no_message(
-            manage_file(test_file, FALSE, "test.zip", verbose = FALSE),
-            message = "\\[DEBUG\\]"
+        # Test keep_file = TRUE (current directory)
+        expect_message(
+            manage_file(test_file, TRUE, "test.zip", verbose = TRUE),
+            "\\[DEBUG\\] Saving file to current directory: test.zip"
+        )
+    })
+
+    withr::with_tempdir({
+        # Create a test file and subdirectory
+        test_file <- tempfile("test_asreml_")
+        writeLines("test content", test_file)
+        subdir <- "subdir"
+        dir.create(subdir)
+
+        # Test keep_file = path (specified directory)
+        expect_message(
+            manage_file(test_file, subdir, "test.zip", verbose = TRUE),
+            "\\[DEBUG\\] Saving file to specified directory: subdir[/\\\\]test.zip"
+        )
+    })
+
+    withr::with_tempdir({
+        # Create a test file
+        test_file <- tempfile("test_asreml_")
+        writeLines("test content", test_file)
+
+        # Test keep_file = invalid path
+        expect_message(
+            expect_warning(
+                manage_file(test_file, "/nonexistent/path", "test.zip", verbose = TRUE),
+                "Invalid keep_file argument"
+            ),
+            "\\[DEBUG\\] Invalid keep_file argument, removing file"
+        )
+    })
+
+    withr::with_tempdir({
+        # Create a test file
+        test_file <- tempfile("test_asreml_")
+        writeLines("test content", test_file)
+
+        # Mock file.rename to fail to trigger error branch
+        mockery::stub(manage_file, "file.rename", function(...) stop("move failed"))
+        expect_message(
+            expect_warning(
+                manage_file(test_file, TRUE, "test.zip", verbose = TRUE),
+                "Could not save ASReml file to specified location"
+            ),
+            "\\[DEBUG\\] Failed to move file: move failed"
         )
     })
 })
