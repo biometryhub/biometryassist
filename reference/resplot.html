@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">biometryassist</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -56,6 +56,8 @@
 <span>  label.size <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  axes.size <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  call.size <span class="op">=</span> <span class="fl">9</span>,</span>
+<span>  onepage <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  onepage_cols <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  <span class="va">mod.obj</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -88,6 +90,14 @@
 <dd><p>A numeric value for the size of the model displayed on the plot.</p></dd>
 
 
+<dt id="arg-onepage">onepage<a class="anchor" aria-label="anchor" href="#arg-onepage"></a></dt>
+<dd><p>(Logical) If TRUE and there are multiple plots, combines up to 6 plots per page.</p></dd>
+
+
+<dt id="arg-onepage-cols">onepage_cols<a class="anchor" aria-label="anchor" href="#arg-onepage-cols"></a></dt>
+<dd><p>Integer. Number of columns to use in grid layout when onepage=TRUE. Default is 3.</p></dd>
+
+
 <dt id="arg-mod-obj">mod.obj<a class="anchor" aria-label="anchor" href="#arg-mod-obj"></a></dt>
 <dd><p>Deprecated to be consistent with other functions. Please use <code>model.obj</code> instead.</p></dd>
 
@@ -115,7 +125,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
 </div>
 
     </footer></div>

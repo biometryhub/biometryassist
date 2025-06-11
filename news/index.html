@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">biometryassist</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -42,6 +42,28 @@
       <small>Source: <a href="https://github.com/biometryhub/biometryassist/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.3.0" id="biometryassist-130">biometryassist 1.3.0<a class="anchor" aria-label="anchor" href="#biometryassist-130"></a></h2><p class="text-muted">CRAN release: 2025-06-11</p>
+<div class="section level3">
+<h3 id="major-changes-1-3-0">Major changes<a class="anchor" aria-label="anchor" href="#major-changes-1-3-0"></a></h3>
+<ul><li>Switched to using S3 methods for <code><a href="../reference/resplot.html">resplot()</a></code> to enable easier expansion to different models in future. (<a href="https://github.com/biometryhub/biometryassist/issues/100" class="external-link">#100</a>)</li>
+<li>Introduced a new function <code><a href="../reference/export_design_to_excel.html">export_design_to_excel()</a></code>. An excel file can now be created from a design dataframe, instead of just a graphical plot. (<a href="https://github.com/biometryhub/biometryassist/issues/74" class="external-link">#74</a>)</li>
+<li>Introduced a new comparison interval type in <code><a href="../reference/multiple_comparisons.html">multiple_comparisons()</a></code>. The new option <code>int.type = 'tukey'</code> will now create comparison intervals using Tukey’s distribution rather than a <em>t</em>-distribution for a regular confidence interval. This has been a point of confusion when intervals don’t overlap but share letters. (<a href="https://github.com/biometryhub/biometryassist/issues/66" class="external-link">#66</a>)</li>
+</ul></div>
+<div class="section level3">
+<h3 id="minor-changes-1-3-0">Minor changes<a class="anchor" aria-label="anchor" href="#minor-changes-1-3-0"></a></h3>
+<ul><li>Model inputs are now checked for potential transformations that haven’t been supplied in <code><a href="../reference/multiple_comparisons.html">multiple_comparisons()</a></code>. (<a href="https://github.com/biometryhub/biometryassist/issues/83" class="external-link">#83</a>)</li>
+<li>Enabled a <code>verbose</code> option for the <code>quiet</code> parameter in <code><a href="../reference/install_asreml.html">install_asreml()</a></code> to give more detailed output when required. (<a href="https://github.com/biometryhub/biometryassist/issues/81" class="external-link">#81</a>)</li>
+<li>Added ability to group multiple resplots and variograms into a single grid via a <code>onepage</code> argument. (<a href="https://github.com/biometryhub/biometryassist/issues/73" class="external-link">#73</a>)</li>
+<li>Buffer plots are now implemented within the design data frame, rather than just the plotting logic (<a href="https://github.com/biometryhub/biometryassist/issues/68" class="external-link">#68</a>)</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-1-3-0">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-3-0"></a></h3>
+<ul><li>Fixed a bug introduced in v1.2.2 where arguments weren’t passed through properly to asreml. (<a href="https://github.com/biometryhub/biometryassist/issues/98" class="external-link">#98</a>)</li>
+<li>Fixed a bug which broke the messages about deprecated parameters in resplot. (<a href="https://github.com/biometryhub/biometryassist/issues/97" class="external-link">#97</a>)</li>
+<li>Fixed a long-standing bug where logl_test would work if random terms were given in resid. (<a href="https://github.com/biometryhub/biometryassist/issues/7" class="external-link">#7</a>)</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.2.2" id="biometryassist-122">biometryassist 1.2.2<a class="anchor" aria-label="anchor" href="#biometryassist-122"></a></h2><p class="text-muted">CRAN release: 2025-04-23</p>
 <div class="section level3">
@@ -172,7 +194,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
 </div>
 
     </footer></div>

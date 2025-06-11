@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">biometryassist</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -69,7 +69,7 @@
 
 
 <dt id="arg-quiet">quiet<a class="anchor" aria-label="anchor" href="#arg-quiet"></a></dt>
-<dd><p>Logical (default <code>FALSE</code>). Should package be installed quietly?</p></dd>
+<dd><p>Logical or character (default <code>FALSE</code>). Controls output verbosity. <code>FALSE</code> shows normal messages, <code>TRUE</code> suppresses messages, <code>"verbose"</code> shows detailed debugging information.</p></dd>
 
 
 <dt id="arg-force">force<a class="anchor" aria-label="anchor" href="#arg-force"></a></dt>
@@ -105,6 +105,9 @@
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Example 2: install asreml and save file for later</span></span></span>
 <span class="r-in"><span><span class="fu">install_asreml</span><span class="op">(</span>keep_file <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 3: install with verbose debugging</span></span></span>
+<span class="r-in"><span><span class="fu">install_asreml</span><span class="op">(</span>quiet <span class="op">=</span> <span class="st">"verbose"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
@@ -118,7 +121,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
 </div>
 
     </footer></div>

@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">biometryassist</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -54,7 +54,8 @@
 <span>  row <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  column <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  horizontal <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  palette <span class="op">=</span> <span class="st">"default"</span></span>
+<span>  palette <span class="op">=</span> <span class="st">"default"</span>,</span>
+<span>  onepage <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -80,6 +81,11 @@
 
 <dt id="arg-palette">palette<a class="anchor" aria-label="anchor" href="#arg-palette"></a></dt>
 <dd><p>A string specifying the colour scheme to use for plotting. The default value (<code>"default"</code>) is equivalent to <code>"rainbow"</code>. Colour blind friendly palettes can also be provided via options <code>"colo(u)r blind"</code> (both equivalent to <code>"viridis"</code>), <code>"magma"</code>, <code>"inferno"</code>, <code>"plasma"</code>, <code>"cividis"</code>, <code>"rocket"</code>, <code>"mako"</code> or <code>"turbo"</code>. The <code>"Spectral"</code> palette from <code><a href="https://scales.r-lib.org/reference/pal_brewer.html" class="external-link">scales::brewer_pal()</a></code> is also possible.</p></dd>
+
+
+<dt id="arg-onepage">onepage<a class="anchor" aria-label="anchor" href="#arg-onepage"></a></dt>
+<dd><p>Logical (default FALSE). If TRUE and there are multiple groups,
+combines up to 6 plots onto a single page using a grid layout.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -115,7 +121,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
 </div>
 
     </footer></div>

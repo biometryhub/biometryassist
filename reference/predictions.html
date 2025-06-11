@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">biometryassist</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -49,10 +49,13 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">get_predictions</span><span class="op">(</span><span class="va">model.obj</span>, <span class="va">classify</span>, pred.obj <span class="op">=</span> <span class="cn">NULL</span>, vars <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">get_predictions</span><span class="op">(</span><span class="va">model.obj</span>, <span class="va">classify</span>, pred.obj <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Default S3 method</span></span>
+<span><span class="fu">get_predictions</span><span class="op">(</span><span class="va">model.obj</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'asreml'</span></span>
-<span><span class="fu">get_predictions</span><span class="op">(</span><span class="va">model.obj</span>, <span class="va">classify</span>, pred.obj <span class="op">=</span> <span class="cn">NULL</span>, vars <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span>
+<span><span class="fu">get_predictions</span><span class="op">(</span><span class="va">model.obj</span>, <span class="va">classify</span>, pred.obj <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'lm'</span></span>
 <span><span class="fu">get_predictions</span><span class="op">(</span><span class="va">model.obj</span>, <span class="va">classify</span>, <span class="va">...</span><span class="op">)</span></span>
@@ -69,7 +72,7 @@
 
 
 <dl><dt id="arg-model-obj">model.obj<a class="anchor" aria-label="anchor" href="#arg-model-obj"></a></dt>
-<dd><p>A mixed-effects model object (lmerMod or lmerModLmerTest).</p></dd>
+<dd><p>A model object. Currently supported model objects are asreml, aov/lm, lmerMod/lmerModLmerTest.</p></dd>
 
 
 <dt id="arg-classify">classify<a class="anchor" aria-label="anchor" href="#arg-classify"></a></dt>
@@ -80,23 +83,13 @@
 <dd><p>Optional precomputed prediction object.</p></dd>
 
 
-<dt id="arg-vars">vars<a class="anchor" aria-label="anchor" href="#arg-vars"></a></dt>
-<dd><p>Variables used in the model.</p></dd>
-
-
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Additional arguments passed to <code><a href="https://rvlenth.github.io/emmeans/reference/emmeans.html" class="external-link">emmeans::emmeans</a></code>.</p></dd>
+<dd><p>Additional arguments passed to specific methods.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A list containing predictions, standard errors, degrees of freedom,
-response variable label, and aliased names.</p>
-<p>A list containing predictions, standard errors, degrees of freedom,
-response variable label, and aliased names.</p>
-<p>A list containing predictions, standard errors, degrees of freedom,
-response variable label, and aliased names.</p>
-<p>A list containing predictions, standard errors, degrees of freedom,
 response variable label, and aliased names.</p>
     </div>
 
@@ -109,7 +102,7 @@ response variable label, and aliased names.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
 </div>
 
     </footer></div>
