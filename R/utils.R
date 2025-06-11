@@ -39,7 +39,7 @@ quiet <- function(x) {
                         "    |  Type 'citation('biometryassist')' for the citation details.      |",
                         paste0("    ", paste0(rep("~", times = 69), collapse = ""), "\n"), sep = "\n")
 
-        if(is_installed("crayon")) {
+        if(.check_package_available("crayon")) {
             packageStartupMessage(crayon::green(output), appendLF=TRUE)
         }
         else {
@@ -57,7 +57,7 @@ quiet <- function(x) {
             }
         )
 
-        if(compare_version(cran_version, as.character(local_version)) == 1) { # current version on CRAN newer than installed
+        if(.compare_version(cran_version, as.character(local_version)) == 1) { # current version on CRAN newer than installed
             warning("    biometryassist version ", cran_version, " is now available.\n",
                     "    Please update biometryassist by running\n",
                     "    install.packages('biometryassist')", call. = FALSE)
@@ -72,8 +72,22 @@ quiet <- function(x) {
 #'
 #' @returns Numeric. `0` if the numbers are equal, `-1` if `b` is later and `1` if `a` is later
 #' @keywords internal
-compare_version <- function(a, b) {
+.compare_version <- function(a, b) {
     return(utils::compareVersion(as.character(a), as.character(b)))
+}
+
+#' Check Package Availability
+#'
+#' Internal function to check if a package is available for loading.
+#' This wrapper around \code{.check_package_available} makes testing easier
+#' by allowing the dependency check to be mocked.
+#'
+#' @param pkg Character string specifying the package name to check
+#' @return Logical value: \code{TRUE} if the package is available,
+#'   \code{FALSE} otherwise
+#' @keywords internal
+.check_package_available <- function(pkg) {
+    return(requireNamespace(pkg, quietly = TRUE))
 }
 
 #' Handle deprecated parameters
@@ -105,5 +119,25 @@ handle_deprecated_param <- function(old_param, new_param = NULL, custom_msg = NU
 }
 
 
-
+#' Determine if a Colour is Light
+#'
+#' Internal helper function to determine whether a colour is light or dark
+#' for appropriate font colour selection (black text on light backgrounds,
+#' white text on dark backgrounds).
+#'
+#' @param colour A colour specification (hex code, named colour, etc.)
+#' @return Logical. TRUE if the colour is light (luminance > 0.5), FALSE if dark.
+#'
+#' @details Uses standard luminance calculation: 0.299*R + 0.587*G + 0.114*B,
+#'   normalized to 0-1 scale. Coefficients reflect human eye sensitivity to
+#'   different colours (green > red > blue).
+#'
+#' @keywords internal
+.is_light_colour <- function(colour) {
+    # Convert vector of colours to RGB matrix (columns = colours)
+    rgb_vals <- grDevices::col2rgb(colour)
+    # Calculate luminance for each colour
+    luminance <- (0.299 * rgb_vals[1, ] + 0.587 * rgb_vals[2, ] + 0.114 * rgb_vals[3, ]) / 255
+    return(luminance > 0.5)
+}
 

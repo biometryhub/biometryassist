@@ -54,3 +54,20 @@ test_that("variogram works with dsum models", {
     vdiffr::expect_doppelganger(title = "Variogram dsum 2",
                                 variogram(model4.asr)[[2]])
 })
+
+test_that("onepage argument groups multiple plots into 1", {
+
+    vg <- variogram(model4.asr, onepage = TRUE)
+    expect_equal(length(vg), 1)
+    expect_type(vg, "list")
+
+    load(test_path("data", "multi_dsum.Rdata"))
+    vg_multi <- variogram(model_dsum, onepage = TRUE)
+    expect_equal(length(vg_multi), 2)
+
+    # variogram plots for each year
+    skip_on_os(c("windows", "mac"))
+    vdiffr::expect_doppelganger(title = "Variogram onepage", print(vg))
+    vdiffr::expect_doppelganger(title = "Variogram onepage2.1", print(vg_multi[[1]]))
+    vdiffr::expect_doppelganger(title = "Variogram onepage2.2", print(vg_multi[[2]]))
+})

@@ -1,3 +1,27 @@
+# biometryassist 1.3.0
+
+## Major changes
+
+- Switched to using S3 methods for `resplot()` to enable easier expansion to different models in future. (#100)
+- Introduced a new function `export_design_to_excel()`. An excel file can now be created from a design dataframe, instead of just a graphical plot. (#74)
+- Introduced a new comparison interval type in `multiple_comparisons()`. 
+The new option `int.type = 'tukey'` will now create comparison intervals using Tukey's distribution rather than a _t_-distribution for a regular confidence interval. 
+This has been a point of confusion when intervals don't overlap but share letters. (#66)
+
+## Minor changes
+
+- Model inputs are now checked for potential transformations that haven't been supplied in `multiple_comparisons()`. (#83)
+- Enabled a `verbose` option for the `quiet` parameter in `install_asreml()` to give more detailed output when required. (#81)
+- Added ability to group multiple resplots and variograms into a single grid via a `onepage` argument. (#73)
+- Buffer plots are now implemented within the design data frame, rather than just the plotting logic (#68)
+
+## Bug Fixes
+
+- Fixed a bug introduced in v1.2.2 where arguments weren't passed through properly to asreml. (#98)
+- Fixed a bug which broke the messages about deprecated parameters in resplot. (#97)
+- Fixed a long-standing bug where logl_test would work if random terms were given in resid. (#7)
+
+
 # biometryassist 1.2.2
 
 ## Major changes

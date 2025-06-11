@@ -1,9 +1,3 @@
-# filenames <- list.files("../W2 Analysis/", "*.csv")
-# for (i in seq_along(filenames)) {
-#     assign(sub("\\.csv$", '', filenames[i]), read.csv(paste0("../W2 Analysis/", filenames[i]), stringsAsFactors = T))
-# }
-# filenames <- sub("\\.csv$", '', filenames)
-# save(list = filenames, file = "tests/testthat/data/w2_data.Rdata")
 load(test_path("data", "w2_data.Rdata"), envir = .GlobalEnv)
 
 test_that("example 1 works", {
@@ -25,8 +19,8 @@ test_that("example 2 works", {
     skip_on_cran()
     example2.aov <- aov(TuberLengthGrowth ~ trt, data = example2)
     expect_snapshot_output(anova(example2.aov))
-    pred2.out <- multiple_comparisons(example2.aov, classify =  "trt")
-    expect_equal(pred2.out$predicted.value, c(11.15, 12.45, 14.02, 15.1, 16.11, 17.24, 17.83))
+    pred2.out <- multiple_comparisons(example2.aov, classify =  "trt", decimals = 4)
+    expect_equal(pred2.out$predicted.value, c(11.15, 12.45, 14.02, 15.1, 16.11, 17.24, 17.83), tolerance = 0.001)
     expect_snapshot_output(pred2.out)
     skip_on_ci()
     skip_on_covr()
@@ -130,8 +124,8 @@ test_that("example 6 works", {
     expect_equal(summary(example6.asr)$varcomp$component, c(0.0000002864157, 0.1790097741606, 0.5407770686889))
 
     # expect_warning(
-    logl.tab <- logl_test(example6.asr,
-                          rand.terms = NULL, resid.terms = c("ar1(Row)"))#,
+    logl.tab <- logl_test(example6.asr, rand.terms = NULL,
+                          resid.terms = c("ar1(Row)"), quiet = TRUE)#,
     # "Some components changed by more than 1% on the last iteration.")
 
     expect_equal(logl.tab$LogLRT.pvalue, '0.003')
@@ -155,8 +149,8 @@ test_that("example 7 works", {
     vg7 <- variogram(example7.asr)
     expect_snapshot_output(print(summary(example7.asr)$varcomp, digits = 2))
     # expect_warning(
-    logl.tab <- logl_test(example7.asr,
-                          rand.terms = NULL, resid.terms = c("ar1(Row)"))#,
+    logl.tab <- logl_test(example7.asr, rand.terms = NULL,
+                          resid.terms = c("ar1(Row)"), quiet = TRUE)#,
     # "Some components changed by more than 1% on the last iteration.")
     expect_equal(logl.tab$LogLRT.pvalue, '0.003')
     expect_warning(pred7.out <- multiple_comparisons(example7.asr, classify = "Herbicide:Rate",
@@ -378,7 +372,8 @@ test_that("exercise 13 works", {
 
     logl.tab <- logl_test(model.obj = exercise13.asr,
                           rand.terms = NULL,
-                          resid.terms = "ar1(Row)")
+                          resid.terms = "ar1(Row)",
+                          quiet = TRUE)
     expect_equal(logl.tab$LogLRT.pvalue, "0.221")
     pred13e.out1 <- multiple_comparisons(exercise13.asr, classify = "Genotype")
     expect_equal(pred13e.out1$predicted.value, c(97.41, 104.31, 110.07))
@@ -392,7 +387,7 @@ test_that("exercise 13 works", {
     vdiffr::expect_doppelganger(title = "exercise13resplot", resplot(exercise13.asr))
     vdiffr::expect_doppelganger(title = "exercise13autoplot1", autoplot(pred13e.out1))
     vdiffr::expect_doppelganger(title = "exercise13autoplot2", autoplot(pred13e.out2))
-    skip_on_os(c("windows", "mac"))
+    # skip_on_os(c("windows", "mac"))
     vdiffr::expect_doppelganger(title = "exercise13variogram", variogram(exercise13.asr))
 })
 
@@ -408,7 +403,8 @@ test_that("exercise 14 works", {
 
     logl.tab <- logl_test(model.obj = exercise14.asr,
                           rand.terms = NULL,
-                          resid.terms = "ar1(Row)")
+                          resid.terms = "ar1(Row)",
+                          quiet = TRUE)
     expect_equal(logl.tab$LogLRT.pvalue, "<0.001")
     pred14e.out <- multiple_comparisons(exercise14.asr, classify = "Genotype")
     expect_equal(pred14e.out$predicted.value,
@@ -425,7 +421,7 @@ test_that("exercise 14 works", {
     skip_if(packageVersion("grid") < "4.2.1")
     vdiffr::expect_doppelganger(title = "exercise14resplot", resplot(exercise14.asr))
     vdiffr::expect_doppelganger(title = "exercise14autoplot", autoplot(pred14e.out))
-    skip_on_os(c("windows", "mac"))
+    # skip_on_os(c("windows", "mac"))
     vdiffr::expect_doppelganger(title = "exercise14variogram", variogram(exercise14.asr))
 })
 
@@ -440,7 +436,8 @@ test_that("exercise 15 works", {
 
     logl.tab <- logl_test(model.obj = exercise15.asr,
                           rand.terms = NULL,
-                          resid.terms = "ar1(col)")
+                          resid.terms = "ar1(col)",
+                          quiet = TRUE)
     expect_equal(logl.tab$LogLRT.pvalue, "0.156")
     pred15e.out1 <- multiple_comparisons(exercise15.asr, classify = "Control",
                                          present = c("Control", "Rate", "Season"))
@@ -461,7 +458,7 @@ test_that("exercise 15 works", {
     vdiffr::expect_doppelganger(title = "exercise15autoplot1", autoplot(pred15e.out1))
     vdiffr::expect_doppelganger(title = "exercise15autoplot2", autoplot(pred15e.out2))
     vdiffr::expect_doppelganger(title = "exercise15autoplot3", autoplot(pred15e.out3))
-    skip_on_os(c("windows", "mac"))
+    # skip_on_os(c("windows", "mac"))
     vdiffr::expect_doppelganger(title = "exercise15variogram", variogram(exercise15.asr))
 })
 

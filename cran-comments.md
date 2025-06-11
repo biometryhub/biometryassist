@@ -1,10 +1,10 @@
 ## Submission
 
-Updates to fix issues flagged by CRAN; resubmission to fix broken URLs.
+Updates to fix bugs accidentally introduced in the previous release. Resubmission to fix failing test.
 
 ## Test environments
 * Local Windows 10 install, R 4.5.0
-* Ubuntu 22.04 (Virtual Machine), R 4.4.3
+* Ubuntu 22.04 (Virtual Machine), R 4.5.0
 * Rhub `check_for_cran()`
 * Github Actions:
     - macOS: r-release

@@ -11,6 +11,8 @@ resplot(
   label.size = 10,
   axes.size = 10,
   call.size = 9,
+  onepage = FALSE,
+  onepage_cols = 3,
   mod.obj
 )
 }
@@ -26,6 +28,10 @@ resplot(
 \item{axes.size}{A numeric value for the size of the axes label font size in points.}
 
 \item{call.size}{A numeric value for the size of the model displayed on the plot.}
+
+\item{onepage}{(Logical) If TRUE and there are multiple plots, combines up to 6 plots per page.}
+
+\item{onepage_cols}{Integer. Number of columns to use in grid layout when onepage=TRUE. Default is 3.}
 
 \item{mod.obj}{Deprecated to be consistent with other functions. Please use \code{model.obj} instead.}
 }

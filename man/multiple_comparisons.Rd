@@ -9,9 +9,9 @@ multiple_comparisons(
   classify,
   sig = 0.05,
   int.type = "ci",
-  trans = NA,
-  offset = NA,
-  power = NA,
+  trans = NULL,
+  offset = NULL,
+  power = NULL,
   decimals = 2,
   descending = FALSE,
   groups = TRUE,
@@ -33,13 +33,13 @@ multiple_comparisons(
 
 \item{sig}{The significance level, numeric between 0 and 1. Default is 0.05.}
 
-\item{int.type}{The type of confidence interval to calculate. One of \code{ci}, \verb{1se} or \verb{2se}. Default is \code{ci}.}
+\item{int.type}{The type of confidence interval to calculate. One of \code{ci}, \code{tukey}, \verb{1se} or \verb{2se}. Default is \code{ci}.}
 
-\item{trans}{Transformation that was applied to the response variable. One of \code{log}, \code{sqrt}, \code{logit}, \code{power} or \code{inverse}. Default is \code{NA}.}
+\item{trans}{Transformation that was applied to the response variable. One of \code{log}, \code{sqrt}, \code{logit}, \code{power} or \code{inverse}. Default is \code{NULL}.}
 
-\item{offset}{Numeric offset applied to response variable prior to transformation. Default is \code{NA}. Use 0 if no offset was applied to the transformed data. See Details for more information.}
+\item{offset}{Numeric offset applied to response variable prior to transformation. Default is \code{NULL}. Use 0 if no offset was applied to the transformed data. See Details for more information.}
 
-\item{power}{Numeric power applied to response variable with power transformation. Default is \code{NA}. See Details for more information.}
+\item{power}{Numeric power applied to response variable with power transformation. Default is \code{NULL}. See Details for more information.}
 
 \item{decimals}{Controls rounding of decimal places in output. Default is 2 decimal places.}
 
@@ -63,7 +63,7 @@ multiple_comparisons(
 
 \item{pred}{Deprecated. Use \code{classify} instead.}
 
-\item{...}{Other arguments passed through to \code{predict.asreml()}.}
+\item{...}{Other arguments passed through to \code{\link[=get_predictions]{get_predictions()}}.}
 }
 \value{
 A list containing a data frame with predicted means, standard errors,
@@ -95,6 +95,40 @@ transformation, add 0.1 in the \code{offset} argument.
 The power argument allows the specification of arbitrary powers to be
 back transformed, if they have been used to attempt to improve normality of
 residuals.
+
+#' ## Confidence Intervals & Comparison Intervals
+
+The function provides several options for confidence intervals via the \code{int.type} argument:
+\itemize{
+\item \strong{\code{tukey} (default)}: Tukey comparison intervals that are consistent with the multiple comparison test. These intervals are wider than regular confidence intervals and are designed so that non-overlapping intervals correspond to statistically significant differences in the Tukey HSD test. This ensures visual consistency between the intervals and letter groupings.
+\item \strong{\code{ci}}: Traditional confidence intervals for individual means. These estimate the precision of each individual mean but may not align with the multiple comparison results. Non-overlapping traditional confidence intervals do not necessarily indicate significant differences in multiple comparison tests.
+\item \strong{\verb{1se}} and \strong{\verb{2se}}: Intervals of ±1 or ±2 standard errors around each mean.
+}
+
+By default, the function displays regular confidence intervals (\code{int.type = "ci"}),
+which estimate the precision of individual treatment means. However, when
+performing multiple comparisons, these regular confidence intervals may not
+align with the letter groupings from Tukey's HSD test. Specifically, you may
+observe non-overlapping confidence intervals for treatments that share the
+same letter group (indicating no significant difference).
+
+This occurs because regular confidence intervals and Tukey's HSD test serve
+different purposes:
+\itemize{
+\item Regular confidence intervals estimate individual mean precision
+\item Tukey's HSD controls the family-wise error rate across all pairwise comparisons
+}
+
+To resolve this visual inconsistency, you can use Tukey comparison intervals
+(\code{int.type = "tukey"}). These intervals are specifically designed for multiple
+comparisons and will be consistent with the letter groupings: non-overlapping
+Tukey intervals indicate significant differences, while overlapping intervals
+suggest no significant difference.
+
+The function will issue a message if it detects potential inconsistencies
+between non-overlapping confidence intervals and letter groupings, suggesting
+the use of Tukey intervals for clearer interpretation.
+For multiple comparison contexts, Tukey comparison intervals are recommended as they provide visual consistency with the statistical test being performed and avoid the common confusion where traditional confidence intervals don't overlap but groups share the same significance letter.
 }
 }
 \examples{
@@ -104,7 +138,7 @@ model <- aov(Petal.Length ~ Species, data = iris)
 # Display the ANOVA table for the model
 anova(model)
 
-# Determine ranking and groups according to Tukey's Test
+# Determine ranking and groups according to Tukey's Test (with Tukey intervals)
 pred.out <- multiple_comparisons(model, classify = "Species")
 
 # Display the predicted values table
@@ -113,6 +147,9 @@ pred.out
 # Show the predicted values plot
 autoplot(pred.out, label_height = 0.5)
 
+# Use traditional confidence intervals instead of Tukey comparison intervals
+pred.out.ci <- multiple_comparisons(model, classify = "Species", int.type = "ci")
+pred.out.ci
 
 # AOV model example with transformation
 my_iris <- iris
@@ -149,7 +186,7 @@ model.asr <- asreml(yield ~ Nitrogen + Variety + Nitrogen:Variety,
                     residual = ~ units,
                     data = asreml::oats)
 
-wald(model.asr) #Nitrogen main effect significant
+wald(model.asr) # Nitrogen main effect significant
 
 #Determine ranking and groups according to Tukey's Test
 pred.out <- multiple_comparisons(model.obj = model.asr, classify = "Nitrogen",

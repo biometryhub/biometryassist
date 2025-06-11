@@ -3,15 +3,18 @@
 \name{predictions}
 \alias{predictions}
 \alias{get_predictions}
+\alias{get_predictions.default}
 \alias{get_predictions.asreml}
 \alias{get_predictions.lm}
 \alias{get_predictions.lmerMod}
 \alias{get_predictions.lmerModLmerTest}
 \title{Get Predictions for Statistical Models}
 \usage{
-get_predictions(model.obj, classify, pred.obj = NULL, vars = NULL, ...)
+get_predictions(model.obj, classify, pred.obj = NULL, ...)
 
-\method{get_predictions}{asreml}(model.obj, classify, pred.obj = NULL, vars = NULL, ...)
+\method{get_predictions}{default}(model.obj, ...)
+
+\method{get_predictions}{asreml}(model.obj, classify, pred.obj = NULL, ...)
 
 \method{get_predictions}{lm}(model.obj, classify, ...)
 
@@ -20,26 +23,15 @@ get_predictions(model.obj, classify, pred.obj = NULL, vars = NULL, ...)
 \method{get_predictions}{lmerModLmerTest}(model.obj, classify, ...)
 }
 \arguments{
-\item{model.obj}{A mixed-effects model object (lmerMod or lmerModLmerTest).}
+\item{model.obj}{A model object. Currently supported model objects are asreml, aov/lm, lmerMod/lmerModLmerTest.}
 
 \item{classify}{Name of predictor variable as a string.}
 
 \item{pred.obj}{Optional precomputed prediction object.}
 
-\item{vars}{Variables used in the model.}
-
-\item{...}{Additional arguments passed to \code{emmeans::emmeans}.}
+\item{...}{Additional arguments passed to specific methods.}
 }
 \value{
-A list containing predictions, standard errors, degrees of freedom,
-response variable label, and aliased names.
-
-A list containing predictions, standard errors, degrees of freedom,
-response variable label, and aliased names.
-
-A list containing predictions, standard errors, degrees of freedom,
-response variable label, and aliased names.
-
 A list containing predictions, standard errors, degrees of freedom,
 response variable label, and aliased names.
 }

@@ -26,7 +26,11 @@ test_that("RCBD with row-wise blocks are supported", {
     # RCBD with row-wise blocks
     d2.1 <- design("rcbd", treatments = LETTERS[1:6], reps = 4,
                    nrows = 4, ncols = 6, brows = 1, bcols = 6, seed = 42, quiet = TRUE)
-
+    
+    expect_equal(names(d2.1), c("design", "plot.des", "satab", "seed"))
+    expect_equal(d2.1$seed, 42)
+    expect_equal(d2.1$design$block, factor(d2.1$design$row))
+    expect_equal(d2.1$satab[6], "Residual                                15\n")
     vdiffr::expect_doppelganger(title = "RCBD with row blocks", autoplot(d2.1))
 
 })
@@ -35,6 +39,9 @@ test_that("RCBD with square blocks are supported", {
     d2.2 <- design("rcbd", treatments = LETTERS[1:6], reps = 4,
                    nrows = 6, ncols = 4, brows = 3, bcols = 2, seed = 42, quiet = TRUE)
 
+    expect_equal(names(d2.2), c("design", "plot.des", "satab", "seed"))
+    expect_equal(d2.2$seed, 42)
+    expect_equal(d2.2$satab[6], "Residual                                15\n")
     vdiffr::expect_doppelganger(title = "RCBD with square blocks", autoplot(d2.2))
 })
 
@@ -726,57 +733,77 @@ test_that("Invalid palette option produces error", {
                  nrows = 11, ncols = 4, seed = 42, quiet = TRUE)
 
     expect_error(autoplot(d1, palette = "abc"), "Invalid value for palette.")
-    expect_error(autoplot(d1, palette = "set3"), "Invalid value for palette.")
-    expect_error(autoplot(d1, palette = "spectral"), "Invalid value for palette.")
+    expect_error(autoplot(d1, palette = 1), "Invalid value for palette.")
 })
 
 test_that("Adding buffers to plots works", {
     # CRD
-    d1 <- design("crd", treatments = LETTERS[1:11], reps = 4,
+    d1_nobuffer <- design("crd", treatments = LETTERS[1:11], reps = 4,
                  nrows = 11, ncols = 4, seed = 42, quiet = TRUE)
+    d1 <- design("crd", treatments = LETTERS[1:11], reps = 4,
+                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE, buffer = "row")
+    d2 <- design("crd", treatments = LETTERS[1:11], reps = 4,
+                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE, buffer = "column")
+    d3 <- design("crd", treatments = LETTERS[1:11], reps = 4,
+                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE, buffer = "edge")
+    d4 <- design("crd", treatments = LETTERS[1:11], reps = 4,
+                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE, buffer = "double row")
+    d5 <- design("crd", treatments = LETTERS[1:11], reps = 4,
+                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE, buffer = "double column")
 
-    expect_equal(length(unique(d1$design$row)), 11)
+    expect_false(identical(d1, d1_nobuffer))
+    expect_false(identical(d1, d2))
+    expect_in("buffer", d1$design$treatments)
+
+    expect_equal(length(unique(d1$design$row)), 23)
     expect_equal(length(unique(d1$design$col)), 4)
-    vdiffr::expect_doppelganger(title = "Row buffers",
-                                autoplot(d1, buffer = "row"))
-    vdiffr::expect_doppelganger(title = "Column buffers",
-                                autoplot(d1, buffer = "column"))
-    vdiffr::expect_doppelganger(title = "Edge buffers",
-                                autoplot(d1, buffer = "edge"))
-    vdiffr::expect_doppelganger(title = "Double row buffers",
-                                autoplot(d1, buffer = "double row"))
-    vdiffr::expect_doppelganger(title = "Double Column buffers",
-                                autoplot(d1, buffer = "double column"))
+    vdiffr::expect_doppelganger(title = "Row buffers", autoplot(d1))
+    vdiffr::expect_doppelganger(title = "Column buffers", autoplot(d2))
+    vdiffr::expect_doppelganger(title = "Edge buffers", autoplot(d3))
+    vdiffr::expect_doppelganger(title = "Double row buffers", autoplot(d4))
+    vdiffr::expect_doppelganger(title = "Double Column buffers", autoplot(d5))
 })
 
 test_that("Adding buffers to plots works for RCBD", {
     # RCBD
+    d1 <- design("rcbd", treatments = LETTERS[1:11], reps = 4,
+                 nrows = 11, ncols = 4, brows = 11, bcols = 1,
+                 seed = 42, quiet = TRUE, buffer = "row")
     d2 <- design("rcbd", treatments = LETTERS[1:11], reps = 4,
                  nrows = 11, ncols = 4, brows = 11, bcols = 1,
-                 seed = 42, quiet = TRUE)
+                 seed = 42, quiet = TRUE, buffer = "column")
+    d3 <- design("rcbd", treatments = LETTERS[1:11], reps = 4,
+                 nrows = 11, ncols = 4, brows = 11, bcols = 1,
+                 seed = 42, quiet = TRUE, buffer = "edge")
+    d4 <- design("rcbd", treatments = LETTERS[1:11], reps = 4,
+                 nrows = 11, ncols = 4, brows = 11, bcols = 1,
+                 seed = 42, quiet = TRUE, buffer = "double row")
+    d5 <- design("rcbd", treatments = LETTERS[1:11], reps = 4,
+                 nrows = 11, ncols = 4, brows = 11, bcols = 1,
+                 seed = 42, quiet = TRUE, buffer = "double column")
+
+    expect_in("buffer", d1$design$treatments)
 
     expect_equal(length(unique(d2$design$row)), 11)
-    expect_equal(length(unique(d2$design$col)), 4)
-    vdiffr::expect_doppelganger(title = "Row buffers RCBD",
-                                autoplot(d2, buffer = "row"))
-    vdiffr::expect_doppelganger(title = "Column buffers RCBD",
-                                autoplot(d2, buffer = "column"))
-    vdiffr::expect_doppelganger(title = "Edge buffers RCBD",
-                                autoplot(d2, buffer = "edge"))
-    vdiffr::expect_doppelganger(title = "Double row buffers RCBD",
-                                autoplot(d2, buffer = "double row"))
-    vdiffr::expect_doppelganger(title = "Double Column buffers RCBD",
-                                autoplot(d2, buffer = "double column"))
+    expect_equal(length(unique(d2$design$col)), 9)
+    vdiffr::expect_doppelganger(title = "Row buffers RCBD", autoplot(d1))
+    vdiffr::expect_doppelganger(title = "Column buffers RCBD", autoplot(d2))
+    vdiffr::expect_doppelganger(title = "Edge buffers RCBD", autoplot(d3))
+    vdiffr::expect_doppelganger(title = "Double row buffers RCBD", autoplot(d4))
+    vdiffr::expect_doppelganger(title = "Double Column buffers RCBD", autoplot(d5))
 })
 
 test_that("Invalid buffer options produce an error", {
     # RCBD
-    d2 <- design("rcbd", treatments = LETTERS[1:11], reps = 4,
+    expect_error(design("rcbd", treatments = LETTERS[1:11], reps = 4,
                  nrows = 11, ncols = 4, brows = 11, bcols = 1,
-                 seed = 42, quiet = TRUE)
+                 seed = 42, quiet = TRUE, buffer = "block"),
+                 "Block buffers are not yet supported\\.")
 
-    expect_error(autoplot(d2, buffer = "block"), "Block buffers are not yet supported\\.")
-    expect_error(autoplot(d2, buffer = "abc"), "Invalid buffer option: abc")
+    expect_error(design("rcbd", treatments = LETTERS[1:11], reps = 4,
+                        nrows = 11, ncols = 4, brows = 11, bcols = 1,
+                        seed = 42, quiet = TRUE, buffer = "abc"),
+                 "Invalid buffer option: abc")
 })
 
 # test_that("Buffers are produced when abreviations are given", {

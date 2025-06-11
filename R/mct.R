@@ -5,10 +5,10 @@
 #' @param model.obj An ASReml-R or aov model object. Will likely also work with `lme` ([nlme::lme()]), `lmerMod` ([lme4::lmer()]) models as well.
 #' @param classify Name of predictor variable as string.
 #' @param sig The significance level, numeric between 0 and 1. Default is 0.05.
-#' @param int.type The type of confidence interval to calculate. One of `ci`, `1se` or `2se`. Default is `ci`.
-#' @param trans Transformation that was applied to the response variable. One of `log`, `sqrt`, `logit`, `power` or `inverse`. Default is `NA`.
-#' @param offset Numeric offset applied to response variable prior to transformation. Default is `NA`. Use 0 if no offset was applied to the transformed data. See Details for more information.
-#' @param power Numeric power applied to response variable with power transformation. Default is `NA`. See Details for more information.
+#' @param int.type The type of confidence interval to calculate. One of `ci`, `tukey`, `1se` or `2se`. Default is `ci`.
+#' @param trans Transformation that was applied to the response variable. One of `log`, `sqrt`, `logit`, `power` or `inverse`. Default is `NULL`.
+#' @param offset Numeric offset applied to response variable prior to transformation. Default is `NULL`. Use 0 if no offset was applied to the transformed data. See Details for more information.
+#' @param power Numeric power applied to response variable with power transformation. Default is `NULL`. See Details for more information.
 #' @param decimals Controls rounding of decimal places in output. Default is 2 decimal places.
 #' @param descending Logical (default `FALSE`). Order of the output sorted by the predicted value. If `TRUE`, largest will be first, through to smallest last.
 #' @param groups Logical (default `TRUE`). If `TRUE`, the significance letter groupings will be calculated and displayed. This can get overwhelming for large numbers of comparisons, so can be turned off by setting to `FALSE`.
@@ -20,7 +20,7 @@
 #' @param order Deprecated. Use `descending` instead.
 #' @param pred Deprecated. Use `classify` instead.
 #' @param pred.obj Deprecated. Predicted values are calculated within the function from version 1.0.1 onwards.
-#' @param ... Other arguments passed through to `predict.asreml()`.
+#' @param ... Other arguments passed through to [get_predictions()].
 #'
 #' @importFrom multcompView multcompLetters
 #' @importFrom emmeans emmeans
@@ -39,11 +39,43 @@
 #' the model, not the inverse. For example, if adding 0.1 to values for a log
 #' transformation, add 0.1 in the `offset` argument.
 #'
-#' @details
 #' ## Power
 #' The power argument allows the specification of arbitrary powers to be
 #' back transformed, if they have been used to attempt to improve normality of
 #' residuals.
+#'
+#' #' ## Confidence Intervals & Comparison Intervals
+#'
+#' The function provides several options for confidence intervals via the `int.type` argument:
+#'
+#' - **`tukey` (default)**: Tukey comparison intervals that are consistent with the multiple comparison test. These intervals are wider than regular confidence intervals and are designed so that non-overlapping intervals correspond to statistically significant differences in the Tukey HSD test. This ensures visual consistency between the intervals and letter groupings.
+#'
+#' - **`ci`**: Traditional confidence intervals for individual means. These estimate the precision of each individual mean but may not align with the multiple comparison results. Non-overlapping traditional confidence intervals do not necessarily indicate significant differences in multiple comparison tests.
+#'
+#' - **`1se`** and **`2se`**: Intervals of ±1 or ±2 standard errors around each mean.
+#'
+#' By default, the function displays regular confidence intervals (`int.type = "ci"`),
+#' which estimate the precision of individual treatment means. However, when
+#' performing multiple comparisons, these regular confidence intervals may not
+#' align with the letter groupings from Tukey's HSD test. Specifically, you may
+#' observe non-overlapping confidence intervals for treatments that share the
+#' same letter group (indicating no significant difference).
+#'
+#' This occurs because regular confidence intervals and Tukey's HSD test serve
+#' different purposes:
+#' - Regular confidence intervals estimate individual mean precision
+#' - Tukey's HSD controls the family-wise error rate across all pairwise comparisons
+#'
+#' To resolve this visual inconsistency, you can use Tukey comparison intervals
+#' (`int.type = "tukey"`). These intervals are specifically designed for multiple
+#' comparisons and will be consistent with the letter groupings: non-overlapping
+#' Tukey intervals indicate significant differences, while overlapping intervals
+#' suggest no significant difference.
+#'
+#' The function will issue a message if it detects potential inconsistencies
+#' between non-overlapping confidence intervals and letter groupings, suggesting
+#' the use of Tukey intervals for clearer interpretation.
+#' For multiple comparison contexts, Tukey comparison intervals are recommended as they provide visual consistency with the statistical test being performed and avoid the common confusion where traditional confidence intervals don't overlap but groups share the same significance letter.
 #'
 #' @returns A list containing a data frame with predicted means, standard errors,
 #'  confidence interval upper and lower bounds, and significant group
@@ -62,7 +94,7 @@
 #' # Display the ANOVA table for the model
 #' anova(model)
 #'
-#' # Determine ranking and groups according to Tukey's Test
+#' # Determine ranking and groups according to Tukey's Test (with Tukey intervals)
 #' pred.out <- multiple_comparisons(model, classify = "Species")
 #'
 #' # Display the predicted values table
@@ -71,6 +103,9 @@
 #' # Show the predicted values plot
 #' autoplot(pred.out, label_height = 0.5)
 #'
+#' # Use traditional confidence intervals instead of Tukey comparison intervals
+#' pred.out.ci <- multiple_comparisons(model, classify = "Species", int.type = "ci")
+#' pred.out.ci
 #'
 #' # AOV model example with transformation
 #' my_iris <- iris
@@ -107,7 +142,7 @@
 #'                     residual = ~ units,
 #'                     data = asreml::oats)
 #'
-#' wald(model.asr) #Nitrogen main effect significant
+#' wald(model.asr) # Nitrogen main effect significant
 #'
 #' #Determine ranking and groups according to Tukey's Test
 #' pred.out <- multiple_comparisons(model.obj = model.asr, classify = "Nitrogen",
@@ -158,9 +193,9 @@ multiple_comparisons <- function(model.obj,
                                  classify,
                                  sig = 0.05,
                                  int.type = "ci",
-                                 trans = NA,
-                                 offset = NA,
-                                 power = NA,
+                                 trans = NULL,
+                                 offset = NULL,
+                                 power = NULL,
                                  decimals = 2,
                                  descending = FALSE,
                                  groups = TRUE,
@@ -178,14 +213,14 @@ multiple_comparisons <- function(model.obj,
     handle_deprecated_param("pred", "classify", classify)
     handle_deprecated_param("order", "descending", descending)
 
-    vars <- validate_inputs(sig, classify, model.obj)
+    vars <- validate_inputs(sig, classify, model.obj, trans)
 
     # Handle deprecated parameter that's being removed
     handle_deprecated_param("pred.obj", NULL, "Predictions are now performed internally in the function.")
 
     # Process dots
     rlang::check_dots_used()
-    args <- list(...)
+    args = list(...)
 
     # Check for alias 'letters' instead of 'groups'
     if ("letters" %in% names(args)) {
@@ -196,15 +231,14 @@ multiple_comparisons <- function(model.obj,
         }
     }
 
-    # asr_args <- args[names(args) %in% names(formals(asreml::predict.asreml))]
-
     # Get model-specific predictions and SED
-    result <- get_predictions(model.obj, classify, args, pred.obj, ...)
+    result <- get_predictions(model.obj, classify, pred.obj, ...)
 
     pp <- result$predictions
     sed <- result$sed
     ndf <- result$df
     ylab <- result$ylab
+    aliased <- result$aliased_names
 
     # Process treatment names
     pp <- process_treatment_names(pp, classify)
@@ -223,7 +257,7 @@ multiple_comparisons <- function(model.obj,
     pp <- add_confidence_intervals(pp, int.type, sig, ndf)
 
     # Apply transformations if requested
-    if (!is.na(trans)) {
+    if (!is.null(trans)) {
         pp <- apply_transformation(pp, trans, offset, power)
     } else {
         pp$low <- pp$predicted.value - pp$ci
@@ -238,8 +272,13 @@ multiple_comparisons <- function(model.obj,
         utils::write.csv(pp, file = paste0(savename, ".csv"), row.names = FALSE)
     }
 
+    # Check for CI/letter group inconsistencies and warn if needed
+    if (groups && tolower(int.type) == "ci") {
+        check_ci_consistency(pp)
+    }
+
     # Add attributes
-    pp <- add_attributes(pp, ylab, crit_val, result$aliased_names)
+    pp <- add_attributes(pp, ylab, crit_val, aliased)
 
     # Plot if requested
     if (plot) {
@@ -279,16 +318,20 @@ print.mct <- function(x, ...) {
     invisible(x)
 }
 
-validate_inputs <- function(sig, classify, model.obj) {
+#' @importFrom stats formula
+#' @keywords internal
+validate_inputs <- function(sig, classify, model.obj, trans) {
     # Check significance level
-    if (sig > 0.5) {
-        warning("Significance level given by `sig` is high. Perhaps you meant ", 1-sig, "?", call. = FALSE)
-    }
-
-    # Check model type
-    supported_models <- c("asreml", "aov", "lm", "lmerMod", "lmerModLmerTest")
-    if (!any(sapply(supported_models, function(x) inherits(model.obj, x)))) {
-        stop("Models of type ", class(model.obj), " are not supported.", call. = FALSE)
+    if (sig >= 0.5) {
+        if(sig >= 1 & sig < 50) {
+            stop("Significance level given by `sig` is high. Perhaps you meant ", sig/100, "?", call. = FALSE)
+        }
+        else if(sig >= 1 & sig >= 50) {
+            stop("Significance level given by `sig` is high. Perhaps you meant ", 1-(sig/100), "?", call. = FALSE)
+        }
+        else {
+            warning("Significance level given by `sig` is high. Perhaps you meant ", 1-sig, "?", call. = FALSE)
+        }
     }
 
     # Get the individual names provided in classify
@@ -298,6 +341,24 @@ validate_inputs <- function(sig, classify, model.obj) {
     if (any(vars %in% reserved_col_names)) {
         stop("Invalid column name. Please change the name of column(s): ",
              vars[vars %in% reserved_col_names], call. = FALSE)
+    }
+
+    # Check if the response variable is transformed in the model formula
+    model_formula <- stats::formula(model.obj)
+    if(inherits(model.obj, "asreml")) {
+        response_part <- model_formula[[1]][[2]]
+    }
+    else {
+        response_part <- model_formula[[2]]
+    }
+    if (is.call(response_part) & is.null(trans)) {
+        warning(call. = FALSE,
+            sprintf(
+                "The response variable appears to be transformed in the model formula: %s.",
+                deparse(response_part)
+            ),
+            "\nPlease specify the 'trans' argument if you want back-transformed predictions."
+        )
     }
 
     return(vars)
@@ -350,10 +411,11 @@ add_confidence_intervals <- function(pp, int.type, sig, ndf) {
     # Calculate confidence interval width
     pp$ci <- switch(
         tolower(int.type),
-        "ci" = stats::qt(p = sig, ndf, lower.tail = FALSE) * pp$std.error,
+        "ci" = stats::qt(p = sig/2, ndf, lower.tail = FALSE) * pp$std.error,
+        "tukey" = stats::qtukey(p = 1 - sig, nmeans = nrow(pp), df = ndf) / sqrt(2) * pp$std.error,
         "1se" = pp$std.error,
         "2se" = 2 * pp$std.error,
-        stop("Invalid int.type.")
+        stop("Invalid int.type. Use 'ci', 'tukey', '1se', or '2se'.")
     )
 
     return(pp)
@@ -361,24 +423,24 @@ add_confidence_intervals <- function(pp, int.type, sig, ndf) {
 
 apply_transformation <- function(pp, trans, offset, power) {
     # Set default offset if not provided
-    if (is.na(offset)) {
+    if (is.null(offset)) {
         warning("Offset value assumed to be 0. Change with `offset` argument.")
         offset <- 0
     }
 
     # Apply appropriate transformation
     if (trans == "sqrt") {
-        pp$PredictedValue <- (pp$predicted.value)^2 - ifelse(!is.na(offset), offset, 0)
+        pp$PredictedValue <- (pp$predicted.value)^2 - ifelse(!is.null(offset), offset, 0)
         pp$ApproxSE <- 2 * abs(pp$std.error) * sqrt(pp$PredictedValue)
 
-        pp$low <- (pp$predicted.value - pp$ci)^2 - ifelse(!is.na(offset), offset, 0)
-        pp$up <- (pp$predicted.value + pp$ci)^2 - ifelse(!is.na(offset), offset, 0)
+        pp$low <- (pp$predicted.value - pp$ci)^2 - ifelse(!is.null(offset), offset, 0)
+        pp$up <- (pp$predicted.value + pp$ci)^2 - ifelse(!is.null(offset), offset, 0)
     } else if (trans == "log") {
-        pp$PredictedValue <- exp(pp$predicted.value) - ifelse(!is.na(offset), offset, 0)
+        pp$PredictedValue <- exp(pp$predicted.value) - ifelse(!is.null(offset), offset, 0)
         pp$ApproxSE <- abs(pp$std.error) * pp$PredictedValue
 
-        pp$low <- exp(pp$predicted.value - pp$ci) - ifelse(!is.na(offset), offset, 0)
-        pp$up <- exp(pp$predicted.value + pp$ci) - ifelse(!is.na(offset), offset, 0)
+        pp$low <- exp(pp$predicted.value - pp$ci) - ifelse(!is.null(offset), offset, 0)
+        pp$up <- exp(pp$predicted.value + pp$ci) - ifelse(!is.null(offset), offset, 0)
     } else if (trans == "logit") {
         pp$PredictedValue <- exp(pp$predicted.value) / (1 + exp(pp$predicted.value))
         pp$ApproxSE <- pp$PredictedValue * (1 - pp$PredictedValue) * abs(pp$std.error)
@@ -388,11 +450,11 @@ apply_transformation <- function(pp, trans, offset, power) {
         uu <- pp$predicted.value + pp$ci
         pp$up <- exp(uu) / (1 + exp(uu))
     } else if (trans == "power") {
-        pp$PredictedValue <- (pp$predicted.value)^(1/power) - ifelse(!is.na(offset), offset, 0)
-        pp$ApproxSE <- pp$std.error * (1/(power * pp$PredictedValue^(power-1)))
+        pp$PredictedValue <- (pp$predicted.value)^(1/power) - ifelse(!is.null(offset), offset, 0)
+        pp$ApproxSE <- pp$std.error / abs(power * pp$PredictedValue^(power-1))
 
-        pp$low <- (pp$predicted.value - pp$ci)^(1/power) - ifelse(!is.na(offset), offset, 0)
-        pp$up <- (pp$predicted.value + pp$ci)^(1/power) - ifelse(!is.na(offset), offset, 0)
+        pp$low <- (pp$predicted.value - pp$ci)^(1/power) - ifelse(!is.null(offset), offset, 0)
+        pp$up <- (pp$predicted.value + pp$ci)^(1/power) - ifelse(!is.null(offset), offset, 0)
     } else if (trans == "inverse") {
         pp$PredictedValue <- 1/pp$predicted.value
         pp$ApproxSE <- abs(pp$std.error) * pp$PredictedValue^2
@@ -424,9 +486,6 @@ format_output <- function(pp, descending, vars, decimals) {
     # Extract treatment variable names
     trtindex <- max(unlist(lapply(paste0("^", vars, "$"), grep, x = names(pp))))
 
-    # Operator for "not in"
-    `%!in%` <- function(x, y) !(`%in%`(x, y))
-
     trtnam <- names(pp)[1:trtindex]
     # Exclude reserved column names
     trtnam <- trtnam[trtnam %!in% c("predicted.value", "std.error", "Df",
@@ -447,10 +506,10 @@ format_output <- function(pp, descending, vars, decimals) {
 }
 
 add_attributes <- function(pp, ylab, crit_val, aliased_names) {
-    # If there are brackets in the label, grab the text from inside
-    if (is.call(ylab)) {
-        ylab <- as.character(ylab)[2]
-    }
+    # # If there are brackets in the label, grab the text from inside
+    # if (is.call(ylab)) {
+    #     ylab <- as.character(ylab)[2]
+    # }
     attr(pp, "ylab") <- ylab
 
     # Add class
@@ -470,3 +529,58 @@ add_attributes <- function(pp, ylab, crit_val, aliased_names) {
 
     return(pp)
 }
+
+check_ci_consistency <- function(pp) {
+
+    result <- FALSE
+    # Pre-extract and validate data once
+    n <- nrow(pp)
+    low <- pp$predicted.value - pp$ci
+    up <- pp$predicted.value + pp$ci
+    groups <- as.character(pp$groups)
+
+    # Pre-process group letters efficiently
+    group_letters <- vector("list", length(groups))
+    for (i in seq_along(groups)) {
+        group_letters[[i]] <- unique(strsplit(groups[i], "")[[1]])
+    }
+
+    # Vectorized overlap detection using outer operations
+    # Two intervals [a,b] and [c,d] overlap if max(a,c) <= min(b,d)
+    low_matrix <- matrix(low, nrow = n, ncol = n, byrow = TRUE)
+    up_matrix <- matrix(up, nrow = n, ncol = n, byrow = FALSE)
+
+    # Only compute upper triangle to avoid redundant comparisons
+    upper_tri <- upper.tri(matrix(TRUE, n, n))
+
+    # Vectorized overlap check
+    max_lows <- pmax(low_matrix, t(low_matrix))
+    min_ups <- pmin(up_matrix, t(up_matrix))
+    overlaps <- max_lows <= min_ups
+
+    # Find non-overlapping pairs in upper triangle only
+    non_overlapping <- upper_tri & !overlaps
+
+    if (!any(non_overlapping)) return(FALSE)
+
+    # Get indices efficiently
+    indices <- which(non_overlapping, arr.ind = TRUE)
+
+    # Check for shared letters only among non-overlapping pairs
+    for (k in seq_len(nrow(indices))) {
+        i <- indices[k, 1]
+        j <- indices[k, 2]
+
+        if (groups[i] == groups[j] | length(intersect(group_letters[[i]], group_letters[[j]])) > 0) {
+            message("Note: Some treatments sharing the same letter group have non-overlapping confidence intervals.\n",
+                    "This is expected behavior as regular confidence intervals estimate individual mean precision,\n",
+                    "while Tukey's HSD controls family-wise error rates. For visual consistency with letter groups,\n",
+                    "consider using 'int.type = \"tukey\"' to display Tukey comparison intervals.")
+            return(TRUE)
+        }
+    }
+
+    invisible(result)
+}
+
+
