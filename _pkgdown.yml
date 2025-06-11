@@ -12,6 +12,8 @@ reference:
   desc: Functions to help with the design of experiments.
 - contents:
   - starts_with("des")
+  - add_buffers
+  - export_design_to_excel
 - title: Analysis
   desc: Functions to help with the analysis of experiments.
 - contents:
@@ -26,4 +28,5 @@ reference:
   - heat_map
   - print.mct
   - summary_graph
-  - ends_with("asreml")
+  - contains("template")
+  - install_asreml

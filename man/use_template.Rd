@@ -13,18 +13,17 @@ use_template(
 )
 }
 \arguments{
-\item{template_name}{\code{character(1)} Name of the template file to use.
+\item{template_name}{Name or path of the template file to use.
 Default is \code{"mixed_model_template.R"}. Available templates can be listed
 with \code{list_templates()}.}
 
-\item{dest_dir}{\code{character(1)} Directory where the template should be copied.
+\item{dest_dir}{Directory where the template should be copied.
 Default is the current working directory (\code{"."}).}
 
-\item{open}{\code{logical(1)} Should the template file be opened in the default
-editor after copying? Default is \code{TRUE}.}
+\item{open}{Logical (default \code{TRUE}). Should the template file be opened in the default
+editor after copying?}
 
-\item{overwrite}{\code{logical(1)} Should existing files be overwritten?
-Default is \code{FALSE} to prevent accidental data loss.}
+\item{overwrite}{Logical (default \code{FALSE}). Should existing files be overwritten?}
 
 \item{output_name}{\code{character}, Optional. Name for the copied file in the destination directory.
 If not specified, defaults to \code{"analysis_script.R"}.
@@ -38,15 +37,15 @@ its side effects of copying and optionally opening the template file.
 \description{
 \code{use_template()} copies a pre-built analysis template from the biometryassist
 package to your working directory and optionally opens it for editing. These
-templates provide standardized approaches for common biometric analyses.
+templates provide standardized approaches for common agronomic analyses.
 }
 \details{
 This function is designed to help users get started with biometryassist
 analyses by providing tested, documented templates. The templates include:
 \itemize{
-\item Commented code explaining each step
 \item Suggested package loading
-\item Example data structures
+\item Commented code explaining steps
+\item Example data exploration
 \item Common analysis workflows
 }
 
@@ -73,6 +72,5 @@ use_template("mixed_model_template.R", overwrite = TRUE)
 \seealso{
 \itemize{
 \item \code{\link[=list_templates]{list_templates()}} to see available templates
-\item \code{vignette("analysis-workflow", package = "biometryassist")} for analysis guidance
 }
 }

@@ -3,17 +3,16 @@
 #' @description
 #' `use_template()` copies a pre-built analysis template from the biometryassist
 #' package to your working directory and optionally opens it for editing. These
-#' templates provide standardized approaches for common biometric analyses.
+#' templates provide standardized approaches for common agronomic analyses.
 #'
-#' @param template_name `character(1)` Name of the template file to use.
+#' @param template_name Name or path of the template file to use.
 #'   Default is `"mixed_model_template.R"`. Available templates can be listed
 #'   with `list_templates()`.
-#' @param dest_dir `character(1)` Directory where the template should be copied.
+#' @param dest_dir Directory where the template should be copied.
 #'   Default is the current working directory (`"."`).
-#' @param open `logical(1)` Should the template file be opened in the default
-#'   editor after copying? Default is `TRUE`.
-#' @param overwrite `logical(1)` Should existing files be overwritten?
-#'   Default is `FALSE` to prevent accidental data loss.
+#' @param open Logical (default `TRUE`). Should the template file be opened in the default
+#'   editor after copying?
+#' @param overwrite Logical (default `FALSE`). Should existing files be overwritten?
 #' @param output_name `character`, Optional. Name for the copied file in the destination directory.
 #'   If not specified, defaults to `"analysis_script.R"`.
 #'   If specified, the template will be copied and renamed to this file.
@@ -26,9 +25,9 @@
 #' @details
 #' This function is designed to help users get started with biometryassist
 #' analyses by providing tested, documented templates. The templates include:
-#' - Commented code explaining each step
 #' - Suggested package loading
-#' - Example data structures
+#' - Commented code explaining steps
+#' - Example data exploration
 #' - Common analysis workflows
 #'
 #' If a file with the same name already exists in the destination directory,
@@ -54,7 +53,6 @@
 #'
 #' @seealso
 #' * [list_templates()] to see available templates
-#' * `vignette("analysis-workflow", package = "biometryassist")` for analysis guidance
 #'
 #' @export
 use_template <- function(template_name = "mixed_model_template.R",

@@ -1,7 +1,7 @@
 #' Create buffers for design plots
 #'
 #' @param design The data frame of the design.
-#' @param type The type of buffer. One of edge, row, column, double row, double column, or block (coming soon).
+#' @param type The type of buffer. One of edge, row, column, double row, or double column.
 #' @param blocks Does the design data frame contain blocks?
 #'
 #' @importFrom stats setNames aggregate
@@ -111,8 +111,26 @@ create_buffers <- function(design, type, blocks = FALSE) {
 #' Add buffers to an existing design
 #'
 #' @param design_obj A design object (with class "design") from the design() function
-#' @param type The type of buffer to add
+#' @param type The type of buffer to add. One of 'edge', 'row', 'column', 'double row', or 'double column'.
 #' @returns The modified design object with buffers added
+#' 
+#' @examples
+#' # Create a simple CRD design
+#' des <- design(type = "crd", treatments = c("A", "B"), reps = 3, nrows = 2, ncols = 3, seed = 42)
+#' 
+#' # Plot the original design
+#' autoplot(des)
+#' 
+#' # Add edge buffers to the design
+#' des_buf <- add_buffers(des, type = "edge")
+#' 
+#' # Plot the design with buffers
+#' autoplot(des_buf)
+#' 
+#' # Add double row buffers
+#' des_row_buf <- add_buffers(des, type = "double row")
+#' autoplot(des_row_buf)
+#' 
 #' @export
 add_buffers <- function(design_obj, type) {
     stopifnot(inherits(design_obj, "design"))
@@ -125,22 +143,3 @@ add_buffers <- function(design_obj, type) {
 
     return(design_obj)
 }
-
-
-# # Blocks
-#
-# nrow <- max(des.out$design$row)
-# ncol <- max(des.out$design$col)
-# nblocks <- max(as.numeric(des.out$design$block))
-# autoplot(des.out)
-#
-#
-# buffers <- data.frame(row = rep(1:nrow,
-#                                 times = ncol+1),
-#                       col = rep(seq(1, (2*ncol)+1, by = 2),
-#                                 each = nrow),
-#                       plots = NA, rep = NA, treatments = factor("buffer"))
-#
-# des.out$design$col <- 2*des.out$design$col
-# des.out$design <- rbind(des.out$design, buffers)
-# autoplot(des.out)
