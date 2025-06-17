@@ -1,0 +1,53 @@
+---
+title: "biometryassist: an R package to aid the design and analysis of agronomic-style experiments"
+tags:
+  - Python
+  - astronomy
+  - dynamics
+  - galactic dy
+authors:
+  - name: Sam Rogers
+    orcid: 0000-0000-0000-0000
+    corresponding: true # (This is how to denote the corresponding author)
+    equal-contrib: true
+    affiliation: 1 
+  - name: Sharon Nielsen
+    equal-contrib: true
+    affiliation: 1
+  - name: Annie Conway
+    affiliation: 1
+affiliations:
+ - name: Biometry Hub, University of Adelaide, Australia
+   index: 1
+date: 17 June 2025
+bibliography: paper.bib
+format: markdown
+---
+
+# Summary
+
+A summary describing the high-level functionality and purpose of the software for a diverse, non-specialist audience.
+
+Researchers and biometricians working in agriculture often face challenges in generating, randomising, and analysing field experiments with complex layouts. Designing agricultural experiments that are both statistically valid and practical in the field is a complex task, and analysing those experiments can be even more challenging. The goal of `biometryassist` is to 
+
+The `biometryassist` package is available on [GitHub](https://github.com/biometryhub/biometryassist). All instructions for installation and usage can be found in the [package documentation website](https://biometryhub.github.io/biometryassist).
+
+
+# Statement of need
+
+A Statement of need section that clearly illustrates the research purpose of the software and places it in the context of related work.
+
+Other related packages
+Not streamlined
+Multiple different packages
+
+
+# Package Features or Functionality
+
+# Citations
+
+Mention (if applicable) a representative set of past or ongoing research projects using the software and recent scholarly publications enabled by it.
+
+# Acknowledgements
+
+# References
