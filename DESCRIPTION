@@ -42,7 +42,7 @@ Imports:
     cowplot,
     curl,
     emmeans,
-    ggplot2,
+    ggplot2 (>= 3.5.2),
     lattice,
     multcompView,
     pracma,
