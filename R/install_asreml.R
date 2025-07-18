@@ -69,7 +69,7 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
     new_version <- if(check_version) newer_version() else FALSE
     verbose_msg(paste("Newer version available:", new_version))
 
-    if(.check_package_available("asreml") && isFALSE(new_version) && isFALSE(force)) {
+    if(rlang::is_installed("asreml") && isFALSE(new_version) && isFALSE(force)) {
         verbose_msg("Latest version already installed and force=FALSE")
         normal_msg("The latest version of ASReml-R available for your system is already installed. To install anyway, set `force = TRUE`.")
         return(invisible(TRUE))
@@ -106,7 +106,7 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
     }
 
     # If forcing installation, remove existing version to avoid errors on installation
-    if(force && .check_package_available("asreml") && os_ver$os != "linux") {
+    if(force && rlang::is_installed("asreml") && os_ver$os != "linux") {
         verbose_msg("Force=TRUE and existing package found - removing existing installation")
         remove_existing_asreml(verbose = identical(quiet, "verbose"))
     }
@@ -124,7 +124,7 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
     verbose_msg("Managing downloaded file")
     manage_file(save_file, keep_file, basename(save_file), verbose = identical(quiet, "verbose"))
 
-    if(install_result & .check_package_available("asreml")) {
+    if(install_result & rlang::is_installed("asreml")) {
         verbose_msg("Installation successful - ASReml-R is available")
         normal_msg("ASReml-R successfully installed!")
         invisible(TRUE)
@@ -270,7 +270,7 @@ install_asreml_package <- function(save_file, library, quiet, os, verbose = FALS
                          verbose = !isTRUE(quiet),
                          type = if(os == "win") "binary" else "source")
         if (verbose) message("[DEBUG] install.packages() completed, checking if package is available")
-        result <- .check_package_available("asreml")
+        result <- rlang::is_installed("asreml")
         if (verbose) message("[DEBUG] Package availability check result: ", result)
         result
     }, error = function(e) {
@@ -396,7 +396,7 @@ newer_version <- function() {
     newest <- newest[which(newest$asr_ver==nv), ]
 
     # Get current version info
-    if(.check_package_available("asreml")) {
+    if(rlang::is_installed("asreml")) {
         asr_desc <- utils::packageDescription("asreml")
         asr_date <- as.Date(substr(asr_desc$Packaged %||% "1900-01-01", 1, 10))
         asr_ver <- asr_desc$Version %||% "0"

@@ -64,7 +64,7 @@ test_that("export_design_to_excel uses custom palette", {
 
 test_that("function fails gracefully when openxlsx is not available", {
     with_mocked_bindings(
-        .check_package_available = function(pkg) FALSE,
+        rlang::is_installed = function(pkg) FALSE,
         {
             expect_error(
                 export_design_to_excel(test_data),

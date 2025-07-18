@@ -173,7 +173,7 @@ test_that("newer_version returns FALSE if installed version is up-to-date", {
     )
     mockery::stub(newer_version, "get_version_table", function() fake_versions)
     mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
-    mockery::stub(newer_version, ".check_package_available", function(pkg) TRUE)
+    mockery::stub(newer_version, "rlang::is_installed", function(pkg) TRUE)
     mockery::stub(newer_version, "utils::packageDescription", function(pkg) list(Packaged = "2023-01-10", Version = "4.2.0"))
     expect_false(newer_version())
 })
@@ -186,7 +186,7 @@ test_that("newer_version returns TRUE if online version is newer and published >
     colnames(fake_versions)[5] <- "Date published"
     mockery::stub(newer_version, "get_version_table", function() fake_versions)
     mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
-    mockery::stub(newer_version, ".check_package_available", function(pkg) TRUE)
+    mockery::stub(newer_version, "rlang::is_installed", function(pkg) TRUE)
     mockery::stub(newer_version, "utils::packageDescription", function(pkg) list(
         Packaged = "2023-01-01", Version = "4.2.0"
     ))
@@ -201,7 +201,7 @@ test_that("newer_version returns TRUE if asreml is not installed", {
     colnames(fake_versions)[5] <- "Date published"
     mockery::stub(newer_version, "get_version_table", function() fake_versions)
     mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
-    mockery::stub(newer_version, ".check_package_available", function(pkg) FALSE)
+    mockery::stub(newer_version, "rlang::is_installed", function(pkg) FALSE)
     expect_true(newer_version())
 })
 
@@ -213,7 +213,7 @@ test_that("newer_version handles missing Packaged or Version gracefully", {
     colnames(fake_versions)[5] <- "Date published"
     mockery::stub(newer_version, "get_version_table", function() fake_versions)
     mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
-    mockery::stub(newer_version, ".check_package_available", function(pkg) TRUE)
+    mockery::stub(newer_version, "rlang::is_installed", function(pkg) TRUE)
     mockery::stub(newer_version, "utils::packageDescription", function(pkg) list(
         Packaged = NULL, Version = NULL
     ))
@@ -231,7 +231,7 @@ test_that("install_asreml handles no internet connection", {
 
 test_that("install_asreml early return when up-to-date", {
     skip_on_cran()
-    mockery::stub(install_asreml, ".check_package_available", function(pkg) TRUE)
+    mockery::stub(install_asreml, "rlang::is_installed", function(pkg) TRUE)
     mockery::stub(install_asreml, "newer_version", function() FALSE)
     mockery::stub(install_asreml, "has_internet", function() TRUE)
     expect_message(
@@ -369,7 +369,7 @@ test_that("install_asreml verbose parameter validation and messaging", {
     skip_on_cran()
 
     # Test that verbose = "verbose" produces debug messages
-    mockery::stub(install_asreml, ".check_package_available", function(pkg) TRUE)
+    mockery::stub(install_asreml, "rlang::is_installed", function(pkg) TRUE)
     mockery::stub(install_asreml, "newer_version", function() FALSE)
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
 
@@ -393,7 +393,7 @@ test_that("install_asreml verbose parameter validation and messaging", {
 test_that("verbose messaging works correctly with different quiet settings", {
     skip_on_cran()
 
-    mockery::stub(install_asreml, ".check_package_available", function(pkg) TRUE)
+    mockery::stub(install_asreml, "rlang::is_installed", function(pkg) TRUE)
     mockery::stub(install_asreml, "newer_version", function() FALSE)
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
 
@@ -510,7 +510,7 @@ test_that("install_asreml_package verbose parameter works", {
     on.exit(unlink(temp_file))
 
     mockery::stub(install_asreml_package, "install.packages", function(...) {})
-    mockery::stub(install_asreml_package, ".check_package_available", function(...) TRUE)
+    mockery::stub(install_asreml_package, "rlang::is_installed", function(...) TRUE)
 
     # Test verbose = TRUE produces debug messages
     expect_message(
@@ -621,7 +621,7 @@ test_that("manage_file verbose parameter works", {
 test_that("verbose debugging shows OS detection details", {
     skip_on_cran()
 
-    mockery::stub(install_asreml, ".check_package_available", function(pkg) FALSE)
+    mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
     mockery::stub(install_asreml, "newer_version", function() FALSE)
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
     mockery::stub(install_asreml, "find_existing_package", function() "/tmp/asreml.zip")
@@ -682,7 +682,7 @@ test_that("install_asreml verbose mode shows version check details", {
     skip_on_cran()
 
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
-    mockery::stub(install_asreml, ".check_package_available", function(pkg) FALSE)
+    mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
     mockery::stub(install_asreml, "newer_version", function() TRUE)
     mockery::stub(install_asreml, "find_existing_package", function() NULL)
     mockery::stub(install_asreml, "download_asreml_package", function(...) "/tmp/asreml.zip")
