@@ -1,3 +1,5 @@
+# biometryassist 1.3.2
+
 # biometryassist 1.3.1
 
 ## Bug Fixes
