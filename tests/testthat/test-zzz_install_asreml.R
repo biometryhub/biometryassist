@@ -704,3 +704,209 @@ test_that("install_asreml verbose mode shows version check details", {
         "There was a problem with installation and ASReml-R was not successfully installed\\."
     )
 })
+
+test_that("install_asreml calls create_mac_folder on macOS", {
+    skip_on_cran()
+       
+    # Mock all the dependencies to get to the macOS check
+    mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
+    mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
+    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "get_r_os", function() list(os = "mac", ver = "44", arm = FALSE, os_ver = "mac-44"))
+    mockery::stub(install_asreml, "create_mac_folder", function() TRUE)
+    mockery::stub(install_asreml, "find_existing_package", function() "/tmp/asreml.zip")
+    mockery::stub(install_asreml, "install_dependencies", function(...) {})
+    mockery::stub(install_asreml, "install_asreml_package", function(...) TRUE)
+    mockery::stub(install_asreml, "manage_file", function(...) TRUE)
+    
+    # Run install_asreml
+    expect_warning(
+        install_asreml(quiet = TRUE),
+        "There was a problem with installation and ASReml-R was not successfully installed\\."
+    )
+    
+    # Verify create_mac_folder was called
+    expect_true(mac_folder_called)
+})
+
+test_that("install_asreml does not call create_mac_folder on non-macOS", {
+    skip_on_cran()
+       
+    # Mock all the dependencies to get to the OS check (Linux)
+    mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
+    mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
+    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "get_r_os", function() list(os = "linux", ver = "44", arm = FALSE, os_ver = "linux-44"))
+    mockery::stub(install_asreml, "create_mac_folder", function() TRUE)
+    mockery::stub(install_asreml, "find_existing_package", function() "/tmp/asreml.zip")
+    mockery::stub(install_asreml, "install_dependencies", function(...) {})
+    mockery::stub(install_asreml, "install_asreml_package", function(...) TRUE)
+    mockery::stub(install_asreml, "manage_file", function(...) TRUE)
+    
+    # Run install_asreml
+    expect_warning(
+        install_asreml(quiet = TRUE),
+        "There was a problem with installation and ASReml-R was not successfully installed\\."
+    )
+    
+    # Verify create_mac_folder was NOT called
+    expect_false(mac_folder_called)
+})
+
+test_that("install_asreml verbose messaging shows mac folder creation", {
+    skip_on_cran()
+    
+    # Mock all the dependencies for macOS
+    mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
+    mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
+    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "get_r_os", function() list(os = "mac", ver = "44", arm = FALSE, os_ver = "mac-44"))
+    mockery::stub(install_asreml, "create_mac_folder", function() TRUE)
+    mockery::stub(install_asreml, "find_existing_package", function() "/tmp/asreml.zip")
+    mockery::stub(install_asreml, "install_dependencies", function(...) {})
+    mockery::stub(install_asreml, "install_asreml_package", function(...) TRUE)
+    mockery::stub(install_asreml, "manage_file", function(...) TRUE)
+    
+    # Test that verbose mode shows the mac folder creation message
+    expect_warning(
+        expect_message(
+            install_asreml(quiet = "verbose"),
+            "\\[DEBUG\\] macOS detected - checking/creating Mac folder"
+        ),
+        "There was a problem with installation and ASReml-R was not successfully installed\\."
+    )
+})
+
+test_that("install_asreml removes existing package when force=TRUE on non-Linux systems", {
+    skip_on_cran()
+    
+    # Track if remove_existing_asreml was called
+    remove_called <- FALSE
+    
+    # Mock all dependencies to reach the force removal logic
+    local_mocked_bindings(
+        # Basic setup mocks
+        `curl::has_internet` = function() TRUE,
+        newer_version = function() FALSE,
+        get_r_os = function() list(os = "win", ver = "44", arm = FALSE, os_ver = "win-44"),
+        find_existing_package = function() "/tmp/asreml.zip",
+        install_dependencies = function(...) {},
+        install_asreml_package = function(...) TRUE,
+        manage_file = function(...) TRUE,
+        
+        # Key mocks for the tested condition
+        `rlang::is_installed` = function(pkg) {
+            if (pkg == "asreml") return(TRUE)  # asreml is installed
+            return(FALSE)
+        },
+        remove_existing_asreml = function(verbose = FALSE) {
+            remove_called <<- TRUE
+            TRUE
+        }
+    )
+    
+    # Run install_asreml with force=TRUE
+    result <- install_asreml(force = TRUE, quiet = TRUE)
+    
+    # Verify remove_existing_asreml was called
+    expect_true(remove_called)
+    expect_true(result)
+})
+
+test_that("install_asreml does NOT remove existing package when force=TRUE on Linux", {
+    skip_on_cran()
+    
+    # Track if remove_existing_asreml was called
+    remove_called <- FALSE
+    
+    # Mock all dependencies for Linux system
+    local_mocked_bindings(
+        # Basic setup mocks
+        `curl::has_internet` = function() TRUE,
+        newer_version = function() FALSE,
+        get_r_os = function() list(os = "linux", ver = "44", arm = FALSE, os_ver = "linux-44"),  # Linux OS
+        find_existing_package = function() "/tmp/asreml.tar.gz",
+        install_dependencies = function(...) {},
+        install_asreml_package = function(...) TRUE,
+        manage_file = function(...) TRUE,
+        
+        # Key mocks for the tested condition
+        `rlang::is_installed` = function(pkg) {
+            if (pkg == "asreml") return(TRUE)  # asreml is installed
+            return(FALSE)
+        },
+        remove_existing_asreml = function(verbose = FALSE) {
+            remove_called <<- TRUE
+            TRUE
+        }
+    )
+    
+    # Run install_asreml with force=TRUE on Linux
+    result <- install_asreml(force = TRUE, quiet = TRUE)
+    
+    # Verify remove_existing_asreml was NOT called (because os == "linux")
+    expect_false(remove_called)
+    expect_true(result)
+})
+
+test_that("install_asreml does NOT remove existing package when force=FALSE", {
+    skip_on_cran()
+    
+    # Track if remove_existing_asreml was called
+    remove_called <- FALSE
+    
+    # Mock all dependencies
+    local_mocked_bindings(
+        # Basic setup mocks
+        `curl::has_internet` = function() TRUE,
+        newer_version = function() FALSE,
+        get_r_os = function() list(os = "win", ver = "44", arm = FALSE, os_ver = "win-44"),
+        find_existing_package = function() "/tmp/asreml.zip",
+        install_dependencies = function(...) {},
+        install_asreml_package = function(...) TRUE,
+        manage_file = function(...) TRUE,
+        
+        # Key mocks for the tested condition
+        `rlang::is_installed` = function(pkg) {
+            if (pkg == "asreml") return(TRUE)  # asreml is installed
+            return(FALSE)
+        },
+        remove_existing_asreml = function(verbose = FALSE) {
+            remove_called <<- TRUE
+            TRUE
+        }
+    )
+    
+    # Run install_asreml with force=FALSE
+    result <- install_asreml(force = FALSE, quiet = TRUE)
+    
+    # Verify remove_existing_asreml was NOT called (because force=FALSE)
+    expect_false(remove_called)
+    expect_true(result)
+})
+
+test_that("install_asreml verbose messaging shows package removal", {
+    skip_on_cran()
+    
+    # Mock all dependencies for Windows system with force=TRUE
+    local_mocked_bindings(
+        `curl::has_internet` = function() TRUE,
+        newer_version = function() FALSE,
+        get_r_os = function() list(os = "win", ver = "44", arm = FALSE, os_ver = "win-44"),
+        find_existing_package = function() "/tmp/asreml.zip",
+        install_dependencies = function(...) {},
+        install_asreml_package = function(...) TRUE,
+        manage_file = function(...) TRUE,
+        remove_existing_asreml = function(verbose = FALSE) TRUE,
+        `rlang::is_installed` = function(pkg) {
+            if (pkg == "asreml") return(TRUE)
+            return(FALSE)
+        }
+    )
+    
+    # Test that verbose mode shows the removal message
+    expect_message(
+        install_asreml(force = TRUE, quiet = "verbose"),
+        "\\[DEBUG\\] Force=TRUE and existing package found - removing existing installation"
+    )
+})
