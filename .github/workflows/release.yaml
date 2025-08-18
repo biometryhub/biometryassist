@@ -21,10 +21,17 @@ jobs:
           VERSION=$(grep "^Version:" DESCRIPTION | sed 's/Version: *//')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Package version: $VERSION"
+          
+          # Validate version format
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Invalid version format: $VERSION"
+            exit 1
+          fi
       
       - name: Get latest release
         id: get-release
         run: |
+          set -e
           LATEST_RELEASE=$(curl -s "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.tag_name // empty')
           if [[ -z "$LATEST_RELEASE" ]]; then
             echo "latest-release=none" >> $GITHUB_OUTPUT
@@ -93,18 +100,25 @@ jobs:
       - name: Build source package
         if: matrix.config.type == 'source'
         run: |
+          set -e
+          echo "Building source package..."
           R CMD build .
+          echo "Source package build completed"
         shell: bash
       
       - name: Build binary package
         if: matrix.config.type == 'binary'
         run: |
+          set -e
+          echo "Building binary package for ${{ runner.os }}..."
           R CMD INSTALL --build .
+          echo "Binary package build completed"
         shell: bash
       
       - name: Find package files
         id: find-files
         run: |
+          set -e
           if [[ "${{ matrix.config.type }}" == "source" ]]; then
             PKG_FILE=$(ls biometryassist_*.tar.gz | head -1)
           else
@@ -120,6 +134,13 @@ jobs:
                 ;;
             esac
           fi
+          
+          if [[ -z "$PKG_FILE" || ! -f "$PKG_FILE" ]]; then
+            echo "Error: Package file not found for ${{ runner.os }} ${{ matrix.config.type }}"
+            ls -la *.tar.gz *.zip *.tgz 2>/dev/null || echo "No package files found"
+            exit 1
+          fi
+          
           echo "package-file=$PKG_FILE" >> $GITHUB_OUTPUT
           echo "Found package file: $PKG_FILE"
         shell: bash
@@ -146,7 +167,11 @@ jobs:
       
       - name: List artifacts
         run: |
-          find artifacts -type f -name "*.tar.gz" -o -name "*.zip" -o -name "*.tgz"
+          echo "Available artifacts:"
+          find artifacts -type f -name "*.tar.gz" -o -name "*.zip" -o -name "*.tgz" | sort
+          
+          echo "Checking artifact structure:"
+          ls -la artifacts/*/
       
       - name: Create or update release
         env:
@@ -158,7 +183,7 @@ jobs:
           TAG_NAME="v$VERSION"
           
           # Get changelog entry for this version
-          CHANGELOG=$(awk "/^# biometryassist $VERSION/,/^# biometryassist [0-9]/" NEWS.md | head -n -1 | tail -n +2 | sed '/^$/d' | sed 's/^/          /')
+          CHANGELOG=$(sed -n "/^# biometryassist $VERSION/,/^# biometryassist [0-9]/p" NEWS.md | head -n -1 | tail -n +2 | sed '/^$/d' | sed 's/^/          /')
           if [[ -z "$CHANGELOG" ]]; then
             CHANGELOG="          Release version $VERSION"
           fi
@@ -201,13 +226,28 @@ $CHANGELOG"
           fi
           
           # Upload all package files
+          UPLOAD_COUNT=0
           for artifact_dir in artifacts/package-*; do
             if [[ -d "$artifact_dir" ]]; then
               for file in "$artifact_dir"/*; do
                 if [[ -f "$file" ]]; then
-                  echo "Uploading $(basename "$file")"
-                  gh release upload "$TAG_NAME" "$file"
+                  filename=$(basename "$file")
+                  echo "Uploading $filename"
+                  if gh release upload "$TAG_NAME" "$file"; then
+                    echo "✓ Successfully uploaded $filename"
+                    ((UPLOAD_COUNT++))
+                  else
+                    echo "✗ Failed to upload $filename"
+                    exit 1
+                  fi
                 fi
               done
             fi
           done
+          
+          if [[ $UPLOAD_COUNT -eq 0 ]]; then
+            echo "Error: No files were uploaded"
+            exit 1
+          else
+            echo "✓ Successfully uploaded $UPLOAD_COUNT files"
+          fi
