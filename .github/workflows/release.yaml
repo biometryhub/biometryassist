@@ -1,0 +1,256 @@
+---
+on:
+  push:
+    branches:
+      - main
+
+name: Automated Release
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+      needs-release: ${{ steps.compare-version.outputs.needs-release }}
+      update-existing: ${{ steps.compare-version.outputs.update-existing }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get package version from DESCRIPTION
+        id: get-version
+        run: |
+          VERSION=$(grep "^Version:" DESCRIPTION | sed 's/Version: *//')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Package version: $VERSION"
+
+          # Validate version format
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Invalid version format: $VERSION"
+            exit 1
+          fi
+
+      - name: Get latest release
+        id: get-release
+        run: |
+          set -e
+          LATEST_RELEASE=$(curl -s "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.tag_name // empty')
+          if [[ -z "$LATEST_RELEASE" ]]; then
+            echo "latest-release=none" >> $GITHUB_OUTPUT
+            echo "No previous releases found"
+          else
+            echo "latest-release=$LATEST_RELEASE" >> $GITHUB_OUTPUT
+            echo "Latest release: $LATEST_RELEASE"
+          fi
+
+      - name: Compare versions
+        id: compare-version
+        run: |
+          PACKAGE_VERSION="${{ steps.get-version.outputs.version }}"
+          LATEST_RELEASE="${{ steps.get-release.outputs.latest-release }}"
+
+          # Remove 'v' prefix from release tag if present
+          LATEST_VERSION=$(echo "$LATEST_RELEASE" | sed 's/^v//')
+
+          if [[ "$LATEST_RELEASE" == "none" ]]; then
+            echo "needs-release=true" >> $GITHUB_OUTPUT
+            echo "update-existing=false" >> $GITHUB_OUTPUT
+            echo "No previous release - will create new release"
+          elif [[ "$PACKAGE_VERSION" != "$LATEST_VERSION" ]]; then
+            echo "needs-release=true" >> $GITHUB_OUTPUT
+            echo "update-existing=false" >> $GITHUB_OUTPUT
+            echo "Version changed ($LATEST_VERSION -> $PACKAGE_VERSION) - will create new release"
+          else
+            echo "needs-release=false" >> $GITHUB_OUTPUT
+            echo "update-existing=true" >> $GITHUB_OUTPUT
+            echo "Version unchanged ($PACKAGE_VERSION) - will update existing release"
+          fi
+
+  build-package:
+    needs: check-version
+    if: needs.check-version.outputs.needs-release == 'true' || needs.check-version.outputs.update-existing == 'true'
+    runs-on: ${{ matrix.config.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - {os: ubuntu-24.04, r: 'release', type: 'source'}
+          - {os: ubuntu-24.04, r: 'release', type: 'binary', suffix: '_R_x86_64-pc-linux-gnu.tar.gz'}
+          - {os: windows-latest, r: 'release', type: 'binary', suffix: '.zip'}
+          - {os: macOS-latest, r: 'release', type: 'binary', suffix: '.tgz'}
+
+    env:
+      R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.config.r }}
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck, asreml=?ignore, github::mjskay/ARTool
+          needs: check
+
+      - name: Build source package
+        if: matrix.config.type == 'source'
+        run: |
+          set -e
+          echo "Building source package..."
+          R CMD build .
+          echo "Source package build completed"
+        shell: bash
+
+      - name: Build binary package
+        if: matrix.config.type == 'binary'
+        run: |
+          set -e
+          echo "Building binary package for ${{ runner.os }}..."
+          R CMD INSTALL --build .
+          echo "Binary package build completed"
+        shell: bash
+
+      - name: Find package files
+        id: find-files
+        run: |
+          set -e
+          if [[ "${{ matrix.config.type }}" == "source" ]]; then
+            PKG_FILE=$(ls biometryassist_*.tar.gz | head -1)
+          else
+            case "${{ runner.os }}" in
+              Windows)
+                PKG_FILE=$(ls biometryassist_*.zip | head -1)
+                ;;
+              macOS)
+                PKG_FILE=$(ls biometryassist_*.tgz | head -1)
+                ;;
+              Linux)
+                PKG_FILE=$(ls biometryassist_*_R_*.tar.gz | head -1)
+                ;;
+            esac
+          fi
+
+          if [[ -z "$PKG_FILE" || ! -f "$PKG_FILE" ]]; then
+            echo "Error: Package file not found for ${{ runner.os }} ${{ matrix.config.type }}"
+            ls -la *.tar.gz *.zip *.tgz 2>/dev/null || echo "No package files found"
+            exit 1
+          fi
+
+          echo "package-file=$PKG_FILE" >> $GITHUB_OUTPUT
+          echo "Found package file: $PKG_FILE"
+        shell: bash
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-${{ matrix.config.os }}-${{ matrix.config.type }}
+          path: ${{ steps.find-files.outputs.package-file }}
+
+  create-release:
+    needs: [check-version, build-package]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List artifacts
+        run: |
+          echo "Available artifacts:"
+          find artifacts -type f -name "*.tar.gz" -o -name "*.zip" -o -name "*.tgz" | sort
+
+          echo "Checking artifact structure:"
+          ls -la artifacts/*/
+
+      - name: Create or update release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.check-version.outputs.version }}
+          NEEDS_RELEASE: ${{ needs.check-version.outputs.needs-release }}
+          UPDATE_EXISTING: ${{ needs.check-version.outputs.update-existing }}
+        run: |
+          TAG_NAME="v$VERSION"
+
+          # Get changelog entry for this version
+          CHANGELOG=$(sed -n "/^# biometryassist $VERSION/,/^# biometryassist [0-9]/p" NEWS.md | head -n -1 | tail -n +2 | sed '/^$/d' | sed 's/^/          /')
+          if [[ -z "$CHANGELOG" ]]; then
+            CHANGELOG="          Release version $VERSION"
+          fi
+
+          # Create release body
+          cat > release_body.txt << EOF
+          Release version $VERSION
+
+          See [changelog](https://biometryhub.github.io/biometryassist/news/index.html) for more details.
+
+          Operating System versions:
+
+          - Windows: biometryassist_$VERSION.zip file
+          - Linux: biometryassist_${VERSION}_R_x86_64-pc-linux-gnu.tar.gz file
+          - macOS: biometryassist_$VERSION.tgz file
+          - Source: biometryassist_$VERSION.tar.gz file for building from source
+
+          $CHANGELOG
+          EOF
+
+          if [[ "$NEEDS_RELEASE" == "true" ]]; then
+            echo "Creating new release $TAG_NAME"
+            gh release create "$TAG_NAME" \
+              --title "v$VERSION" \
+              --notes-file release_body.txt \
+              --target main
+          elif [[ "$UPDATE_EXISTING" == "true" ]]; then
+            echo "Updating existing release $TAG_NAME"
+            # Check if release exists
+            if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+              # Delete existing assets
+              gh release view "$TAG_NAME" --json assets --jq '.assets[].name' | xargs -I {} sh -c 'gh release delete-asset "$1" "$2" --yes || true' _ "$TAG_NAME" {}
+              # Update release notes
+              gh release edit "$TAG_NAME" --notes-file release_body.txt
+            else
+              echo "Release $TAG_NAME not found, creating new release"
+              gh release create "$TAG_NAME" \
+                --title "v$VERSION" \
+                --notes-file release_body.txt \
+                --target main
+            fi
+          fi
+
+          # Upload all package files
+          UPLOAD_COUNT=0
+          for artifact_dir in artifacts/package-*; do
+            if [[ -d "$artifact_dir" ]]; then
+              for file in "$artifact_dir"/*; do
+                if [[ -f "$file" ]]; then
+                  filename=$(basename "$file")
+                  echo "Uploading $filename"
+                  if gh release upload "$TAG_NAME" "$file"; then
+                    echo "✓ Successfully uploaded $filename"
+                    ((UPLOAD_COUNT++))
+                  else
+                    echo "✗ Failed to upload $filename"
+                    exit 1
+                  fi
+                fi
+              done
+            fi
+          done
+
+          if [[ $UPLOAD_COUNT -eq 0 ]]; then
+            echo "Error: No files were uploaded"
+            exit 1
+          else
+            echo "✓ Successfully uploaded $UPLOAD_COUNT files"
+          fi
