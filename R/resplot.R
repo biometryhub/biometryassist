@@ -83,17 +83,19 @@ resplot <- function(model.obj, shapiro = TRUE, call = FALSE,
 #' @param label.size Size of plot labels
 #' @keywords internal
 create_diagnostic_plots <- function(group_residuals, axes.size, label.size) {
-    min_val <- floor(min(group_residuals$stdres, na.rm = TRUE))
-    min_val <- ifelse(min_val < -3.5, min_val, -3.5)
-    max_val <- ceiling(max(group_residuals$stdres, na.rm = TRUE))
-    max_val <- ifelse(max_val > 3.5, max_val, 3.5)
+
+    # Set histogram x axis width
+    max_val <- max(abs(group_residuals$stdres), na.rm = TRUE)
+    max_val <- ifelse(max_val > 3.5, max_val+0.25, 3.5)
+    breaks_seq <- seq(0.25, max_val, by = 0.5)
+    breaks_seq <- c(-rev(breaks_seq), breaks_seq)
 
     a <- ggplot2::ggplot(data = group_residuals, mapping = ggplot2::aes(x = stdres)) +
         ggplot2::geom_histogram(
             bins = ifelse(nrow(group_residuals) < 31, 7, 11),
             fill = "aquamarine3",
             colour = "black",
-            breaks = seq(min_val, max_val, by = 0.5)
+            breaks = breaks_seq
         ) +
         ggplot2::theme_bw(base_size = axes.size) +
         ggplot2::labs(y = "Frequency", x = "Standardised Residual")
