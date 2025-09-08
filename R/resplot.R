@@ -87,7 +87,8 @@ create_diagnostic_plots <- function(group_residuals, axes.size, label.size) {
         ggplot2::geom_histogram(
             bins = ifelse(nrow(group_residuals) < 31, 7, 11),
             fill = "aquamarine3",
-            colour = "black"
+            colour = "black",
+            breaks = seq(floor(min(group_residuals$stdres, na.rm = TRUE)), ceiling(max(group_residuals$stdres, na.rm = TRUE)), by = 0.5)
         ) +
         ggplot2::theme_bw(base_size = axes.size) +
         ggplot2::labs(y = "Frequency", x = "Standardised Residual")
