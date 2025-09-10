@@ -1,6 +1,6 @@
 # biometryassist 1.3.2
 
-# Bug Fixes
+## Bug Fixes
 
 - Updates to tests and histograms for compatibility with upcoming ggplot2 release.
 - Fixed a bug where standard errors that were too small would produce plots with missing upper or lower confidence limits due to rounding the SE to zero. (#119)
