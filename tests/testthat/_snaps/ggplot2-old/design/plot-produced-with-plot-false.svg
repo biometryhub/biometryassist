@@ -124,6 +124,6 @@
 <text x='676.16' y='286.00' style='font-size: 8.80px; font-family: sans;' textLength='4.89px' lengthAdjust='spacingAndGlyphs'>5</text>
 <text x='676.16' y='303.28' style='font-size: 8.80px; font-family: sans;' textLength='9.79px' lengthAdjust='spacingAndGlyphs'>10</text>
 <text x='676.16' y='320.56' style='font-size: 8.80px; font-family: sans;' textLength='9.79px' lengthAdjust='spacingAndGlyphs'>20</text>
-<text x='27.90' y='14.56' style='font-size: 13.20px; font-family: sans;' textLength='79.23px' lengthAdjust='spacingAndGlyphs'>crd without trt</text>
+<text x='27.90' y='14.56' style='font-size: 13.20px; font-family: sans;' textLength='190.43px' lengthAdjust='spacingAndGlyphs'>Plot produced with plot = FALSE</text>
 </g>
 </svg>
