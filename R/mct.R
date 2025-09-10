@@ -485,23 +485,49 @@ format_output <- function(pp, descending, vars, decimals) {
 
     # Extract treatment variable names
     trtindex <- max(unlist(lapply(paste0("^", vars, "$"), grep, x = names(pp))))
-
     trtnam <- names(pp)[1:trtindex]
+
     # Exclude reserved column names
-    trtnam <- trtnam[trtnam %!in% c("predicted.value", "std.error", "Df",
-                                    "groups", "PredictedValue", "ApproxSE", "ci", "low", "up")]
+    reserved_cols <- c("predicted.value", "std.error", "Df", "groups",
+                       "PredictedValue", "ApproxSE", "ci", "low", "up")
+    trtnam <- trtnam[trtnam %!in% reserved_cols]
 
     # Convert treatment columns to factors with ordered levels
     for (i in seq_along(trtnam)) {
         pp[[trtnam[i]]] <- factor(pp[[trtnam[i]]], levels = unique(pp[[trtnam[i]]]))
     }
 
-    # Round numeric columns to specified decimal places
-    pp <- rapply(object = pp, f = round, classes = "numeric", how = "replace", digits = decimals)
+    # Helper function to calculate decimal places needed to avoid rounding to zero
+    calc_se_decimals <- function(values, default_decimals) {
+        min_val <- min(values, na.rm = TRUE)
+        if (min_val > 0 && round(min_val, default_decimals) == 0) {
+            max(default_decimals, -floor(log10(min_val)) + 1)
+        } else {
+            default_decimals
+        }
+    }
+
+    # Identify SE columns and calculate needed decimal places
+    se_cols <- intersect(c("std.error", "ApproxSE"), names(pp))
+    se_decimals <- sapply(se_cols, function(col) calc_se_decimals(pp[[col]], decimals))
+
+    # Warn if any SE columns need more decimal places
+    if (any(se_decimals > decimals)) {
+        warning("Some standard errors are very small and would round to zero with ",
+                decimals, " decimal places. Using ", max(se_decimals),
+                " decimal places for standard error columns to preserve error bar display.",
+                call. = FALSE)
+    }
+
+    # Round all numeric columns
+    numeric_cols <- names(pp)[sapply(pp, is.numeric)]
+    for (col in numeric_cols) {
+        pp[[col]] <- round(pp[[col]],
+                           if (col %in% names(se_decimals)) se_decimals[[col]] else decimals)
+    }
 
     # Remove row names
     rownames(pp) <- NULL
-
     return(pp)
 }
 
