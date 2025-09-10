@@ -19,6 +19,23 @@ test_that("Output prints if crayon is not installed", {
     )
 })
 
+test_that("Plain message printed when crayon is not available", {
+    rlang::local_interactive(value = TRUE)
+    # Mock to simulate crayon not being installed
+    local_mocked_bindings(
+        rlang::is_installed = function(pkg) {
+            if (pkg == "crayon") return(FALSE)
+            return(TRUE)  # Return TRUE for other packages
+        }
+    )
+    
+    # Test that the plain message (without crayon formatting) is printed
+    expect_message(
+        biometryassist:::.onAttach(pkg = "biometryassist"),
+        "biometryassist version"
+    )
+})
+
 test_that("Warning prints if cran version is newer", {
     rlang::local_interactive(value = TRUE)
     local_mocked_bindings(.compare_version = function(...) 1L)
