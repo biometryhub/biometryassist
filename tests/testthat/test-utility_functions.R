@@ -23,10 +23,11 @@ test_that("Plain message printed when crayon is not available", {
     rlang::local_interactive(value = TRUE)
     # Mock to simulate crayon not being installed
     local_mocked_bindings(
-        rlang::is_installed = function(pkg) {
+        is_installed = function(pkg) {
             if (pkg == "crayon") return(FALSE)
             return(TRUE)  # Return TRUE for other packages
-        }
+        },
+        .package = "rlang"
     )
     
     # Test that the plain message (without crayon formatting) is printed
