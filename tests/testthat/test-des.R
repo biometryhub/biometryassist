@@ -6,7 +6,8 @@ test_that("crd works if treatments are not called trt", {
     expect_equal(crd_des_out$satab[3],
                  "abcs                                    3\n")
     expect_snapshot_output(crd_des_out$satab)
-    vdiffr::expect_doppelganger("crd without trt", print(crd_des_out$plot.des))
+    vdiffr::expect_doppelganger("crd without trt", print(crd_des_out$plot.des),
+                                variant = ggplot2_variant())
 })
 
 
@@ -19,5 +20,6 @@ test_that("rcbd works if treatments are not called trt", {
     expect_equal(rcbd_des_out$satab[5],
                  "abcs                                    10\n")
     expect_snapshot_output(rcbd_des_out$satab)
-    vdiffr::expect_doppelganger("rcbd without trt", print(rcbd_des_out$plot.des))
+    vdiffr::expect_doppelganger("rcbd without trt", print(rcbd_des_out$plot.des),
+                                variant = ggplot2_variant())
 })
