@@ -325,6 +325,8 @@ test_that("autoplot can rotate axis and labels independently", {
                                 autoplot(output, label_rotation = 90))
     vdiffr::expect_doppelganger("axis rotation",
                                 autoplot(output, axis_rotation = 90))
+    vdiffr::expect_doppelganger("axis rotation -90",
+                                autoplot(output, axis_rotation = -90))
     vdiffr::expect_doppelganger("axis and label rotation",
                                 autoplot(output, axis_rotation = 45, label_rotation = 90))
     vdiffr::expect_doppelganger("rotation and axis rotation",
