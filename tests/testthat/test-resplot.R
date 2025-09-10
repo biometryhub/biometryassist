@@ -3,14 +3,14 @@ test_that("Residual plots work for aov", {
 
     p1 <- resplot(dat.aov, shapiro = FALSE)
 
-    vdiffr::expect_doppelganger(title = "Resplot for aov without shapiro", p1)
+    vdiffr::expect_doppelganger(title = "Resplot for aov without shapiro", p1, variant = ggplot2_variant())
 })
 
 test_that("resplt is deprecated and produces a warning", {
     dat.aov <- aov(Petal.Length ~ Petal.Width, data = iris)
 
     expect_warning(p1 <- resplt(dat.aov), "resplt has been deprecated in version 1\\.0\\.1 and will be removed in a future version\\.\\nPlease use resplot\\(\\) instead\\.")
-    vdiffr::expect_doppelganger(title = "Resplot for aov", p1)
+    vdiffr::expect_doppelganger(title = "Resplot for aov", p1, variant = ggplot2_variant())
 })
 
 test_that("resplot produces an error for invalid data types", {
@@ -22,7 +22,7 @@ test_that("Old mod.obj argument produces a warning", {
     dat.aov <- aov(Petal.Length ~ Petal.Width, data = iris)
     expect_warning(p <- resplot(model.obj = dat.aov, mod.obj = dat.aov),
                    "Argument `mod\\.obj` has been deprecated and will be removed in a future version\\. Please use `model\\.obj` instead\\.")
-    vdiffr::expect_doppelganger(title = "Resplot after warning", p)
+    vdiffr::expect_doppelganger(title = "Resplot after warning", p, variant = ggplot2_variant())
 })
 
 test_that("Residual plots work for asreml", {
@@ -41,10 +41,10 @@ test_that("Residual plots work for asreml", {
             "Removed 1 row containing non-finite outside the scale range"),
         "Removed 1 row containing missing values or values outside the scale range")
 
-    vdiffr::expect_doppelganger(title = "Resplot for asreml single", p1_single)
-    vdiffr::expect_doppelganger(title = "Resplot for asreml pt 1", p1_multi[[1]])
-    vdiffr::expect_doppelganger(title = "Resplot for asreml pt 2", p1_multi[[2]])
-    vdiffr::expect_doppelganger(title = "Resplot for asreml pt 3", p1_multi[[3]])
+    vdiffr::expect_doppelganger(title = "Resplot for asreml single", p1_single, variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "Resplot for asreml pt 1", p1_multi[[1]], variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "Resplot for asreml pt 2", p1_multi[[2]], variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "Resplot for asreml pt 3", p1_multi[[3]], variant = ggplot2_variant())
 })
 
 
@@ -53,7 +53,7 @@ test_that("Residual plots work for lme4", {
     dat.lme4 <- lme4::lmer(Reaction ~ Days + (Days | Subject), lme4::sleepstudy)
 
     p1 <- resplot(dat.lme4, call = TRUE)
-    vdiffr::expect_doppelganger(title = "Resplot for lme4", p1)
+    vdiffr::expect_doppelganger(title = "Resplot for lme4", p1, variant = ggplot2_variant())
 })
 
 
@@ -67,7 +67,7 @@ test_that("Residual plots work for nlme", {
 
     p1 <- resplot(dat.nlme, call = TRUE)
 
-    vdiffr::expect_doppelganger(title = "Resplot for nlme", p1)
+    vdiffr::expect_doppelganger(title = "Resplot for nlme", p1, variant = ggplot2_variant())
 })
 
 test_that("Residual plots work for sommer", {
@@ -80,8 +80,8 @@ test_that("Residual plots work for sommer", {
     expect_contains(class(p2), "ggplot")
 
     skip_on_os("linux")
-    vdiffr::expect_doppelganger(title = "Resplot for sommer mmer", p1)
-    vdiffr::expect_doppelganger(title = "Resplot for sommer mmes", p2)
+    vdiffr::expect_doppelganger(title = "Resplot for sommer mmer", p1, variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "Resplot for sommer mmes", p2, variant = ggplot2_variant())
 })
 
 test_that("Residual plots display call for aov and lm", {
@@ -89,8 +89,8 @@ test_that("Residual plots display call for aov and lm", {
     p1 <- resplot(dat.aov, call = TRUE)
     p2 <- resplot(dat.aov, call = TRUE, call.size = 7)
 
-    vdiffr::expect_doppelganger(title = "Resplot with call", p1)
-    vdiffr::expect_doppelganger(title = "Resplot with smaller call", p2)
+    vdiffr::expect_doppelganger(title = "Resplot with call", p1, variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "Resplot with smaller call", p2, variant = ggplot2_variant())
 })
 
 test_that("Residual plots work for ARTool models", {
@@ -100,8 +100,8 @@ test_that("Residual plots work for ARTool models", {
     p1 <- resplot(model.art)
     p2 <- resplot(model.art, call = TRUE)
 
-    vdiffr::expect_doppelganger(title = "ARTool resplot", p1)
-    vdiffr::expect_doppelganger(title = "ARTool resplot with call", p2)
+    vdiffr::expect_doppelganger(title = "ARTool resplot", p1, variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "ARTool resplot with call", p2, variant = ggplot2_variant())
 })
 
 test_that("Shapiro-Wilk test produces a warning with large numbers of observations.", {
@@ -114,9 +114,9 @@ test_that("Shapiro-Wilk test produces a warning with large numbers of observatio
     expect_warning(p2 <- resplot(dat_med.aov, shapiro = TRUE),
                    "Shapiro-Wilk test p-values are unreliable for large numbers of observations")
 
-    vdiffr::expect_doppelganger(title = "Medium data shapiro", p2)
+    vdiffr::expect_doppelganger(title = "Medium data shapiro", p2, variant = ggplot2_variant())
     skip_on_os("linux")
-    vdiffr::expect_doppelganger(title = "Large data shapiro", p1)
+    vdiffr::expect_doppelganger(title = "Large data shapiro", p1, variant = ggplot2_variant())
 })
 
 test_that("onepage is ignored for single plots", {
@@ -128,8 +128,8 @@ test_that("onepage is ignored for single plots", {
     expect_contains(class(p2), "ggplot")
 
     expect_true(equivalent_ggplot2(p1, p2))
-    vdiffr::expect_doppelganger(title = "resplot_onepage_false", p1)
-    vdiffr::expect_doppelganger(title = "resplot_onepage_true", p2)
+    vdiffr::expect_doppelganger(title = "resplot_onepage_false", p1, variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "resplot_onepage_true", p2, variant = ggplot2_variant())
 })
 
 test_that("onepage produces plots with up to 6 on a page", {
@@ -153,15 +153,15 @@ test_that("onepage produces plots with up to 6 on a page", {
 
     expect_false(equivalent_ggplot2(p1[[1]], p2[[1]]))
 
-    vdiffr::expect_doppelganger(title = "Onepage_off_1", p1[[1]])
-    vdiffr::expect_doppelganger(title = "Onepage_off_2", p1[[2]])
-    vdiffr::expect_doppelganger(title = "Onepage_off_3", p1[[3]])
-    vdiffr::expect_doppelganger(title = "Onepage_on", p2)
-    vdiffr::expect_doppelganger(title = "Onepage_on_page_1", p3[[1]])
-    vdiffr::expect_doppelganger(title = "Onepage_on_page_2", p3[[2]])
+    vdiffr::expect_doppelganger(title = "Onepage_off_1", p1[[1]], variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "Onepage_off_2", p1[[2]], variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "Onepage_off_3", p1[[3]], variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "Onepage_on", p2, variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "Onepage_on_page_1", p3[[1]], variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "Onepage_on_page_2", p3[[2]], variant = ggplot2_variant())
 })
 
-test_that("onepage_col produces plots with up to 6 on a page", {
+test_that("onepage_col changes the number of columns on a page", {
     load(test_path("data", "asreml_model.Rdata"))
     p1 <- suppressWarnings(resplot(complex_model.asr, onepage = TRUE, onepage_cols = 3))
     p2 <- suppressWarnings(resplot(complex_model.asr, onepage = TRUE, onepage_cols = 2))
@@ -170,6 +170,6 @@ test_that("onepage_col produces plots with up to 6 on a page", {
 
     expect_false(equivalent_ggplot2(p1[[1]], p2[[1]]))
 
-    vdiffr::expect_doppelganger(title = "Onepage_cols_3", p1)
-    vdiffr::expect_doppelganger(title = "Onepage_cols_2", p2)
+    vdiffr::expect_doppelganger(title = "Onepage_cols_3", p1, variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "Onepage_cols_2", p2, variant = ggplot2_variant())
 })

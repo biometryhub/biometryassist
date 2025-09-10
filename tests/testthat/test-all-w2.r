@@ -135,7 +135,7 @@ test_that("example 6 works", {
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
     vdiffr::expect_doppelganger(title = "example6lmmresplot", resplot(example6.asr), variant = ggplot2_variant())
-    vdiffr::expect_doppelganger(title = "example6variogram", vg6)
+    vdiffr::expect_doppelganger(title = "example6variogram", vg6, variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "example6lmmautoplot2", autoplot(pred6.out))
 })
 
@@ -161,7 +161,7 @@ test_that("example 7 works", {
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
     vdiffr::expect_doppelganger(title = "example7lmmresplot", resplot(example7.asr), variant = ggplot2_variant())
-    vdiffr::expect_doppelganger(title = "example7variogram", vg7)
+    vdiffr::expect_doppelganger(title = "example7variogram", vg7, variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "example7lmmautoplot", autoplot(pred7.out))
 })
 
@@ -388,7 +388,7 @@ test_that("exercise 13 works", {
     vdiffr::expect_doppelganger(title = "exercise13autoplot1", autoplot(pred13e.out1))
     vdiffr::expect_doppelganger(title = "exercise13autoplot2", autoplot(pred13e.out2))
     # skip_on_os(c("windows", "mac"))
-    vdiffr::expect_doppelganger(title = "exercise13variogram", variogram(exercise13.asr))
+    vdiffr::expect_doppelganger(title = "exercise13variogram", variogram(exercise13.asr), variant = ggplot2_variant())
 })
 
 test_that("exercise 14 works", {
@@ -422,7 +422,7 @@ test_that("exercise 14 works", {
     vdiffr::expect_doppelganger(title = "exercise14resplot", resplot(exercise14.asr), variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "exercise14autoplot", autoplot(pred14e.out))
     # skip_on_os(c("windows", "mac"))
-    vdiffr::expect_doppelganger(title = "exercise14variogram", variogram(exercise14.asr))
+    vdiffr::expect_doppelganger(title = "exercise14variogram", variogram(exercise14.asr), variant = ggplot2_variant())
 })
 
 test_that("exercise 15 works", {
@@ -459,6 +459,6 @@ test_that("exercise 15 works", {
     vdiffr::expect_doppelganger(title = "exercise15autoplot2", autoplot(pred15e.out2))
     vdiffr::expect_doppelganger(title = "exercise15autoplot3", autoplot(pred15e.out3))
     # skip_on_os(c("windows", "mac"))
-    vdiffr::expect_doppelganger(title = "exercise15variogram", variogram(exercise15.asr))
+    vdiffr::expect_doppelganger(title = "exercise15variogram", variogram(exercise15.asr), variant = ggplot2_variant())
 })
 

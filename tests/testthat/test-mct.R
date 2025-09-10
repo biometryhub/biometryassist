@@ -253,7 +253,7 @@ test_that("3 way interaction works", {
     expect_equal(output$std.error,
                  rep(0.63, 27))
     # skip_if(interactive())
-    vdiffr::expect_doppelganger("3 way interaction", autoplot(output))
+    vdiffr::expect_doppelganger("3 way interaction", autoplot(output), variant = ggplot2_variant())
 })
 
 test_that("plots are produced when requested", {
@@ -270,7 +270,9 @@ test_that("plots are produced when requested", {
     expect_equal(output$std.error,
                  rep(0.63, 27))
     skip_if(interactive())
-    vdiffr::expect_doppelganger("3 way interaction internal", output <- multiple_comparisons(dat.aov, classify = "A:B:C", plot = TRUE))
+    vdiffr::expect_doppelganger("3 way interaction internal",
+                                output <- multiple_comparisons(dat.aov, classify = "A:B:C", plot = TRUE),
+                                variant = ggplot2_variant())
 })
 
 test_that("nlme model produces an error", {
