@@ -902,3 +902,94 @@ test_that("install_asreml verbose messaging shows package removal", {
         "\\[DEBUG\\] Force=TRUE and existing package found - removing existing installation"
     )
 })
+
+test_that("get_version_table handles missing version headers", {
+    skip_on_cran()
+
+    # Mock xml2 functions to simulate a page without version headers
+    mock_html <- structure(list(), class = "xml_document")
+    mockery::stub(get_version_table, "xml2::read_html", function(url) mock_html)
+    mockery::stub(get_version_table, "xml2::xml_find_all", function(doc, xpath) {
+        if(grepl("//h3", xpath)) {
+            # Return headers that don't match the expected pattern
+            structure(list(), class = "xml_nodeset")
+        } else {
+            structure(list(), class = "xml_nodeset")
+        }
+    })
+    mockery::stub(get_version_table, "xml2::xml_text", function(nodes) character(0))
+
+    # Should stop with specific error message
+    expect_warning(
+        table <- get_version_table(),
+        "URL doesn't seem to contain asreml version information\\."
+    )
+    expect_equal(nrow(table), 0)
+})
+
+test_that("get_version_table handles network/parsing errors gracefully", {
+    skip_on_cran()
+
+    # Mock xml2::read_html to throw a network error
+    mockery::stub(get_version_table, "xml2::read_html", function(url) {
+        stop("Network timeout or connection failed")
+    })
+
+    # Should return empty data frame and warn about failure
+    expect_warning(
+        result <- get_version_table(),
+        "Failed to retrieve version information: Network timeout or connection failed"
+    )
+    expect_s3_class(result, "data.frame")
+    expect_equal(nrow(result), 0)
+})
+
+test_that("get_version_table handles XML parsing errors", {
+    skip_on_cran()
+
+    # Mock xml2 functions to simulate XML parsing failure
+    mock_html <- structure(list(), class = "xml_document")
+    mockery::stub(get_version_table, "xml2::read_html", function(url) mock_html)
+    mockery::stub(get_version_table, "xml2::xml_find_all", function(doc, xpath) {
+        stop("XPath expression error")
+    })
+
+    # Should return empty data frame and warn about failure
+    expect_warning(
+        result <- get_version_table(),
+        "Failed to retrieve version information: XPath expression error"
+    )
+    expect_s3_class(result, "data.frame")
+    expect_equal(nrow(result), 0)
+})
+
+test_that("get_version_table handles malformed table data", {
+    skip_on_cran()
+
+    # Mock xml2 functions to return valid headers but malformed table data
+    mock_html <- structure(list(), class = "xml_document")
+    mockery::stub(get_version_table, "xml2::read_html", function(url) mock_html)
+    mockery::stub(get_version_table, "xml2::xml_find_all", function(doc, xpath) {
+        structure(list(), class = "xml_nodeset")
+    })
+    mockery::stub(get_version_table, "xml2::xml_text", function(nodes) {
+        if(length(nodes) == 0) {
+            # Return valid headers for h3 search
+            "ASReml-R 4.2 (All platforms)"
+        } else {
+            # Return malformed table data
+            "Invalid table data without macOS"
+        }
+    })
+    mockery::stub(get_version_table, "stringi::stri_split_fixed", function(x, pattern) {
+        stop("String processing error")
+    })
+
+    # Should return empty data frame and warn about failure
+    expect_warning(
+        result <- get_version_table(),
+        "Failed to retrieve version information: String processing error"
+    )
+    expect_s3_class(result, "data.frame")
+    expect_equal(nrow(result), 0)
+})
