@@ -37,3 +37,13 @@ logit <- function (p, percents = range.p[2] > 1, adjust)
     a <- 1 - 2 * a
     log((0.5 + a * (p - 0.5))/(1 - (0.5 + a * (p - 0.5))))
 }
+
+
+# Helper function for ggplot2 version variants in visual tests
+ggplot2_variant <- function() {
+  if (packageVersion("ggplot2") <= "3.5.2") {
+    "ggplot2-old"
+  } else {
+    "ggplot2-new"
+  }
+}
