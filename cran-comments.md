@@ -1,6 +1,6 @@
 ## Submission
 
-Updates to ensure compatibility with upcoming ggplot2 release.
+Further updates to ensure compatibility with upcoming ggplot2 release.
 
 ## Test environments
 * Local Windows 10 install, R 4.5.1
