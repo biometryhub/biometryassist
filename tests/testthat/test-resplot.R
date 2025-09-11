@@ -1,14 +1,26 @@
-test_that("Residual plots work for aov", {
-    dat.aov <- aov(Petal.Length ~ Petal.Width, data = iris)
+# Setup models and data once for reuse across tests
+dat.aov <- aov(Petal.Length ~ Petal.Width, data = iris)
 
+# Load data files at start
+load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
+load(test_path("data", "sommer_models.Rdata"), envir = .GlobalEnv)
+load(test_path("data", "multi_dsum.Rdata"), envir = .GlobalEnv)
+load(test_path("data", "lme4_model.Rdata"), envir = .GlobalEnv)
+load(test_path("data", "nlme_model.Rdata"), envir = .GlobalEnv)
+load(test_path("data", "ARTool_model.Rdata"), envir = .GlobalEnv)
+
+load(test_path("data", "large_data.Rdata"), envir = .GlobalEnv)
+dat_large.aov <- aov(y ~ x, data = large_dat)
+dat_med.aov <- aov(y ~ x, data = med_dat)
+
+# Start testing
+test_that("Residual plots work for aov", {
     p1 <- resplot(dat.aov, shapiro = FALSE)
 
     vdiffr::expect_doppelganger(title = "Resplot for aov without shapiro", p1, variant = ggplot2_variant())
 })
 
 test_that("resplt is deprecated and produces a warning", {
-    dat.aov <- aov(Petal.Length ~ Petal.Width, data = iris)
-
     expect_warning(p1 <- resplt(dat.aov), "resplt has been deprecated in version 1\\.0\\.1 and will be removed in a future version\\.\\nPlease use resplot\\(\\) instead\\.")
     vdiffr::expect_doppelganger(title = "Resplot for aov", p1, variant = ggplot2_variant())
 })
@@ -19,7 +31,6 @@ test_that("resplot produces an error for invalid data types", {
 })
 
 test_that("Old mod.obj argument produces a warning", {
-    dat.aov <- aov(Petal.Length ~ Petal.Width, data = iris)
     expect_warning(p <- resplot(model.obj = dat.aov, mod.obj = dat.aov),
                    "Argument `mod\\.obj` has been deprecated and will be removed in a future version\\. Please use `model\\.obj` instead\\.")
     vdiffr::expect_doppelganger(title = "Resplot after warning", p, variant = ggplot2_variant())
@@ -28,7 +39,6 @@ test_that("Old mod.obj argument produces a warning", {
 test_that("Residual plots work for asreml", {
     skip_on_cran()
 
-    load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
     p1_single <- resplot(model.asr, shapiro = FALSE, call = TRUE)
     expect_contains(class(p1_single), "ggplot")
 
@@ -50,8 +60,6 @@ test_that("Residual plots work for asreml", {
 
 test_that("Residual plots work for lme4", {
     skip_if_not_installed("lme4")
-    dat.lme4 <- lme4::lmer(Reaction ~ Days + (Days | Subject), lme4::sleepstudy)
-
     p1 <- resplot(dat.lme4, call = TRUE)
     vdiffr::expect_doppelganger(title = "Resplot for lme4", p1, variant = ggplot2_variant())
 })
@@ -59,20 +67,11 @@ test_that("Residual plots work for lme4", {
 
 test_that("Residual plots work for nlme", {
     skip_if_not_installed("nlme")
-    dat.nlme <- nlme::nlme(height ~ SSasymp(age, Asym, R0, lrc),
-                           data = Loblolly,
-                           fixed = Asym + R0 + lrc ~ 1,
-                           random = Asym ~ 1,
-                           start = c(Asym = 103, R0 = -8.5, lrc = -3.3))
-
     p1 <- resplot(dat.nlme, call = TRUE)
-
     vdiffr::expect_doppelganger(title = "Resplot for nlme", p1, variant = ggplot2_variant())
 })
 
 test_that("Residual plots work for sommer", {
-    load(test_path("data", "sommer_models.Rdata"))
-
     p1 <- resplot(model_mmer, call = TRUE)
     p2 <- resplot(model_mmes, call = TRUE)
 
@@ -85,7 +84,6 @@ test_that("Residual plots work for sommer", {
 })
 
 test_that("Residual plots display call for aov and lm", {
-    dat.aov <- aov(Petal.Length ~ Petal.Width, data = iris)
     p1 <- resplot(dat.aov, call = TRUE)
     p2 <- resplot(dat.aov, call = TRUE, call.size = 7)
 
@@ -94,9 +92,7 @@ test_that("Residual plots display call for aov and lm", {
 })
 
 test_that("Residual plots work for ARTool models", {
-    load(test_path("data", "art_dat.Rdata"))
-    skip_if_not_installed("ARTool")
-    model.art <- ARTool::art(medmolarity ~ name + (1|rep), data = dat.art)
+    model.art <- get_art_model()
     p1 <- resplot(model.art)
     p2 <- resplot(model.art, call = TRUE)
 
@@ -105,13 +101,11 @@ test_that("Residual plots work for ARTool models", {
 })
 
 test_that("Shapiro-Wilk test produces a warning with large numbers of observations.", {
-    load(test_path("data", "large_data.Rdata"))
-    dat_large.aov <- aov(y ~ x, data = large_dat)
-    dat_med.aov <- aov(y ~ x, data = med_dat)
+    models <- get_large_data_models()
 
-    expect_warning(p1 <- resplot(dat_large.aov, shapiro = TRUE),
+    expect_warning(p1 <- resplot(models$large, shapiro = TRUE),
                    "Shapiro-Wilk test p-values are unreliable for more than 5000 observations and has not been performed")
-    expect_warning(p2 <- resplot(dat_med.aov, shapiro = TRUE),
+    expect_warning(p2 <- resplot(models$med, shapiro = TRUE),
                    "Shapiro-Wilk test p-values are unreliable for large numbers of observations")
 
     vdiffr::expect_doppelganger(title = "Medium data shapiro", p2, variant = ggplot2_variant())
@@ -120,8 +114,6 @@ test_that("Shapiro-Wilk test produces a warning with large numbers of observatio
 })
 
 test_that("onepage is ignored for single plots", {
-    dat.aov <- aov(Petal.Length ~ Petal.Width, data = iris)
-
     p1 <- resplot(dat.aov)
     p2 <- resplot(dat.aov, onepage = TRUE)
     expect_contains(class(p1), "ggplot")
@@ -132,9 +124,8 @@ test_that("onepage is ignored for single plots", {
     vdiffr::expect_doppelganger(title = "resplot_onepage_true", p2, variant = ggplot2_variant())
 })
 
-test_that("onepage produces plots with up to 6 on a page", {
-    load(test_path("data", "multi_dsum.Rdata"))
-    load(test_path("data", "asreml_model.Rdata"))
+test_that("onepage produces plots with up to 6 on a page and column changes work", {
+    # Test basic onepage functionality
     p1 <- suppressWarnings(resplot(complex_model.asr))
     p2 <- suppressWarnings(resplot(complex_model.asr, onepage = TRUE))
     p3 <- resplot(model_dsum, onepage = TRUE)
@@ -153,23 +144,19 @@ test_that("onepage produces plots with up to 6 on a page", {
 
     expect_false(equivalent_ggplot2(p1[[1]], p2[[1]]))
 
+    # Test column changes in same test to avoid redundant model loading
+    p4 <- suppressWarnings(resplot(complex_model.asr, onepage = TRUE, onepage_cols = 3))
+    p5 <- suppressWarnings(resplot(complex_model.asr, onepage = TRUE, onepage_cols = 2))
+
+    expect_equal(length(p4), length(p5))
+    expect_false(equivalent_ggplot2(p4[[1]], p5[[1]]))
+
     vdiffr::expect_doppelganger(title = "Onepage_off_1", p1[[1]], variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "Onepage_off_2", p1[[2]], variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "Onepage_off_3", p1[[3]], variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "Onepage_on", p2, variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "Onepage_on_page_1", p3[[1]], variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "Onepage_on_page_2", p3[[2]], variant = ggplot2_variant())
-})
-
-test_that("onepage_col changes the number of columns on a page", {
-    load(test_path("data", "asreml_model.Rdata"))
-    p1 <- suppressWarnings(resplot(complex_model.asr, onepage = TRUE, onepage_cols = 3))
-    p2 <- suppressWarnings(resplot(complex_model.asr, onepage = TRUE, onepage_cols = 2))
-
-    expect_equal(length(p1), length(p2))
-
-    expect_false(equivalent_ggplot2(p1[[1]], p2[[1]]))
-
-    vdiffr::expect_doppelganger(title = "Onepage_cols_3", p1, variant = ggplot2_variant())
-    vdiffr::expect_doppelganger(title = "Onepage_cols_2", p2, variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "Onepage_cols_3", p4, variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "Onepage_cols_2", p5, variant = ggplot2_variant())
 })
