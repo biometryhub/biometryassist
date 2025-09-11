@@ -92,7 +92,6 @@ test_that("Residual plots display call for aov and lm", {
 })
 
 test_that("Residual plots work for ARTool models", {
-    model.art <- get_art_model()
     p1 <- resplot(model.art)
     p2 <- resplot(model.art, call = TRUE)
 
@@ -101,11 +100,9 @@ test_that("Residual plots work for ARTool models", {
 })
 
 test_that("Shapiro-Wilk test produces a warning with large numbers of observations.", {
-    models <- get_large_data_models()
-
-    expect_warning(p1 <- resplot(models$large, shapiro = TRUE),
+    expect_warning(p1 <- resplot(dat_large.aov, shapiro = TRUE),
                    "Shapiro-Wilk test p-values are unreliable for more than 5000 observations and has not been performed")
-    expect_warning(p2 <- resplot(models$med, shapiro = TRUE),
+    expect_warning(p2 <- resplot(dat_med.aov, shapiro = TRUE),
                    "Shapiro-Wilk test p-values are unreliable for large numbers of observations")
 
     vdiffr::expect_doppelganger(title = "Medium data shapiro", p2, variant = ggplot2_variant())
