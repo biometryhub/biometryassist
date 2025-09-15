@@ -1,3 +1,9 @@
+# biometryassist 1.3.3
+
+## Bug Fixes
+
+- Fixing test issues identified by CRAN after ggplot2 4.0.0 release
+
 # biometryassist 1.3.2
 
 ## Bug Fixes

@@ -1,6 +1,6 @@
 ## Submission
 
-Further updates to ensure compatibility with upcoming ggplot2 release.
+Fixing issues identified by CRAN
 
 ## Test environments
 * Local Windows 10 install, R 4.5.1
