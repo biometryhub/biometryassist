@@ -12,8 +12,7 @@ test_that("get_r_os returns correct structure and values", {
     expect_equal(result$os, expected_os)
     expect_match(result$ver, "\\d{2}")  # Should be something like "43" for R 4.3
     expect_match(result$os_ver, "^(win-|mac-|linux-)(arm-)?[0-9]{2}$")
-    skip_on_os(c("windows", "linux"))  # Skip ARM check on Windows and Linux
-    expect_true(result$arm)  # Windows doesn't have ARM distinction in this context
+    expect_equal(result$arm, sys_info[["machine"]] == "arm64")
 })
 
 test_that("find_existing_package works correctly", {
