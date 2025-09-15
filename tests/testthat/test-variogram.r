@@ -16,8 +16,7 @@ test_that("variogram produces a plot", {
         v5 <- variogram(model.asr, palette = "Spectral")
     expect_error(variogram(model.asr, palette = "abc"),
                  "Invalid value for palette.")
-    expect_type(v1, "list")
-    expect_s3_class(v1, "ggplot")
+    expect_contains(class(v1), "ggplot")
     skip_on_os(c("windows", "mac"))
     vdiffr::expect_doppelganger(title = "Variogram produced", v1)
     vdiffr::expect_doppelganger(title = "Variogram palette 1",

@@ -1,3 +1,10 @@
+# biometryassist 1.3.1
+
+## Bug Fixes
+
+- Update to ensure compatability with upcoming ggplot2 release (#111)
+
+
 # biometryassist 1.3.0
 
 ## Major changes

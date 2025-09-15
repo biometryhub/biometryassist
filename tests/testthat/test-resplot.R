@@ -30,8 +30,7 @@ test_that("Residual plots work for asreml", {
 
     load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
     p1_single <- resplot(model.asr, shapiro = FALSE, call = TRUE)
-    expect_type(p1_single, "list")
-    expect_equal(class(p1_single), c("gg", "ggplot"))
+    expect_contains(class(p1_single), "ggplot")
 
     expect_warning(
         expect_warning(
@@ -77,10 +76,8 @@ test_that("Residual plots work for sommer", {
     p1 <- resplot(model_mmer, call = TRUE)
     p2 <- resplot(model_mmes, call = TRUE)
 
-    expect_type(p1, "list")
-    expect_type(p2, "list")
-    expect_s3_class(p1, "ggplot")
-    expect_s3_class(p2, "ggplot")
+    expect_contains(class(p1), "ggplot")
+    expect_contains(class(p2), "ggplot")
 
     skip_on_os("linux")
     vdiffr::expect_doppelganger(title = "Resplot for sommer mmer", p1)
@@ -127,10 +124,8 @@ test_that("onepage is ignored for single plots", {
 
     p1 <- resplot(dat.aov)
     p2 <- resplot(dat.aov, onepage = TRUE)
-    expect_type(p1, "list")
-    expect_type(p2, "list")
-    expect_equal(class(p1), c("gg", "ggplot"))
-    expect_equal(class(p2), c("gg", "ggplot"))
+    expect_contains(class(p1), "ggplot")
+    expect_contains(class(p2), "ggplot")
 
     expect_true(equivalent_ggplot2(p1, p2))
     vdiffr::expect_doppelganger(title = "resplot_onepage_false", p1)
