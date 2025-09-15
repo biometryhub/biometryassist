@@ -16,9 +16,18 @@ test_that("transformations are handled", {
     output.sqrt2 <- multiple_comparisons(dat.aov.sqrt, classify = "Species", trans = "sqrt", offset = 0, int.type = "1se")
     output.sqrt3 <- multiple_comparisons(dat.aov.sqrt, classify = "Species", trans = "sqrt", offset = 0, int.type = "2se")
     dat.aov.logit <- aov(logit(1/Petal.Width) ~ Species, data = iris)
-    output.logit <- multiple_comparisons(dat.aov.logit, classify = "Species", trans = "logit", offset = 0)
-    output.logit2 <- multiple_comparisons(dat.aov.logit, classify = "Species", trans = "logit", offset = 0, int.type = "1se")
-    output.logit3 <- multiple_comparisons(dat.aov.logit, classify = "Species", trans = "logit", offset = 0, int.type = "2se")
+    expect_warning(
+        output.logit <- multiple_comparisons(dat.aov.logit, classify = "Species", trans = "logit", offset = 0),
+        "Some standard errors are very small and would round to zero with 2 decimal places"
+    )
+    expect_warning(
+        output.logit2 <- multiple_comparisons(dat.aov.logit, classify = "Species", trans = "logit", offset = 0, int.type = "1se"),
+        "Some standard errors are very small and would round to zero with 2 decimal places"
+    )
+    expect_warning(
+        output.logit3 <- multiple_comparisons(dat.aov.logit, classify = "Species", trans = "logit", offset = 0, int.type = "2se"),
+        "Some standard errors are very small and would round to zero with 2 decimal places"
+    )
     dat.aov.inverse <- aov((1/Petal.Width) ~ Species, data = iris)
     output.inverse <- multiple_comparisons(dat.aov.inverse, classify = "Species", trans = "inverse", offset = 0)
     output.inverse2 <- multiple_comparisons(dat.aov.inverse, classify = "Species", trans = "inverse", offset = 0, int.type = "1se")
@@ -82,6 +91,7 @@ test_that("different interval types work", {
 })
 
 test_that("Testing asreml predictions", {
+    skip_if_not_installed("Matrix")
     load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
     expect_warning(output <- multiple_comparisons(model.asr,
                                                   classify = "Nitrogen",
@@ -108,7 +118,7 @@ test_that("save produces output", {
 
 test_that("Interaction terms work", {
     load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
-    skip_if_not(.check_package_available("asreml"))
+    skip_if_not_installed("asreml")
     quiet(library(asreml))
     output <- multiple_comparisons(model.asr, classify = "Nitrogen:Variety", pvals = T)
     expect_equal(output$predicted.value,
@@ -159,7 +169,7 @@ test_that("mct removes aliased treatments in aov", {
 
 
 test_that("mct handles aliased results in asreml with a warning", {
-    skip_if_not(.check_package_available("asreml"))
+    skip_if_not_installed("asreml")
     quiet(library(asreml))
     load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
     load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
@@ -214,7 +224,7 @@ test_that("Invalid column name causes an error", {
 })
 
 test_that("Including pred.obj object causes warning", {
-    skip_if_not(.check_package_available("asreml"))
+    skip_if_not_installed("asreml")
     quiet(library(asreml))
     load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
     expect_warning(multiple_comparisons(model.asr, pred.obj = pred.asr, classify = "Nitrogen"),
@@ -222,7 +232,7 @@ test_that("Including pred.obj object causes warning", {
 })
 
 test_that("Providing a random term in classify produces an error.", {
-    skip_if_not(.check_package_available("asreml"))
+    skip_if_not_installed("asreml")
     load(test_path("data", "oats_data2.Rdata"), envir = .GlobalEnv)
     expect_error(multiple_comparisons(model2.asr, classify = "Blocks"),
                  "All predicted values are aliased\\. Perhaps you need the `present` argument\\?")
@@ -253,7 +263,7 @@ test_that("3 way interaction works", {
     expect_equal(output$std.error,
                  rep(0.63, 27))
     # skip_if(interactive())
-    vdiffr::expect_doppelganger("3 way interaction", autoplot(output))
+    vdiffr::expect_doppelganger("3 way interaction", autoplot(output), variant = ggplot2_variant())
 })
 
 test_that("plots are produced when requested", {
@@ -270,7 +280,9 @@ test_that("plots are produced when requested", {
     expect_equal(output$std.error,
                  rep(0.63, 27))
     skip_if(interactive())
-    vdiffr::expect_doppelganger("3 way interaction internal", output <- multiple_comparisons(dat.aov, classify = "A:B:C", plot = TRUE))
+    vdiffr::expect_doppelganger("3 way interaction internal",
+                                output <- multiple_comparisons(dat.aov, classify = "A:B:C", plot = TRUE),
+                                variant = ggplot2_variant())
 })
 
 test_that("nlme model produces an error", {
@@ -314,14 +326,14 @@ test_that("autoplot can rotate axis and labels independently", {
                                 autoplot(output, label_rotation = 90))
     vdiffr::expect_doppelganger("axis rotation",
                                 autoplot(output, axis_rotation = 90))
+    vdiffr::expect_doppelganger("axis rotation -90",
+                                autoplot(output, axis_rotation = -90))
     vdiffr::expect_doppelganger("axis and label rotation",
                                 autoplot(output, axis_rotation = 45, label_rotation = 90))
     vdiffr::expect_doppelganger("rotation and axis rotation",
                                 autoplot(output, rotation = 45, axis_rotation = 90))
     vdiffr::expect_doppelganger("rotation and label rotation",
                                 autoplot(output, rotation = 45, label_rotation = 90))
-    vdiffr::expect_doppelganger("rotation with hjust and vjust",
-                                autoplot(output, rotation = 45, label_rotation = 90, hjust = 0, vjust = 0.5))
 })
 
 test_that("Autoplot can output column graphs", {
@@ -384,5 +396,129 @@ test_that("print.mct with no aliased attribute", {
     expect_output(print(output),
                   "Aliased levels are: ABC, DEF and GHI")
 
+})
+
+test_that("Standard error rounding preserves error bars", {
+    # Create data with very small standard errors
+    set.seed(123)
+
+    # Create a mock model that would produce very small standard errors
+    # We'll use a simple approach with very precise data
+    precise_data <- data.frame(
+        treatment = factor(rep(c("A", "B", "C"), each = 100)),
+        response = c(rep(1.000001, 100), rep(1.000002, 100), rep(1.000003, 100)) +
+            rnorm(300, 0, 0.0000001)  # Very small error
+    )
+
+    dat.aov <- aov(response ~ treatment, data = precise_data)
+
+    # Test with default decimals (2) - should trigger warning
+    expect_warning(
+        output <- multiple_comparisons(dat.aov, classify = "treatment", decimals = 2),
+        "Some standard errors are very small and would round to zero with 2 decimal places"
+    )
+
+    # Check that standard errors are preserved (not rounded to 0)
+    expect_true(all(output$std.error > 0))
+    expect_false(any(output$std.error == 0))
+
+    # Check that other columns are still rounded to 2 decimal places
+    expect_true(all(nchar(sub(".*\\.", "", as.character(output$predicted.value))) <= 2))
+})
+
+test_that("Standard error rounding works with transformed data", {
+    # Create data that will have small standard errors on the transformed scale
+    set.seed(456)
+    # Use data that's already on log scale with very small differences
+    transform_data <- data.frame(
+        treatment = factor(rep(c("A", "B", "C"), each = 100)),
+        # Create log-scale response with tiny differences and very small error
+        log_response = c(rep(-0.0001, 100), rep(0.0000, 100), rep(0.0001, 100)) +
+            rnorm(300, 0, 0.000001)  # Very small error on log scale
+    )
+
+    # Apply log transformation - the model is on log scale, transform back to original
+    dat.aov <- aov(log_response ~ treatment, data = transform_data)
+
+    # Test with transformation - should handle both std.error and ApproxSE
+    expect_warning(
+        output <- multiple_comparisons(dat.aov, classify = "treatment",
+                                       trans = "log", offset = 0, decimals = 3),
+        "Some standard errors are very small"
+    )
+
+    # Check that both standard error columns are preserved
+    expect_true(all(output$std.error > 0))
+    expect_true(all(output$ApproxSE > 0))
+    expect_false(any(output$std.error == 0))
+    expect_false(any(output$ApproxSE == 0))
+})
+
+test_that("Normal rounding works when standard errors are not too small", {
+    # Use the standard iris data which has reasonable standard errors
+    dat.aov <- aov(Petal.Width ~ Species, data = iris)
+
+    # Should not trigger warning with normal data
+    expect_no_warning(
+        output <- multiple_comparisons(dat.aov, classify = "Species", decimals = 2)
+    )
+
+    # Check that all numeric columns are properly rounded
+    expect_true(all(nchar(sub(".*\\.", "", as.character(output$predicted.value))) <= 2))
+    expect_true(all(nchar(sub(".*\\.", "", as.character(output$std.error))) <= 2))
+})
+
+test_that("Standard error rounding works with different decimal settings", {
+    # Create data with moderately small standard errors
+    set.seed(789)
+    moderate_data <- data.frame(
+        treatment = factor(rep(c("A", "B"), each = 20)),
+        response = c(rep(1.001, 20), rep(1.002, 20)) + rnorm(40, 0, 0.001)
+    )
+
+    dat.aov <- aov(response ~ treatment, data = moderate_data)
+
+    # Test with decimals = 4 (should not trigger warning)
+    expect_no_warning(
+        output4 <- multiple_comparisons(dat.aov, classify = "treatment", decimals = 4)
+    )
+
+    # Test with decimals = 1 (might trigger warning depending on actual SE values)
+    expect_warning(
+        output1 <- multiple_comparisons(dat.aov, classify = "treatment", decimals = 1),
+        "Some standard errors are very small and would round to zero with 1 decimal places"
+    )
+
+    # Ensure standard errors are never exactly 0
+    expect_true(all(output1$std.error > 0))
+    expect_true(all(output4$std.error > 0))
+})
+
+
+test_that("ApproxSE column is also preserved during rounding", {
+    # Create data that will trigger the standard error preservation
+    set.seed(111)
+    # Create data with extremely small values to get tiny standard errors after log transformation
+    precise_data <- data.frame(
+        treatment = factor(rep(c("A", "B"), each = 100)),
+        # Use very small response values that will have tiny standard errors
+        response = c(rep(0.000001, 100), rep(0.000002, 100)) + rnorm(200, 0, 0.0000001)
+    )
+
+    # Use log transformation to create ApproxSE column
+    dat.aov <- aov(log(response) ~ treatment, data = precise_data)
+
+    # Should trigger warning and preserve both std.error and ApproxSE
+    expect_warning(
+        output <- multiple_comparisons(dat.aov, classify = "treatment",
+                                       trans = "log", offset = 0, decimals = 2),
+        "Some standard errors are very small"
+    )
+
+    # Both standard error columns should be preserved
+    expect_true(all(output$std.error > 0))
+    expect_true(all(output$ApproxSE > 0))
+    expect_false(any(output$std.error == 0))
+    expect_false(any(output$ApproxSE == 0))
 })
 

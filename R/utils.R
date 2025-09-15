@@ -39,7 +39,7 @@ quiet <- function(x) {
                         "    |  Type 'citation('biometryassist')' for the citation details.      |",
                         paste0("    ", paste0(rep("~", times = 69), collapse = ""), "\n"), sep = "\n")
 
-        if(.check_package_available("crayon")) {
+        if(rlang::is_installed("crayon")) {
             packageStartupMessage(crayon::green(output), appendLF=TRUE)
         }
         else {
@@ -74,20 +74,6 @@ quiet <- function(x) {
 #' @keywords internal
 .compare_version <- function(a, b) {
     return(utils::compareVersion(as.character(a), as.character(b)))
-}
-
-#' Check Package Availability
-#'
-#' Internal function to check if a package is available for loading.
-#' This wrapper around \code{.check_package_available} makes testing easier
-#' by allowing the dependency check to be mocked.
-#'
-#' @param pkg Character string specifying the package name to check
-#' @return Logical value: \code{TRUE} if the package is available,
-#'   \code{FALSE} otherwise
-#' @keywords internal
-.check_package_available <- function(pkg) {
-    return(requireNamespace(pkg, quietly = TRUE))
 }
 
 #' Handle deprecated parameters

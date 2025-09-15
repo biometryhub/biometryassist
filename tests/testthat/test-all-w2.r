@@ -1,8 +1,66 @@
-load(test_path("data", "w2_data.Rdata"), envir = .GlobalEnv)
+# Load pre-computed models once for reuse across tests
+load(test_path("data", "w2_models.Rdata"), envir = .GlobalEnv)
+
+# AOV models
+# example1.aov <- aov(RL ~ trt, data = example1)
+# example2.aov <- aov(TuberLengthGrowth ~ trt, data = example2)
+# example3.aov <- aov(Yield ~ Block + Variety, data = example3)
+# example4.aov <- aov(DM ~ row + col + trt, data = example4)
+# exercise1.aov <- aov(Yield ~ Variety, data = exercise1)
+# exercise2.aov <- aov(Time ~ Treatment, data = exercise2)
+# exercise3.aov <- aov(AverageFruitSize ~ Replicate + Variety, data = exercise3)
+# exercise4.aov <- aov(Yield ~ Block + SeedingRate, data = exercise4)
+# exercise5.aov <- aov(EarInfect ~ row + col + Treatment, data = exercise5)
+# exercise6.aov <- aov(SugarYield ~ row + col + Treatment, data = exercise6)
+#
+# example3.asr <- asreml::asreml(Yield ~ Variety, random = ~ Block, residual = ~ id(Plot),
+#                        data = example3, trace = FALSE)
+# example4.asr <- asreml::asreml(DM ~ trt, random = ~ row + col,
+#                        residual = ~ id(plots), data = example4,
+#                        trace = FALSE)
+# example5.asr <- asreml::asreml(Yield ~ Genotype + Fungicide + Genotype:Fungicide,
+#                        random = ~ Block + Block:WholePlot, residual = ~ units,
+#                        data = example5, trace = FALSE)
+# example6.asr <- asreml::asreml(Yield ~ Treatment, random = ~ Block,
+#                        residual = ~ id(Column):ar1(Row),
+#                        data = example6, trace = FALSE)
+# example7.asr <- asreml::asreml(Yield ~ Control + Herbicide + Rate + Herbicide:Rate,
+#                        random = ~ Block,  residual = ~ id(Column):ar1(Row),
+#                        data = example7, trace = FALSE)
+# exercise7.asr <- asreml::asreml(AverageFruitSize ~ Variety, random = ~ Replicate,
+#                         residual = ~ id(Plot), data = exercise3, trace = FALSE)
+# exercise8.asr <- asreml::asreml(Yield ~ SeedingRate, random = ~ Block,
+#                         residual = ~ id(Plot), data = exercise4, trace = FALSE)
+# exercise9.asr <- asreml::asreml(EarInfect ~ Treatment,
+#                         random = ~ row + col,
+#                         residual = ~ id(plots),
+#                         data = exercise5, trace = FALSE)
+# exercise10.asr <- asreml::asreml(SugarYield ~ Treatment,
+#                          random = ~ row + col,
+#                          residual = ~ plots,
+#                          data = exercise6, trace = FALSE)
+# exercise11.asr <- asreml::asreml(Yield ~ Genotype + Nitrogen + Genotype:Nitrogen,
+#                          random = ~ Block + Block:WholePlot,
+#                          residual= ~ units,
+#                          data = exercise11, trace = FALSE)
+# exercise12.asr <- asreml::asreml(Yield ~ Variety * Irrigation,
+#                          random = ~ Block + Block:WholePlot,
+#                          residual = ~ units,
+#                          data = exercise12, trace = FALSE)
+# exercise13.asr <- asreml::asreml(Yield ~ Genotype + Nitrogen + Genotype:Nitrogen,
+#                          random = ~ Block + Block:WholePlot,
+#                          residual = ~ id(Column):ar1(Row),
+#                          data = exercise13, trace = FALSE)
+# exercise14.asr <- asreml::asreml(Yield ~ Genotype,
+#                          random = ~ Block,
+#                          residual = ~ id(Column):ar1(Row),
+#                          data = exercise14, trace = FALSE)
+# exercise15.asr <- asreml::asreml(loginf ~ Control + Season + Rate + Season:Rate,
+#                          residual = ~ ar1(col):id(row),
+#                          data = exercise15, trace = FALSE)
 
 test_that("example 1 works", {
     skip_on_cran()
-    example1.aov <- aov(RL ~ trt, data = example1)
     withr::local_options(scipen = 100)
     expect_snapshot_output(anova(example1.aov))
     pred1.out <- multiple_comparisons(example1.aov, classify = "trt")
@@ -11,13 +69,12 @@ test_that("example 1 works", {
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
-    vdiffr::expect_doppelganger(title = "example1resplot", resplot(example1.aov))
+    vdiffr::expect_doppelganger(title = "example1resplot", resplot(example1.aov), variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "example1autoplot", autoplot(pred1.out))
 })
 
 test_that("example 2 works", {
     skip_on_cran()
-    example2.aov <- aov(TuberLengthGrowth ~ trt, data = example2)
     expect_snapshot_output(anova(example2.aov))
     pred2.out <- multiple_comparisons(example2.aov, classify =  "trt", decimals = 4)
     expect_equal(pred2.out$predicted.value, c(11.15, 12.45, 14.02, 15.1, 16.11, 17.24, 17.83), tolerance = 0.001)
@@ -25,13 +82,12 @@ test_that("example 2 works", {
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
-    vdiffr::expect_doppelganger(title = "example2resplot", resplot(example2.aov))
+    vdiffr::expect_doppelganger(title = "example2resplot", resplot(example2.aov), variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "example2autoplot", autoplot(pred2.out))
 })
 
 test_that("example 3 works", {
     skip_on_cran()
-    example3.aov <- aov(Yield ~ Block + Variety, data = example3)
     expect_snapshot_output(anova(example3.aov))
     pred3.out <- multiple_comparisons(example3.aov, classify = "Variety")
     expect_equal(pred3.out$predicted.value, c(1.68, 2.68, 4.72, 4.85))
@@ -39,13 +95,12 @@ test_that("example 3 works", {
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
-    vdiffr::expect_doppelganger(title = "example3resplot", resplot(example3.aov))
+    vdiffr::expect_doppelganger(title = "example3resplot", resplot(example3.aov), variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "example3autoplot", autoplot(pred3.out))
 })
 
 test_that("example 4 works", {
     skip_on_cran()
-    example4.aov <- aov(DM ~ row + col + trt, data = example4)
     expect_snapshot_output(anova(example4.aov))
     pred4.out <- multiple_comparisons(example4.aov, classify = "trt")
     expect_equal(pred4.out$predicted.value, c(1707.94, 1802.7, 2053.73, 2200.08))
@@ -53,16 +108,13 @@ test_that("example 4 works", {
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
-    vdiffr::expect_doppelganger(title = "example4resplot", resplot(example4.aov))
+    vdiffr::expect_doppelganger(title = "example4resplot", resplot(example4.aov), variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "example4autoplot", autoplot(pred4.out))
 })
 
 test_that("example 3 LMM works", {
     skip_on_cran()
     skip_if_not_installed("asreml")
-    library(asreml, quietly = T)
-    example3.asr <- asreml(Yield ~ Variety, random = ~ Block, residual = ~ id(Plot),
-                           data = example3, trace = FALSE)
     expect_snapshot_output(print.data.frame(asreml::wald(example3.asr, denDF = "default")$Wald))
     pred3asr.out <- multiple_comparisons(example3.asr, classify = "Variety")
     expect_equal(pred3asr.out$predicted.value, c(1.68, 2.68, 4.72, 4.85))
@@ -70,16 +122,13 @@ test_that("example 3 LMM works", {
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
-    vdiffr::expect_doppelganger(title = "example3lmmresplot", resplot(example3.asr))
+    vdiffr::expect_doppelganger(title = "example3lmmresplot", resplot(example3.asr), variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "example3lmmautoplot", autoplot(pred3asr.out))
 })
 
 test_that("example 4 LMM works", {
     skip_on_cran()
     skip_if_not_installed("asreml")
-    example4.asr <- asreml(DM ~ trt, random = ~ row + col,
-                           residual = ~ id(plots), data = example4,
-                           trace = FALSE)
     # example4.asr <- update(example4.asr)
     expect_snapshot_output(print.data.frame(asreml::wald(example4.asr, denDF = "default")$Wald))
     pred4lmm.out <- multiple_comparisons(example4.asr, classify = "trt")
@@ -88,16 +137,13 @@ test_that("example 4 LMM works", {
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
-    vdiffr::expect_doppelganger(title = "example4lmmresplot", resplot(example4.asr))
+    vdiffr::expect_doppelganger(title = "example4lmmresplot", resplot(example4.asr), variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "example4lmmautoplot", autoplot(pred4lmm.out))
 })
 
 test_that("example 5 works", {
     skip_on_cran()
     skip_if_not_installed("asreml")
-    example5.asr <- asreml(Yield ~ Genotype + Fungicide + Genotype:Fungicide,
-                           random = ~ Block + Block:WholePlot, residual = ~ units,
-                           data = example5, trace = FALSE)
     expect_snapshot_output(print.data.frame(asreml::wald(example5.asr, denDF = "default")$Wald))
     skip_on_ci()
     skip_on_covr()
@@ -107,7 +153,7 @@ test_that("example 5 works", {
     expect_snapshot_output(pred5.out1)
     pred5.out2 <- multiple_comparisons(example5.asr, classify = "Fungicide")
     expect_snapshot_output(pred5.out2)
-    vdiffr::expect_doppelganger(title = "example5lmmresplot", resplot(example5.asr))
+    vdiffr::expect_doppelganger(title = "example5lmmresplot", resplot(example5.asr), variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "example5lmmautoplot1", autoplot(pred5.out1))
     vdiffr::expect_doppelganger(title = "example5lmmautoplot2", autoplot(pred5.out2))
 })
@@ -115,9 +161,6 @@ test_that("example 5 works", {
 test_that("example 6 works", {
     skip_on_cran()
     skip_if_not_installed("asreml")
-    example6.asr <- asreml(Yield ~ Treatment, random = ~ Block,
-                           residual = ~ id(Column):ar1(Row),
-                           data = example6, trace = FALSE)
     expect_snapshot_output(print.data.frame(asreml::wald(example6.asr, denDF = "default")$Wald))
     vg6 <- variogram(example6.asr)
     expect_snapshot_output(summary(example6.asr)$varcomp)
@@ -134,17 +177,14 @@ test_that("example 6 works", {
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
-    vdiffr::expect_doppelganger(title = "example6lmmresplot", resplot(example6.asr))
-    vdiffr::expect_doppelganger(title = "example6variogram", vg6)
+    vdiffr::expect_doppelganger(title = "example6lmmresplot", resplot(example6.asr), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "example6variogram", vg6, variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "example6lmmautoplot2", autoplot(pred6.out))
 })
 
 test_that("example 7 works", {
     skip_on_cran()
     skip_if_not_installed("asreml")
-    example7.asr <- asreml(Yield ~ Control + Herbicide + Rate + Herbicide:Rate,
-                           random = ~ Block,  residual = ~ id(Column):ar1(Row),
-                           data = example7, trace = FALSE)
     expect_snapshot_output(print.data.frame(asreml::wald(example7.asr, denDF = "default")$Wald))
     vg7 <- variogram(example7.asr)
     expect_snapshot_output(print(summary(example7.asr)$varcomp, digits = 2))
@@ -160,8 +200,8 @@ test_that("example 7 works", {
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
-    vdiffr::expect_doppelganger(title = "example7lmmresplot", resplot(example7.asr))
-    vdiffr::expect_doppelganger(title = "example7variogram", vg7)
+    vdiffr::expect_doppelganger(title = "example7lmmresplot", resplot(example7.asr), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "example7variogram", vg7, variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "example7lmmautoplot", autoplot(pred7.out))
 })
 
@@ -172,7 +212,6 @@ test_that("example 7 works", {
 
 test_that("exercise 1 works", {
     skip_on_cran()
-    exercise1.aov <- aov(Yield ~ Variety, data = exercise1)
     expect_snapshot_output(anova(exercise1.aov))
     pred1e.out <- multiple_comparisons(exercise1.aov, classify = "Variety", decimals = 5)
     expect_equal(pred1e.out$predicted.value, c(1.97333, 2.13000, 2.13000, 2.14000, 2.19333, 2.24000, 2.27000, 2.28333, 2.52667, 2.54000, 2.75000, 2.75333))
@@ -181,14 +220,13 @@ test_that("exercise 1 works", {
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
-    vdiffr::expect_doppelganger(title = "exercise1resplot", resplot(exercise1.aov))
+    vdiffr::expect_doppelganger(title = "exercise1resplot", resplot(exercise1.aov), variant = ggplot2_variant())
     skip_on_os("linux")
     vdiffr::expect_doppelganger(title = "exercise1autoplot", autoplot(pred1e.out))
 })
 
 test_that("exercise 2 works", {
     skip_on_cran()
-    exercise2.aov <- aov(Time ~ Treatment, data = exercise2)
     expect_snapshot_output(anova(exercise2.aov))
     pred2e.out <- multiple_comparisons(exercise2.aov, classify = "Treatment")
     pred2e.out$predicted.value <- round(pred2e.out$predicted.value, 1)
@@ -197,13 +235,12 @@ test_that("exercise 2 works", {
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
-    vdiffr::expect_doppelganger(title = "exercise2resplot", resplot(exercise2.aov))
+    vdiffr::expect_doppelganger(title = "exercise2resplot", resplot(exercise2.aov), variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "exercise2autoplot", autoplot(pred2e.out, rotation = 90))
 })
 
 test_that("exercise 3 works", {
     skip_on_cran()
-    exercise3.aov <- aov(AverageFruitSize ~ Replicate + Variety, data = exercise3)
     expect_snapshot_output(anova(exercise3.aov))
     pred3e.out <- multiple_comparisons(exercise3.aov, classify = "Variety")
     expect_equal(pred3e.out$predicted.value, c(2.84, 2.86, 3.08, 4.7, 4.78, 4.96, 8.88))
@@ -211,24 +248,22 @@ test_that("exercise 3 works", {
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
-    vdiffr::expect_doppelganger(title = "exercise3resplot", resplot(exercise3.aov))
+    vdiffr::expect_doppelganger(title = "exercise3resplot", resplot(exercise3.aov), variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "exercise3autoplot", autoplot(pred3e.out))
 })
 
 test_that("exercise 4 works", {
     skip_on_cran()
-    exercise4.aov <- aov(Yield ~ Block + SeedingRate, data = exercise4)
     expect_snapshot_output(anova(exercise4.aov))
     expect_equal(anova(exercise4.aov)$`Mean Sq`, c(0.64812028, 0.17470687, 0.13221151))
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
-    vdiffr::expect_doppelganger(title = "exercise4resplot", resplot(exercise4.aov))
+    vdiffr::expect_doppelganger(title = "exercise4resplot", resplot(exercise4.aov), variant = ggplot2_variant())
 })
 
 test_that("exercise 5 works", {
     skip_on_cran()
-    exercise5.aov <- aov(EarInfect ~ row + col + Treatment, data = exercise5)
     expect_snapshot_output(anova(exercise5.aov))
     pred5e.out <- multiple_comparisons(exercise5.aov, classify = "Treatment")
     expect_equal(pred5e.out$predicted.value, c(31.61, 35.98, 38.95, 43.52, 48.12))
@@ -236,13 +271,12 @@ test_that("exercise 5 works", {
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
-    vdiffr::expect_doppelganger(title = "exercise5resplot", resplot(exercise5.aov))
+    vdiffr::expect_doppelganger(title = "exercise5resplot", resplot(exercise5.aov), variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "exercise5autoplot", autoplot(pred5e.out))
 })
 
 test_that("exercise 6 works", {
     skip_on_cran()
-    exercise6.aov <- aov(SugarYield ~ row + col + Treatment, data = exercise6)
     expect_snapshot_output(anova(exercise6.aov))
     pred6e.out <- multiple_comparisons(exercise6.aov, classify = "Treatment")
     expect_equal(pred6e.out$predicted.value, c(16.01, 17.51, 21.40, 24.39))
@@ -250,15 +284,13 @@ test_that("exercise 6 works", {
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
-    vdiffr::expect_doppelganger(title = "exercise6resplot", resplot(exercise6.aov))
+    vdiffr::expect_doppelganger(title = "exercise6resplot", resplot(exercise6.aov), variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "exercise6autoplot", autoplot(pred6e.out))
 })
 
 test_that("exercise 7 works", {
     skip_on_cran()
     skip_if_not_installed("asreml")
-    exercise7.asr <- asreml::asreml(AverageFruitSize ~ Variety, random = ~ Replicate,
-                                    residual = ~ id(Plot), data = exercise3, trace = FALSE)
     expect_snapshot_output(print.data.frame(asreml::wald(exercise7.asr, denDF = "default")$Wald))
     pred7e.out <- multiple_comparisons(exercise7.asr, classify = "Variety")
     expect_equal(pred7e.out$predicted.value, c(2.84, 2.86, 3.08, 4.70, 4.78, 4.96, 8.88))
@@ -266,30 +298,24 @@ test_that("exercise 7 works", {
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
-    vdiffr::expect_doppelganger(title = "exercise7resplot", resplot(exercise7.asr))
+    vdiffr::expect_doppelganger(title = "exercise7resplot", resplot(exercise7.asr), variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "exercise7autoplot", autoplot(pred7e.out))
 })
 
 test_that("exercise 8 works", {
     skip_on_cran()
     skip_if_not_installed("asreml")
-    exercise8.asr <- asreml::asreml(Yield ~ SeedingRate, random = ~ Block,
-                                    residual = ~ id(Plot), data = exercise4, trace = FALSE)
     expect_equal(asreml::wald(exercise8.asr, denDF = "default")$Wald$Pr[2], 0.30758014, tolerance = 0.0001)
     expect_snapshot_output(print.data.frame(asreml::wald(exercise8.asr, denDF = "default")$Wald))
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
-    vdiffr::expect_doppelganger(title = "exercise8resplot", resplot(exercise8.asr))
+    vdiffr::expect_doppelganger(title = "exercise8resplot", resplot(exercise8.asr), variant = ggplot2_variant())
 })
 
 test_that("exercise 9 works", {
     skip_on_cran()
     skip_if_not_installed("asreml")
-    exercise9.asr <- suppressWarnings(asreml::asreml(EarInfect ~ Treatment,
-                                                     random = ~ row + col,
-                                                     residual = ~ id(plots),
-                                                     data = exercise5, trace = FALSE))
     expect_snapshot_output(print.data.frame(asreml::wald(exercise9.asr, denDF = "default")$Wald))
     pred9e.out <- multiple_comparisons(exercise9.asr, classify = "Treatment")
     expect_equal(pred9e.out$predicted.value, c(31.61, 35.98, 38.95, 43.52, 48.12))
@@ -297,17 +323,13 @@ test_that("exercise 9 works", {
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
-    vdiffr::expect_doppelganger(title = "exercise9resplot", resplot(exercise9.asr))
+    vdiffr::expect_doppelganger(title = "exercise9resplot", resplot(exercise9.asr), variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "exercise9autoplot", autoplot(pred9e.out))
 })
 
 test_that("exercise 10 works", {
     skip_on_cran()
     skip_if_not_installed("asreml")
-    exercise10.asr <- suppressWarnings(asreml::asreml(SugarYield ~ Treatment,
-                                                      random = ~ row + col,
-                                                      residual = ~ plots,
-                                                      data = exercise6, trace = FALSE))
     expect_snapshot_output(print.data.frame(asreml::wald(exercise10.asr, denDF = "default")$Wald))
     pred10e.out <- multiple_comparisons(exercise10.asr, classify = "Treatment")
     expect_equal(pred10e.out$predicted.value, c(16.01, 17.51, 21.40, 24.39))
@@ -315,17 +337,13 @@ test_that("exercise 10 works", {
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
-    vdiffr::expect_doppelganger(title = "exercise10resplot", resplot(exercise10.asr))
+    vdiffr::expect_doppelganger(title = "exercise10resplot", resplot(exercise10.asr), variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "exercise10autoplot", autoplot(pred10e.out))
 })
 
 test_that("exercise 11 works", {
     skip_on_cran()
     skip_if_not_installed("asreml")
-    exercise11.asr <- asreml::asreml(Yield ~ Genotype + Nitrogen + Genotype:Nitrogen,
-                                     random = ~ Block + Block:WholePlot,
-                                     residual= ~ units,
-                                     data = exercise11, trace = FALSE)
     expect_snapshot_output(print.data.frame(asreml::wald(exercise11.asr, denDF = "default")$Wald))
     pred11e.out1 <- multiple_comparisons(exercise11.asr, classify = "Genotype")
     expect_equal(pred11e.out1$predicted.value, c(97.68, 104.89, 109.35))
@@ -336,7 +354,7 @@ test_that("exercise 11 works", {
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
-    vdiffr::expect_doppelganger(title = "exercise11resplot", resplot(exercise11.asr))
+    vdiffr::expect_doppelganger(title = "exercise11resplot", resplot(exercise11.asr), variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "exercise11autoplot1", autoplot(pred11e.out1))
     vdiffr::expect_doppelganger(title = "exercise11autoplot2", autoplot(pred11e.out2))
 })
@@ -344,10 +362,6 @@ test_that("exercise 11 works", {
 test_that("exercise 12 works", {
     skip_on_cran()
     skip_if_not_installed("asreml")
-    exercise12.asr <- asreml::asreml(Yield ~ Variety * Irrigation,
-                                     random = ~ Block + Block:WholePlot,
-                                     residual = ~ units,
-                                     data = exercise12, trace = FALSE)
     expect_snapshot_output(print.data.frame(asreml::wald(exercise12.asr, denDF = "default")$Wald))
     pred12e.out <- multiple_comparisons(exercise12.asr, classify = "Variety:Irrigation")
     expect_equal(pred12e.out$predicted.value,
@@ -356,18 +370,13 @@ test_that("exercise 12 works", {
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
-    vdiffr::expect_doppelganger(title = "exercise12resplot", resplot(exercise12.asr))
+    vdiffr::expect_doppelganger(title = "exercise12resplot", resplot(exercise12.asr), variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "exercise12autoplot", autoplot(pred12e.out))
 })
 
 test_that("exercise 13 works", {
     skip_on_cran()
     skip_if_not_installed("asreml")
-    exercise13.asr <- suppressWarnings(asreml::asreml(Yield ~ Genotype + Nitrogen + Genotype:Nitrogen,
-                                                      random = ~ Block + Block:WholePlot,
-                                                      residual = ~ id(Column):ar1(Row),
-                                                      data = exercise13, trace = FALSE))
-
     expect_snapshot_output(print.data.frame(asreml::wald(exercise13.asr, denDF = "default")$Wald, digits = 3))
 
     logl.tab <- logl_test(model.obj = exercise13.asr,
@@ -384,21 +393,16 @@ test_that("exercise 13 works", {
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
-    vdiffr::expect_doppelganger(title = "exercise13resplot", resplot(exercise13.asr))
+    vdiffr::expect_doppelganger(title = "exercise13resplot", resplot(exercise13.asr), variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "exercise13autoplot1", autoplot(pred13e.out1))
     vdiffr::expect_doppelganger(title = "exercise13autoplot2", autoplot(pred13e.out2))
     # skip_on_os(c("windows", "mac"))
-    vdiffr::expect_doppelganger(title = "exercise13variogram", variogram(exercise13.asr))
+    vdiffr::expect_doppelganger(title = "exercise13variogram", variogram(exercise13.asr), variant = ggplot2_variant())
 })
 
 test_that("exercise 14 works", {
     skip_on_cran()
     skip_if_not_installed("asreml")
-    exercise14.asr <- suppressWarnings(asreml::asreml(Yield ~ Genotype,
-                                                      random = ~ Block,
-                                                      residual = ~ id(Column):ar1(Row),
-                                                      data = exercise14, trace = FALSE))
-
     expect_snapshot_output(print.data.frame(asreml::wald(exercise14.asr, denDF = "default")$Wald))
 
     logl.tab <- logl_test(model.obj = exercise14.asr,
@@ -419,19 +423,15 @@ test_that("exercise 14 works", {
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
-    vdiffr::expect_doppelganger(title = "exercise14resplot", resplot(exercise14.asr))
+    vdiffr::expect_doppelganger(title = "exercise14resplot", resplot(exercise14.asr), variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "exercise14autoplot", autoplot(pred14e.out))
     # skip_on_os(c("windows", "mac"))
-    vdiffr::expect_doppelganger(title = "exercise14variogram", variogram(exercise14.asr))
+    vdiffr::expect_doppelganger(title = "exercise14variogram", variogram(exercise14.asr), variant = ggplot2_variant())
 })
 
 test_that("exercise 15 works", {
     skip_on_cran()
     skip_if_not_installed("asreml")
-    exercise15.asr <- asreml::asreml(loginf ~ Control + Season + Rate + Season:Rate,
-                                     residual = ~ ar1(col):id(row),
-                                     data = exercise15, trace = FALSE)
-
     expect_snapshot_output(print.data.frame(asreml::wald(exercise15.asr, denDF = "default")$Wald))
 
     logl.tab <- logl_test(model.obj = exercise15.asr,
@@ -454,11 +454,11 @@ test_that("exercise 15 works", {
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
-    vdiffr::expect_doppelganger(title = "exercise15resplot", resplot(exercise15.asr))
+    vdiffr::expect_doppelganger(title = "exercise15resplot", resplot(exercise15.asr), variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "exercise15autoplot1", autoplot(pred15e.out1))
     vdiffr::expect_doppelganger(title = "exercise15autoplot2", autoplot(pred15e.out2))
     vdiffr::expect_doppelganger(title = "exercise15autoplot3", autoplot(pred15e.out3))
     # skip_on_os(c("windows", "mac"))
-    vdiffr::expect_doppelganger(title = "exercise15variogram", variogram(exercise15.asr))
+    vdiffr::expect_doppelganger(title = "exercise15variogram", variogram(exercise15.asr), variant = ggplot2_variant())
 })
 

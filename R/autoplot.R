@@ -59,16 +59,25 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1,
     yval <- ifelse("PredictedValue" %in% colnames(object), "PredictedValue", "predicted.value")
     yval <- rlang::ensym(yval)
 
+    # Calculate hjust based on axis rotation
+    hjust_value <- if (axis_rotation %% 360 == 90) {
+        1
+    } else if (axis_rotation %% 360 == 270 || axis_rotation %% 360 == -90) {
+        0
+    } else {
+        0.5
+    }
+
     plot <- ggplot2::ggplot(data = object, ggplot2::aes(x = {{ classify }})) +
         ggplot2::theme_bw() +
-        ggplot2::theme(axis.text.x = ggplot2::element_text(angle = axis_rotation, ...)) +
+        ggplot2::theme(axis.text.x = ggplot2::element_text(angle = axis_rotation, vjust = 0.5, hjust = hjust_value, ...)) +
         ggplot2::labs(x = "", y = paste0("Predicted ", ylab))
 
-    if(type == "point") {
+    if(tolower(type) == "point") {
         plot <- plot + ggplot2::geom_point(ggplot2::aes(y = {{ yval }}), colour = "black", shape = 16, size = 2) +
             ggplot2::geom_errorbar(aes(ymin = low, ymax = up), width = 0.2)
     }
-    else if(type %in% c("col", "column")) {
+    else if(tolower(type) %in% c("col", "column")) {
         plot <- plot + ggplot2::geom_col(ggplot2::aes(y = {{ yval }}), colour = "black", fill = "cornflowerblue", alpha = 0.75) +
             ggplot2::geom_errorbar(aes(ymin = low, ymax = up), width = 0.2)
     }

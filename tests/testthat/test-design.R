@@ -7,7 +7,8 @@ test_that("CRD designs are supported", {
     expect_equal(d1$seed, 42)
     expect_equal(d1$satab[4], "Residual                                16\n")
     expect_snapshot_output(d1$satab)
-    vdiffr::expect_doppelganger(title = "CRD plot produced", autoplot(d1))
+    vdiffr::expect_doppelganger(title = "CRD plot produced",
+                                autoplot(d1), variant = ggplot2_variant())
 })
 
 test_that("RCBD designs are supported", {
@@ -19,19 +20,21 @@ test_that("RCBD designs are supported", {
     expect_equal(d2$satab[3],
                  "Block stratum                           3\n")
     expect_snapshot_output(d2$satab)
-    vdiffr::expect_doppelganger(title = "RCBD plot produced", autoplot(d2))
+    vdiffr::expect_doppelganger(title = "RCBD plot produced",
+                                autoplot(d2), variant = ggplot2_variant())
 })
 
 test_that("RCBD with row-wise blocks are supported", {
     # RCBD with row-wise blocks
     d2.1 <- design("rcbd", treatments = LETTERS[1:6], reps = 4,
                    nrows = 4, ncols = 6, brows = 1, bcols = 6, seed = 42, quiet = TRUE)
-    
+
     expect_equal(names(d2.1), c("design", "plot.des", "satab", "seed"))
     expect_equal(d2.1$seed, 42)
     expect_equal(d2.1$design$block, factor(d2.1$design$row))
     expect_equal(d2.1$satab[6], "Residual                                15\n")
-    vdiffr::expect_doppelganger(title = "RCBD with row blocks", autoplot(d2.1))
+    vdiffr::expect_doppelganger(title = "RCBD with row blocks",
+                                autoplot(d2.1), variant = ggplot2_variant())
 
 })
 
@@ -42,7 +45,8 @@ test_that("RCBD with square blocks are supported", {
     expect_equal(names(d2.2), c("design", "plot.des", "satab", "seed"))
     expect_equal(d2.2$seed, 42)
     expect_equal(d2.2$satab[6], "Residual                                15\n")
-    vdiffr::expect_doppelganger(title = "RCBD with square blocks", autoplot(d2.2))
+    vdiffr::expect_doppelganger(title = "RCBD with square blocks",
+                                autoplot(d2.2), variant = ggplot2_variant())
 })
 
 test_that("LSD designs are supported", {
@@ -54,7 +58,8 @@ test_that("LSD designs are supported", {
     expect_equal(d3$satab[6],
                  "Residual                                6\n")
     expect_snapshot_output(d3$satab)
-    vdiffr::expect_doppelganger(title = "LSD plot produced", autoplot(d3))
+    vdiffr::expect_doppelganger(title = "LSD plot produced",
+                                autoplot(d3), variant = ggplot2_variant())
 })
 
 test_that("Split plot designs are supported", {
@@ -68,7 +73,8 @@ test_that("Split plot designs are supported", {
     expect_equal(d4$satab[11],
                  "         treatments:sub_treatments           3\n")
     expect_snapshot_output(d4$satab)
-    vdiffr::expect_doppelganger(title = "Split plot produced", autoplot(d4))
+    vdiffr::expect_doppelganger(title = "Split plot produced",
+                                autoplot(d4), variant = ggplot2_variant())
 })
 
 test_that("Split plot designs with names are supported", {
@@ -81,7 +87,8 @@ test_that("Split plot designs with names are supported", {
     expect_equal(d4.1$satab[11],
                  "         Water:N                             3\n")
     expect_snapshot_output(d4.1$satab)
-    vdiffr::expect_doppelganger(title = "Split plot with names", autoplot(d4.1))
+    vdiffr::expect_doppelganger(title = "Split plot with names",
+                                autoplot(d4.1), variant = ggplot2_variant())
 })
 
 test_that("Split plot designs with double row blocks are supported", {
@@ -92,7 +99,8 @@ test_that("Split plot designs with double row blocks are supported", {
     expect_equal(d4.2$satab[11],
                  "         treatments:sub_treatments           3\n")
     expect_equal(d4.2$seed, 42)
-    vdiffr::expect_doppelganger(title = "Split plot double row blocks", autoplot(d4.2))
+    vdiffr::expect_doppelganger(title = "Split plot double row blocks",
+                                autoplot(d4.2), variant = ggplot2_variant())
 })
 
 test_that("Split plot designs with ntrt == bcol are supported", {
@@ -103,7 +111,8 @@ test_that("Split plot designs with ntrt == bcol are supported", {
     expect_equal(d4.3$satab[11],
                  "         treatments:sub_treatments           3\n")
     expect_equal(d4.3$seed, 42)
-    vdiffr::expect_doppelganger(title = "Split plot ntrt == bcol", autoplot(d4.3))
+    vdiffr::expect_doppelganger(title = "Split plot ntrt == bcol",
+                                autoplot(d4.3), variant = ggplot2_variant())
 })
 
 test_that("Split plot designs with column-wise arrangement are supported", {
@@ -115,7 +124,8 @@ test_that("Split plot designs with column-wise arrangement are supported", {
     expect_equal(d4.4$satab[11],
                  "         treatments:sub_treatments           3\n")
     expect_equal(d4.4$seed, 42)
-    vdiffr::expect_doppelganger(title = "Split plot byrow = F", autoplot(d4.4))
+    vdiffr::expect_doppelganger(title = "Split plot byrow = F",
+                                autoplot(d4.4), variant = ggplot2_variant())
 })
 
 test_that("Crossed CRD designs are supported", {
@@ -128,7 +138,8 @@ test_that("Crossed CRD designs are supported", {
     expect_equal(d5$satab[5],
                  "A:B                                     2\n")
     expect_snapshot_output(d5$satab)
-    vdiffr::expect_doppelganger(title = "Factorial CRD plot no space sep", autoplot(d5))
+    vdiffr::expect_doppelganger(title = "Factorial CRD plot no space sep",
+                                autoplot(d5), variant = ggplot2_variant())
 
     # Crossed, CRD with renaming
     d5.1 <- design(type = "crossed:crd", treatments = c(3, 2),
@@ -140,7 +151,8 @@ test_that("Crossed CRD designs are supported", {
     expect_equal(d5.1$satab[5],
                  "N:Water                                 2\n")
     expect_snapshot_output(d5.1$satab)
-    vdiffr::expect_doppelganger(title = "Factorial CRD with names", autoplot(d5.1))
+    vdiffr::expect_doppelganger(title = "Factorial CRD with names",
+                                autoplot(d5.1), variant = ggplot2_variant())
 })
 
 test_that("Crossed RCBD designs are supported", {
@@ -153,7 +165,8 @@ test_that("Crossed RCBD designs are supported", {
     expect_equal(d6$satab[8],
                  "Residual                                10\n")
     expect_snapshot_output(d6$satab)
-    vdiffr::expect_doppelganger(title = "Factorial RCBD plot produced", autoplot(d6))
+    vdiffr::expect_doppelganger(title = "Factorial RCBD plot produced",
+                                autoplot(d6), variant = ggplot2_variant())
 })
 
 test_that("Crossed RCBD designs with row blocks are supported", {
@@ -163,7 +176,8 @@ test_that("Crossed RCBD designs with row blocks are supported", {
 
     expect_equal(d6.1$satab[8],
                  "Residual                                10\n")
-    vdiffr::expect_doppelganger(title = "Factorial RCBD plot with row blocks", autoplot(d6.1))
+    vdiffr::expect_doppelganger(title = "Factorial RCBD plot with row blocks",
+                                autoplot(d6.1), variant = ggplot2_variant())
 })
 
 test_that("Crossed RCBD designs with double row blocks are supported", {
@@ -173,7 +187,8 @@ test_that("Crossed RCBD designs with double row blocks are supported", {
 
     expect_equal(d6.2$satab[8],
                  "Residual                                10\n")
-    vdiffr::expect_doppelganger(title = "Factorial RCBD plot double row blocks", autoplot(d6.2))
+    vdiffr::expect_doppelganger(title = "Factorial RCBD plot double row blocks",
+                                autoplot(d6.2), variant = ggplot2_variant())
 })
 
 test_that("Crossed RCBD designs with double row blocks are supported", {
@@ -181,7 +196,8 @@ test_that("Crossed RCBD designs with double row blocks are supported", {
                    reps = 4, nrows = 6, ncols = 4, brows = 3, bcols = 2,
                    seed = 42, quiet = TRUE)
 
-    vdiffr::expect_doppelganger(title = "Factorial RCBD plot square blocks", autoplot(d6.3))
+    vdiffr::expect_doppelganger(title = "Factorial RCBD plot square blocks",
+                                autoplot(d6.3), variant = ggplot2_variant())
 })
 
 test_that("Crossed LSD designs are supported", {
@@ -194,7 +210,8 @@ test_that("Crossed LSD designs are supported", {
     expect_equal(d7$satab[3],
                  "Row                                     5\n")
     expect_snapshot_output(d7$satab)
-    vdiffr::expect_doppelganger(title = "Factorial LSD plot with sep", autoplot(d7))
+    vdiffr::expect_doppelganger(title = "Factorial LSD plot with sep",
+                                autoplot(d7), variant = ggplot2_variant())
 })
 
 test_that("Crossed LSD designs with names are supported", {
@@ -206,7 +223,8 @@ test_that("Crossed LSD designs with names are supported", {
     expect_equal(d7.1$seed, 42)
     expect_equal(d7.1$satab[3],
                  "Row                                     5\n")
-    vdiffr::expect_doppelganger(title = "Factorial LSD with names", autoplot(d7.1))
+    vdiffr::expect_doppelganger(title = "Factorial LSD with names",
+                                autoplot(d7.1), variant = ggplot2_variant())
 })
 
 test_that("Crossed LSD designs with names and separator are supported", {
@@ -219,7 +237,8 @@ test_that("Crossed LSD designs with names and separator are supported", {
     expect_equal(d7.2$seed, 42)
     expect_equal(d7.2$satab[3],
                  "Row                                     5\n")
-    vdiffr::expect_doppelganger(title = "Factorial LSD plot names and sep", autoplot(d7.2))
+    vdiffr::expect_doppelganger(title = "Factorial LSD plot names and sep",
+                                autoplot(d7.2), variant = ggplot2_variant())
 })
 
 test_that("Nested designs are supported", {
@@ -231,7 +250,8 @@ test_that("Nested designs are supported", {
     expect_equal(d8$satab[6],
                  "Residual                                30\n")
     expect_snapshot_output(d8$satab)
-    vdiffr::expect_doppelganger(title = "Nested LSD", autoplot(d8))
+    vdiffr::expect_doppelganger(title = "Nested LSD",
+                                autoplot(d8), variant = ggplot2_variant())
 })
 
 test_that("3 way factorial designs are possible", {
@@ -242,7 +262,8 @@ test_that("3 way factorial designs are possible", {
     expect_equal(d9$satab[6],
                  "A:B:C                                   1\n")
     expect_snapshot_output(d9$satab)
-    vdiffr::expect_doppelganger(title = "3 way factorial", autoplot(d9))
+    vdiffr::expect_doppelganger(title = "3 way factorial",
+                                autoplot(d9), variant = ggplot2_variant())
 
     d9.1 <- design(type = "crossed:crd", treatments = c(2, 2, 2), quiet = TRUE,
                    reps = 3, nrows = 6, ncols = 4, seed = 42,
@@ -252,7 +273,8 @@ test_that("3 way factorial designs are possible", {
     expect_equal(d9.1$satab[6],
                  "X:Y:Z                                   1\n")
     expect_snapshot_output(d9.1$satab)
-    vdiffr::expect_doppelganger(title = "3 way factorial with names", autoplot(d9.1))
+    vdiffr::expect_doppelganger(title = "3 way factorial with names",
+                                autoplot(d9.1), variant = ggplot2_variant())
 
     d9.2 <- design(type = "crossed:rcbd", treatments = c(2, 2, 2), quiet = TRUE,
                    reps = 3, nrows = 8, ncols = 3, brows = 8, bcols = 1, seed = 42,
@@ -262,7 +284,8 @@ test_that("3 way factorial designs are possible", {
     expect_equal(d9.2$satab[3],
                  "Block stratum                           2\n")
     expect_snapshot_output(d9.2$satab)
-    vdiffr::expect_doppelganger(title = "3 way rcbd factorial with names", autoplot(d9.2))
+    vdiffr::expect_doppelganger(title = "3 way rcbd factorial with names",
+                                autoplot(d9.2), variant = ggplot2_variant())
 })
 
 test_that("Adding names to 3 way factorial designs works", {
@@ -274,7 +297,8 @@ test_that("Adding names to 3 way factorial designs works", {
     expect_equal(d9.2$satab[3],
                  "Block stratum                           2\n")
     expect_snapshot_output(d9.2$satab)
-    vdiffr::expect_doppelganger(title = "3 way rcbd factorial with names", autoplot(d9.2))
+    vdiffr::expect_doppelganger(title = "3 way rcbd factorial with names",
+                                autoplot(d9.2), variant = ggplot2_variant())
 })
 
 test_that("seed options work", {
@@ -377,7 +401,8 @@ test_that("split plot allows a character vector for factor names", {
     expect_equal(d11$satab[11],
                  "         Water:Nitrogen                      3\n")
     expect_snapshot_output(d11$satab)
-    vdiffr::expect_doppelganger(title = "Split plot with vector names", autoplot(d11))
+    vdiffr::expect_doppelganger(title = "Split plot with vector names",
+                                autoplot(d11), variant = ggplot2_variant())
 })
 
 test_that("split plot produces warning when incorrect number of treatment labels given", {
@@ -516,7 +541,7 @@ test_that("Output is produced when quiet = FALSE", {
                                 nrows = 11, ncols = 4, quiet = FALSE),
                   "Source of Variation                     df")
     expect_snapshot(cat(des$satab))
-    vdiffr::expect_doppelganger(title = "Plot output", des$plot.des)
+    vdiffr::expect_doppelganger(title = "Plot output", des$plot.des, variant = ggplot2_variant())
 })
 
 test_that("designs have a class of 'design'", {
@@ -549,25 +574,29 @@ test_that("plot = FALSE does not produce a plot, but autoplot does", {
 
     expect_equal(names(d1), c("design", "satab", "seed"))
     expect_null(d1$plot.des)
-    vdiffr::expect_doppelganger(title = "Plot produced with plot = FALSE", autoplot(d1))
+    vdiffr::expect_doppelganger(title = "Plot produced with plot = FALSE",
+                                autoplot(d1), variant = ggplot2_variant())
 })
 
 test_that("autoplot responds to margin argument", {
     d1 <- design(type = "crd", treatments = c(1, 5, 10, 20),
                  reps = 5, nrows = 4, ncols = 5, seed = 42, quiet = TRUE)
-    vdiffr::expect_doppelganger(title = "autoplot with margin", autoplot(d1, margin = TRUE))
+    vdiffr::expect_doppelganger(title = "autoplot with margin",
+                                autoplot(d1, margin = TRUE), variant = ggplot2_variant())
 })
 
 test_that("autoplot responds to rotation argument", {
     d1 <- design(type = "crd", treatments = c(1, 5, 10, 20),
                  reps = 5, nrows = 4, ncols = 5, seed = 42, quiet = TRUE)
-    vdiffr::expect_doppelganger(title = "autoplot with rotation", autoplot(d1, rotation = 90))
+    vdiffr::expect_doppelganger(title = "autoplot with rotation",
+                                autoplot(d1, rotation = 90), variant = ggplot2_variant())
 })
 
 test_that("autoplot responds to size argument", {
     d1 <- design(type = "crd", treatments = c(1, 5, 10, 20),
                  reps = 5, nrows = 4, ncols = 5, seed = 42, quiet = TRUE)
-    vdiffr::expect_doppelganger(title = "autoplot with size", autoplot(d1, size = 8))
+    vdiffr::expect_doppelganger(title = "autoplot with size",
+                                autoplot(d1, size = 8), variant = ggplot2_variant())
 })
 
 test_that("Colour blind friendly plots work", {
@@ -583,8 +612,10 @@ test_that("Colour blind friendly plots work", {
 
     expect_snapshot_output(d1$satab)
     expect_snapshot_output(d2$satab)
-    vdiffr::expect_doppelganger(title = "CRD colour blind", autoplot(d1, palette = "colour blind"))
-    vdiffr::expect_doppelganger(title = "RCBD colour blind", autoplot(d2, palette = "cb"))
+    vdiffr::expect_doppelganger(title = "CRD colour blind",
+                                autoplot(d1, palette = "colour blind"), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "RCBD colour blind",
+                                autoplot(d2, palette = "cb"), variant = ggplot2_variant())
 })
 
 test_that("Colour blind friendly viridis", {
@@ -598,8 +629,10 @@ test_that("Colour blind friendly viridis", {
                  seed = 42, quiet = TRUE)
 
 
-    vdiffr::expect_doppelganger(title = "CRD colour blind viridis", autoplot(d1, palette = "viridis"))
-    vdiffr::expect_doppelganger(title = "RCBD colour blind viridis", autoplot(d2, palette = "viridis"))
+    vdiffr::expect_doppelganger(title = "CRD colour blind viridis",
+                                autoplot(d1, palette = "viridis"), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "RCBD colour blind viridis",
+                                autoplot(d2, palette = "viridis"), variant = ggplot2_variant())
 })
 
 test_that("Colour blind friendly magma", {
@@ -613,8 +646,10 @@ test_that("Colour blind friendly magma", {
                  seed = 42, quiet = TRUE)
 
 
-    vdiffr::expect_doppelganger(title = "CRD colour blind magma", autoplot(d1, palette = "magma"))
-    vdiffr::expect_doppelganger(title = "RCBD colour blind magma", autoplot(d2, palette = "magma"))
+    vdiffr::expect_doppelganger(title = "CRD colour blind magma",
+                                autoplot(d1, palette = "magma"), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "RCBD colour blind magma",
+                                autoplot(d2, palette = "magma"), variant = ggplot2_variant())
 })
 
 test_that("Colour blind friendly inferno", {
@@ -628,8 +663,10 @@ test_that("Colour blind friendly inferno", {
                  seed = 42, quiet = TRUE)
 
 
-    vdiffr::expect_doppelganger(title = "CRD colour blind inferno", autoplot(d1, palette = "inferno"))
-    vdiffr::expect_doppelganger(title = "RCBD colour blind inferno", autoplot(d2, palette = "inferno"))
+    vdiffr::expect_doppelganger(title = "CRD colour blind inferno",
+                                autoplot(d1, palette = "inferno"), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "RCBD colour blind inferno",
+                                autoplot(d2, palette = "inferno"), variant = ggplot2_variant())
 })
 
 test_that("Colour blind friendly plasma", {
@@ -643,8 +680,10 @@ test_that("Colour blind friendly plasma", {
                  seed = 42, quiet = TRUE)
 
 
-    vdiffr::expect_doppelganger(title = "CRD colour blind plasma", autoplot(d1, palette = "plasma"))
-    vdiffr::expect_doppelganger(title = "RCBD colour blind plasma", autoplot(d2, palette = "plasma"))
+    vdiffr::expect_doppelganger(title = "CRD colour blind plasma",
+                                autoplot(d1, palette = "plasma"), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "RCBD colour blind plasma",
+                                autoplot(d2, palette = "plasma"), variant = ggplot2_variant())
 })
 
 test_that("Colour blind friendly cividis", {
@@ -658,8 +697,10 @@ test_that("Colour blind friendly cividis", {
                  seed = 42, quiet = TRUE)
 
 
-    vdiffr::expect_doppelganger(title = "CRD colour blind cividis", autoplot(d1, palette = "cividis"))
-    vdiffr::expect_doppelganger(title = "RCBD colour blind cividis", autoplot(d2, palette = "cividis"))
+    vdiffr::expect_doppelganger(title = "CRD colour blind cividis",
+                                autoplot(d1, palette = "cividis"), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "RCBD colour blind cividis",
+                                autoplot(d2, palette = "cividis"), variant = ggplot2_variant())
 })
 
 test_that("Various colour blind spellings and options", {
@@ -672,20 +713,32 @@ test_that("Various colour blind spellings and options", {
                  nrows = 11, ncols = 4, brows = 11, bcols = 1,
                  seed = 42, quiet = TRUE)
 
-    vdiffr::expect_doppelganger(title = "CRD colour blind option1", autoplot(d1, palette = "colour-blind"))
-    vdiffr::expect_doppelganger(title = "CRD colour blind option2", autoplot(d1, palette = "colour blind"))
-    vdiffr::expect_doppelganger(title = "CRD colour blind option3", autoplot(d1, palette = "colour_blind"))
-    vdiffr::expect_doppelganger(title = "CRD colour blind option4", autoplot(d1, palette = "colour.blind"))
-    vdiffr::expect_doppelganger(title = "CRD colour blind option5", autoplot(d1, palette = "colourblind"))
+    vdiffr::expect_doppelganger(title = "CRD colour blind option1",
+                                autoplot(d1, palette = "colour-blind"), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "CRD colour blind option2",
+                                autoplot(d1, palette = "colour blind"), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "CRD colour blind option3",
+                                autoplot(d1, palette = "colour_blind"), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "CRD colour blind option4",
+                                autoplot(d1, palette = "colour.blind"), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "CRD colour blind option5",
+                                autoplot(d1, palette = "colourblind"), variant = ggplot2_variant())
 
-    vdiffr::expect_doppelganger(title = "CRD color blind option1", autoplot(d1, palette = "color-blind"))
-    vdiffr::expect_doppelganger(title = "CRD color blind option2", autoplot(d1, palette = "color blind"))
-    vdiffr::expect_doppelganger(title = "CRD color blind option3", autoplot(d1, palette = "color_blind"))
-    vdiffr::expect_doppelganger(title = "CRD color blind option4", autoplot(d1, palette = "color.blind"))
-    vdiffr::expect_doppelganger(title = "CRD color blind option5", autoplot(d1, palette = "colorblind"))
+    vdiffr::expect_doppelganger(title = "CRD color blind option1",
+                                autoplot(d1, palette = "color-blind"), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "CRD color blind option2",
+                                autoplot(d1, palette = "color blind"), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "CRD color blind option3",
+                                autoplot(d1, palette = "color_blind"), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "CRD color blind option4",
+                                autoplot(d1, palette = "color.blind"), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "CRD color blind option5",
+                                autoplot(d1, palette = "colorblind"), variant = ggplot2_variant())
 
-    vdiffr::expect_doppelganger(title = "RCBD colour blind option1", autoplot(d2, palette = "colour-blind"))
-    vdiffr::expect_doppelganger(title = "RCBD color blind option1", autoplot(d2, palette = "color-blind"))
+    vdiffr::expect_doppelganger(title = "RCBD colour blind option1",
+                                autoplot(d2, palette = "colour-blind"), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "RCBD color blind option1",
+                                autoplot(d2, palette = "color-blind"), variant = ggplot2_variant())
 
 })
 
@@ -700,12 +753,18 @@ test_that("Alternative palettes work", {
                  seed = 42, quiet = TRUE)
 
 
-    vdiffr::expect_doppelganger(title = "CRD RdBu palette", autoplot(d1, palette = "RdBu"))
-    vdiffr::expect_doppelganger(title = "CRD Set3 palette", autoplot(d1, palette = "Set3"))
-    vdiffr::expect_doppelganger(title = "CRD Paired palette", autoplot(d1, palette = "Paired"))
-    vdiffr::expect_doppelganger(title = "RCBD RdBu palette", autoplot(d2, palette = "RdBu"))
-    vdiffr::expect_doppelganger(title = "RCBD Set3 palette", autoplot(d2, palette = "Set3"))
-    vdiffr::expect_doppelganger(title = "RCBD Paired palette", autoplot(d2, palette = "Paired"))
+    vdiffr::expect_doppelganger(title = "CRD RdBu palette",
+                                autoplot(d1, palette = "RdBu"), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "CRD Set3 palette",
+                                autoplot(d1, palette = "Set3"), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "CRD Paired palette",
+                                autoplot(d1, palette = "Paired"), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "RCBD RdBu palette",
+                                autoplot(d2, palette = "RdBu"), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "RCBD Set3 palette",
+                                autoplot(d2, palette = "Set3"), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "RCBD Paired palette",
+                                autoplot(d2, palette = "Paired"), variant = ggplot2_variant())
 })
 
 test_that("Users can provide custom colours for the palette argument", {
@@ -713,7 +772,13 @@ test_that("Users can provide custom colours for the palette argument", {
     d1 <- design("crd", treatments = LETTERS[1:5], reps = 4,
                  nrows = 5, ncols = 4, seed = 42, quiet = TRUE)
 
-    vdiffr::expect_doppelganger(title = "Custom palette", autoplot(d1, palette = c("red", "blue", "orange", "darkgreen", "purple")))
+    vdiffr::expect_doppelganger(title = "Custom palette",
+                                autoplot(d1, palette = c("red",
+                                                         "blue",
+                                                         "orange",
+                                                         "darkgreen",
+                                                         "purple")),
+                                variant = ggplot2_variant())
 })
 
 test_that("Incorrect number of custom colours for palette results in error", {
@@ -757,11 +822,16 @@ test_that("Adding buffers to plots works", {
 
     expect_equal(length(unique(d1$design$row)), 23)
     expect_equal(length(unique(d1$design$col)), 4)
-    vdiffr::expect_doppelganger(title = "Row buffers", autoplot(d1))
-    vdiffr::expect_doppelganger(title = "Column buffers", autoplot(d2))
-    vdiffr::expect_doppelganger(title = "Edge buffers", autoplot(d3))
-    vdiffr::expect_doppelganger(title = "Double row buffers", autoplot(d4))
-    vdiffr::expect_doppelganger(title = "Double Column buffers", autoplot(d5))
+    vdiffr::expect_doppelganger(title = "Row buffers",
+                                autoplot(d1), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "Column buffers",
+                                autoplot(d2), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "Edge buffers",
+                                autoplot(d3), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "Double row buffers",
+                                autoplot(d4), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "Double Column buffers",
+                                autoplot(d5), variant = ggplot2_variant())
 })
 
 test_that("Adding buffers to plots works for RCBD", {
@@ -786,11 +856,16 @@ test_that("Adding buffers to plots works for RCBD", {
 
     expect_equal(length(unique(d2$design$row)), 11)
     expect_equal(length(unique(d2$design$col)), 9)
-    vdiffr::expect_doppelganger(title = "Row buffers RCBD", autoplot(d1))
-    vdiffr::expect_doppelganger(title = "Column buffers RCBD", autoplot(d2))
-    vdiffr::expect_doppelganger(title = "Edge buffers RCBD", autoplot(d3))
-    vdiffr::expect_doppelganger(title = "Double row buffers RCBD", autoplot(d4))
-    vdiffr::expect_doppelganger(title = "Double Column buffers RCBD", autoplot(d5))
+    vdiffr::expect_doppelganger(title = "Row buffers RCBD",
+                                autoplot(d1), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "Column buffers RCBD",
+                                autoplot(d2), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "Edge buffers RCBD",
+                                autoplot(d3), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "Double row buffers RCBD",
+                                autoplot(d4), variant = ggplot2_variant())
+    vdiffr::expect_doppelganger(title = "Double Column buffers RCBD",
+                                autoplot(d5), variant = ggplot2_variant())
 })
 
 test_that("Invalid buffer options produce an error", {
@@ -856,9 +931,11 @@ test_that("Ability to provide arbitrary column names for plotting works", {
     des$treat <- sample(rep(LETTERS[1:4], times = 5))
     class(des) <- c("design", class(des))
     vdiffr::expect_doppelganger(title = "Quoted column names without blocks",
-                                autoplot(des, row = "ro", column = "co", treatments = "treat"))
+                                autoplot(des, row = "ro", column = "co", treatments = "treat"),
+                                variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "Quoted column names with blocks",
-                                autoplot(des, row = "ro", column = "co", treatments = "treat"))
+                                autoplot(des, row = "ro", column = "co", treatments = "treat"),
+                                variant = ggplot2_variant())
 })
 
 test_that("Arbitrary unquoted column names for plotting works", {
@@ -868,8 +945,10 @@ test_that("Arbitrary unquoted column names for plotting works", {
     des$treat <- sample(rep(LETTERS[1:5], times = 4))
     class(des) <- c("design", class(des))
     vdiffr::expect_doppelganger(title = "NSE of column names without blocks",
-                                autoplot(des, row = ro, column = co, treatments = treat))
+                                autoplot(des, row = ro, column = co, treatments = treat),
+                                variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "NSE of column names with blocks",
-                                autoplot(des, row = ro, column = co, block = bl, treatments = treat))
+                                autoplot(des, row = ro, column = co, block = bl, treatments = treat),
+                                variant = ggplot2_variant())
 })
 

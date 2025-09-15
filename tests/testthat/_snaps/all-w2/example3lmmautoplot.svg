@@ -74,10 +74,10 @@
 <polyline points='289.47,547.85 289.47,545.11 ' style='stroke-width: 1.07; stroke: #333333; stroke-linecap: butt;' />
 <polyline points='452.95,547.85 452.95,545.11 ' style='stroke-width: 1.07; stroke: #333333; stroke-linecap: butt;' />
 <polyline points='616.43,547.85 616.43,545.11 ' style='stroke-width: 1.07; stroke: #333333; stroke-linecap: butt;' />
-<text x='125.99' y='556.10' text-anchor='middle' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='34.73px' lengthAdjust='spacingAndGlyphs'>Parafield</text>
-<text x='289.47' y='556.10' text-anchor='middle' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='24.96px' lengthAdjust='spacingAndGlyphs'>Kaspa</text>
-<text x='452.95' y='556.10' text-anchor='middle' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='28.86px' lengthAdjust='spacingAndGlyphs'>Yarrum</text>
-<text x='616.43' y='556.10' text-anchor='middle' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='23.48px' lengthAdjust='spacingAndGlyphs'>Excell</text>
+<text x='125.99' y='557.01' text-anchor='middle' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='34.73px' lengthAdjust='spacingAndGlyphs'>Parafield</text>
+<text x='289.47' y='557.01' text-anchor='middle' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='24.96px' lengthAdjust='spacingAndGlyphs'>Kaspa</text>
+<text x='452.95' y='557.01' text-anchor='middle' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='28.86px' lengthAdjust='spacingAndGlyphs'>Yarrum</text>
+<text x='616.43' y='557.01' text-anchor='middle' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='23.48px' lengthAdjust='spacingAndGlyphs'>Excell</text>
 <text transform='translate(13.05,283.95) rotate(-90)' text-anchor='middle' style='font-size: 11.00px; font-family: sans;' textLength='73.99px' lengthAdjust='spacingAndGlyphs'>Predicted Yield</text>
 <text x='27.90' y='14.56' style='font-size: 13.20px; font-family: sans;' textLength='129.15px' lengthAdjust='spacingAndGlyphs'>example3lmmautoplot</text>
 </g>

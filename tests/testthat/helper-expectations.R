@@ -1,7 +1,7 @@
 equivalent_ggplot2 <- function(x, y) {
     # Create temporary files that will be automatically cleaned up when the function exits
     # Determine file extension based on svglite availability
-    fileext <- ifelse(.check_package_available("svglite"), ".svg", ".png")
+    fileext <- ifelse(rlang::is_installed("svglite"), ".svg", ".png")
     tmp1 <- withr::local_tempfile(fileext = fileext)
     tmp2 <- withr::local_tempfile(fileext = fileext)
 
@@ -36,4 +36,14 @@ logit <- function (p, percents = range.p[2] > 1, adjust)
                       1 - a, ")", sep = ""))
     a <- 1 - 2 * a
     log((0.5 + a * (p - 0.5))/(1 - (0.5 + a * (p - 0.5))))
+}
+
+
+# Helper function for ggplot2 version variants in visual tests
+ggplot2_variant <- function() {
+  if (packageVersion("ggplot2") <= "3.5.2") {
+    "ggplot2-old"
+  } else {
+    "ggplot2-new"
+  }
 }

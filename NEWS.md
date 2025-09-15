@@ -1,9 +1,16 @@
+# biometryassist 1.3.2
+
+## Bug Fixes
+
+- Updates to tests and histograms for compatibility with upcoming ggplot2 release.
+- Fixed a bug where standard errors that were too small would produce plots with missing upper or lower confidence limits due to rounding the SE to zero. (#119)
+- Fixed a bug that made rotated axis labels overlap the plot area (#113)
+
 # biometryassist 1.3.1
 
 ## Bug Fixes
 
-- Update to ensure compatability with upcoming ggplot2 release (#111)
-
+- Update to ensure compatibility with upcoming ggplot2 release (#111)
 
 # biometryassist 1.3.0
 

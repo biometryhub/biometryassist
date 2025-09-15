@@ -12,8 +12,7 @@ test_that("get_r_os returns correct structure and values", {
     expect_equal(result$os, expected_os)
     expect_match(result$ver, "\\d{2}")  # Should be something like "43" for R 4.3
     expect_match(result$os_ver, "^(win-|mac-|linux-)(arm-)?[0-9]{2}$")
-    skip_on_os(c("windows", "linux"))  # Skip ARM check on Windows and Linux
-    expect_true(result$arm)  # Windows doesn't have ARM distinction in this context
+    expect_equal(result$arm, sys_info[["machine"]] == "arm64")
 })
 
 test_that("find_existing_package works correctly", {
@@ -173,7 +172,7 @@ test_that("newer_version returns FALSE if installed version is up-to-date", {
     )
     mockery::stub(newer_version, "get_version_table", function() fake_versions)
     mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
-    mockery::stub(newer_version, ".check_package_available", function(pkg) TRUE)
+    mockery::stub(newer_version, "rlang::is_installed", function(pkg) TRUE)
     mockery::stub(newer_version, "utils::packageDescription", function(pkg) list(Packaged = "2023-01-10", Version = "4.2.0"))
     expect_false(newer_version())
 })
@@ -186,7 +185,7 @@ test_that("newer_version returns TRUE if online version is newer and published >
     colnames(fake_versions)[5] <- "Date published"
     mockery::stub(newer_version, "get_version_table", function() fake_versions)
     mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
-    mockery::stub(newer_version, ".check_package_available", function(pkg) TRUE)
+    mockery::stub(newer_version, "rlang::is_installed", function(pkg) TRUE)
     mockery::stub(newer_version, "utils::packageDescription", function(pkg) list(
         Packaged = "2023-01-01", Version = "4.2.0"
     ))
@@ -201,7 +200,7 @@ test_that("newer_version returns TRUE if asreml is not installed", {
     colnames(fake_versions)[5] <- "Date published"
     mockery::stub(newer_version, "get_version_table", function() fake_versions)
     mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
-    mockery::stub(newer_version, ".check_package_available", function(pkg) FALSE)
+    mockery::stub(newer_version, "rlang::is_installed", function(pkg) FALSE)
     expect_true(newer_version())
 })
 
@@ -213,7 +212,7 @@ test_that("newer_version handles missing Packaged or Version gracefully", {
     colnames(fake_versions)[5] <- "Date published"
     mockery::stub(newer_version, "get_version_table", function() fake_versions)
     mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
-    mockery::stub(newer_version, ".check_package_available", function(pkg) TRUE)
+    mockery::stub(newer_version, "rlang::is_installed", function(pkg) TRUE)
     mockery::stub(newer_version, "utils::packageDescription", function(pkg) list(
         Packaged = NULL, Version = NULL
     ))
@@ -231,7 +230,7 @@ test_that("install_asreml handles no internet connection", {
 
 test_that("install_asreml early return when up-to-date", {
     skip_on_cran()
-    mockery::stub(install_asreml, ".check_package_available", function(pkg) TRUE)
+    mockery::stub(install_asreml, "rlang::is_installed", function(pkg) TRUE)
     mockery::stub(install_asreml, "newer_version", function() FALSE)
     mockery::stub(install_asreml, "has_internet", function() TRUE)
     expect_message(
@@ -369,7 +368,7 @@ test_that("install_asreml verbose parameter validation and messaging", {
     skip_on_cran()
 
     # Test that verbose = "verbose" produces debug messages
-    mockery::stub(install_asreml, ".check_package_available", function(pkg) TRUE)
+    mockery::stub(install_asreml, "rlang::is_installed", function(pkg) TRUE)
     mockery::stub(install_asreml, "newer_version", function() FALSE)
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
 
@@ -393,7 +392,7 @@ test_that("install_asreml verbose parameter validation and messaging", {
 test_that("verbose messaging works correctly with different quiet settings", {
     skip_on_cran()
 
-    mockery::stub(install_asreml, ".check_package_available", function(pkg) TRUE)
+    mockery::stub(install_asreml, "rlang::is_installed", function(pkg) TRUE)
     mockery::stub(install_asreml, "newer_version", function() FALSE)
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
 
@@ -510,7 +509,7 @@ test_that("install_asreml_package verbose parameter works", {
     on.exit(unlink(temp_file))
 
     mockery::stub(install_asreml_package, "install.packages", function(...) {})
-    mockery::stub(install_asreml_package, ".check_package_available", function(...) TRUE)
+    mockery::stub(install_asreml_package, "rlang::is_installed", function(...) TRUE)
 
     # Test verbose = TRUE produces debug messages
     expect_message(
@@ -621,7 +620,7 @@ test_that("manage_file verbose parameter works", {
 test_that("verbose debugging shows OS detection details", {
     skip_on_cran()
 
-    mockery::stub(install_asreml, ".check_package_available", function(pkg) FALSE)
+    mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
     mockery::stub(install_asreml, "newer_version", function() FALSE)
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
     mockery::stub(install_asreml, "find_existing_package", function() "/tmp/asreml.zip")
@@ -682,7 +681,7 @@ test_that("install_asreml verbose mode shows version check details", {
     skip_on_cran()
 
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
-    mockery::stub(install_asreml, ".check_package_available", function(pkg) FALSE)
+    mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
     mockery::stub(install_asreml, "newer_version", function() TRUE)
     mockery::stub(install_asreml, "find_existing_package", function() NULL)
     mockery::stub(install_asreml, "download_asreml_package", function(...) "/tmp/asreml.zip")
@@ -703,4 +702,293 @@ test_that("install_asreml verbose mode shows version check details", {
             "\\[DEBUG\\] Newer version available: TRUE"),
         "There was a problem with installation and ASReml-R was not successfully installed\\."
     )
+})
+
+test_that("install_asreml calls create_mac_folder on macOS", {
+    skip_on_cran()
+
+    mac_folder_called <- FALSE
+    # Mock all the dependencies to get to the macOS check
+    mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
+    mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
+    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "get_r_os", function() list(os = "mac", ver = "44", arm = FALSE, os_ver = "mac-44"))
+    mockery::stub(install_asreml, "create_mac_folder", function() {
+        mac_folder_called <<- TRUE
+        TRUE
+    })
+    mockery::stub(install_asreml, "find_existing_package", function() "/tmp/asreml.zip")
+    mockery::stub(install_asreml, "install_dependencies", function(...) {})
+    mockery::stub(install_asreml, "install_asreml_package", function(...) TRUE)
+    mockery::stub(install_asreml, "manage_file", function(...) TRUE)
+
+    # Run install_asreml
+    expect_false(install_asreml(quiet = TRUE))
+
+    # Verify create_mac_folder was called
+    expect_true(mac_folder_called)
+})
+
+test_that("install_asreml does not call create_mac_folder on non-macOS", {
+    skip_on_cran()
+
+    mac_folder_called <- FALSE
+    # Mock all the dependencies to get to the OS check (Linux)
+    mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
+    mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
+    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "get_r_os", function() list(os = "linux", ver = "44", arm = FALSE, os_ver = "linux-44"))
+    mockery::stub(install_asreml, "create_mac_folder", function() {
+        mac_folder_called <<- TRUE
+        TRUE
+    })
+    mockery::stub(install_asreml, "find_existing_package", function() "/tmp/asreml.zip")
+    mockery::stub(install_asreml, "install_dependencies", function(...) {})
+    mockery::stub(install_asreml, "install_asreml_package", function(...) TRUE)
+    mockery::stub(install_asreml, "manage_file", function(...) TRUE)
+
+    # Run install_asreml
+    # Run install_asreml
+    expect_false(install_asreml(quiet = TRUE))
+
+    # Verify create_mac_folder was NOT called
+    expect_false(mac_folder_called)
+})
+
+test_that("install_asreml verbose messaging shows mac folder creation", {
+    skip_on_cran()
+
+    # Mock all the dependencies for macOS
+    mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
+    mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
+    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "get_r_os", function() list(os = "mac", ver = "44", arm = FALSE, os_ver = "mac-44"))
+    mockery::stub(install_asreml, "create_mac_folder", function() TRUE)
+    mockery::stub(install_asreml, "find_existing_package", function() "/tmp/asreml.zip")
+    mockery::stub(install_asreml, "install_dependencies", function(...) {})
+    mockery::stub(install_asreml, "install_asreml_package", function(...) TRUE)
+    mockery::stub(install_asreml, "manage_file", function(...) TRUE)
+
+    # Test that verbose mode shows the mac folder creation message
+    expect_warning(
+        expect_message(
+            install_asreml(quiet = "verbose"),
+            "\\[DEBUG\\] macOS detected - checking/creating Mac folder"
+        ),
+        "There was a problem with installation and ASReml-R was not successfully installed\\."
+    )
+})
+
+test_that("install_asreml removes existing package when force=TRUE on non-Linux systems", {
+    skip_on_cran()
+
+    # Track if remove_existing_asreml was called
+    remove_called <- FALSE
+
+    # Mock all dependencies to reach the force removal logic
+    mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
+    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "get_r_os", function() list(os = "win", ver = "44", arm = FALSE, os_ver = "win-44"))
+    mockery::stub(install_asreml, "find_existing_package", function() "/tmp/asreml.zip")
+    mockery::stub(install_asreml, "install_dependencies", function(...) {})
+    mockery::stub(install_asreml, "install_asreml_package", function(...) TRUE)
+    mockery::stub(install_asreml, "manage_file", function(...) TRUE)
+
+    # Key mocks for the tested condition
+    mockery::stub(install_asreml, "rlang::is_installed", function(pkg) {
+        if (pkg == "asreml") return(TRUE)  # asreml is installed
+        return(FALSE)
+    })
+    mockery::stub(install_asreml, "remove_existing_asreml", function(verbose = FALSE) {
+        remove_called <<- TRUE
+        TRUE
+    })
+
+    # Run install_asreml with force=TRUE
+    result <- install_asreml(force = TRUE, quiet = TRUE)
+
+    # Verify remove_existing_asreml was called
+    expect_true(remove_called)
+    expect_true(result)
+})
+
+test_that("install_asreml does NOT remove existing package when force=TRUE on Linux", {
+    skip_on_cran()
+
+    # Track if remove_existing_asreml was called
+    remove_called <- FALSE
+
+    # Mock all dependencies for Linux system
+    mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
+    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "get_r_os", function() list(os = "linux", ver = "44", arm = FALSE, os_ver = "linux-44"))  # Linux OS
+    mockery::stub(install_asreml, "find_existing_package", function() "/tmp/asreml.tar.gz")
+    mockery::stub(install_asreml, "install_dependencies", function(...) {})
+    mockery::stub(install_asreml, "install_asreml_package", function(...) TRUE)
+    mockery::stub(install_asreml, "manage_file", function(...) TRUE)
+
+    # Key mocks for the tested condition
+    mockery::stub(install_asreml, "rlang::is_installed", function(pkg) {
+        if (pkg == "asreml") return(TRUE)  # asreml is installed
+        return(FALSE)
+    })
+    mockery::stub(install_asreml, "remove_existing_asreml", function(verbose = FALSE) {
+        remove_called <<- TRUE
+        TRUE
+    })
+
+    # Run install_asreml with force=TRUE on Linux
+    result <- install_asreml(force = TRUE, quiet = TRUE)
+
+    # Verify remove_existing_asreml was NOT called (because os == "linux")
+    expect_false(remove_called)
+    expect_true(result)
+})
+
+test_that("install_asreml does NOT remove existing package when force=FALSE", {
+    skip_on_cran()
+
+    # Track if remove_existing_asreml was called
+    remove_called <- FALSE
+
+    # Mock all dependencies
+    mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
+    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "get_r_os", function() list(os = "win", ver = "44", arm = FALSE, os_ver = "win-44"))
+    mockery::stub(install_asreml, "find_existing_package", function() "/tmp/asreml.zip")
+    mockery::stub(install_asreml, "install_dependencies", function(...) {})
+    mockery::stub(install_asreml, "install_asreml_package", function(...) TRUE)
+    mockery::stub(install_asreml, "manage_file", function(...) TRUE)
+
+    # Key mocks for the tested condition
+    mockery::stub(install_asreml, "rlang::is_installed", function(pkg) {
+        if (pkg == "asreml") return(TRUE)  # asreml is installed
+        return(FALSE)
+    })
+    mockery::stub(install_asreml, "remove_existing_asreml", function(verbose = FALSE) {
+        remove_called <<- TRUE
+        TRUE
+    })
+
+    # Run install_asreml with force=FALSE
+    result <- install_asreml(force = FALSE, quiet = TRUE)
+
+    # Verify remove_existing_asreml was NOT called (because force=FALSE)
+    expect_false(remove_called)
+    expect_true(result)
+})
+
+test_that("install_asreml verbose messaging shows package removal", {
+    skip_on_cran()
+
+    # Mock all dependencies for Windows system with force=TRUE
+    mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
+    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "get_r_os", function() list(os = "win", ver = "44", arm = FALSE, os_ver = "win-44"))
+    mockery::stub(install_asreml, "find_existing_package", function() "/tmp/asreml.zip")
+    mockery::stub(install_asreml, "install_dependencies", function(...) {})
+    mockery::stub(install_asreml, "install_asreml_package", function(...) TRUE)
+    mockery::stub(install_asreml, "manage_file", function(...) TRUE)
+    mockery::stub(install_asreml, "remove_existing_asreml", function(verbose = FALSE) TRUE)
+    mockery::stub(install_asreml, "rlang::is_installed", function(pkg) {
+        if (pkg == "asreml") return(TRUE)
+        return(FALSE)
+    })
+
+    # Test that verbose mode shows the removal message
+    expect_message(
+        install_asreml(force = TRUE, quiet = "verbose"),
+        "\\[DEBUG\\] Force=TRUE and existing package found - removing existing installation"
+    )
+})
+
+test_that("get_version_table handles missing version headers", {
+    skip_on_cran()
+
+    # Mock xml2 functions to simulate a page without version headers
+    mock_html <- structure(list(), class = "xml_document")
+    mockery::stub(get_version_table, "xml2::read_html", function(url) mock_html)
+    mockery::stub(get_version_table, "xml2::xml_find_all", function(doc, xpath) {
+        if(grepl("//h3", xpath)) {
+            # Return headers that don't match the expected pattern
+            structure(list(), class = "xml_nodeset")
+        } else {
+            structure(list(), class = "xml_nodeset")
+        }
+    })
+    mockery::stub(get_version_table, "xml2::xml_text", function(nodes) character(0))
+
+    # Should stop with specific error message
+    expect_warning(
+        table <- get_version_table(),
+        "URL doesn't seem to contain asreml version information\\."
+    )
+    expect_equal(nrow(table), 0)
+})
+
+test_that("get_version_table handles network/parsing errors gracefully", {
+    skip_on_cran()
+
+    # Mock xml2::read_html to throw a network error
+    mockery::stub(get_version_table, "xml2::read_html", function(url) {
+        stop("Network timeout or connection failed")
+    })
+
+    # Should return empty data frame and warn about failure
+    expect_warning(
+        result <- get_version_table(),
+        "Failed to retrieve version information: Network timeout or connection failed"
+    )
+    expect_s3_class(result, "data.frame")
+    expect_equal(nrow(result), 0)
+})
+
+test_that("get_version_table handles XML parsing errors", {
+    skip_on_cran()
+
+    # Mock xml2 functions to simulate XML parsing failure
+    mock_html <- structure(list(), class = "xml_document")
+    mockery::stub(get_version_table, "xml2::read_html", function(url) mock_html)
+    mockery::stub(get_version_table, "xml2::xml_find_all", function(doc, xpath) {
+        stop("XPath expression error")
+    })
+
+    # Should return empty data frame and warn about failure
+    expect_warning(
+        result <- get_version_table(),
+        "Failed to retrieve version information: XPath expression error"
+    )
+    expect_s3_class(result, "data.frame")
+    expect_equal(nrow(result), 0)
+})
+
+test_that("get_version_table handles malformed table data", {
+    skip_on_cran()
+
+    # Mock xml2 functions to return valid headers but malformed table data
+    mock_html <- structure(list(), class = "xml_document")
+    mockery::stub(get_version_table, "xml2::read_html", function(url) mock_html)
+    mockery::stub(get_version_table, "xml2::xml_find_all", function(doc, xpath) {
+        structure(list(), class = "xml_nodeset")
+    })
+    mockery::stub(get_version_table, "xml2::xml_text", function(nodes) {
+        if(length(nodes) == 0) {
+            # Return valid headers for h3 search
+            "ASReml-R 4.2 (All platforms)"
+        } else {
+            # Return malformed table data
+            "Invalid table data without macOS"
+        }
+    })
+    mockery::stub(get_version_table, "stringi::stri_split_fixed", function(x, pattern) {
+        stop("String processing error")
+    })
+
+    # Should return empty data frame and warn about failure
+    expect_warning(
+        result <- get_version_table(),
+        "Failed to retrieve version information: String processing error"
+    )
+    expect_s3_class(result, "data.frame")
+    expect_equal(nrow(result), 0)
 })

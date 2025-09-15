@@ -11,6 +11,8 @@
 #'
 #' @return Invisibly returns the layout dataframe
 #'
+#' @importFrom rlang is_installed
+#'
 #' @details
 #' This function takes an experimental design in long format (with row/col coordinates)
 #' and converts it to a matrix layout that matches the spatial arrangement of the experiment,
@@ -45,7 +47,7 @@ export_design_to_excel <- function(design_df, value_column = "treatments",
                                    palette = "default") {
 
     # Check if openxlsx is available
-    if (!.check_package_available("openxlsx")) {
+    if (!rlang::is_installed("openxlsx")) {
         stop("Package 'openxlsx' is required for Excel export but is not installed.\n",
              "Install it with: install.packages('openxlsx')")
     }
