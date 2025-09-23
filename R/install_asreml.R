@@ -393,7 +393,7 @@ newer_version <- function() {
     }
 
     nv <- max(numeric_version(as.character(newest$asr_ver)))
-    newest <- newest[which(newest$asr_ver==nv), ]
+    newest <- newest[which.max(newest$`Date published`), , drop = FALSE] 
 
     # Get current version info
     if(rlang::is_installed("asreml")) {
