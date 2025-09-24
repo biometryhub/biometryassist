@@ -403,8 +403,8 @@ newer_version <- function() {
     # Get current version info
     if(rlang::is_installed("asreml")) {
         asr_desc <- utils::packageDescription("asreml")
-        asr_date <- as.Date(substr(asr_desc$Packaged %||% "1900-01-01", 1, 10))
-        asr_ver <- asr_desc$Version %||% "0"
+        asr_date <- as.Date(substr(if(is.null(asr_desc$Packaged)) "1900-01-01" else asr_desc$Packaged, 1, 10))
+        asr_ver <- if(is.null(asr_desc$Version)) "0" else asr_desc$Version
     } else {
         asr_date <- as.Date("1900-01-01")
         asr_ver <- "0"
