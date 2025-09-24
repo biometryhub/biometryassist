@@ -219,6 +219,80 @@ test_that("newer_version handles missing Packaged or Version gracefully", {
     expect_true(newer_version())
 })
 
+test_that("newer_version handles multiple newer versions correctly", {
+    # Create fake data with multiple versions, including older and newer ones
+    fake_versions <- data.frame(
+        os = c("linux", "linux", "linux", "linux"),
+        arm = c(FALSE, FALSE, FALSE, FALSE),
+        r_ver = c("44", "44", "44", "44"),
+        asr_ver = c("4.1.0", "4.3.0", "4.3.0", "4.2.5"),
+        `Date published` = as.Date(c("2023-01-01", "2023-03-15", "2023-03-01", "2023-02-15")),
+        stringsAsFactors = FALSE
+    )
+    colnames(fake_versions)[5] <- "Date published"
+
+    mockery::stub(newer_version, "get_version_table", function() fake_versions)
+    mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
+    mockery::stub(newer_version, "rlang::is_installed", function(pkg) TRUE)
+    mockery::stub(newer_version, "utils::packageDescription", function(pkg) list(
+        Packaged = "2023-01-01", Version = "4.1.0"  # Installed version is older
+    ))
+
+    # Should return TRUE because there are newer versions (4.3.0 > 4.1.0)
+    # and the most recent 4.3.0 (2023-03-15) is > 7 days after installed date (2023-01-01)
+    expect_true(newer_version())
+})
+
+test_that("newer_version selects most recent when multiple versions have same number", {
+    # Test case where there are multiple entries with the same version number
+    # but different publication dates - should select the most recent one
+    fake_versions <- data.frame(
+        os = c("linux", "linux", "linux"),
+        arm = c(FALSE, FALSE, FALSE),
+        r_ver = c("44", "44", "44"),
+        asr_ver = c("4.3.0", "4.3.0", "4.3.0"),
+        `Date published` = as.Date(c("2023-01-01", "2023-01-15", "2023-01-10")),
+        stringsAsFactors = FALSE
+    )
+    colnames(fake_versions)[5] <- "Date published"
+
+    mockery::stub(newer_version, "get_version_table", function() fake_versions)
+    mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
+    mockery::stub(newer_version, "rlang::is_installed", function(pkg) TRUE)
+    mockery::stub(newer_version, "utils::packageDescription", function(pkg) list(
+        Packaged = "2023-01-05", Version = "4.2.0"  # Older version, earlier date
+    ))
+
+    # Should return TRUE because:
+    # 1. Version check: 4.3.0 > 4.2.0 = TRUE
+    # 2. Date check: most recent publication date (2023-01-15) > installed date + 7 days (2023-01-12) = TRUE
+    # 3. Result: TRUE && TRUE = TRUE
+    expect_true(newer_version())
+})
+
+test_that("newer_version returns FALSE when multiple versions exist but none are newer", {
+    # Test case with multiple versions but the installed version is already the newest
+    fake_versions <- data.frame(
+        os = c("linux", "linux", "linux"),
+        arm = c(FALSE, FALSE, FALSE),
+        r_ver = c("44", "44", "44"),
+        asr_ver = c("4.1.0", "4.2.0", "4.1.5"),
+        `Date published` = as.Date(c("2023-01-01", "2023-02-01", "2023-01-15")),
+        stringsAsFactors = FALSE
+    )
+    colnames(fake_versions)[5] <- "Date published"
+
+    mockery::stub(newer_version, "get_version_table", function() fake_versions)
+    mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
+    mockery::stub(newer_version, "rlang::is_installed", function(pkg) TRUE)
+    mockery::stub(newer_version, "utils::packageDescription", function(pkg) list(
+        Packaged = "2023-02-10", Version = "4.2.0"  # Already have the newest version
+    ))
+
+    # Should return FALSE because installed version (4.2.0) is >= newest available (4.2.0)
+    expect_false(newer_version())
+})
+
 test_that("install_asreml handles no internet connection", {
     skip_on_cran()
     mockery::stub(install_asreml, "curl::has_internet", function() FALSE)

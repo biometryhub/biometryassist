@@ -393,7 +393,12 @@ newer_version <- function() {
     }
 
     nv <- max(numeric_version(as.character(newest$asr_ver)))
-    newest <- newest[which.max(newest$`Date published`), , drop = FALSE] 
+    newest <- newest[which(newest$asr_ver == as.character(nv)), ]
+    
+    # If multiple rows with same version, take the most recent
+    if(nrow(newest) > 1) {
+        newest <- newest[which.max(newest$`Date published`), , drop = FALSE]
+    }
 
     # Get current version info
     if(rlang::is_installed("asreml")) {
@@ -405,9 +410,15 @@ newer_version <- function() {
         asr_ver <- "0"
     }
 
-    # Check if newer version is available
-    result <- (newest$`Date published` > asr_date + 7) &&
-        (numeric_version(as.character(newest$asr_ver)) > numeric_version(as.character(asr_ver)))
+    # Check if newer version is available (ensure single values for &&)
+    date_check <- as.logical(newest$`Date published`[1] > asr_date + 7)
+    version_check <- as.logical(numeric_version(as.character(newest$asr_ver[1])) > numeric_version(as.character(asr_ver)))
+    
+    # Handle any NA values
+    date_check <- isTRUE(date_check)
+    version_check <- isTRUE(version_check)
+    
+    result <- date_check && version_check
 
     return(result)
 }
