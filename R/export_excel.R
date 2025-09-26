@@ -128,6 +128,12 @@ export_design_to_excel <- function(design_df, value_column = "treatments",
         ntrt <- length(unique_treatments)
 
         colours <- setup_colour_palette(palette, ntrt)
+        
+        # Expand 3-digit hex codes to 6-digit and 4-digit to 8-digit for openxlsx compatibility
+        colours <- gsub("^#([0-9A-Fa-f])([0-9A-Fa-f])([0-9A-Fa-f])$", "#\\1\\1\\2\\2\\3\\3", colours)  # 3-digit -> 6-digit
+        colours <- gsub("^#([0-9A-Fa-f])([0-9A-Fa-f])([0-9A-Fa-f])([0-9A-Fa-f])$", "#\\1\\1\\2\\2\\3\\3\\4\\4", colours)  # 4-digit -> 8-digit
+        # Remove transparency from 8-digit hex codes
+        colours <- gsub("^(#[0-9A-Fa-f]{6})[0-9A-Fa-f]{2}$", "\\1", colours)  # 8-digit -> 6-digit
 
         # Create colour mapping
         colour_map <- setNames(colours, unique_treatments)
