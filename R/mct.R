@@ -5,7 +5,7 @@
 #' @param model.obj An ASReml-R or aov model object. Will likely also work with `lme` ([nlme::lme()]), `lmerMod` ([lme4::lmer()]) models as well.
 #' @param classify Name of predictor variable as string.
 #' @param sig The significance level, numeric between 0 and 1. Default is 0.05.
-#' @param int.type The type of confidence interval to calculate. One of `ci`, `tukey`, `1se` or `2se`. Default is `ci`.
+#' @param int.type The type of confidence interval to calculate. One of `ci`, `tukey`, `1se`, `2se`, or `none`. Default is `ci`.
 #' @param trans Transformation that was applied to the response variable. One of `log`, `sqrt`, `logit`, `power` or `inverse`. Default is `NULL`.
 #' @param offset Numeric offset applied to response variable prior to transformation. Default is `NULL`. Use 0 if no offset was applied to the transformed data. See Details for more information.
 #' @param power Numeric power applied to response variable with power transformation. Default is `NULL`. See Details for more information.
@@ -48,11 +48,13 @@
 #'
 #' The function provides several options for confidence intervals via the `int.type` argument:
 #'
-#' - **`tukey` (default)**: Tukey comparison intervals that are consistent with the multiple comparison test. These intervals are wider than regular confidence intervals and are designed so that non-overlapping intervals correspond to statistically significant differences in the Tukey HSD test. This ensures visual consistency between the intervals and letter groupings.
+#' - **`ci` (default)**: Traditional confidence intervals for individual means. These estimate the precision of each individual mean but may not align with the multiple comparison results. Non-overlapping traditional confidence intervals do not necessarily indicate significant differences in multiple comparison tests.
 #'
-#' - **`ci`**: Traditional confidence intervals for individual means. These estimate the precision of each individual mean but may not align with the multiple comparison results. Non-overlapping traditional confidence intervals do not necessarily indicate significant differences in multiple comparison tests.
+#' - **`tukey`**: Tukey comparison intervals that are consistent with the multiple comparison test. These intervals are wider than regular confidence intervals and are designed so that non-overlapping intervals correspond to statistically significant differences in the Tukey HSD test. This ensures visual consistency between the intervals and letter groupings.
 #'
 #' - **`1se`** and **`2se`**: Intervals of ±1 or ±2 standard errors around each mean.
+#'
+#' - **`none`**: No confidence intervals will be calculated or displayed in plots.
 #'
 #' By default, the function displays regular confidence intervals (`int.type = "ci"`),
 #' which estimate the precision of individual treatment means. However, when
@@ -106,6 +108,10 @@
 #' # Use traditional confidence intervals instead of Tukey comparison intervals
 #' pred.out.ci <- multiple_comparisons(model, classify = "Species", int.type = "ci")
 #' pred.out.ci
+#'
+#' # Plot without confidence intervals
+#' pred.out.none <- multiple_comparisons(model, classify = "Species", int.type = "none")
+#' autoplot(pred.out.none)
 #'
 #' # AOV model example with transformation
 #' my_iris <- iris
@@ -415,7 +421,8 @@ add_confidence_intervals <- function(pp, int.type, sig, ndf) {
         "tukey" = stats::qtukey(p = 1 - sig, nmeans = nrow(pp), df = ndf) / sqrt(2) * pp$std.error,
         "1se" = pp$std.error,
         "2se" = 2 * pp$std.error,
-        stop("Invalid int.type. Use 'ci', 'tukey', '1se', or '2se'.")
+        "none" = 0,
+        stop("Invalid int.type. Use 'ci', 'tukey', '1se', '2se', or 'none'.")
     )
 
     return(pp)
