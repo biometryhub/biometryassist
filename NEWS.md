@@ -1,3 +1,15 @@
+# biometryassist 1.3.4
+
+## Minor changes
+
+- Add interval type 'none' for multiple_comparisons. (#125)
+
+## Bug Fixes
+
+- Fixed a bug where hex colours don't work with `export_design_to_excel()` (#124)
+- Fixed a bug where buffers weren't added to the plot if they are added after initial design creation. (#123)
+- Fixed a bug in `install_asreml()` where it threw an error with more than one new version. (#122)
+
 # biometryassist 1.3.3
 
 ## Bug Fixes
