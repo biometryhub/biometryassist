@@ -33,7 +33,7 @@ multiple_comparisons(
 
 \item{sig}{The significance level, numeric between 0 and 1. Default is 0.05.}
 
-\item{int.type}{The type of confidence interval to calculate. One of \code{ci}, \code{tukey}, \verb{1se} or \verb{2se}. Default is \code{ci}.}
+\item{int.type}{The type of confidence interval to calculate. One of \code{ci}, \code{tukey}, \verb{1se}, \verb{2se}, or \code{none}. Default is \code{ci}.}
 
 \item{trans}{Transformation that was applied to the response variable. One of \code{log}, \code{sqrt}, \code{logit}, \code{power} or \code{inverse}. Default is \code{NULL}.}
 
@@ -100,9 +100,10 @@ residuals.
 
 The function provides several options for confidence intervals via the \code{int.type} argument:
 \itemize{
-\item \strong{\code{tukey} (default)}: Tukey comparison intervals that are consistent with the multiple comparison test. These intervals are wider than regular confidence intervals and are designed so that non-overlapping intervals correspond to statistically significant differences in the Tukey HSD test. This ensures visual consistency between the intervals and letter groupings.
-\item \strong{\code{ci}}: Traditional confidence intervals for individual means. These estimate the precision of each individual mean but may not align with the multiple comparison results. Non-overlapping traditional confidence intervals do not necessarily indicate significant differences in multiple comparison tests.
+\item \strong{\code{ci} (default)}: Traditional confidence intervals for individual means. These estimate the precision of each individual mean but may not align with the multiple comparison results. Non-overlapping traditional confidence intervals do not necessarily indicate significant differences in multiple comparison tests.
+\item \strong{\code{tukey}}: Tukey comparison intervals that are consistent with the multiple comparison test. These intervals are wider than regular confidence intervals and are designed so that non-overlapping intervals correspond to statistically significant differences in the Tukey HSD test. This ensures visual consistency between the intervals and letter groupings.
 \item \strong{\verb{1se}} and \strong{\verb{2se}}: Intervals of ±1 or ±2 standard errors around each mean.
+\item \strong{\code{none}}: No confidence intervals will be calculated or displayed in plots.
 }
 
 By default, the function displays regular confidence intervals (\code{int.type = "ci"}),
@@ -150,6 +151,10 @@ autoplot(pred.out, label_height = 0.5)
 # Use traditional confidence intervals instead of Tukey comparison intervals
 pred.out.ci <- multiple_comparisons(model, classify = "Species", int.type = "ci")
 pred.out.ci
+
+# Plot without confidence intervals
+pred.out.none <- multiple_comparisons(model, classify = "Species", int.type = "none")
+autoplot(pred.out.none)
 
 # AOV model example with transformation
 my_iris <- iris

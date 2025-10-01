@@ -13,6 +13,7 @@
 #' @param column A variable to plot a column from `object` as columns.
 #' @param block A variable to plot a column from `object` as blocks.
 #' @param treatments A variable to plot a column from `object` as treatments.
+#' @param legend Logical (default `FALSE`). If `TRUE`, displays the legend for treatment colors.
 #' @inheritParams rlang::args_dots_used
 #'
 #' @name autoplot
@@ -133,10 +134,16 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1,
 #'
 #' # Display block level
 #' autoplot(des.out, treatments = block)
-autoplot.design <- function(object, rotation = 0, size = 4,
-                            margin = FALSE, palette = "default",
-                            row = NULL, column = NULL, block = NULL,
-                            treatments = NULL, ...) {
+autoplot.design <- function(object,
+                            rotation = 0,
+                            size = 4,
+                            margin = FALSE,
+                            palette = "default",
+                            row = NULL,
+                            column = NULL,
+                            block = NULL,
+                            treatments = NULL,
+                            legend = FALSE, ...) {
     stopifnot(inherits(object, "design"))
     rlang::check_dots_used()
 
@@ -204,6 +211,11 @@ autoplot.design <- function(object, rotation = 0, size = 4,
 
     # Apply styling
     plt <- plt + scale_fill_manual(values = colour_palette, name = tools::toTitleCase(trt_expr))
+
+    # Control legend visibility
+    if (!legend) {
+        plt <- plt + ggplot2::theme(legend.position = "none")
+    }
 
     plt <- apply_axis_styling(plt, margin, object, row_expr, column_expr)
 
