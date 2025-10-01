@@ -599,6 +599,13 @@ test_that("autoplot responds to size argument", {
                                 autoplot(d1, size = 8), variant = ggplot2_variant())
 })
 
+test_that("autoplot responds to legend argument", {
+    d1 <- design(type = "crd", treatments = c(1, 5, 10, 20),
+                 reps = 5, nrows = 4, ncols = 5, seed = 42, quiet = TRUE)
+    vdiffr::expect_doppelganger(title = "autoplot with size",
+                                autoplot(d1, legend = FALSE), variant = ggplot2_variant())
+})
+
 test_that("Colour blind friendly plots work", {
     # CRD
     d1 <- design("crd", treatments = LETTERS[1:11], reps = 4,
