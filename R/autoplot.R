@@ -13,7 +13,7 @@
 #' @param column A variable to plot a column from `object` as columns.
 #' @param block A variable to plot a column from `object` as blocks.
 #' @param treatments A variable to plot a column from `object` as treatments.
-#' @param legend Logical (default `FALSE`). If `TRUE`, displays the legend for treatment colors.
+#' @param legend Logical (default `TRUE`). If `TRUE`, displays the legend for treatment colours.
 #' @inheritParams rlang::args_dots_used
 #'
 #' @name autoplot
@@ -143,7 +143,7 @@ autoplot.design <- function(object,
                             column = NULL,
                             block = NULL,
                             treatments = NULL,
-                            legend = FALSE, ...) {
+                            legend = TRUE, ...) {
     stopifnot(inherits(object, "design"))
     rlang::check_dots_used()
 
