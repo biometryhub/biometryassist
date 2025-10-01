@@ -53,6 +53,7 @@ Imports:
 Suggests: 
     covr,
     crayon,
+    ggspatial,
     knitr,
     mockery,
     openxlsx,
