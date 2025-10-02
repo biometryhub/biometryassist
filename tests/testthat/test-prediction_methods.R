@@ -1,6 +1,6 @@
 test_that("get_predictions.asreml uses provided pred.obj when supplied", {
     skip_if_not_installed("mockery")
-    
+
     # Create mock model object
     mock_model <- list(
         formulae = list(
@@ -10,7 +10,7 @@ test_that("get_predictions.asreml uses provided pred.obj when supplied", {
         nedf = 10
     )
     class(mock_model) <- "asreml"
-    
+
     # Create mock pred.obj that would be passed in
     mock_pred_obj <- list(
         pvals = data.frame(
@@ -24,23 +24,23 @@ test_that("get_predictions.asreml uses provided pred.obj when supplied", {
                       8, 8, NA, 9,
                       9, 9, 9, NA), nrow = 4, ncol = 4)
     )
-    
+
     # Mock the asreml functions to ensure they're NOT called when pred.obj is provided
     mock_predict <- mockery::mock()
     mock_wald <- mockery::mock(list(Wald = data.frame(
         denDF = c(10),
         row.names = c("Nitrogen")
     )))
-    
+
     mockery::stub(get_predictions.asreml, 'asreml::predict.asreml', mock_predict)
     mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
-    
+
     # Call the function with pred.obj provided
     result <- get_predictions.asreml(mock_model, classify = "Nitrogen", pred.obj = mock_pred_obj)
-    
+
     # Verify predict.asreml was NOT called (because pred.obj was provided)
     mockery::expect_called(mock_predict, 0)
-    
+
     # Verify the result uses the provided pred.obj
     expect_equal(result$predictions$predicted.value, c(100, 110, 120, 130))
     expect_equal(result$predictions$std.error, c(5, 5, 5, 5))
@@ -48,7 +48,7 @@ test_that("get_predictions.asreml uses provided pred.obj when supplied", {
 
 test_that("get_predictions.asreml generates predictions when pred.obj is NULL", {
     skip_if_not_installed("mockery")
-    
+
     # Create mock model object
     mock_model <- list(
         formulae = list(
@@ -58,7 +58,7 @@ test_that("get_predictions.asreml generates predictions when pred.obj is NULL", 
         nedf = 10
     )
     class(mock_model) <- "asreml"
-    
+
     # Mock prediction result that would be generated
     mock_pred_result <- list(
         pvals = data.frame(
@@ -72,37 +72,37 @@ test_that("get_predictions.asreml generates predictions when pred.obj is NULL", 
                       8, 8, NA, 9,
                       9, 9, 9, NA), nrow = 4, ncol = 4)
     )
-    
+
     # Mock the asreml functions
     mock_predict <- mockery::mock(mock_pred_result)
     mock_wald <- mockery::mock(list(Wald = data.frame(
         denDF = c(10),
         row.names = c("Nitrogen")
     )))
-    
+
     mockery::stub(get_predictions.asreml, 'asreml::predict.asreml', mock_predict)
     mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
-    
+
     # Call the function without pred.obj (NULL by default)
     result <- get_predictions.asreml(mock_model, classify = "Nitrogen")
-    
+
     # Verify predict.asreml WAS called (because pred.obj was NULL)
     mockery::expect_called(mock_predict, 1)
-    
+
     # Verify the correct arguments were passed to predict.asreml
     call_args <- mockery::mock_args(mock_predict)[[1]]
     expect_equal(call_args$object, mock_model)
     expect_equal(call_args$classify, "Nitrogen")
     expect_equal(call_args$sed, TRUE)
     expect_equal(call_args$trace, FALSE)
-    
+
     # Verify the result contains the generated predictions
     expect_equal(result$predictions$predicted.value, c(100, 110, 120, 130))
 })
 
 test_that("get_predictions.asreml generates predictions when pred.obj is missing", {
     skip_if_not_installed("mockery")
-    
+
     # Create mock model object
     mock_model <- list(
         formulae = list(
@@ -112,7 +112,7 @@ test_that("get_predictions.asreml generates predictions when pred.obj is missing
         nedf = 10
     )
     class(mock_model) <- "asreml"
-    
+
     # Mock prediction result
     mock_pred_result <- list(
         pvals = data.frame(
@@ -123,20 +123,20 @@ test_that("get_predictions.asreml generates predictions when pred.obj is missing
         ),
         sed = matrix(c(NA, 7, 7, NA), nrow = 2, ncol = 2)
     )
-    
+
     # Mock the asreml functions
     mock_predict <- mockery::mock(mock_pred_result)
     mock_wald <- mockery::mock(list(Wald = data.frame(
         denDF = c(10),
         row.names = c("Nitrogen")
     )))
-    
+
     mockery::stub(get_predictions.asreml, 'asreml::predict.asreml', mock_predict)
     mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
-    
+
     # Call without specifying pred.obj at all
     result <- get_predictions.asreml(mock_model, classify = "Nitrogen")
-    
+
     # Verify predict.asreml WAS called
     mockery::expect_called(mock_predict, 1)
     expect_equal(result$predictions$predicted.value, c(100, 110))
@@ -144,17 +144,17 @@ test_that("get_predictions.asreml generates predictions when pred.obj is missing
 
 test_that("get_predictions.asreml errors when all predicted values are aliased", {
     skip_if_not_installed("mockery")
-    
-    # Create mock model object
+
+    # Create mock model object with interaction term
     mock_model <- list(
         formulae = list(
-            fixed = as.formula("yield ~ Nitrogen + Variety"),
+            fixed = as.formula("yield ~ Nitrogen + Variety + Nitrogen:Variety"),
             random = as.formula("~Blocks")
         ),
         nedf = 10
     )
     class(mock_model) <- "asreml"
-    
+
     # Mock prediction result with ALL NA values (all aliased)
     mock_pred_result <- list(
         pvals = data.frame(
@@ -168,12 +168,12 @@ test_that("get_predictions.asreml errors when all predicted values are aliased",
                       NA, NA, NA,
                       NA, NA, NA), nrow = 3, ncol = 3)
     )
-    
+
     # Mock the asreml functions
     mock_predict <- mockery::mock(mock_pred_result)
-    
+
     mockery::stub(get_predictions.asreml, 'asreml::predict.asreml', mock_predict)
-    
+
     # Expect error when all values are aliased
     expect_error(
         get_predictions.asreml(mock_model, classify = "Nitrogen:Variety"),
@@ -183,7 +183,7 @@ test_that("get_predictions.asreml errors when all predicted values are aliased",
 
 test_that("get_predictions.asreml errors when all std.errors are NA but predicted values exist", {
     skip_if_not_installed("mockery")
-    
+
     # Create mock model object
     mock_model <- list(
         formulae = list(
@@ -193,7 +193,7 @@ test_that("get_predictions.asreml errors when all std.errors are NA but predicte
         nedf = 10
     )
     class(mock_model) <- "asreml"
-    
+
     # Mock prediction result with predicted values but ALL NA std.errors
     mock_pred_result <- list(
         pvals = data.frame(
@@ -206,12 +206,12 @@ test_that("get_predictions.asreml errors when all std.errors are NA but predicte
                       NA, NA, NA,
                       NA, NA, NA), nrow = 3, ncol = 3)
     )
-    
+
     # Mock the asreml functions
     mock_predict <- mockery::mock(mock_pred_result)
-    
+
     mockery::stub(get_predictions.asreml, 'asreml::predict.asreml', mock_predict)
-    
+
     # Expect error when all std.errors are NA
     expect_error(
         get_predictions.asreml(mock_model, classify = "Treatment"),
@@ -221,7 +221,7 @@ test_that("get_predictions.asreml errors when all std.errors are NA but predicte
 
 test_that("get_predictions.asreml handles partial aliasing correctly", {
     skip_if_not_installed("mockery")
-    
+
     # Create mock model object
     mock_model <- list(
         formulae = list(
@@ -231,7 +231,7 @@ test_that("get_predictions.asreml handles partial aliasing correctly", {
         nedf = 10
     )
     class(mock_model) <- "asreml"
-    
+
     # Mock prediction result with SOME aliased values (not all)
     mock_pred_result <- list(
         pvals = data.frame(
@@ -245,23 +245,23 @@ test_that("get_predictions.asreml handles partial aliasing correctly", {
                       8, 8, NA, 9,
                       9, 9, 9, NA), nrow = 4, ncol = 4)
     )
-    
+
     # Mock the asreml functions
     mock_predict <- mockery::mock(mock_pred_result)
     mock_wald <- mockery::mock(list(Wald = data.frame(
         denDF = c(10),
         row.names = c("Treatment")
     )))
-    
+
     mockery::stub(get_predictions.asreml, 'asreml::predict.asreml', mock_predict)
     mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
-    
+
     # Should NOT error with partial aliasing (only error when ALL are aliased)
     expect_warning(
         result <- get_predictions.asreml(mock_model, classify = "Treatment"),
         "A level of Treatment is aliased"
     )
-    
+
     # Result should only contain non-aliased values
     expect_equal(nrow(result$predictions), 3)
     expect_equal(result$predictions$predicted.value, c(100, 110, 130))
@@ -270,7 +270,7 @@ test_that("get_predictions.asreml handles partial aliasing correctly", {
 
 test_that("get_predictions.asreml passes additional arguments to predict.asreml", {
     skip_if_not_installed("mockery")
-    
+
     # Create mock model object
     mock_model <- list(
         formulae = list(
@@ -280,7 +280,7 @@ test_that("get_predictions.asreml passes additional arguments to predict.asreml"
         nedf = 10
     )
     class(mock_model) <- "asreml"
-    
+
     # Mock prediction result
     mock_pred_result <- list(
         pvals = data.frame(
@@ -291,22 +291,22 @@ test_that("get_predictions.asreml passes additional arguments to predict.asreml"
         ),
         sed = matrix(c(NA, 7, 7, NA), nrow = 2, ncol = 2)
     )
-    
+
     # Mock the asreml functions
     mock_predict <- mockery::mock(mock_pred_result)
     mock_wald <- mockery::mock(list(Wald = data.frame(
         denDF = c(10),
         row.names = c("Nitrogen")
     )))
-    
+
     mockery::stub(get_predictions.asreml, 'asreml::predict.asreml', mock_predict)
     mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
-    
+
     # Call with additional arguments
-    result <- get_predictions.asreml(mock_model, classify = "Nitrogen", 
+    result <- get_predictions.asreml(mock_model, classify = "Nitrogen",
                                     present = c("Nitrogen", "Blocks"),
                                     aliasing.scheme = TRUE)
-    
+
     # Verify additional arguments were passed through
     call_args <- mockery::mock_args(mock_predict)[[1]]
     expect_equal(call_args$present, c("Nitrogen", "Blocks"))
@@ -315,7 +315,7 @@ test_that("get_predictions.asreml passes additional arguments to predict.asreml"
 
 test_that("get_predictions.asreml uses provided dendf when supplied in args", {
     skip_if_not_installed("mockery")
-    
+
     # Create mock model object
     mock_model <- list(
         formulae = list(
@@ -325,7 +325,7 @@ test_that("get_predictions.asreml uses provided dendf when supplied in args", {
         nedf = 10
     )
     class(mock_model) <- "asreml"
-    
+
     # Mock prediction result
     mock_pred_result <- list(
         pvals = data.frame(
@@ -338,33 +338,33 @@ test_that("get_predictions.asreml uses provided dendf when supplied in args", {
                       7, NA, 8,
                       8, 8, NA), nrow = 3, ncol = 3)
     )
-    
+
     # Create custom dendf data frame
     custom_dendf <- data.frame(
         Source = c("Nitrogen", "Blocks"),
         denDF = c(25, 5)
     )
-    
+
     # Mock the asreml functions
     mock_predict <- mockery::mock(mock_pred_result)
     mock_wald <- mockery::mock()  # Should NOT be called when dendf is provided
-    
+
     mockery::stub(get_predictions.asreml, 'asreml::predict.asreml', mock_predict)
     mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
-    
+
     # Call with dendf provided in args
     result <- get_predictions.asreml(mock_model, classify = "Nitrogen", dendf = custom_dendf)
-    
+
     # Verify wald was NOT called (because dendf was provided)
     mockery::expect_called(mock_wald, 0)
-    
+
     # Verify the custom dendf was used (should be 25, not the default from wald)
     expect_equal(result$df, 25)
 })
 
 test_that("get_predictions.asreml uses residual df when classify not found in wald output", {
     skip_if_not_installed("mockery")
-    
+
     # Create mock model object with random term
     mock_model <- list(
         formulae = list(
@@ -374,7 +374,7 @@ test_that("get_predictions.asreml uses residual df when classify not found in wa
         nedf = 15
     )
     class(mock_model) <- "asreml"
-    
+
     # Mock prediction result
     mock_pred_result <- list(
         pvals = data.frame(
@@ -387,32 +387,32 @@ test_that("get_predictions.asreml uses residual df when classify not found in wa
                       7, NA, 8,
                       8, 8, NA), nrow = 3, ncol = 3)
     )
-    
+
     # Mock wald output that doesn't include Blocks (since it's a random term)
     mock_wald <- mockery::mock(list(Wald = data.frame(
         denDF = c(10),
         row.names = c("Variety")  # Only fixed term, not Blocks
     )))
-    
+
     # Mock the asreml functions
     mock_predict <- mockery::mock(mock_pred_result)
-    
+
     mockery::stub(get_predictions.asreml, 'asreml::predict.asreml', mock_predict)
     mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
-    
+
     # Call with Blocks (a random term not in wald output)
     expect_warning(
         result <- get_predictions.asreml(mock_model, classify = "Blocks"),
         "Blocks is not a fixed term in the model. The denominator degrees of freedom are estimated using the residual degrees of freedom. This may be inaccurate."
     )
-    
+
     # Verify it falls back to model.obj$nedf (residual df)
     expect_equal(result$df, 15)
 })
 
 test_that("get_predictions.lmerModLmerTest delegates to lmerMod method", {
     skip_if_not_installed("mockery")
-    
+
     # Create a mock lmerModLmerTest object
     mock_model <- structure(
         list(
@@ -423,7 +423,7 @@ test_that("get_predictions.lmerModLmerTest delegates to lmerMod method", {
         ),
         class = c("lmerModLmerTest", "lmerMod")
     )
-    
+
     # Create a mock result that would be returned by get_predictions.lm
     mock_result <- list(
         predictions = data.frame(
@@ -437,22 +437,22 @@ test_that("get_predictions.lmerModLmerTest delegates to lmerMod method", {
         ylab = "yield",
         aliased_names = NULL
     )
-    
+
     # Mock get_predictions.lmerMod to return the mock result
     mock_lmerMod_method <- mockery::mock(mock_result)
-    
+
     # Stub the lmerMod method
     mockery::stub(get_predictions.lmerModLmerTest, 'get_predictions.lmerMod', mock_lmerMod_method)
-    
+
     # Call get_predictions.lmerModLmerTest
     result <- get_predictions.lmerModLmerTest(mock_model, classify = "Treatment")
-    
+
     # Verify that get_predictions.lmerMod was called with correct arguments
     mockery::expect_called(mock_lmerMod_method, 1)
     call_args <- mockery::mock_args(mock_lmerMod_method)[[1]]
     expect_equal(call_args[[1]], mock_model)
     expect_equal(call_args[[2]], "Treatment")
-    
+
     # Verify the result is what was returned by the lmerMod method
     expect_equal(result$predictions$predicted.value, c(105, 120))
     expect_equal(result$df, 4)
@@ -461,17 +461,17 @@ test_that("get_predictions.lmerModLmerTest delegates to lmerMod method", {
 
 test_that("get_predictions.asreml handles multiple aliased values with plural warning", {
     skip_if_not_installed("mockery")
-    
-    # Create mock model object
+
+    # Create mock model object with interaction term
     mock_model <- list(
         formulae = list(
-            fixed = as.formula("yield ~ Nitrogen + Variety"),
+            fixed = as.formula("yield ~ Nitrogen + Variety + Nitrogen:Variety"),
             random = as.formula("~Blocks")
         ),
         nedf = 10
     )
     class(mock_model) <- "asreml"
-    
+
     # Mock prediction result with MULTIPLE aliased values (not all)
     mock_pred_result <- list(
         pvals = data.frame(
@@ -487,17 +487,17 @@ test_that("get_predictions.asreml handles multiple aliased values with plural wa
                       9, 9, 9, NA, 10,
                       10, 10, 10, 10, NA), nrow = 5, ncol = 5)
     )
-    
+
     # Mock the asreml functions
     mock_predict <- mockery::mock(mock_pred_result)
     mock_wald <- mockery::mock(list(Wald = data.frame(
         denDF = c(10),
         row.names = c("Nitrogen:Variety")
     )))
-    
+
     mockery::stub(get_predictions.asreml, 'asreml::predict.asreml', mock_predict)
     mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
-    
+
     # Expect warning with plural message for multiple aliased values
     expect_warning(
         result <- get_predictions.asreml(mock_model, classify = "Nitrogen:Variety"),
@@ -505,7 +505,7 @@ test_that("get_predictions.asreml handles multiple aliased values with plural wa
   Aliased levels are: 0\\.4:C, 0\\.8:E.
   These levels are saved in the output object."
     )
-    
+
     # Result should only contain non-aliased values
     expect_equal(nrow(result$predictions), 3)
     expect_equal(result$predictions$predicted.value, c(100, 110, 130))
