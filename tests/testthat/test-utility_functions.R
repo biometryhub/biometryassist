@@ -10,13 +10,47 @@ test_that("Package message prints on load", {
 
 test_that("Output prints if crayon is not installed", {
     rlang::local_interactive(value = TRUE)
-    mockery::stub(biometryassist:::.onAttach, "rlang::is_installed", function(...) FALSE)
+    
+    # Mock to simulate crayon not being installed
+    mockery::stub(biometryassist:::.onAttach, "rlang::is_installed", function(pkg) {
+        if (pkg == "crayon") return(FALSE)
+        TRUE
+    })
+    
+    # Mock compare_version to avoid network calls and avoid triggering update warning
+    mockery::stub(biometryassist:::.onAttach, "compare_version", function(...) 0L)
 
     # Use expect_message since .onAttach uses packageStartupMessage()
+    # This should hit the else branch (line 45-47) which calls packageStartupMessage without crayon
     expect_message(
         biometryassist:::.onAttach(pkg = "biometryassist"),
         "biometryassist version"
     )
+})
+
+test_that("Output prints with crayon when it is installed", {
+    rlang::local_interactive(value = TRUE)
+    
+    # Mock to simulate crayon being installed
+    mockery::stub(biometryassist:::.onAttach, "rlang::is_installed", function(pkg) TRUE)
+    
+    # Mock crayon::green to verify it's called
+    green_called <- FALSE
+    mockery::stub(biometryassist:::.onAttach, "crayon::green", function(text) {
+        green_called <<- TRUE
+        text  # Return text unchanged
+    })
+    
+    # Mock compare_version to avoid network calls
+    mockery::stub(biometryassist:::.onAttach, "compare_version", function(...) 0L)
+
+    # Should call crayon::green (lines 42-43)
+    expect_message(
+        biometryassist:::.onAttach(pkg = "biometryassist"),
+        "biometryassist version"
+    )
+    
+    expect_true(green_called)
 })
 
 
