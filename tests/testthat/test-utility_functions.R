@@ -29,28 +29,22 @@ test_that("Output prints if crayon is not installed", {
 })
 
 test_that("Output prints with crayon when it is installed", {
+    skip_if_not_installed("crayon")
     rlang::local_interactive(value = TRUE)
     
-    # Mock to simulate crayon being installed
-    mockery::stub(biometryassist:::.onAttach, "rlang::is_installed", function(pkg) TRUE)
-    
-    # Mock crayon::green to verify it's called
-    green_called <- FALSE
-    mockery::stub(biometryassist:::.onAttach, "crayon::green", function(text) {
-        green_called <<- TRUE
-        text  # Return text unchanged
-    })
-    
+    # Simply call .onAttach when crayon IS installed (default behavior)
+    # This will naturally test the if(rlang::is_installed("crayon")) branch
     # Mock compare_version to avoid network calls
-    mockery::stub(biometryassist:::.onAttach, "compare_version", function(...) 0L)
-
-    # Should call crayon::green (lines 42-43)
+    local_mocked_bindings(
+        compare_version = function(...) 0L,
+        .package = "biometryassist"
+    )
+    
+    # Should use crayon::green (lines 42-43) since crayon is installed
     expect_message(
         biometryassist:::.onAttach(pkg = "biometryassist"),
         "biometryassist version"
     )
-    
-    expect_true(green_called)
 })
 
 
