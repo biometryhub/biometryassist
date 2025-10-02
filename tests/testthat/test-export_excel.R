@@ -177,3 +177,14 @@ test_that("color transparency removal works with mixed palette in export functio
     expect_true(file.exists(tmpfile))
   })
 })
+
+test_that("int2col works correctly", {
+  expect_equal(int2col(1), "A")
+  expect_equal(int2col(26), "Z")
+  expect_equal(int2col(27), "AA")
+  expect_equal(int2col(52), "AZ")
+  expect_equal(int2col(53), "BA")
+  expect_error(int2col(-1), "Column number must be positive")
+})
+
+
