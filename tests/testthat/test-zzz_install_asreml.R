@@ -407,6 +407,179 @@ test_that("create_mac_folder handles different scenarios", {
     }
 })
 
+test_that("create_mac_folder returns TRUE on non-macOS systems", {
+    skip_on_cran()
+    
+    # Mock Sys.info to return Linux
+    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Linux", release = "5.10"))
+    result <- create_mac_folder()
+    expect_true(result)
+    
+    # Mock Sys.info to return Windows
+    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Windows", release = "10.0"))
+    result <- create_mac_folder()
+    expect_true(result)
+})
+
+test_that("create_mac_folder returns TRUE when major release is less than 21", {
+    skip_on_cran()
+    
+    # macOS Catalina (Darwin 19)
+    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "19.6.0"))
+    result <- create_mac_folder()
+    expect_true(result)
+    
+    # macOS Mojave (Darwin 18)
+    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "18.7.0"))
+    result <- create_mac_folder()
+    expect_true(result)
+})
+
+test_that("create_mac_folder returns TRUE when Reprise folder already exists", {
+    skip_on_cran()
+    
+    # macOS Big Sur or later with existing folder
+    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
+    mockery::stub(create_mac_folder, "dir.exists", function(path) TRUE)
+    
+    result <- create_mac_folder()
+    expect_true(result)
+})
+
+test_that("create_mac_folder creates directory successfully on macOS Big Sur+", {
+    skip_on_cran()
+    
+    dir_created <- FALSE
+    
+    # Mock macOS Big Sur (Darwin 21)
+    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
+    mockery::stub(create_mac_folder, "dir.exists", function(path) dir_created)
+    mockery::stub(create_mac_folder, "dir.create", function(path, recursive) {
+        dir_created <<- TRUE
+        TRUE
+    })
+    
+    result <- create_mac_folder()
+    expect_true(result)
+    expect_true(dir_created)
+})
+
+test_that("create_mac_folder prompts user when dir.create fails and user says Yes", {
+    skip_on_cran()
+    
+    system_called <- FALSE
+    
+    # Mock macOS Big Sur with failing dir.create
+    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
+    mockery::stub(create_mac_folder, "dir.exists", function(path) FALSE)
+    mockery::stub(create_mac_folder, "dir.create", function(path, recursive) stop("Permission denied"))
+    mockery::stub(create_mac_folder, "readline", function(prompt) "Yes")
+    mockery::stub(create_mac_folder, "Sys.sleep", function(time) NULL)
+    mockery::stub(create_mac_folder, "system", function(command, input) {
+        system_called <<- TRUE
+        0
+    })
+    mockery::stub(create_mac_folder, "askpass::askpass", function(prompt) "password123")
+    
+    expect_message(
+        result <- create_mac_folder(),
+        "The ASReml-R package uses Reprise license management"
+    )
+    expect_true(system_called)
+})
+
+test_that("create_mac_folder prompts user with 'Y' response", {
+    skip_on_cran()
+    
+    system_called <- FALSE
+    
+    # Mock with user responding 'Y' instead of 'Yes'
+    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
+    mockery::stub(create_mac_folder, "dir.exists", function(path) FALSE)
+    mockery::stub(create_mac_folder, "dir.create", function(path, recursive) stop("Permission denied"))
+    mockery::stub(create_mac_folder, "readline", function(prompt) "Y")
+    mockery::stub(create_mac_folder, "Sys.sleep", function(time) NULL)
+    mockery::stub(create_mac_folder, "system", function(command, input) {
+        system_called <<- TRUE
+        0
+    })
+    mockery::stub(create_mac_folder, "askpass::askpass", function(prompt) "password123")
+    
+    result <- create_mac_folder()
+    expect_true(system_called)
+})
+
+test_that("create_mac_folder prompts user with lowercase 'yes' response", {
+    skip_on_cran()
+    
+    system_called <- FALSE
+    
+    # Mock with user responding 'yes' (lowercase)
+    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
+    mockery::stub(create_mac_folder, "dir.exists", function(path) FALSE)
+    mockery::stub(create_mac_folder, "dir.create", function(path, recursive) stop("Permission denied"))
+    mockery::stub(create_mac_folder, "readline", function(prompt) "yes")
+    mockery::stub(create_mac_folder, "Sys.sleep", function(time) NULL)
+    mockery::stub(create_mac_folder, "system", function(command, input) {
+        system_called <<- TRUE
+        0
+    })
+    mockery::stub(create_mac_folder, "askpass::askpass", function(prompt) "password123")
+    
+    result <- create_mac_folder()
+    expect_true(system_called)
+})
+
+test_that("create_mac_folder stops when user declines to create folder", {
+    skip_on_cran()
+    
+    # Mock with user saying No
+    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
+    mockery::stub(create_mac_folder, "dir.exists", function(path) FALSE)
+    mockery::stub(create_mac_folder, "dir.create", function(path, recursive) stop("Permission denied"))
+    mockery::stub(create_mac_folder, "readline", function(prompt) "No")
+    
+    expect_error(
+        create_mac_folder(),
+        "ASReml-R cannot be installed until the folder '/Library/Application Support/Reprise' is created"
+    )
+})
+
+test_that("create_mac_folder stops when user gives invalid response", {
+    skip_on_cran()
+    
+    # Mock with user giving invalid response
+    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
+    mockery::stub(create_mac_folder, "dir.exists", function(path) FALSE)
+    mockery::stub(create_mac_folder, "dir.create", function(path, recursive) stop("Permission denied"))
+    mockery::stub(create_mac_folder, "readline", function(prompt) "Maybe")
+    
+    expect_error(
+        create_mac_folder(),
+        "ASReml-R cannot be installed until the folder '/Library/Application Support/Reprise' is created"
+    )
+})
+
+test_that("create_mac_folder handles NA release version gracefully", {
+    skip_on_cran()
+    
+    # Mock Sys.info with NA release
+    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = NA))
+    
+    result <- create_mac_folder()
+    expect_true(result)
+})
+
+test_that("create_mac_folder handles NULL release version gracefully", {
+    skip_on_cran()
+    
+    # Mock Sys.info with NULL release
+    mockery::stub(create_mac_folder, "Sys.info", function() list(sysname = "Darwin", release = NULL))
+    
+    result <- create_mac_folder()
+    expect_true(result)
+})
+
 test_that("download_asreml_package handles download failures", {
     skip_on_cran()
     mockery::stub(download_asreml_package, "curl::curl_fetch_disk", function(...) stop("Network error"))
