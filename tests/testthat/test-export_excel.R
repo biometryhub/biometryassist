@@ -171,7 +171,7 @@ test_that("color transparency removal works with mixed palette in export functio
   withr::with_tempfile("tmpfile", fileext = ".xlsx", {
     expect_no_error(
       export_design_to_excel(df, value_column = "treatments",
-                             # filename = tmpfile,
+                             filename = tmpfile,
                              palette = mixed_palette)
     )
     expect_true(file.exists(tmpfile))
