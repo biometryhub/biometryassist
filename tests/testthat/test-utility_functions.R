@@ -22,7 +22,7 @@ test_that("Output prints if crayon is not installed", {
 
 test_that("Warning prints if cran version is newer", {
     rlang::local_interactive(value = TRUE)
-    local_mocked_bindings(.compare_version = function(...) 1L)
+    local_mocked_bindings(compare_version = function(...) 1L)
     expect_warning(print(biometryassist:::.onAttach(pkg = "biometryassist")))
 })
 

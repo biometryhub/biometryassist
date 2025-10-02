@@ -197,7 +197,7 @@ autoplot.design <- function(object,
 
     # Text colour setup
     colours <- data.frame(treatments = levels(object[[trt_expr]]),
-                          text_col = ifelse(.is_light_colour(colour_palette), "black", "white"))
+                          text_col = ifelse(is_light_colour(colour_palette), "black", "white"))
     colnames(colours)[1] <- trt_expr
     object <- merge(object, colours)
 
@@ -220,66 +220,6 @@ autoplot.design <- function(object,
     plt <- apply_axis_styling(plt, margin, object, row_expr, column_expr)
 
     return(plt)
-}
-
-#' @keywords internal
-setup_colour_palette <- function(palette, ntrt) {
-    # Handle custom colour palettes (vector of colours)
-    if(length(palette) > 1) {
-        if(length(palette) != ntrt) {
-            stop("palette needs to be a single string to choose a predefined palette, or ",
-                 ntrt, " custom colours.")
-        }
-        return(palette)
-    }
-
-    # Handle single string palette names
-    palette <- tolower(trimws(palette))
-
-    # Default Spectral palette
-    if(palette == "default") {
-        return(grDevices::colorRampPalette(scales::brewer_pal(palette = "Spectral")(11))(ntrt))
-    }
-
-    # colourBrewer palettes
-    brewer_palettes <- c("brbg", "piyg", "prgn", "puor", "rdbu", "rdgy",
-                         "rdylbu", "rdylgn", "spectral", "set3", "paired")
-    if(palette %in% brewer_palettes) {
-        # Convert to proper case for scales::brewer_pal
-        palette_proper <- switch(palette,
-                                 "brbg" = "BrBG",
-                                 "piyg" = "PiYG",
-                                 "prgn" = "PRGn",
-                                 "puor" = "PuOr",
-                                 "rdbu" = "RdBu",
-                                 "rdgy" = "RdGy",
-                                 "rdylbu" = "RdYlBU",
-                                 "rdylgn" = "RdYlGn",
-                                 "spectral" = "Spectral",
-                                 "set3" = "Set3",
-                                 "paired" = "Paired"
-        )
-        return(grDevices::colorRampPalette(scales::brewer_pal(palette = palette_proper)(11))(ntrt))
-    }
-
-    # colour blind friendly palettes (viridis family)
-    viridis_patterns <- c("colou?r([[:punct:]]|[[:space:]]?)blind", "cb", "viridis")
-    if(any(sapply(viridis_patterns, function(pattern) grepl(pattern, palette, ignore.case = TRUE)))) {
-        return(scales::viridis_pal(option = "viridis")(ntrt))
-    }
-
-    # Other viridis options
-    viridis_options <- c("magma", "inferno", "cividis", "plasma", "rocket", "mako", "turbo")
-    if(palette %in% viridis_options) {
-        return(scales::viridis_pal(option = palette)(ntrt))
-    }
-
-    # If we get here, the palette name is invalid
-    valid_options <- c("default", brewer_palettes, "colour blind", "colour blind",
-                       "cb", viridis_options)
-    stop("Invalid value for palette. Valid options are: ",
-         paste(valid_options, collapse = ", "),
-         ", or a vector of ", ntrt, " custom colours.", call. = FALSE)
 }
 
 
