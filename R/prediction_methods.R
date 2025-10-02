@@ -188,12 +188,12 @@ process_aliased <- function(pp, sed, classify, exclude_cols = c("predicted.value
         }
 
         # Create warning message
-        warn_string <- if(length(aliased_names) > 1) {
-            paste0("Some levels of ", classify, " are aliased. They have been removed from predicted output.\n",
+        if(length(aliased_names) > 1) {
+            warn_string <- paste0("Some levels of ", classify, " are aliased. They have been removed from predicted output.\n",
                   "  Aliased levels are: ", paste(aliased_names, collapse = ", "),
                   ".\n  These levels are saved in the output object.")
         } else {
-            paste0("A level of ", classify, " is aliased. It has been removed from predicted output.\n",
+            warn_string <- paste0("A level of ", classify, " is aliased. It has been removed from predicted output.\n",
                   "  Aliased level is: ", aliased_names,
                   ".\n  This level is saved as an attribute of the output object.")
         }
