@@ -1,3 +1,19 @@
+#' Convert column number to Excel column letter
+#' @param num Integer column number
+#' @return Character Excel column letter(s)
+#' @keywords internal
+int2col <- function(num) {
+    # Convert integer to Excel column letters (A, B, ..., Z, AA, AB, ...)
+    if (num <= 0) stop("Column number must be positive")
+    result <- ""
+    while (num > 0) {
+        remainder <- (num - 1) %% 26
+        result <- paste0(LETTERS[remainder + 1], result)
+        num <- (num - remainder - 1) %/% 26
+    }
+    return(result)
+}
+
 #' Export Experimental Design Layout to Excel
 #'
 #' Converts an experimental design dataframe into a spatial layout matrix
@@ -27,7 +43,7 @@
 #'   \item Custom vector of colours (must match number of unique treatments)
 #' }
 #'
-#' Requires the 'openxlsx' package to be installed.
+#' Requires the 'openxlsx2' package to be installed.
 #'
 #' @examples
 #' \dontrun{
@@ -46,10 +62,10 @@ export_design_to_excel <- function(design_df, value_column = "treatments",
                                    filename = "experimental_design.xlsx",
                                    palette = "default") {
 
-    # Check if openxlsx is available
-    if (!rlang::is_installed("openxlsx")) {
-        stop("Package 'openxlsx' is required for Excel export but is not installed.\n",
-             "Install it with: install.packages('openxlsx')")
+    # Check if openxlsx2 is available
+    if (!rlang::is_installed("openxlsx2")) {
+        stop("Package 'openxlsx2' is required for Excel export but is not installed.\n",
+             "Install it with: install.packages('openxlsx2')")
     }
 
     # If design_df is a list (e.g., from a design generation function), extract the design dataframe
@@ -84,42 +100,35 @@ export_design_to_excel <- function(design_df, value_column = "treatments",
     rownames(layout_df) <- paste("Row", 1:max_row)
     colnames(layout_df) <- paste("Col", 1:max_col)
 
-    # Create workbook
-    wb <- openxlsx::createWorkbook()
-
-    # Add worksheets
-    openxlsx::addWorksheet(wb, "Layout")
-    openxlsx::addWorksheet(wb, "Raw_Data")
+    # Create workbook and add worksheets
+    wb <- openxlsx2::wb_workbook()$
+        add_worksheet("Layout")$
+        add_worksheet("Raw_Data")
 
     # Write data
-    openxlsx::writeData(wb, "Layout", layout_df, rowNames = TRUE)
-    openxlsx::writeData(wb, "Raw_Data", design_df)
-
-    # Apply basic formatting
-    header_style <- openxlsx::createStyle(
-        fontSize = 12,
-        fontColour = "white",
-        fgFill = "#4F81BD",
-        halign = "center",
-        valign = "center",
-        textDecoration = "bold"
-    )
-
-    cell_style <- openxlsx::createStyle(
-        halign = "center",
-        valign = "center",
-        border = "TopBottomLeftRight",
-        borderColour = "black"
-    )
+    wb$add_data(sheet = "Layout", x = layout_df, rowNames = TRUE)
+    wb$add_data(sheet = "Raw_Data", x = design_df)
 
     # Get dimensions for formatting
     rows <- nrow(layout_df) + 1
     cols <- ncol(layout_df) + 1
 
-    # Apply basic styles
-    openxlsx::addStyle(wb, "Layout", header_style, rows = 1, cols = 1:cols)
-    openxlsx::addStyle(wb, "Layout", header_style, rows = 1:rows, cols = 1)
-    openxlsx::addStyle(wb, "Layout", cell_style, rows = 2:rows, cols = 2:cols, gridExpand = TRUE)
+    # Apply header style (row 1 and column 1)
+    # wb$add_fill(sheet = "Layout", dims = paste0("A1:", int2col(cols), "1"), color = openxlsx2::wb_color("#4F81BD"))
+    # wb$add_fill(sheet = "Layout", dims = paste0("A1:A", rows), color = openxlsx2::wb_color("#4F81BD"))
+    wb$add_font(sheet = "Layout", dims = paste0("A1:", int2col(cols), "1"),
+                bold = TRUE, size = 12)
+    wb$add_font(sheet = "Layout", dims = paste0("A1:A", rows),
+                bold = TRUE, size = 12)
+    wb$add_cell_style(sheet = "Layout", dims = paste0("A1:", int2col(cols), rows),
+                      horizontal = "center", vertical = "center")
+
+    # Apply borders to data cells
+    wb$add_border(sheet = "Layout", dims = paste0("B2:", int2col(cols), rows),
+                  top_color = openxlsx2::wb_color("black"),
+                  bottom_color = openxlsx2::wb_color("black"),
+                  left_color = openxlsx2::wb_color("black"),
+                  right_color = openxlsx2::wb_color("black"))
 
     # Apply colour coding if palette is specified
     if (!is.null(palette)) {
@@ -128,8 +137,8 @@ export_design_to_excel <- function(design_df, value_column = "treatments",
         ntrt <- length(unique_treatments)
 
         colours <- setup_colour_palette(palette, ntrt)
-        
-        # Expand 3-digit hex codes to 6-digit and 4-digit to 8-digit for openxlsx compatibility
+
+        # Expand 3-digit hex codes to 6-digit and 4-digit to 8-digit for openxlsx2 compatibility
         colours <- gsub("^#([0-9A-Fa-f])([0-9A-Fa-f])([0-9A-Fa-f])$", "#\\1\\1\\2\\2\\3\\3", colours)  # 3-digit -> 6-digit
         colours <- gsub("^#([0-9A-Fa-f])([0-9A-Fa-f])([0-9A-Fa-f])([0-9A-Fa-f])$", "#\\1\\1\\2\\2\\3\\3\\4\\4", colours)  # 4-digit -> 8-digit
         # Remove transparency from 8-digit hex codes
@@ -144,25 +153,33 @@ export_design_to_excel <- function(design_df, value_column = "treatments",
                 cell_value <- layout_df[i-1, j-1]
                 if (!is.na(cell_value)) {
                     colour <- colour_map[[as.character(cell_value)]]
-                    coloured_style <- openxlsx::createStyle(
-                        halign = "center",
-                        valign = "center",
-                        border = "TopBottomLeftRight",
-                        borderColour = "black",
-                        fgFill = colour,
-                        fontColour = ifelse(.is_light_colour(colour), "black", "white")
-                    )
-                    openxlsx::addStyle(wb, "Layout", coloured_style, rows = i, cols = j)
+                    cell_ref <- paste0(int2col(j), i)
+
+                    # Apply fill color
+                    wb$add_fill(sheet = "Layout", dims = cell_ref,
+                               color = openxlsx2::wb_color(colour))
+
+                    # Apply font color based on background lightness
+                    font_col <- ifelse(is_light_colour(colour), "black", "white")
+                    wb$add_font(sheet = "Layout", dims = cell_ref,
+                               color = openxlsx2::wb_color(font_col))
+
+                    # Apply borders
+                    wb$add_border(sheet = "Layout", dims = cell_ref,
+                                 top_color = openxlsx2::wb_color("black"),
+                                 bottom_color = openxlsx2::wb_color("black"),
+                                 left_color = openxlsx2::wb_color("black"),
+                                 right_color = openxlsx2::wb_color("black"))
                 }
             }
         }
     }
 
     # Auto-size columns
-    openxlsx::setColWidths(wb, "Layout", cols = 1:cols, widths = "auto")
+    wb$set_col_widths(sheet = "Layout", cols = 1:cols, widths = "auto")
 
     # Save workbook
-    openxlsx::saveWorkbook(wb, filename, overwrite = TRUE)
+    wb$save(file = filename, overwrite = TRUE)
 
     message("Excel file saved as: ", filename)
     return(invisible(layout_df))

@@ -30,7 +30,7 @@ test_that("export_design_to_excel works with a list input", {
 })
 
 test_that("export_design_to_excel returns invisibly when exporting to Excel", {
-  skip_if_not_installed("openxlsx")
+  skip_if_not_installed("openxlsx2")
   df <- data.frame(
     row = rep(1:2, each = 2),
     col = rep(1:2, 2),
@@ -46,7 +46,7 @@ test_that("export_design_to_excel returns invisibly when exporting to Excel", {
 })
 
 test_that("export_design_to_excel uses custom palette", {
-  skip_if_not_installed("openxlsx")
+  skip_if_not_installed("openxlsx2")
   df <- data.frame(
     row = rep(1:2, each = 2),
     col = rep(1:2, 2),
@@ -62,17 +62,17 @@ test_that("export_design_to_excel uses custom palette", {
   })
 })
 
-test_that("function fails gracefully when openxlsx is not available", {
+test_that("function fails gracefully when openxlsx2 is not available", {
     mockery::stub(export_design_to_excel, "rlang::is_installed", function(pkg) FALSE)
 
     expect_error(
         export_design_to_excel(test_data),
-        "Package 'openxlsx' is required.*not installed"
+        "Package 'openxlsx2' is required.*not installed"
     )
 })
 
 test_that("color transparency removal works correctly", {
-  skip_if_not_installed("openxlsx")
+  skip_if_not_installed("openxlsx2")
 
   # Test data
   df <- data.frame(
@@ -151,7 +151,7 @@ test_that("color transparency removal handles mixed color formats", {
 })
 
 test_that("color transparency removal works with mixed palette in export function", {
-  skip_if_not_installed("openxlsx")
+  skip_if_not_installed("openxlsx2")
 
   # Test data with 4 treatments to match custom palette
   df <- data.frame(
@@ -162,7 +162,7 @@ test_that("color transparency removal works with mixed palette in export functio
 
   # Mixed custom palette with transparency
   mixed_palette <- c(
-    "#FF0000FF",      # 8-digit hex with alpha
+    "#FF000055",      # 8-digit hex with alpha
     "#0F0A",          # 4-digit hex with alpha
     "blue",           # R color name
     "#123456"         # 6-digit hex (no alpha)
@@ -171,7 +171,7 @@ test_that("color transparency removal works with mixed palette in export functio
   withr::with_tempfile("tmpfile", fileext = ".xlsx", {
     expect_no_error(
       export_design_to_excel(df, value_column = "treatments",
-                             filename = tmpfile,
+                             # filename = tmpfile,
                              palette = mixed_palette)
     )
     expect_true(file.exists(tmpfile))

@@ -56,7 +56,7 @@ Suggests:
     ggspatial,
     knitr,
     mockery,
-    openxlsx,
+    openxlsx2,
     rmarkdown,
     testthat,
     vdiffr,
