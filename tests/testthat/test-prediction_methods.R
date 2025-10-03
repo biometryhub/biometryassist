@@ -512,3 +512,81 @@ test_that("get_predictions.asreml handles multiple aliased values with plural wa
     expect_true(all(c("0.4:C", "0.8:E") %in% result$aliased_names))
     expect_equal(length(result$aliased_names), 2)
 })
+
+test_that("get_predictions.lm handles reversed two-way interaction order", {
+    skip_if_not_installed("emmeans")
+
+    # Simple model with two-way interaction
+    set.seed(123)
+    dat <- data.frame(
+        y = rnorm(12),
+        A = factor(rep(c("A1", "A2"), each = 6)),
+        B = factor(rep(c("B1", "B2", "B3"), 4))
+    )
+    model <- lm(y ~ A * B, data = dat)
+
+    # Get predictions with correct order (A:B)
+    result1 <- get_predictions.lm(model, classify = "A:B")
+
+    # Get predictions with reversed order (B:A)
+    result2 <- get_predictions.lm(model, classify = "B:A")
+
+    # Both should succeed and return same predictions
+    expect_equal(result1$predictions$predicted.value, result2$predictions$predicted.value)
+    expect_equal(nrow(result1$predictions), nrow(result2$predictions))
+})
+
+test_that("get_predictions.lm handles three-way interaction in any order", {
+    skip_if_not_installed("emmeans")
+
+    # Simple model with three-way interaction
+    set.seed(456)
+    dat <- data.frame(
+        y = rnorm(16),
+        A = factor(rep(c("A1", "A2"), each = 8)),
+        B = factor(rep(c("B1", "B2"), 8)),
+        C = factor(rep(c("C1", "C2"), each = 4, times = 2))
+    )
+    model <- lm(y ~ A * B * C, data = dat)
+
+    # Get predictions with different orderings
+    result_abc <- get_predictions.lm(model, classify = "A:B:C")
+    result_cba <- get_predictions.lm(model, classify = "C:B:A")
+    result_bac <- get_predictions.lm(model, classify = "B:A:C")
+
+    # All should succeed and return same number of predictions
+    expect_equal(nrow(result_abc$predictions), nrow(result_cba$predictions))
+    expect_equal(nrow(result_abc$predictions), nrow(result_bac$predictions))
+
+    # Predicted values should be the same (may be in different order)
+    expect_setequal(result_abc$predictions$predicted.value, result_cba$predictions$predicted.value)
+    expect_setequal(result_abc$predictions$predicted.value, result_bac$predictions$predicted.value)
+})
+
+test_that("check_classify_in_terms works correctly", {
+    # Simple terms match directly
+    model_terms <- c("A", "B", "C", "A:B", "A:C", "B:C", "A:B:C")
+
+    # Direct matches
+    expect_equal(check_classify_in_terms("A", model_terms), "A")
+    expect_equal(check_classify_in_terms("A:B", model_terms), "A:B")
+    expect_equal(check_classify_in_terms("A:B:C", model_terms), "A:B:C")
+
+    # Reversed two-way interactions
+    expect_equal(check_classify_in_terms("B:A", model_terms), "A:B")
+    expect_equal(check_classify_in_terms("C:A", model_terms), "A:C")
+    expect_equal(check_classify_in_terms("C:B", model_terms), "B:C")
+
+    # Three-way interactions in different orders
+    expect_equal(check_classify_in_terms("B:A:C", model_terms), "A:B:C")
+    expect_equal(check_classify_in_terms("C:B:A", model_terms), "A:B:C")
+    expect_equal(check_classify_in_terms("B:C:A", model_terms), "A:B:C")
+
+    # Non-existent terms error
+    expect_error(check_classify_in_terms("D", model_terms), "not a term in the model")
+    expect_error(check_classify_in_terms("A:D", model_terms), "not a term in the model")
+
+    # Wrong number of components doesn't match
+    model_terms2 <- c("A", "B", "A:B")
+    expect_error(check_classify_in_terms("A:B:C", model_terms2), "not a term in the model")
+})
