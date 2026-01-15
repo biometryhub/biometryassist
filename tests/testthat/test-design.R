@@ -191,7 +191,7 @@ test_that("Crossed RCBD designs with double row blocks are supported", {
                                 autoplot(d6.2), variant = ggplot2_variant())
 })
 
-test_that("Crossed RCBD designs with double row blocks are supported", {
+test_that("Crossed RCBD designs with square blocks are supported", {
     d6.3 <- design(type = "crossed:rcbd", treatments = c(3, 2),
                    reps = 4, nrows = 6, ncols = 4, brows = 3, bcols = 2,
                    seed = 42, quiet = TRUE)
@@ -827,8 +827,8 @@ test_that("Adding buffers to plots works", {
     expect_false(identical(d1, d2))
     expect_in("buffer", d1$design$treatments)
 
-    expect_equal(length(unique(d1$design$row)), 23)
-    expect_equal(length(unique(d1$design$col)), 4)
+    expect_equal(n_unique(d1$design$row), 23)
+    expect_equal(n_unique(d1$design$col), 4)
     vdiffr::expect_doppelganger(title = "Row buffers",
                                 autoplot(d1), variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "Column buffers",
@@ -861,8 +861,8 @@ test_that("Adding buffers to plots works for RCBD", {
 
     expect_in("buffer", d1$design$treatments)
 
-    expect_equal(length(unique(d2$design$row)), 11)
-    expect_equal(length(unique(d2$design$col)), 9)
+    expect_equal(n_unique(d2$design$row), 11)
+    expect_equal(n_unique(d2$design$col), 9)
     vdiffr::expect_doppelganger(title = "Row buffers RCBD",
                                 autoplot(d1), variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "Column buffers RCBD",

@@ -8,10 +8,10 @@
 satab <- function(design.obj) {
   design_info <- get_design_info(design.obj)
   design_book <- design.obj$book
-  
+
   # Get ANOVA structure for this design
   anova_structure <- get_anova_structure(design_info$type, design_book)
-  
+
   # Format and return
   format_satab(anova_structure, design_info$type)
 }
@@ -38,9 +38,9 @@ get_anova_structure <- function(design_type, design_book) {
 anova_crd <- function(design_book) {
   trt_name <- names(design_book)[3]
   totdf <- nrow(design_book) - 1
-  trtdf <- length(unique(design_book[, 3])) - 1
+  trtdf <- n_unique(design_book[, 3]) - 1
   errdf <- totdf - trtdf
-  
+
   list(
     sources = c(trt_name, "Residual", "Total"),
     df = c(trtdf, errdf, totdf),
@@ -52,11 +52,11 @@ anova_crd <- function(design_book) {
 #' @noRd
 anova_rcbd <- function(design_book) {
   trt_name <- names(design_book)[3]
-  blkdf <- length(unique(design_book$block)) - 1
+  blkdf <- n_unique(design_book$block) - 1
   totdf <- nrow(design_book) - 1
-  trtdf <- length(unique(design_book[, 3])) - 1
+  trtdf <- n_unique(design_book[, 3]) - 1
   errdf <- totdf - trtdf - blkdf
-  
+
   list(
     sources = c("Block stratum", trt_name, "Residual", "Total"),
     df = c(blkdf, trtdf, errdf, totdf),
@@ -68,12 +68,12 @@ anova_rcbd <- function(design_book) {
 #' @noRd
 anova_lsd <- function(design_book) {
   trt_name <- names(design_book)[4]
-  rowdf <- length(unique(design_book$row)) - 1
-  coldf <- length(unique(design_book$col)) - 1
+  rowdf <- n_unique(design_book$row) - 1
+  coldf <- n_unique(design_book$col) - 1
   totdf <- nrow(design_book) - 1
-  trtdf <- length(unique(design_book[, 4])) - 1
+  trtdf <- n_unique(design_book[, 4]) - 1
   errdf <- totdf - trtdf - coldf - rowdf
-  
+
   list(
     sources = c("Row", "Column", trt_name, "Residual", "Total"),
     df = c(rowdf, coldf, trtdf, errdf, totdf),
@@ -84,21 +84,21 @@ anova_lsd <- function(design_book) {
 #' ANOVA structure for Factorial CRD
 #' @noRd
 anova_factorial_crd <- function(design_book) {
-  trt_names <- names(design_book)[3:(ncol(design_book) - 1)]
+  trt_names <- names(design_book)[3:(ncol(design_book))]
   totdf <- nrow(design_book) - 1
-  
+
   # Calculate df for each factor
   trtdf <- sapply(trt_names, function(name) {
-    length(unique(design_book[[name]])) - 1
+    n_unique(design_book[[name]]) - 1
   })
-  
+
   # Interaction df
   interaction_name <- paste(trt_names, collapse = ":")
   interaction_df <- prod(trtdf)
-  
+
   # Residual df
   errdf <- totdf - sum(trtdf) - interaction_df
-  
+
   list(
     sources = c(trt_names, interaction_name, "Residual", "Total"),
     df = c(trtdf, interaction_df, errdf, totdf),
@@ -109,22 +109,22 @@ anova_factorial_crd <- function(design_book) {
 #' ANOVA structure for Factorial RCBD
 #' @noRd
 anova_factorial_rcbd <- function(design_book) {
-  trt_names <- names(design_book)[3:(ncol(design_book) - 1)]
+  trt_names <- names(design_book)[3:(ncol(design_book))]
   totdf <- nrow(design_book) - 1
-  blkdf <- length(unique(design_book$block)) - 1
-  
+  blkdf <- n_unique(design_book$block) - 1
+
   # Calculate df for each factor
   trtdf <- sapply(trt_names, function(name) {
-    length(unique(design_book[[name]])) - 1
+    n_unique(design_book[[name]]) - 1
   })
-  
+
   # Interaction df
   interaction_name <- paste(trt_names, collapse = ":")
   interaction_df <- prod(trtdf)
-  
+
   # Residual df
   errdf <- totdf - sum(trtdf) - interaction_df - blkdf
-  
+
   list(
     sources = c("Block stratum", trt_names, interaction_name, "Residual", "Total"),
     df = c(blkdf, trtdf, interaction_df, errdf, totdf),
@@ -135,24 +135,24 @@ anova_factorial_rcbd <- function(design_book) {
 #' ANOVA structure for Factorial LSD
 #' @noRd
 anova_factorial_lsd <- function(design_book) {
-  rowdf <- length(unique(design_book$row)) - 1
-  coldf <- length(unique(design_book$col)) - 1
+  rowdf <- n_unique(design_book$row) - 1
+  coldf <- n_unique(design_book$col) - 1
   totdf <- nrow(design_book) - 1
-  
-  trt_names <- names(design_book)[4:(ncol(design_book) - 1)]
-  
+
+  trt_names <- names(design_book)[4:(ncol(design_book))]
+
   # Calculate df for each factor
   trtdf <- sapply(trt_names, function(name) {
-    length(unique(design_book[[name]])) - 1
+    n_unique(design_book[[name]]) - 1
   })
-  
+
   # Interaction df
   interaction_name <- paste(trt_names, collapse = ":")
   interaction_df <- prod(trtdf)
-  
+
   # Residual df
   errdf <- totdf - sum(trtdf) - interaction_df - rowdf - coldf
-  
+
   list(
     sources = c("Row", "Column", trt_names, interaction_name, "Residual", "Total"),
     df = c(rowdf, coldf, trtdf, interaction_df, errdf, totdf),
@@ -163,23 +163,27 @@ anova_factorial_lsd <- function(design_book) {
 #' ANOVA structure for Split Plot
 #' @noRd
 anova_split <- function(design_book) {
-  blkdf <- length(unique(design_book$block)) - 1
+  # ###### HARD CODING HERE ##### assumes a column named 'block' exists
+  blkdf <- n_unique(design_book$block) - 1
   totdf <- nrow(design_book) - 1
-  numwplots <- nrow(design_book) / length(unique(design_book$subplots))
-  
+  # ###### HARD CODING HERE ##### assumes a column named 'subplots' exists and defines the number of subplots
+  numwplots <- nrow(design_book) / n_unique(design_book$splots)
+
+  # ###### HARD CODING HERE ##### assumes whole-plot and subplot treatment columns are 5 and 6
   trtAname <- names(design_book)[5]
   trtBname <- names(design_book)[6]
-  
-  trtAdf <- length(unique(design_book[, 5])) - 1
-  trtBdf <- length(unique(design_book[, 6])) - 1
+
+  # ###### HARD CODING HERE ##### uses column indices 5 and 6 for whole-plot/subplot treatment levels
+  trtAdf <- n_unique(design_book[, 5]) - 1
+  trtBdf <- n_unique(design_book[, 6]) - 1
   trtABdf <- trtAdf * trtBdf
-  
+
   wpresdf <- (numwplots - 1) - blkdf - trtAdf
   errdf <- totdf - trtAdf - trtBdf - trtABdf - blkdf - wpresdf
-  
+
   list(
     sources = c("Block stratum", trtAname, "Whole plot Residual",
-                trtBname, paste(trtAname, trtBname, sep = ":"), 
+                trtBname, paste(trtAname, trtBname, sep = ":"),
                 "Subplot Residual", "Total"),
     df = c(blkdf, trtAdf, wpresdf, trtBdf, trtABdf, errdf, totdf),
     strata = list(
@@ -200,29 +204,32 @@ format_satab <- function(anova_structure, design_type) {
   if (design_type == "split") {
     return(format_satab_split(anova_structure))
   }
-  
+
   # Standard formatting
   output <- c(
+    # ###### HARD CODING HERE ##### fixed output widths and separator lengths assume monospace console printing
     paste0(format("Source of Variation", width = 40), "df", "\n"),
     "=============================================\n"
   )
-  
+
   sources <- anova_structure$sources
   df <- anova_structure$df
-  
+
   for (i in seq_along(sources)) {
     # Add separator after block stratum
     if (!is.null(anova_structure$strata) && i == 1) {
+      # ###### HARD CODING HERE ##### assumes the first source is the block stratum when strata is present
       output <- c(output, paste0(format(sources[i], width = 40), df[i], "\n"))
       output <- c(output, "---------------------------------------------\n")
     } else if (sources[i] == "Total") {
+      # ###### HARD CODING HERE ##### assumes a source literally named 'Total' exists and should be preceded by a separator
       output <- c(output, "=============================================\n")
       output <- c(output, paste0(format(sources[i], width = 40), df[i], "\n"))
     } else {
       output <- c(output, paste0(format(sources[i], width = 40), df[i], "\n"))
     }
   }
-  
+
   class(output) <- c("satab", class(output))
   return(output)
 }
@@ -233,31 +240,36 @@ format_satab_split <- function(anova_structure) {
   sources <- anova_structure$sources
   df <- anova_structure$df
   names <- anova_structure$names
-  
+
+  # ###### HARD CODING HERE ##### positional indexing into df[] assumes fixed ordering of split-plot sources
   # Determine width based on df magnitude
+  # ###### HARD CODING HERE ##### fixed widths (44/45/35/36) are tuned for the current text layout
   width1 <- ifelse(df[1] > 10, 44, 45)
   width2 <- ifelse(df[2] > 10, 35, 36)
   width3 <- ifelse(df[4] > 10, 35, 36)
   width4 <- ifelse(df[5] > 10, 35, 36)
   width5 <- ifelse(df[7] > 10, 44, 45)
-  
+
   output <- c(
+    # ###### HARD CODING HERE ##### fixed formatting and indentation assume monospace console printing
     paste0(format("Source of Variation", width = 45), "df", "\n"),
     "==================================================\n",
     paste0(format(sources[1], width = width1), df[1], "\n"),
     "--------------------------------------------------\n",
     "Whole plot stratum\n",
+    # ###### HARD CODING HERE ##### indentation width = 9 is tuned for current layout
     paste0(format(" ", width = 9), format(sources[2], width = width2), df[2], "\n"),
     paste0(format(sources[3], width = 45), df[3], "\n"),
     "==================================================\n",
     "Subplot stratum\n",
+    # ###### HARD CODING HERE ##### indentation width = 9 is tuned for current layout
     paste0(format(" ", width = 9), format(sources[4], width = width3), df[4], "\n"),
     paste0(format(" ", width = 9), format(sources[5], width = width4), df[5], "\n"),
     paste0(format(" ", width = 9), format(sources[6], width = 35), df[6], "\n"),
     "==================================================\n",
     paste0(format("Total", width = width5), df[7], "\n")
   )
-  
+
   class(output) <- c("satab", class(output))
   return(output)
 }
