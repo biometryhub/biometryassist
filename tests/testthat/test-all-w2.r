@@ -1,63 +1,5 @@
 # Load pre-computed models once for reuse across tests
-load(test_path("data", "w2_models.Rdata"), envir = .GlobalEnv)
-
-# AOV models
-# example1.aov <- aov(RL ~ trt, data = example1)
-# example2.aov <- aov(TuberLengthGrowth ~ trt, data = example2)
-# example3.aov <- aov(Yield ~ Block + Variety, data = example3)
-# example4.aov <- aov(DM ~ row + col + trt, data = example4)
-# exercise1.aov <- aov(Yield ~ Variety, data = exercise1)
-# exercise2.aov <- aov(Time ~ Treatment, data = exercise2)
-# exercise3.aov <- aov(AverageFruitSize ~ Replicate + Variety, data = exercise3)
-# exercise4.aov <- aov(Yield ~ Block + SeedingRate, data = exercise4)
-# exercise5.aov <- aov(EarInfect ~ row + col + Treatment, data = exercise5)
-# exercise6.aov <- aov(SugarYield ~ row + col + Treatment, data = exercise6)
-#
-# example3.asr <- asreml::asreml(Yield ~ Variety, random = ~ Block, residual = ~ id(Plot),
-#                        data = example3, trace = FALSE)
-# example4.asr <- asreml::asreml(DM ~ trt, random = ~ row + col,
-#                        residual = ~ id(plots), data = example4,
-#                        trace = FALSE)
-# example5.asr <- asreml::asreml(Yield ~ Genotype + Fungicide + Genotype:Fungicide,
-#                        random = ~ Block + Block:WholePlot, residual = ~ units,
-#                        data = example5, trace = FALSE)
-# example6.asr <- asreml::asreml(Yield ~ Treatment, random = ~ Block,
-#                        residual = ~ id(Column):ar1(Row),
-#                        data = example6, trace = FALSE)
-# example7.asr <- asreml::asreml(Yield ~ Control + Herbicide + Rate + Herbicide:Rate,
-#                        random = ~ Block,  residual = ~ id(Column):ar1(Row),
-#                        data = example7, trace = FALSE)
-# exercise7.asr <- asreml::asreml(AverageFruitSize ~ Variety, random = ~ Replicate,
-#                         residual = ~ id(Plot), data = exercise3, trace = FALSE)
-# exercise8.asr <- asreml::asreml(Yield ~ SeedingRate, random = ~ Block,
-#                         residual = ~ id(Plot), data = exercise4, trace = FALSE)
-# exercise9.asr <- asreml::asreml(EarInfect ~ Treatment,
-#                         random = ~ row + col,
-#                         residual = ~ id(plots),
-#                         data = exercise5, trace = FALSE)
-# exercise10.asr <- asreml::asreml(SugarYield ~ Treatment,
-#                          random = ~ row + col,
-#                          residual = ~ plots,
-#                          data = exercise6, trace = FALSE)
-# exercise11.asr <- asreml::asreml(Yield ~ Genotype + Nitrogen + Genotype:Nitrogen,
-#                          random = ~ Block + Block:WholePlot,
-#                          residual= ~ units,
-#                          data = exercise11, trace = FALSE)
-# exercise12.asr <- asreml::asreml(Yield ~ Variety * Irrigation,
-#                          random = ~ Block + Block:WholePlot,
-#                          residual = ~ units,
-#                          data = exercise12, trace = FALSE)
-# exercise13.asr <- asreml::asreml(Yield ~ Genotype + Nitrogen + Genotype:Nitrogen,
-#                          random = ~ Block + Block:WholePlot,
-#                          residual = ~ id(Column):ar1(Row),
-#                          data = exercise13, trace = FALSE)
-# exercise14.asr <- asreml::asreml(Yield ~ Genotype,
-#                          random = ~ Block,
-#                          residual = ~ id(Column):ar1(Row),
-#                          data = exercise14, trace = FALSE)
-# exercise15.asr <- asreml::asreml(loginf ~ Control + Season + Rate + Season:Rate,
-#                          residual = ~ ar1(col):id(row),
-#                          data = exercise15, trace = FALSE)
+quiet(load(test_path("data", "w2_models.Rdata"), envir = .GlobalEnv))
 
 test_that("example 1 works", {
     skip_on_cran()
@@ -149,7 +91,8 @@ test_that("example 5 works", {
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
     skip_on_os("linux")
-    pred5.out1 <- multiple_comparisons(example5.asr, classify = "Genotype")
+    expect_message(pred5.out1 <- multiple_comparisons(example5.asr, classify = "Genotype"),
+                   "Some treatments sharing the same letter group have non-overlapping confidence intervals")
     expect_snapshot_output(pred5.out1)
     pred5.out2 <- multiple_comparisons(example5.asr, classify = "Fungicide")
     expect_snapshot_output(pred5.out2)
@@ -172,7 +115,8 @@ test_that("example 6 works", {
     # "Some components changed by more than 1% on the last iteration.")
 
     expect_equal(logl.tab$LogLRT.pvalue, '0.003')
-    pred6.out <- multiple_comparisons(example6.asr, classify = "Treatment")
+    expect_message(pred6.out <- multiple_comparisons(example6.asr, classify = "Treatment"),
+                   "Some treatments sharing the same letter group have non-overlapping confidence intervals")
     expect_snapshot_output(pred6.out)
     skip_on_ci()
     skip_on_covr()
@@ -193,9 +137,10 @@ test_that("example 7 works", {
                           resid.terms = c("ar1(Row)"), quiet = TRUE)#,
     # "Some components changed by more than 1% on the last iteration.")
     expect_equal(logl.tab$LogLRT.pvalue, '0.003')
-    expect_warning(pred7.out <- multiple_comparisons(example7.asr, classify = "Herbicide:Rate",
+    expect_message(expect_warning(pred7.out <- multiple_comparisons(example7.asr, classify = "Herbicide:Rate",
                                                      present = c("Control", "Herbicide", "Rate")),
-                   "Some levels of Herbicide:Rate are aliased. They have been removed from predicted output.")
+                   "Some levels of Herbicide:Rate are aliased. They have been removed from predicted output."),
+                   "Some treatments sharing the same letter group have non-overlapping confidence intervals")
     expect_snapshot_output(pred7.out)
     skip_on_ci()
     skip_on_covr()
@@ -213,7 +158,8 @@ test_that("example 7 works", {
 test_that("exercise 1 works", {
     skip_on_cran()
     expect_snapshot_output(anova(exercise1.aov))
-    pred1e.out <- multiple_comparisons(exercise1.aov, classify = "Variety", decimals = 5)
+    expect_message(pred1e.out <- multiple_comparisons(exercise1.aov, classify = "Variety", decimals = 5),
+                   "Some treatments sharing the same letter group have non-overlapping confidence intervals")
     expect_equal(pred1e.out$predicted.value, c(1.97333, 2.13000, 2.13000, 2.14000, 2.19333, 2.24000, 2.27000, 2.28333, 2.52667, 2.54000, 2.75000, 2.75333))
     pred1e.out <- pred1e.out[order(pred1e.out$predicted.value, as.character(pred1e.out$Variety)),]
     expect_snapshot_output(pred1e.out)
@@ -242,7 +188,8 @@ test_that("exercise 2 works", {
 test_that("exercise 3 works", {
     skip_on_cran()
     expect_snapshot_output(anova(exercise3.aov))
-    pred3e.out <- multiple_comparisons(exercise3.aov, classify = "Variety")
+    expect_message(pred3e.out <- multiple_comparisons(exercise3.aov, classify = "Variety"),
+                   "Some treatments sharing the same letter group have non-overlapping confidence intervals")
     expect_equal(pred3e.out$predicted.value, c(2.84, 2.86, 3.08, 4.7, 4.78, 4.96, 8.88))
     expect_snapshot_output(pred3e.out)
     skip_on_ci()
@@ -410,7 +357,8 @@ test_that("exercise 14 works", {
                           resid.terms = "ar1(Row)",
                           quiet = TRUE)
     expect_equal(logl.tab$LogLRT.pvalue, "<0.001")
-    pred14e.out <- multiple_comparisons(exercise14.asr, classify = "Genotype")
+    expect_message(pred14e.out <- multiple_comparisons(exercise14.asr, classify = "Genotype"),
+                   "Some treatments sharing the same letter group have non-overlapping confidence intervals")
     expect_equal(pred14e.out$predicted.value,
                  c(3.68, 3.79, 3.9, 3.91, 3.92, 3.96, 3.96,
                    3.98, 3.98, 4.02, 4.03, 4.04, 4.06, 4.06,
@@ -454,6 +402,7 @@ test_that("exercise 15 works", {
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
+
     vdiffr::expect_doppelganger(title = "exercise15resplot", resplot(exercise15.asr), variant = ggplot2_variant())
     vdiffr::expect_doppelganger(title = "exercise15autoplot1", autoplot(pred15e.out1))
     vdiffr::expect_doppelganger(title = "exercise15autoplot2", autoplot(pred15e.out2))

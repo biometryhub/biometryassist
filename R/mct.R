@@ -247,10 +247,10 @@ multiple_comparisons <- function(model.obj,
     aliased <- result$aliased_names
 
     # Process treatment names
-    pp <- process_treatment_names(pp, classify)
+    pp <- process_treatment_names(pp, classify, vars)
 
     # Calculate critical values and determine pairs that are significantly different
-    result <- calculate_differences(pp, sed, ndf, sig)
+    result <- get_diffs(pp, sed, ndf, sig)
     crit_val <- result$crit_val
     diffs <- result$diffs
 
@@ -326,6 +326,7 @@ print.mct <- function(x, ...) {
 
 #' @importFrom stats formula
 #' @keywords internal
+#' @noRd
 validate_inputs <- function(sig, classify, model.obj, trans) {
     # Check significance level
     if (sig >= 0.5) {
@@ -370,6 +371,7 @@ validate_inputs <- function(sig, classify, model.obj, trans) {
     return(vars)
 }
 
+#' @noRd
 process_treatment_names <- function(pp, classify, vars) {
     # Create Names column
     if (grepl(":", classify)) {
@@ -395,7 +397,8 @@ process_treatment_names <- function(pp, classify, vars) {
     return(pp)
 }
 
-calculate_differences <- function(pp, sed, ndf, sig) {
+#' @noRd
+get_diffs <- function(pp, sed, ndf, sig) {
     # Calculate the critical value
     crit_val <- 1 / sqrt(2) * stats::qtukey((1 - sig), nrow(pp), ndf) * sed
 
@@ -413,6 +416,7 @@ calculate_differences <- function(pp, sed, ndf, sig) {
     return(list(crit_val = crit_val, diffs = diffs))
 }
 
+#' @noRd
 add_confidence_intervals <- function(pp, int.type, sig, ndf) {
     # Calculate confidence interval width
     pp$ci <- switch(
@@ -428,6 +432,7 @@ add_confidence_intervals <- function(pp, int.type, sig, ndf) {
     return(pp)
 }
 
+#' @noRd
 apply_transformation <- function(pp, trans, offset, power) {
     # Set default offset if not provided
     if (is.null(offset)) {
@@ -473,6 +478,7 @@ apply_transformation <- function(pp, trans, offset, power) {
     return(pp)
 }
 
+#' @noRd
 add_letter_groups <- function(pp, diffs, descending) {
     ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp, reversed = !descending)
 
@@ -483,6 +489,7 @@ add_letter_groups <- function(pp, diffs, descending) {
     return(pp)
 }
 
+#' @noRd
 format_output <- function(pp, descending, vars, decimals) {
     # Order by predicted value
     pp <- pp[base::order(pp$predicted.value, decreasing = descending), ]
@@ -538,6 +545,7 @@ format_output <- function(pp, descending, vars, decimals) {
     return(pp)
 }
 
+#' @noRd
 add_attributes <- function(pp, ylab, crit_val, aliased_names) {
     # # If there are brackets in the label, grab the text from inside
     # if (is.call(ylab)) {
@@ -563,6 +571,7 @@ add_attributes <- function(pp, ylab, crit_val, aliased_names) {
     return(pp)
 }
 
+#' @noRd
 check_ci_consistency <- function(pp) {
 
     result <- FALSE

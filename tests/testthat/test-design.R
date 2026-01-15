@@ -284,7 +284,7 @@ test_that("3 way factorial designs are possible", {
     expect_equal(d9.2$satab[3],
                  "Block stratum                           2\n")
     expect_snapshot_output(d9.2$satab)
-    vdiffr::expect_doppelganger(title = "3 way rcbd factorial with names",
+    vdiffr::expect_doppelganger(title = "3 way rcbd factorial no names",
                                 autoplot(d9.2), variant = ggplot2_variant())
 })
 
