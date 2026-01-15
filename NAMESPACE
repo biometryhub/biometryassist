@@ -3,6 +3,7 @@
 S3method(autoplot,design)
 S3method(autoplot,mct)
 S3method(print,mct)
+S3method(print,satab)
 export(add_buffers)
 export(autoplot)
 export(des_info)

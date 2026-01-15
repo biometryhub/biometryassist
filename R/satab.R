@@ -154,5 +154,16 @@ satab <- function(design.obj) {
     output <- c(output, paste0("=============================================\n"))
     output <- c(output, paste0(format("Total", width = 40), totdf, "\n"))
   }
+
+  class(output) <- c("satab", class(output))
   return(output)
+}
+
+#' @noRd
+#' @method print satab
+#' @export
+print.satab <- function(x, ...) {
+  stopifnot(inherits(x, "satab"))
+  cat(as.character(x), sep = "")
+  invisible(x)
 }
