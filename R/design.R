@@ -31,6 +31,7 @@
 #' @importFrom graphics plot
 #' @importFrom ggplot2 ggsave
 #' @importFrom utils write.csv
+#' @importFrom rlang check_dots_used
 #'
 #' @export
 #'
@@ -104,107 +105,516 @@ design <- function(type,
                    quiet = FALSE,
                    ...) {
 
-    # Some error checking of inputs before creating design
-    if(!is.na(brows) & brows > nrows) {
-        stop("brows must not be larger than nrows", call. = FALSE)
+  # Error checking of inputs
+  rlang::check_dots_used()
+  validate_design_inputs(nrows, ncols, brows, bcols, size, seed)
+  
+  # Normalize fac.sep
+  if (!missing(fac.sep) && length(fac.sep) == 1) {
+    fac.sep <- rep(fac.sep, times = 2)
+  }
+  
+  # Parse and validate design type
+  parsed_type <- parse_design_type(type)
+  
+  # Create the agricolae design object
+  outdesign <- create_agricolae_design(
+    parsed_type, treatments, reps, sub_treatments, seed
+  )
+  
+  # Validate design dimensions
+  dim <- nrows * ncols
+  trs <- calculate_total_plots(parsed_type, treatments, reps, sub_treatments)
+  validate_dimensions(dim, trs)
+  
+  # Update savename if factorial
+  if (parsed_type$is_factorial) {
+    savename <- gsub(":", "_", savename)
+  }
+  
+  # Get design information
+  design_info <- get_design_info(outdesign)
+  
+  # Validate block parameters
+  validate_block_params(design_info, brows, bcols)
+  
+  # Apply factor names if this is a factorial or split design
+  if (design_info$is_factorial) {
+    outdesign$book <- apply_factor_names(outdesign$book, fac.names, "factorial")
+  } else if (design_info$type == "split") {
+    outdesign$book <- apply_factor_names(outdesign$book, fac.names, "split")
+  }
+  
+  # Build the design based on type
+  des <- build_design(outdesign, design_info$type, nrows, ncols, 
+                      brows, bcols, fac.sep, byrow)
+  
+  # Sort treatments naturally
+  des$treatments <- factor(des$treatments, 
+                          levels = unique(stringi::stri_sort(des$treatments, numeric = TRUE)))
+  
+  # Create output list
+  output <- list(design = des)
+  class(des) <- c("design", class(des))
+  
+  # Add buffers if requested
+  if (!is.null(buffer)) {
+    has_blocks <- any(grepl("block", tolower(names(des))))
+    des <- create_buffers(des, type = buffer, blocks = has_blocks)
+    output$design <- des
+  }
+  
+  # Create plot
+  if (plot) {
+    output$plot.des <- autoplot(des, rotation = rotation, size = size, margin = margin)
+  }
+  
+  # Create SATAB
+  output$satab <- satab(outdesign)
+  
+  # Print output if not quiet
+  if (!quiet) {
+    print.satab(output$satab)
+    if (plot) {
+      plot(output$plot.des)
     }
+  }
+  
+  # Handle saving
+  handle_save(save, savename, plottype, output, ...)
+  
+  # Add seed if requested
+  if (seed) {
+    output$seed <- outdesign$parameters$seed
+  }
+  
+  class(output) <- c("design", class(output))
+  
+  return(output)
+}
 
-    if(!is.na(bcols) & bcols > ncols) {
-        stop("bcols must not be larger than ncols", call. = FALSE)
+
+#' Produce a graph of design layout, skeletal ANOVA table and data frame with complete design
+#'
+#' @description
+#' **Deprecated**: `des_info()` has been superseded by [design()]. Please use [design()] instead.
+#' This function will be removed in a future version.
+#'
+#' @param design.obj An `agricolae` design object.
+#' @param nrows The number of rows in the design.
+#' @param ncols The number of columns in the design.
+#' @param brows For RCBD only. The number of rows in a block.
+#' @param bcols For RCBD only. The number of columns in a block.
+#' @param byrow For split-plot only. Logical (default: `TRUE`). Provides a way to arrange plots within whole-plots when there are multiple possible arrangements.
+#' @param fac.sep The separator used by `fac.names`. Used to combine factorial design levels. If a vector of 2 levels is supplied, the first separates factor levels and label, and the second separates the different factors.
+#' @param buffer The type of buffer. One of edge, row, column, double row, double column, or block (coming soon).
+#' @param fac.names Allows renaming of the `A` level of factorial designs (i.e. those using [agricolae::design.ab()]) by passing (optionally named) vectors of new labels to be applied to the factors within a list. See examples and details for more information.
+#' @param plot Logical (default `TRUE`). If `TRUE`, display a plot of the generated design. A plot can always be produced later using [autoplot()].
+#' @param rotation Rotate the text output as Treatments within the plot. Allows for easier reading of long treatment labels. Takes positive and negative values being number of degrees of rotation from horizontal.
+#' @param size Increase or decrease the text size within the plot for treatment labels. Numeric with default value of 4.
+#' @param margin Logical (default FALSE). Setting to `TRUE` will add a margin (white space) between plot and axes.
+#' @param save One of `FALSE` (default)/`"none"`, `TRUE`/`"both"`, `"plot"` or `"workbook"`. Specifies which output to save.
+#' @param savename A filename for the design to be saved to. Default is the type of the design combined with "_design".
+#' @param plottype The type of file to save the plot as. Usually one of `"pdf"`, `"png"`, or `"jpg"`. See [ggplot2::ggsave()] for all possible options.
+#' @param return.seed Logical (default TRUE). Output the seed used in the design?
+#' @param quiet Logical (default FALSE). Return the objects without printing output.
+#' @param ... Additional parameters passed to [ggplot2::ggsave()] for saving the plot.
+#'
+#' @returns A list containing a data frame with the complete design, a ggplot object with plot layout, the seed (if `return.seed = TRUE`), and the `satab` object, allowing repeat output of the `satab` table via `cat(output$satab)`.
+#'
+#' @keywords internal
+#' @export
+des_info <- function(design.obj,
+                     nrows,
+                     ncols,
+                     brows = NA,
+                     bcols = NA,
+                     byrow = TRUE,
+                     fac.names = NULL,
+                     fac.sep = c("", " "),
+                     buffer = NULL,
+                     plot = TRUE,
+                     rotation = 0,
+                     size = 4,
+                     margin = FALSE,
+                     save = FALSE,
+                     savename = paste0(design.obj$parameters$design, "_design"),
+                     plottype = "pdf",
+                     return.seed = TRUE,
+                     quiet = FALSE,
+                     ...) {
+  
+  .Deprecated("design", 
+              msg = "des_info() is deprecated and will be removed in a future version. Please use design() instead.")
+  
+  # Error checking of inputs
+  rlang::check_dots_used()
+  
+  # Normalize fac.sep
+  if (!missing(fac.sep) && length(fac.sep) == 1) {
+    fac.sep <- rep(fac.sep, times = 2)
+  }
+  
+  # Get design information
+  design_info <- get_design_info(design.obj)
+  
+  # Validate block parameters
+  validate_block_params(design_info, brows, bcols)
+  
+  # Apply factor names if this is a factorial or split design
+  if (design_info$is_factorial) {
+    design.obj$book <- apply_factor_names(design.obj$book, fac.names, "factorial")
+  } else if (design_info$type == "split") {
+    design.obj$book <- apply_factor_names(design.obj$book, fac.names, "split")
+  }
+  
+  # Build the design based on type
+  des <- build_design(design.obj, design_info$type, nrows, ncols, 
+                      brows, bcols, fac.sep, byrow)
+  
+  # Sort treatments naturally
+  des$treatments <- factor(des$treatments, 
+                          levels = unique(stringi::stri_sort(des$treatments, numeric = TRUE)))
+  
+  # Create output list
+  info <- list(design = des)
+  class(des) <- c("design", class(des))
+  
+  # Add buffers if requested
+  if (!is.null(buffer)) {
+    has_blocks <- any(grepl("block", tolower(names(des))))
+    des <- create_buffers(des, type = buffer, blocks = has_blocks)
+    info$design <- des
+  }
+  
+  # Create plot
+  if (plot) {
+    info$plot.des <- autoplot(des, rotation = rotation, size = size, margin = margin)
+  }
+  
+  # Create SATAB
+  info$satab <- satab(design.obj)
+  
+  # Print output if not quiet
+  if (!quiet) {
+    print.satab(info$satab)
+    if (plot) {
+      plot(info$plot.des)
     }
+  }
+  
+  # Handle saving
+  handle_save(save, savename, plottype, info, ...)
+  
+  # Add seed if requested
+  if (return.seed) {
+    info$seed <- design.obj$parameters$seed
+  }
+  
+  return(info)
+}
 
-    if(!is.numeric(size)) {
-        stop("size must be numeric", call. = FALSE)
+
+# Helper Functions --------------------------------------------------------
+
+#' Validate Design Inputs
+#' @noRd
+validate_design_inputs <- function(nrows, ncols, brows, bcols, size, seed) {
+  if (!is.na(brows) && brows > nrows) {
+    stop("brows must not be larger than nrows", call. = FALSE)
+  }
+  
+  if (!is.na(bcols) && bcols > ncols) {
+    stop("bcols must not be larger than ncols", call. = FALSE)
+  }
+  
+  if (!is.numeric(size)) {
+    stop("size must be numeric", call. = FALSE)
+  }
+  
+  if ((!is.logical(seed) || is.na(seed)) && !is.numeric(seed)) {
+    stop("seed must be numeric or TRUE/FALSE", call. = FALSE)
+  }
+}
+
+#' Parse Design Type
+#'
+#' Parses user input to determine base design and whether factorial
+#' @noRd
+parse_design_type <- function(type) {
+  type_lower <- tolower(type)
+  
+  # Check if factorial (crossed)
+  if (substr(type_lower, 1, 7) == "crossed") {
+    type_split <- unlist(strsplit(type_lower, ":"))
+    
+    if (length(type_split) < 2) {
+      stop("Crossed designs must be specified as 'crossed:<type>'", call. = FALSE)
     }
-
-    if((!is.logical(seed) | is.na(seed)) & !is.numeric(seed)) {
-        stop("seed must be numeric or TRUE/FALSE", call. = FALSE)
+    
+    base_type <- type_split[2]
+    
+    if (base_type %!in% c("crd", "rcbd", "lsd")) {
+      stop("Crossed designs of type '", base_type, "' are not supported", call. = FALSE)
     }
+    
+    return(list(
+      base = base_type,
+      is_factorial = TRUE,
+      full_type = paste0("factorial_", base_type)
+    ))
+  }
+  
+  # Non-factorial designs
+  valid_types <- c("crd", "rcbd", "lsd", "split")
+  if (type_lower %!in% valid_types) {
+    stop("Designs of type '", type, "' are not supported", call. = FALSE)
+  }
+  
+  return(list(
+    base = type_lower,
+    is_factorial = FALSE,
+    full_type = type_lower
+  ))
+}
 
-    dim <- nrows*ncols
-    # Generate design based on type input
-    # If seed is numeric, use that seed to generate the design. If seed is TRUE,
-
-    if(tolower(type) == "crd") {
-        trs <- length(treatments)*reps
-
-        outdesign <- agricolae::design.crd(trt = treatments,
-                                           r = reps,
-                                           seed = ifelse(is.numeric(seed), seed, 0))
+#' Create Agricolae Design Object
+#'
+#' Calls the appropriate agricolae design function
+#' @noRd
+create_agricolae_design <- function(parsed_type, treatments, reps, 
+                                   sub_treatments, seed) {
+  seed_value <- if (is.numeric(seed)) seed else 0
+  
+  if (parsed_type$is_factorial) {
+    if (length(treatments) > 3) {
+      stop("Crossed designs with more than three treatment factors are not supported", 
+           call. = FALSE)
     }
-
-    else if(tolower(type) == "rcbd") {
-        trs <- length(treatments)*reps
-        outdesign <- agricolae::design.rcbd(trt = treatments,
-                                            r = reps,
-                                            seed = ifelse(is.numeric(seed), seed, 0))
-    }
-
-    else if(tolower(type) == "lsd") {
-        if(!missing(reps)) {
-            message("Number of replicates is not required for Latin Square designs and has been ignored")
+    
+    outdesign <- agricolae::design.ab(
+      trt = treatments,
+      r = reps,
+      design = parsed_type$base,
+      seed = seed_value
+    )
+  } else {
+    outdesign <- switch(parsed_type$base,
+      crd = agricolae::design.crd(
+        trt = treatments,
+        r = reps,
+        seed = seed_value
+      ),
+      rcbd = agricolae::design.rcbd(
+        trt = treatments,
+        r = reps,
+        seed = seed_value
+      ),
+      lsd = {
+        if (!missing(reps)) {
+          message("Number of replicates is not required for Latin Square designs and has been ignored")
         }
-        trs <- length(treatments)^2
-        outdesign <- agricolae::design.lsd(trt = treatments,
-                                           seed = ifelse(is.numeric(seed), seed, 0))
-    }
-
-    else if(tolower(type) == "split") {
-        if(is.null(sub_treatments) | anyNA(sub_treatments)) {
-            stop("sub_treatments are required for a split plot design", call. = FALSE)
+        agricolae::design.lsd(
+          trt = treatments,
+          seed = seed_value
+        )
+      },
+      split = {
+        if (is.null(sub_treatments) || anyNA(sub_treatments)) {
+          stop("sub_treatments are required for a split plot design", call. = FALSE)
         }
-        trs <- length(treatments)*length(sub_treatments)*reps
-        outdesign <- agricolae::design.split(trt1 = treatments,
-                                             trt2 = sub_treatments,
-                                             r = reps,
-                                             seed = ifelse(is.numeric(seed), seed, 0))
+        agricolae::design.split(
+          trt1 = treatments,
+          trt2 = sub_treatments,
+          r = reps,
+          seed = seed_value
+        )
+      },
+      stop("Unknown design type: ", parsed_type$base, call. = FALSE)
+    )
+  }
+  
+  return(outdesign)
+}
+
+#' Calculate Total Number of Plots
+#' @noRd
+calculate_total_plots <- function(parsed_type, treatments, reps, sub_treatments) {
+  if (parsed_type$is_factorial) {
+    if (parsed_type$base == "lsd") {
+      return(prod(treatments)^2)
+    } else {
+      return(prod(treatments) * reps)
     }
+  }
+  
+  switch(parsed_type$base,
+    crd = length(treatments) * reps,
+    rcbd = length(treatments) * reps,
+    lsd = length(treatments)^2,
+    split = length(treatments) * length(sub_treatments) * reps,
+    stop("Unknown design type")
+  )
+}
 
-    else if(substr(tolower(type), 1, 7) == "crossed") {
-        type_split <- unlist(strsplit(tolower(type), ":"))
-        savename <- gsub(":", "_", savename)
+#' Validate Design Dimensions
+#' @noRd
+validate_dimensions <- function(dim, trs) {
+  if (dim > trs) {
+    warning("Area provided is larger than treatments applied. Please check inputs.", 
+            call. = FALSE)
+  }
+  
+  if (dim < trs) {
+    warning("Area provided is smaller than treatments applied. Please check inputs.", 
+            call. = FALSE)
+  }
+}
 
-        if(type_split[2] %!in% c("crd", "rcbd", "lsd")) {
-            stop("Crossed designs of type '", type_split[2], "' are not supported", call. = FALSE)
-        }
+#' Build Design Data Frame
+#'
+#' Creates the complete design data frame based on design type
+#' @noRd
+build_design <- function(design.obj, design_type, nrows, ncols, 
+                        brows, bcols, fac.sep, byrow) {
+  
+  des <- switch(design_type,
+    crd = build_crd(design.obj$book, nrows, ncols),
+    rcbd = build_rcbd(design.obj$book, nrows, ncols, brows, bcols),
+    lsd = build_lsd(design.obj$book),
+    factorial_crd = build_factorial_crd(design.obj$book, nrows, ncols, fac.sep),
+    factorial_rcbd = build_factorial_rcbd(design.obj$book, nrows, ncols, 
+                                         brows, bcols, fac.sep),
+    factorial_lsd = build_factorial_lsd(design.obj$book, fac.sep),
+    split = build_split(design.obj$book, nrows, ncols, brows, bcols, byrow),
+    stop("Unknown design type: ", design_type, call. = FALSE)
+  )
+  
+  return(des)
+}
 
-        if(length(treatments) > 3) {
-            stop("Crossed designs with more than three treatment factors are not supported", call. = FALSE)
-        }
-        trs <- ifelse(tolower(type_split[2])=="lsd", prod(treatments)^2, prod(treatments)*reps)
+#' Build CRD Design
+#' @noRd
+build_crd <- function(design_book, nrows, ncols) {
+  plan <- expand.grid(row = 1:nrows, col = 1:ncols)
+  des <- cbind(plan, design_book)
+  
+  names(des)[names(des) == "r"] <- "rep"
+  names(des)[ncol(des)] <- "treatments"
+  
+  des
+}
 
-        outdesign <- agricolae::design.ab(trt = treatments,
-                                          r = reps,
-                                          design = type_split[2],
-                                          seed = ifelse(is.numeric(seed), seed, 0))
-    }
+#' Build RCBD Design
+#' @noRd
+build_rcbd <- function(design_book, nrows, ncols, brows, bcols) {
+  ntrt <- nlevels(as.factor(design_book[, ncol(design_book)]))
+  
+  plan <- calculate_block_layout(nrows, ncols, brows, bcols, ntrt, design_book$block)
+  des <- cbind(plan, design_book)
+  
+  names(des)[ncol(des)] <- "treatments"
+  
+  des
+}
 
-    else {
-        stop("Designs of type '", type, "' are not supported", call. = FALSE)
-    }
+#' Build LSD Design
+#' @noRd
+build_lsd <- function(design_book) {
+  des <- design_book
+  des$row <- as.numeric(des$row)
+  des$col <- as.numeric(des$col)
+  
+  names(des)[ncol(des)] <- "treatments"
+  
+  des
+}
 
-    if(dim > trs) {
-        warning("Area provided is larger than treatments applied. Please check inputs.", call. = FALSE)
-    }
+#' Build Factorial CRD Design
+#' @noRd
+build_factorial_crd <- function(design_book, nrows, ncols, fac.sep) {
+  plan <- expand.grid(row = 1:nrows, col = 1:ncols)
+  des <- cbind(plan, design_book, row.names = NULL)
+  
+  des$treatments <- construct_factorial_labels(design_book, 3, fac.sep)
+  names(des)[names(des) == "r"] <- "reps"
+  
+  des
+}
 
-    if(dim < trs) {
-        warning("Area provided is smaller than treatments applied. Please check inputs.", call. = FALSE)
-    }
+#' Build Factorial RCBD Design
+#' @noRd
+build_factorial_rcbd <- function(design_book, nrows, ncols, brows, bcols, fac.sep) {
+  treatments <- construct_factorial_labels(design_book, 3, fac.sep)
+  ntrt <- nlevels(as.factor(treatments))
+  
+  plan <- calculate_block_layout(nrows, ncols, brows, bcols, ntrt, design_book$block)
+  
+  design_book$treatments <- treatments
+  des <- cbind(plan, design_book)
+  
+  des
+}
 
-    output <- des_info(design.obj = outdesign, nrows = nrows, ncols = ncols,
-                       brows = brows, bcols = bcols, byrow = byrow,
-                       fac.names = fac.names, fac.sep = fac.sep, buffer = buffer,
-                       plot = plot, rotation = rotation, size = size, margin = margin,
-                       save = save, savename = savename, plottype = plottype,
-                       return.seed = seed, quiet = quiet, ...)
+#' Build Factorial LSD Design
+#' @noRd
+build_factorial_lsd <- function(design_book, fac.sep) {
+  des <- design_book
+  
+  des$treatments <- construct_factorial_labels(design_book, 4, fac.sep)
+  des$row <- as.numeric(des$row)
+  des$col <- as.numeric(des$col)
+  
+  des
+}
 
-    class(output) <- c("design", class(output))
+#' Build Split Plot Design
+#' @noRd
+build_split <- function(design_book, nrows, ncols, brows, bcols, byrow) {
+  # Prepare split design structure
+  des <- prepare_split_design(design_book)
+  
+  # Get treatment column names
+  spfacs <- c("plots", "block", "wholeplots", "subplots")
+  trtNams <- names(des[!is.element(names(des), spfacs)])
+  
+  # Create combined treatment factor
+  des$treatments <- factor(paste(des[, trtNams[1]], des[, trtNams[2]], sep = "_"))
+  ntrt <- nlevels(des$treatments)
+  
+  # Calculate layout
+  plan <- calculate_block_layout(nrows, ncols, brows, bcols, ntrt, des$block)
+  des <- cbind(plan, des)
+  
+  # Order by column within blocks if requested
+  if (!byrow) {
+    des[, c("row", "col", "block")] <- des[order(des$block, des$col, des$row), 
+                                           c("row", "col", "block")]
+  }
+  
+  des
+}
 
-    # After creating the basic design, add buffers if requested
-    if (!is.null(buffer)) {
-        has_blocks <- any(grepl("block", tolower(names(output$design))))
-        output$design <- create_buffers(output$design, buffer, blocks = has_blocks)
-    }
-
-    return(output)
+#' Handle Save Operations
+#' @noRd
+handle_save <- function(save, savename, plottype, info, ...) {
+  if (!is.logical(save)) {
+    output <- tolower(save)
+  } else if (save) {
+    output <- "both"
+  } else {
+    output <- "none"
+  }
+  
+  if (output == "plot") {
+    ggplot2::ggsave(filename = paste0(savename, ".", plottype), ...)
+  } else if (output == "workbook") {
+    write.csv(info$design, file = paste0(savename, ".csv"), row.names = FALSE)
+  } else if (output == "both") {
+    ggplot2::ggsave(filename = paste0(savename, ".", plottype), ...)
+    write.csv(info$design, file = paste0(savename, ".csv"), row.names = FALSE)
+  } else if (output != "none") {
+    stop("save must be one of 'none'/FALSE, 'both'/TRUE, 'plot', or 'workbook'.", 
+         call. = FALSE)
+  }
 }
