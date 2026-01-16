@@ -84,7 +84,15 @@ anova_lsd <- function(design_book) {
 #' ANOVA structure for Factorial CRD
 #' @noRd
 anova_factorial_crd <- function(design_book) {
-  trt_names <- names(design_book)[3:(ncol(design_book))]
+  # Get factor columns robustly (agricolae books don't always include a combined
+  # treatment column).
+  structural_cols <- c(
+    "plots", "plot", "r", "rep", "reps",
+    "block", "row", "col",
+    "wholeplots", "wplots", "subplots", "splots",
+    "treatments"
+  )
+  trt_names <- names(design_book)[!names(design_book) %in% structural_cols]
   totdf <- nrow(design_book) - 1
 
   # Calculate df for each factor
@@ -109,7 +117,15 @@ anova_factorial_crd <- function(design_book) {
 #' ANOVA structure for Factorial RCBD
 #' @noRd
 anova_factorial_rcbd <- function(design_book) {
-  trt_names <- names(design_book)[3:(ncol(design_book))]
+  # Get factor columns robustly (agricolae books don't always include a combined
+  # treatment column).
+  structural_cols <- c(
+    "plots", "plot", "r", "rep", "reps",
+    "block", "row", "col",
+    "wholeplots", "wplots", "subplots", "splots",
+    "treatments"
+  )
+  trt_names <- names(design_book)[!names(design_book) %in% structural_cols]
   totdf <- nrow(design_book) - 1
   blkdf <- n_unique(design_book$block) - 1
 
@@ -139,7 +155,15 @@ anova_factorial_lsd <- function(design_book) {
   coldf <- n_unique(design_book$col) - 1
   totdf <- nrow(design_book) - 1
 
-  trt_names <- names(design_book)[4:(ncol(design_book))]
+  # Get factor columns robustly (agricolae books don't always include a combined
+  # treatment column).
+  structural_cols <- c(
+    "plots", "plot", "r", "rep", "reps",
+    "block", "row", "col",
+    "wholeplots", "wplots", "subplots", "splots",
+    "treatments"
+  )
+  trt_names <- names(design_book)[!names(design_book) %in% structural_cols]
 
   # Calculate df for each factor
   trtdf <- sapply(trt_names, function(name) {
@@ -163,19 +187,39 @@ anova_factorial_lsd <- function(design_book) {
 #' ANOVA structure for Split Plot
 #' @noRd
 anova_split <- function(design_book) {
-  # ###### HARD CODING HERE ##### assumes a column named 'block' exists
+  # Get column names dynamically
+  # Structure: plots, block, wholeplots, subplots, trtA, trtB, (treatments - added later)
+
+  # Find the block column
   blkdf <- n_unique(design_book$block) - 1
   totdf <- nrow(design_book) - 1
-  # ###### HARD CODING HERE ##### assumes a column named 'subplots' exists and defines the number of subplots
-  numwplots <- nrow(design_book) / n_unique(design_book$splots)
 
-  # ###### HARD CODING HERE ##### assumes whole-plot and subplot treatment columns are 5 and 6
-  trtAname <- names(design_book)[5]
-  trtBname <- names(design_book)[6]
+  # Find subplots column (could be 'subplots' or 'splots')
+  subplot_col <- if ("subplots" %in% names(design_book)) {
+    "subplots"
+  } else if ("splots" %in% names(design_book)) {
+    "splots"
+  } else {
+    stop("Cannot find subplot column in design book", call. = FALSE)
+  }
 
-  # ###### HARD CODING HERE ##### uses column indices 5 and 6 for whole-plot/subplot treatment levels
-  trtAdf <- n_unique(design_book[, 5]) - 1
-  trtBdf <- n_unique(design_book[, 6]) - 1
+  numwplots <- nrow(design_book) / n_unique(design_book[[subplot_col]])
+
+  # Find treatment columns - they're the columns that aren't structural columns
+  structural_cols <- c("plots", "block", "wholeplots", "wplots", "subplots", "splots", "treatments")
+  trt_cols <- setdiff(names(design_book), structural_cols)
+
+  if (length(trt_cols) != 2) {
+    stop("Expected 2 treatment columns in split plot design, found ",
+         length(trt_cols), call. = FALSE)
+  }
+
+  # Whole-plot treatment is first, subplot treatment is second
+  trtAname <- trt_cols[1]
+  trtBname <- trt_cols[2]
+
+  trtAdf <- n_unique(design_book[[trtAname]]) - 1
+  trtBdf <- n_unique(design_book[[trtBname]]) - 1
   trtABdf <- trtAdf * trtBdf
 
   wpresdf <- (numwplots - 1) - blkdf - trtAdf
@@ -207,7 +251,6 @@ format_satab <- function(anova_structure, design_type) {
 
   # Standard formatting
   output <- c(
-    # ###### HARD CODING HERE ##### fixed output widths and separator lengths assume monospace console printing
     paste0(format("Source of Variation", width = 40), "df", "\n"),
     "=============================================\n"
   )
@@ -218,11 +261,9 @@ format_satab <- function(anova_structure, design_type) {
   for (i in seq_along(sources)) {
     # Add separator after block stratum
     if (!is.null(anova_structure$strata) && i == 1) {
-      # ###### HARD CODING HERE ##### assumes the first source is the block stratum when strata is present
       output <- c(output, paste0(format(sources[i], width = 40), df[i], "\n"))
       output <- c(output, "---------------------------------------------\n")
     } else if (sources[i] == "Total") {
-      # ###### HARD CODING HERE ##### assumes a source literally named 'Total' exists and should be preceded by a separator
       output <- c(output, "=============================================\n")
       output <- c(output, paste0(format(sources[i], width = 40), df[i], "\n"))
     } else {
@@ -241,9 +282,7 @@ format_satab_split <- function(anova_structure) {
   df <- anova_structure$df
   names <- anova_structure$names
 
-  # ###### HARD CODING HERE ##### positional indexing into df[] assumes fixed ordering of split-plot sources
   # Determine width based on df magnitude
-  # ###### HARD CODING HERE ##### fixed widths (44/45/35/36) are tuned for the current text layout
   width1 <- ifelse(df[1] > 10, 44, 45)
   width2 <- ifelse(df[2] > 10, 35, 36)
   width3 <- ifelse(df[4] > 10, 35, 36)
@@ -251,18 +290,15 @@ format_satab_split <- function(anova_structure) {
   width5 <- ifelse(df[7] > 10, 44, 45)
 
   output <- c(
-    # ###### HARD CODING HERE ##### fixed formatting and indentation assume monospace console printing
     paste0(format("Source of Variation", width = 45), "df", "\n"),
     "==================================================\n",
     paste0(format(sources[1], width = width1), df[1], "\n"),
     "--------------------------------------------------\n",
     "Whole plot stratum\n",
-    # ###### HARD CODING HERE ##### indentation width = 9 is tuned for current layout
     paste0(format(" ", width = 9), format(sources[2], width = width2), df[2], "\n"),
     paste0(format(sources[3], width = 45), df[3], "\n"),
     "==================================================\n",
     "Subplot stratum\n",
-    # ###### HARD CODING HERE ##### indentation width = 9 is tuned for current layout
     paste0(format(" ", width = 9), format(sources[4], width = width3), df[4], "\n"),
     paste0(format(" ", width = 9), format(sources[5], width = width4), df[5], "\n"),
     paste0(format(" ", width = 9), format(sources[6], width = 35), df[6], "\n"),
