@@ -58,3 +58,83 @@ test_that("handle_deprecated_param does not warn if old param is missing", {
     expect_silent(test_fun())
 })
 
+test_that("get_design_info returns correct design for factorial CRD", {
+    # Create a mock agricolae factorial design object
+    design_obj <- list(
+        parameters = list(
+            design = "factorial",
+            applied = "crd"
+        )
+    )
+    result <- biometryassist:::get_design_info(design_obj)
+    expect_equal(result, "factorial_crd")
+})
+
+test_that("get_design_info returns correct design for factorial RCBD", {
+    # Create a mock agricolae factorial design object
+    design_obj <- list(
+        parameters = list(
+            design = "factorial",
+            applied = "rcbd"
+        )
+    )
+    result <- biometryassist:::get_design_info(design_obj)
+    expect_equal(result, "factorial_rcbd")
+})
+
+test_that("get_design_info returns correct design for factorial LSD", {
+    # Create a mock agricolae factorial design object
+    design_obj <- list(
+        parameters = list(
+            design = "factorial",
+            applied = "lsd"
+        )
+    )
+    result <- biometryassist:::get_design_info(design_obj)
+    expect_equal(result, "factorial_lsd")
+})
+
+test_that("get_design_info returns correct design for non-factorial CRD", {
+    # Create a mock agricolae CRD design object
+    design_obj <- list(
+        parameters = list(
+            design = "crd"
+        )
+    )
+    result <- biometryassist:::get_design_info(design_obj)
+    expect_equal(result, "crd")
+})
+
+test_that("get_design_info returns correct design for non-factorial RCBD", {
+    # Create a mock agricolae RCBD design object
+    design_obj <- list(
+        parameters = list(
+            design = "rcbd"
+        )
+    )
+    result <- biometryassist:::get_design_info(design_obj)
+    expect_equal(result, "rcbd")
+})
+
+test_that("get_design_info returns correct design for non-factorial LSD", {
+    # Create a mock agricolae LSD design object
+    design_obj <- list(
+        parameters = list(
+            design = "lsd"
+        )
+    )
+    result <- biometryassist:::get_design_info(design_obj)
+    expect_equal(result, "lsd")
+})
+
+test_that("get_design_info returns correct design for split plot", {
+    # Create a mock agricolae split plot design object
+    design_obj <- list(
+        parameters = list(
+            design = "split"
+        )
+    )
+    result <- biometryassist:::get_design_info(design_obj)
+    expect_equal(result, "split")
+})
+

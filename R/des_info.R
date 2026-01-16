@@ -207,10 +207,7 @@ des_info <- function(design.obj,
         fac.sep <- rep(fac.sep, times = 2)
     }
 
-    ifelse(design.obj$parameters$design == "factorial",
-           design <- paste("factorial", design.obj$parameters$applied, sep = "_"),
-           design <- design.obj$parameters$design
-    )
+    design <- get_design_info(design.obj)
 
     if(design == "crd") {
         plan <- expand.grid(row = 1:nrows, col = 1:ncols)

@@ -127,3 +127,25 @@ handle_deprecated_param <- function(old_param, new_param = NULL, custom_msg = NU
     return(luminance > 0.5)
 }
 
+#' Get Design Type String
+#'
+#' Internal helper function to determine the design type string from an agricolae
+#' design object. For factorial designs, combines the design type with the applied
+#' design (e.g., "factorial_crd"). For non-factorial designs, returns the design
+#' type directly (e.g., "crd", "rcbd", "lsd", "split").
+#'
+#' @param design.obj An agricolae design object with a `parameters` component
+#'   containing `design` and optionally `applied` fields.
+#'
+#' @return A character string representing the design type.
+#'
+#' @keywords internal
+get_design_info <- function(design.obj) {
+    if (design.obj$parameters$design == "factorial") {
+        design <- paste("factorial", design.obj$parameters$applied, sep = "_")
+    } else {
+        design <- design.obj$parameters$design
+    }
+    return(design)
+}
+
