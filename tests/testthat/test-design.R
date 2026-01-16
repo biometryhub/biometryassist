@@ -333,7 +333,7 @@ test_that("Invalid seed options give errors or warnings", {
     # seed = NULL
     expect_error(design(type = "crd", treatments = c(1, 5, 10, 20),
                         reps = 5, nrows = 4, ncols = 5, seed = NULL, quiet = TRUE),
-                 "argument is of length zero")
+                 "seed must be numeric or TRUE/FALSE")
 
     # seed = "ABC"
     expect_error(design(type = "crd", treatments = c(1, 5, 10, 20),

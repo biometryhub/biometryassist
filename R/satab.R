@@ -206,7 +206,7 @@ anova_split <- function(design_book) {
   numwplots <- nrow(design_book) / n_unique(design_book[[subplot_col]])
 
   # Find treatment columns - they're the columns that aren't structural columns
-  structural_cols <- c("plots", "block", "wholeplots", "wplots", "subplots", "splots", "treatments")
+  structural_cols <- c("plots", "block", "wholeplots", "wplots", "subplots", "splots")
   trt_cols <- setdiff(names(design_book), structural_cols)
 
   if (length(trt_cols) != 2) {
