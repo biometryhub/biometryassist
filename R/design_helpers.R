@@ -10,6 +10,12 @@
 #' @return Data frame with row, col positions
 #' @noRd
 calculate_block_layout <- function(nrows, ncols, brows, bcols, ntrt, block_vec = NULL) {
+  if (is.null(brows) || is.null(bcols) ||
+      anyNA(c(brows, bcols)) ||
+      !is.finite(brows) || !is.finite(bcols) ||
+      brows <= 0 || bcols <= 0) {
+    stop("calculate_block_layout: 'brows' and 'bcols' must be positive, finite, non-missing values.")
+  }
   rr <- nrows / brows
   cc <- ncols / bcols
   
