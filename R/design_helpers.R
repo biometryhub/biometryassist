@@ -96,21 +96,21 @@ calculate_block_layout <- function(nrows, ncols, brows, bcols, ntrt, block_vec =
 #' @return Factor vector of treatment labels
 #' @noRd
 construct_factorial_labels <- function(design_book, start_col, fac.sep = c("", " ")) {
-  treatments <- NULL
-  
-  for (i in start_col:ncol(design_book)) {
-    treatments <- paste(
-      treatments,
-      paste(colnames(design_book)[i], design_book[, i], sep = fac.sep[1]),
-      sep = fac.sep[2]
-    )
+  if (!missing(fac.sep) && length(fac.sep) == 1) {
+    fac.sep <- rep(fac.sep, times = 2)
   }
-  
-  if (fac.sep[2] == "") {
-    return(factor(trimws(treatments)))
-  } else {
-    return(factor(trimws(substr(treatments, 2, nchar(treatments)))))
+
+  cols <- seq.int(start_col, ncol(design_book))
+  if (length(cols) < 1) {
+    stop("start_col must be <= ncol(design_book)", call. = FALSE)
   }
+
+  parts <- lapply(cols, function(i) {
+    paste0(names(design_book)[i], fac.sep[1], design_book[[i]])
+  })
+
+  treatments <- Reduce(function(a, b) paste(a, b, sep = fac.sep[2]), parts)
+  factor(trimws(treatments))
 }
 
 #' Apply Factor Names to Design
@@ -125,71 +125,65 @@ apply_factor_names <- function(design_book, fac.names, design_type = "factorial"
   if (is.null(fac.names)) {
     return(design_book)
   }
-  
-  if (design_type == "factorial") {
-    n_facs <- ifelse(is.null(design_book$C), 2, 3)
-    factor_cols <- c("A", "B", if (n_facs == 3) "C" else NULL)
-    
-    if (length(fac.names) > n_facs) {
-      warning("fac.names contains ", length(fac.names), 
-              " elements but only the first ", n_facs, " have been used.", 
-              call. = FALSE)
-    } else if (length(fac.names) < n_facs) {
-      warning("fac.names doesn't contain enough elements and has not been used.", 
-              call. = FALSE)
-      return(design_book)
-    }
-    
-    if (is.list(fac.names)) {
-      for (i in seq_along(factor_cols)) {
-        col_name <- factor_cols[i]
-        design_book[[col_name]] <- as.factor(design_book[[col_name]])
-        
-        if (length(levels(design_book[[col_name]])) == length(fac.names[[i]])) {
-          levels(design_book[[col_name]]) <- fac.names[[i]]
-          colnames(design_book)[colnames(design_book) == col_name] <- names(fac.names)[i]
-        } else {
-          warning(names(fac.names)[i], 
-                  " must contain the correct number of elements. Elements have not been applied.", 
-                  call. = FALSE)
-        }
-      }
-    }
-    
+
+  n_facs <- if (design_type == "factorial") {
+    if (is.null(design_book$C)) 2 else 3
   } else if (design_type == "split") {
-    factor_cols <- c("treatments", "sub_treatments")
-    
-    if (length(fac.names) > 2) {
-      warning("fac.names contains ", length(fac.names), 
-              " elements but only the first 2 have been used.", 
-              call. = FALSE)
-    } else if (length(fac.names) < 2) {
-      warning("fac.names doesn't contain enough elements and has not been used.", 
-              call. = FALSE)
-      return(design_book)
-    }
-    
-    if (is.list(fac.names)) {
-      for (i in 1:2) {
-        col_name <- factor_cols[i]
-        design_book[[col_name]] <- as.factor(design_book[[col_name]])
-        
-        if (length(levels(design_book[[col_name]])) == length(fac.names[[i]])) {
-          levels(design_book[[col_name]]) <- fac.names[[i]]
-        } else {
-          warning(names(fac.names)[i], 
-                  " must contain the correct number of elements. Elements have not been applied.", 
-                  call. = FALSE)
-        }
-      }
-      colnames(design_book)[colnames(design_book) %in% factor_cols] <- names(fac.names)[1:2]
-      
-    } else if (is.character(fac.names)) {
-      colnames(design_book)[colnames(design_book) %in% factor_cols] <- fac.names[1:2]
+    2
+  } else {
+    stop("Unknown design_type: ", design_type, call. = FALSE)
+  }
+
+  factor_cols <- if (design_type == "factorial") {
+    c("A", "B", "C")[seq_len(n_facs)]
+  } else {
+    c("treatments", "sub_treatments")
+  }
+
+  if (length(fac.names) > n_facs) {
+    warning(
+      "fac.names contains ", length(fac.names),
+      " elements but only the first ", n_facs, " have been used.",
+      call. = FALSE
+    )
+  } else if (length(fac.names) < n_facs) {
+    warning("fac.names doesn't contain enough elements and has not been used.", call. = FALSE)
+    return(design_book)
+  }
+
+  apply_levels <- function(col_name, new_levels, warn_name) {
+    design_book[[col_name]] <<- as.factor(design_book[[col_name]])
+    if (length(levels(design_book[[col_name]])) == length(new_levels)) {
+      levels(design_book[[col_name]]) <<- new_levels
+      TRUE
+    } else {
+      warning(
+        warn_name,
+        " must contain the correct number of elements. Elements have not been applied.",
+        call. = FALSE
+      )
+      FALSE
     }
   }
-  
-  return(design_book)
+
+  if (is.list(fac.names)) {
+    for (i in seq_len(n_facs)) {
+      col_name <- factor_cols[i]
+      applied <- apply_levels(col_name, fac.names[[i]], names(fac.names)[i])
+
+      if (design_type == "factorial" && isTRUE(applied)) {
+        colnames(design_book)[colnames(design_book) == col_name] <- names(fac.names)[i]
+      }
+    }
+
+    if (design_type == "split") {
+      colnames(design_book)[colnames(design_book) %in% factor_cols] <- names(fac.names)[1:2]
+    }
+  } else if (design_type == "split" && is.character(fac.names)) {
+    colnames(design_book)[colnames(design_book) %in% factor_cols] <- fac.names[1:2]
+  }
+
+  design_book
 }
 
 #' Get Design Type Information
