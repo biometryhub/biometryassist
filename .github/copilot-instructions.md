@@ -77,12 +77,13 @@ devtools::document()
 
 ### Documentation Style
 - Use roxygen2 markdown format (`@details`, `@param`, `@returns`, etc.)
+- Note: Both `@return` and `@returns` are used in the codebase; either is acceptable
 - Include type information in parameter descriptions
 - Provide clear examples that demonstrate function usage
 - Document all exported functions thoroughly
 
 ### Testing Conventions
-- Test files in `tests/testthat/` should be named `test-<module>.R`
+- Test files in `tests/testthat/` should be named `test-<module>.R` (or `.r` - both extensions are used)
 - Use descriptive test names: `test_that("description of what is being tested", { ... })`
 - Use `expect_*()` functions for assertions
 - For plots, use `vdiffr::expect_doppelganger()` for visual regression testing
