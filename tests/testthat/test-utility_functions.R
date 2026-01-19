@@ -86,3 +86,59 @@ test_that("handle_deprecated_param does not warn if old param is missing", {
     expect_silent(test_fun())
 })
 
+# n_unique() tests ----
+
+test_that("n_unique works with basic numeric vectors", {
+    expect_equal(n_unique(c(1, 2, 3, 4, 5)), 5)
+    expect_equal(n_unique(c(1, 1, 2, 2, 3)), 3)
+    expect_equal(n_unique(c(1)), 1)
+})
+
+test_that("n_unique works with character vectors", {
+    expect_equal(n_unique(c("a", "b", "c")), 3)
+    expect_equal(n_unique(c("a", "a", "b", "b")), 2)
+    expect_equal(n_unique(c("hello")), 1)
+})
+
+test_that("n_unique works with factor vectors", {
+    expect_equal(n_unique(factor(c("low", "med", "high"))), 3)
+    expect_equal(n_unique(factor(c("A", "A", "B", "B", "C"))), 3)
+    expect_equal(n_unique(factor(c("single"))), 1)
+})
+
+test_that("n_unique handles empty vectors", {
+    expect_equal(n_unique(numeric(0)), 0)
+    expect_equal(n_unique(character(0)), 0)
+    expect_equal(n_unique(factor(character(0))), 0)
+})
+
+test_that("n_unique handles all NA values", {
+    expect_equal(n_unique(c(NA, NA, NA)), 1)
+    expect_equal(n_unique(c(NA_real_, NA_real_)), 1)
+    expect_equal(n_unique(c(NA_character_, NA_character_)), 1)
+})
+
+test_that("n_unique handles all NA values with na.rm=TRUE", {
+    expect_equal(n_unique(c(NA, NA, NA), na.rm = TRUE), 0)
+    expect_equal(n_unique(c(NA_real_, NA_real_), na.rm = TRUE), 0)
+    expect_equal(n_unique(c(NA_character_, NA_character_), na.rm = TRUE), 0)
+})
+
+test_that("n_unique handles mixed NA values with na.rm=FALSE", {
+    expect_equal(n_unique(c(1, 2, NA, 3, NA)), 4)
+    expect_equal(n_unique(c("a", "b", NA, "c")), 4)
+    expect_equal(n_unique(c(1, 1, NA, 2, NA)), 3)
+})
+
+test_that("n_unique handles mixed NA values with na.rm=TRUE", {
+    expect_equal(n_unique(c(1, 2, NA, 3, NA), na.rm = TRUE), 3)
+    expect_equal(n_unique(c("a", "b", NA, "c"), na.rm = TRUE), 3)
+    expect_equal(n_unique(c(1, 1, NA, 2, NA), na.rm = TRUE), 2)
+})
+
+test_that("n_unique handles vectors with duplicates correctly", {
+    expect_equal(n_unique(rep(1, 10)), 1)
+    expect_equal(n_unique(rep("x", 5)), 1)
+    expect_equal(n_unique(c(1, 2, 1, 2, 1, 2)), 2)
+})
+
