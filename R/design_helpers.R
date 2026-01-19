@@ -53,7 +53,6 @@ calculate_block_layout <- function(nrows, ncols, brows, bcols, ntrt, block_vec =
       for (k in 1:cc) {
         plan$col[plan$block == i] <- pp$col + (k - 1) * bcols
         plan$row[plan$block == i] <- pp$row + (brows * (j - 1))
-        k <- k + 1
         i <- i + 1
       }
     }
@@ -76,7 +75,6 @@ calculate_block_layout <- function(nrows, ncols, brows, bcols, ntrt, block_vec =
     for (k in 1:cc) {
       plan$col[plan$block == i] <- pp$col + (k - 1) * bcols
       plan$row[plan$block == i] <- pp$row
-      k <- k + 1
       i <- i + 1
     }
     plan$block <- NULL
