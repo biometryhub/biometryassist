@@ -172,13 +172,13 @@ apply_factor_names <- function(design_book, fac.names, design_type = "factorial"
       col_name <- factor_cols[i]
       applied <- apply_levels(col_name, fac.names[[i]], names(fac.names)[i])
 
-      if (design_type == "factorial" && isTRUE(applied)) {
-        colnames(design_book)[colnames(design_book) == col_name] <- names(fac.names)[i]
+      if (isTRUE(applied)) {
+        if (design_type == "factorial") {
+          colnames(design_book)[colnames(design_book) == col_name] <- names(fac.names)[i]
+        } else if (design_type == "split") {
+          colnames(design_book)[colnames(design_book) == col_name] <- names(fac.names)[i]
+        }
       }
-    }
-
-    if (design_type == "split") {
-      colnames(design_book)[colnames(design_book) %in% factor_cols] <- names(fac.names)[1:2]
     }
   } else if (design_type == "split" && is.character(fac.names)) {
     colnames(design_book)[colnames(design_book) %in% factor_cols] <- fac.names[1:2]
