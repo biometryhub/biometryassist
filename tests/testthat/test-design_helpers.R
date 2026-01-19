@@ -127,8 +127,6 @@ test_that("calculate_block_layout handles blocking incomplete rows and columns (
   expect_true(all(block1_cols >= 1 & block1_cols <= 2))
 })
 
-
-
 test_that("calculate_block_layout handles blocking incomplete columns with all rows (cc > 1 & rr == 1)", {
   # Multiple column blocks spanning all rows
   block_vec <- rep(1:3, each = 4)
@@ -151,8 +149,6 @@ test_that("calculate_block_layout handles blocking incomplete columns with all r
   expect_true(all(block1_rows >= 1 & block1_rows <= 4))
   expect_true(all(block1_cols >= 1 & block1_cols <= 2))
 })
-
-
 
 test_that("calculate_block_layout falls back to default for edge cases", {
   # Test the default fallback when none of the special conditions are met
