@@ -100,10 +100,11 @@ construct_factorial_labels <- function(design_book, start_col, fac.sep = c("", "
     fac.sep <- rep(fac.sep, times = 2)
   }
 
-  cols <- seq.int(start_col, ncol(design_book))
-  if (length(cols) < 1) {
+  if (start_col > ncol(design_book)) {
     stop("start_col must be <= ncol(design_book)", call. = FALSE)
   }
+
+  cols <- seq.int(from = start_col, to = ncol(design_book))
 
   parts <- lapply(cols, function(i) {
     paste0(names(design_book)[i], fac.sep[1], design_book[[i]])

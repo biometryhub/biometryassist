@@ -8,9 +8,9 @@ test_that("construct_factorial_labels works with default separators", {
         A = c("a1", "a1", "a2", "a2"),
         B = c("b1", "b2", "b1", "b2")
     )
-    
+
     result <- biometryassist:::construct_factorial_labels(design_book, start_col = 3)
-    
+
     # Default separators: c("", " ") means no separator between name and level, space between factors
     expect_equal(as.character(result), c("Aa1 Bb1", "Aa1 Bb2", "Aa2 Bb1", "Aa2 Bb2"))
     expect_s3_class(result, "factor")
@@ -23,10 +23,10 @@ test_that("construct_factorial_labels works with single custom separator", {
         A = c("low", "high"),
         B = c("x", "y")
     )
-    
+
     # When a single separator is provided, it's used for both positions
     result <- biometryassist:::construct_factorial_labels(design_book, start_col = 2, fac.sep = "_")
-    
+
     expect_equal(as.character(result), c("A_low_B_x", "A_high_B_y"))
     expect_s3_class(result, "factor")
 })
@@ -38,10 +38,10 @@ test_that("construct_factorial_labels works with two custom separators", {
         Variety = c("V1", "V2"),
         Fertilizer = c("F1", "F2")
     )
-    
+
     # First separator between name and level, second between factors
     result <- biometryassist:::construct_factorial_labels(design_book, start_col = 2, fac.sep = c(":", " x "))
-    
+
     expect_equal(as.character(result), c("Variety:V1 x Fertilizer:F1", "Variety:V2 x Fertilizer:F2"))
     expect_s3_class(result, "factor")
 })
@@ -52,9 +52,9 @@ test_that("construct_factorial_labels handles single factor column", {
         plot = 1:3,
         treatment = c("T1", "T2", "T3")
     )
-    
+
     result <- biometryassist:::construct_factorial_labels(design_book, start_col = 2)
-    
+
     expect_equal(as.character(result), c("treatmentT1", "treatmentT2", "treatmentT3"))
     expect_s3_class(result, "factor")
 })
@@ -66,9 +66,9 @@ test_that("construct_factorial_labels handles three factors", {
         B = c("b1", "b2"),
         C = c("c1", "c2")
     )
-    
+
     result <- biometryassist:::construct_factorial_labels(design_book, start_col = 1, fac.sep = c("=", ", "))
-    
+
     expect_equal(as.character(result), c("A=a1, B=b1, C=c1", "A=a2, B=b2, C=c2"))
     expect_s3_class(result, "factor")
 })
@@ -79,10 +79,10 @@ test_that("construct_factorial_labels trims whitespace from results", {
         X = c("val1", "val2"),
         Y = c("val3", "val4")
     )
-    
+
     # Using space as both separators could create extra spaces
     result <- biometryassist:::construct_factorial_labels(design_book, start_col = 1, fac.sep = c(" ", " "))
-    
+
     # Check that there's no leading/trailing whitespace
     expect_equal(as.character(result), c("X val1 Y val3", "X val2 Y val4"))
     expect_true(all(!grepl("^\\s|\\s$", as.character(result))))
@@ -93,7 +93,7 @@ test_that("construct_factorial_labels throws error for invalid start_col", {
         A = c("a1", "a2"),
         B = c("b1", "b2")
     )
-    
+
     # start_col greater than ncol(design_book) should error
     expect_error(
         biometryassist:::construct_factorial_labels(design_book, start_col = 5),
@@ -108,9 +108,9 @@ test_that("construct_factorial_labels handles various data types in columns", {
         method = c("A", "B", "C"),
         temp = c(20, 25, 30)
     )
-    
+
     result <- biometryassist:::construct_factorial_labels(design_book, start_col = 1, fac.sep = c(":", "|"))
-    
+
     expect_equal(as.character(result), c("dose:10|method:A|temp:20", "dose:20|method:B|temp:25", "dose:30|method:C|temp:30"))
     expect_s3_class(result, "factor")
 })
@@ -121,9 +121,9 @@ test_that("construct_factorial_labels produces correct factor levels", {
         A = c("a1", "a2", "a1", "a2"),
         B = c("b1", "b1", "b2", "b2")
     )
-    
+
     result <- biometryassist:::construct_factorial_labels(design_book, start_col = 1)
-    
+
     # Should have 4 treatments
     expect_length(result, 4)
     # Should have 4 unique levels
@@ -137,12 +137,14 @@ test_that("construct_factorial_labels works with empty string separators", {
         Factor1 = c("X", "Y"),
         Factor2 = c("1", "2")
     )
-    
+
     # Both separators as empty strings
     result <- biometryassist:::construct_factorial_labels(design_book, start_col = 1, fac.sep = c("", ""))
-    
+
     expect_equal(as.character(result), c("Factor1XFactor21", "Factor1YFactor22"))
     expect_s3_class(result, "factor")
+})
+
 # Tests for apply_factor_names() internal function
 
 # Helper to access internal function
@@ -155,9 +157,9 @@ test_that("apply_factor_names returns design_book unchanged when fac.names is NU
     B = factor(c("B1", "B2")),
     plot = 1:2
   )
-  
+
   result <- apply_factor_names(design_book, fac.names = NULL, design_type = "factorial")
-  
+
   expect_identical(result, design_book)
 })
 
@@ -167,7 +169,7 @@ test_that("apply_factor_names throws error for unknown design_type", {
     A = factor(c("A1", "A2")),
     B = factor(c("B1", "B2"))
   )
-  
+
   expect_error(
     apply_factor_names(design_book, fac.names = list(F1 = c("a", "b"), F2 = c("x", "y")), design_type = "unknown"),
     "Unknown design_type: unknown"
@@ -181,20 +183,20 @@ test_that("apply_factor_names works with 2-factor factorial design", {
     B = factor(c("X", "X", "Y", "Y")),
     plot = 1:4
   )
-  
+
   fac.names <- list(
     Nitrogen = c("Low", "High"),
     Water = c("Dry", "Wet")
   )
-  
+
   result <- apply_factor_names(design_book, fac.names, design_type = "factorial")
-  
+
   # Check that column names changed
   expect_true("Nitrogen" %in% colnames(result))
   expect_true("Water" %in% colnames(result))
   expect_false("A" %in% colnames(result))
   expect_false("B" %in% colnames(result))
-  
+
   # Check that factor levels changed
   expect_equal(levels(result$Nitrogen), c("Low", "High"))
   expect_equal(levels(result$Water), c("Dry", "Wet"))
@@ -208,20 +210,20 @@ test_that("apply_factor_names works with 3-factor factorial design", {
     C = factor(c("P", "Q")),
     plot = 1:2
   )
-  
+
   fac.names <- list(
     Nitrogen = c("N50", "N100"),
     Water = c("Irrigated", "Rainfed"),
     Variety = c("V1", "V2")
   )
-  
+
   result <- apply_factor_names(design_book, fac.names, design_type = "factorial")
-  
+
   # Check that column names changed
   expect_true("Nitrogen" %in% colnames(result))
   expect_true("Water" %in% colnames(result))
   expect_true("Variety" %in% colnames(result))
-  
+
   # Check that factor levels changed
   expect_equal(levels(result$Nitrogen), c("N50", "N100"))
   expect_equal(levels(result$Water), c("Irrigated", "Rainfed"))
@@ -235,20 +237,20 @@ test_that("apply_factor_names works with split plot design using list", {
     sub_treatments = factor(c("1", "2", "1", "2")),
     plot = 1:4
   )
-  
+
   fac.names <- list(
     Water = c("Irrigated", "Rainfed"),
     Nitrogen = c("N50", "N100")
   )
-  
+
   result <- apply_factor_names(design_book, fac.names, design_type = "split")
-  
+
   # Check that column names changed
   expect_true("Water" %in% colnames(result))
   expect_true("Nitrogen" %in% colnames(result))
   expect_false("treatments" %in% colnames(result))
   expect_false("sub_treatments" %in% colnames(result))
-  
+
   # Check that factor levels changed
   expect_equal(levels(result$Water), c("Irrigated", "Rainfed"))
   expect_equal(levels(result$Nitrogen), c("N50", "N100"))
@@ -261,11 +263,11 @@ test_that("apply_factor_names works with split plot design using character vecto
     sub_treatments = factor(c("1", "2")),
     plot = 1:2
   )
-  
+
   fac.names <- c("Water", "Nitrogen")
-  
+
   result <- apply_factor_names(design_book, fac.names, design_type = "split")
-  
+
   # Check that column names changed
   expect_true("Water" %in% colnames(result))
   expect_true("Nitrogen" %in% colnames(result))
@@ -280,13 +282,13 @@ test_that("apply_factor_names warns when fac.names has too many elements for fac
     B = factor(c("X", "Y")),
     plot = 1:2
   )
-  
+
   fac.names <- list(
     F1 = c("a", "b"),
     F2 = c("x", "y"),
     F3 = c("p", "q")  # Too many
   )
-  
+
   expect_warning(
     apply_factor_names(design_book, fac.names, design_type = "factorial"),
     "fac.names contains 3 elements but only the first 2 have been used."
@@ -300,16 +302,16 @@ test_that("apply_factor_names warns and returns unchanged when fac.names has too
     B = factor(c("X", "Y")),
     plot = 1:2
   )
-  
+
   fac.names <- list(
     F1 = c("a", "b")  # Only 1, need 2
   )
-  
+
   expect_warning(
     result <- apply_factor_names(design_book, fac.names, design_type = "factorial"),
     "fac.names doesn't contain enough elements and has not been used."
   )
-  
+
   # Check that design_book is returned unchanged
   expect_identical(result, design_book)
 })
@@ -318,24 +320,24 @@ test_that("apply_factor_names warns and returns unchanged when fac.names has too
 test_that("apply_factor_names warns when factor levels don't match", {
   design_book <- data.frame(
     A = factor(c("1", "2", "3")),  # 3 levels
-    B = factor(c("X", "Y")),
+    B = factor(c("X", "Y", "Y")),
     plot = 1:3
   )
-  
+
   fac.names <- list(
     Nitrogen = c("Low", "High"),  # Only 2 levels, but A has 3
     Water = c("Dry", "Wet")
   )
-  
+
   expect_warning(
     result <- apply_factor_names(design_book, fac.names, design_type = "factorial"),
     "Nitrogen must contain the correct number of elements. Elements have not been applied."
   )
-  
+
   # Check that the mismatched factor was NOT changed
   expect_true("A" %in% colnames(result))  # Column name should still be A
   expect_false("Nitrogen" %in% colnames(result))
-  
+
   # Check that the correctly matched factor WAS changed
   expect_true("Water" %in% colnames(result))
   expect_equal(levels(result$Water), c("Dry", "Wet"))
@@ -348,14 +350,14 @@ test_that("apply_factor_names warns for split plot with too few elements", {
     sub_treatments = factor(c("1", "2")),
     plot = 1:2
   )
-  
+
   fac.names <- list(Water = c("Irrigated", "Rainfed"))  # Only 1, need 2
-  
+
   expect_warning(
     result <- apply_factor_names(design_book, fac.names, design_type = "split"),
     "fac.names doesn't contain enough elements and has not been used."
   )
-  
+
   # Check that design_book is returned unchanged
   expect_identical(result, design_book)
 })
@@ -367,13 +369,13 @@ test_that("apply_factor_names warns for split plot with too many elements", {
     sub_treatments = factor(c("1", "2")),
     plot = 1:2
   )
-  
+
   fac.names <- list(
     Water = c("Irrigated", "Rainfed"),
     Nitrogen = c("N50", "N100"),
     Extra = c("E1", "E2")  # Too many
   )
-  
+
   expect_warning(
     apply_factor_names(design_book, fac.names, design_type = "split"),
     "fac.names contains 3 elements but only the first 2 have been used."
@@ -383,25 +385,25 @@ test_that("apply_factor_names warns for split plot with too many elements", {
 # Test 12: Factorial design with partial mismatch in levels ----
 test_that("apply_factor_names handles partial mismatch in factor levels for factorial", {
   design_book <- data.frame(
-    A = factor(c("1", "2")),
+    A = factor(c("1", "2", "2")),
     B = factor(c("X", "Y", "Z")),  # 3 levels
     plot = 1:3
   )
-  
+
   fac.names <- list(
     Nitrogen = c("Low", "High"),  # Matches A (2 levels)
     Water = c("Dry", "Wet")       # Doesn't match B (3 levels)
   )
-  
+
   expect_warning(
     result <- apply_factor_names(design_book, fac.names, design_type = "factorial"),
     "Water must contain the correct number of elements. Elements have not been applied."
   )
-  
+
   # Check that Nitrogen was applied successfully
   expect_true("Nitrogen" %in% colnames(result))
   expect_equal(levels(result$Nitrogen), c("Low", "High"))
-  
+
   # Check that Water was not applied
   expect_true("B" %in% colnames(result))
   expect_false("Water" %in% colnames(result))
@@ -411,15 +413,15 @@ test_that("apply_factor_names handles partial mismatch in factor levels for fact
 test_that("apply_factor_names warns when split plot factor levels don't match", {
   design_book <- data.frame(
     treatments = factor(c("A", "B", "C")),  # 3 levels
-    sub_treatments = factor(c("1", "2")),
+    sub_treatments = factor(c("1", "2", "2")),
     plot = 1:3
   )
-  
+
   fac.names <- list(
     Water = c("Irrigated", "Rainfed"),  # Only 2, but treatments has 3
     Nitrogen = c("N50", "N100")
   )
-  
+
   expect_warning(
     result <- apply_factor_names(design_book, fac.names, design_type = "split"),
     "Water must contain the correct number of elements. Elements have not been applied."
@@ -429,25 +431,25 @@ test_that("apply_factor_names warns when split plot factor levels don't match", 
 # Test 14: Factorial design - column name updates only on successful application ----
 test_that("apply_factor_names only updates column names when levels are successfully applied", {
   design_book <- data.frame(
-    A = factor(c("1", "2")),
+    A = factor(c("1", "2", "2")),
     B = factor(c("X", "Y", "Z")),  # Mismatch
     plot = 1:3
   )
-  
+
   fac.names <- list(
     GoodName = c("a", "b"),      # Matches A
     BadName = c("x", "y")        # Doesn't match B
   )
-  
+
   expect_warning(
     result <- apply_factor_names(design_book, fac.names, design_type = "factorial"),
     "BadName must contain the correct number of elements"
   )
-  
+
   # GoodName should be applied to A
   expect_true("GoodName" %in% colnames(result))
   expect_false("A" %in% colnames(result))
-  
+
   # BadName should NOT be applied to B
   expect_true("B" %in% colnames(result))
   expect_false("BadName" %in% colnames(result))
@@ -460,17 +462,17 @@ test_that("apply_factor_names correctly identifies 2-factor factorial design", {
     A = factor(c("1", "2")),
     B = factor(c("X", "Y"))
   )
-  
+
   fac.names <- list(
     F1 = c("a", "b"),
     F2 = c("x", "y")
   )
-  
+
   # Should work without error
   expect_silent(
     result <- apply_factor_names(design_book, fac.names, design_type = "factorial")
   )
-  
+
   expect_true("F1" %in% colnames(result))
   expect_true("F2" %in% colnames(result))
 })
@@ -483,21 +485,22 @@ test_that("apply_factor_names correctly identifies 3-factor factorial design", {
     B = factor(c("X", "Y")),
     C = factor(c("P", "Q"))
   )
-  
+
   fac.names <- list(
     F1 = c("a", "b"),
     F2 = c("x", "y"),
     F3 = c("p", "q")
   )
-  
+
   # Should work without error
   expect_silent(
     result <- apply_factor_names(design_book, fac.names, design_type = "factorial")
   )
-  
+
   expect_true("F1" %in% colnames(result))
   expect_true("F2" %in% colnames(result))
   expect_true("F3" %in% colnames(result))
+})
 # Tests for calculate_block_layout() helper function
 
 test_that("calculate_block_layout validates brows and bcols parameters", {
@@ -510,7 +513,7 @@ test_that("calculate_block_layout validates brows and bcols parameters", {
     biometryassist:::calculate_block_layout(10, 10, 5, NULL, 10),
     "calculate_block_layout: 'brows' and 'bcols' must be positive, finite, non-missing values."
   )
-  
+
   # NA values
   expect_error(
     biometryassist:::calculate_block_layout(10, 10, NA, 5, 10),
@@ -520,7 +523,7 @@ test_that("calculate_block_layout validates brows and bcols parameters", {
     biometryassist:::calculate_block_layout(10, 10, 5, NA, 10),
     "calculate_block_layout: 'brows' and 'bcols' must be positive, finite, non-missing values."
   )
-  
+
   # Infinite values
   expect_error(
     biometryassist:::calculate_block_layout(10, 10, Inf, 5, 10),
@@ -530,7 +533,7 @@ test_that("calculate_block_layout validates brows and bcols parameters", {
     biometryassist:::calculate_block_layout(10, 10, 5, Inf, 10),
     "calculate_block_layout: 'brows' and 'bcols' must be positive, finite, non-missing values."
   )
-  
+
   # Zero or negative values
   expect_error(
     biometryassist:::calculate_block_layout(10, 10, 0, 5, 10),
@@ -555,13 +558,13 @@ test_that("calculate_block_layout handles blocking across rows (brows == ntrt)",
   result <- biometryassist:::calculate_block_layout(
     nrows = 6, ncols = 3, brows = 6, bcols = 1, ntrt = 6
   )
-  
+
   # Should return expand.grid(row = 1:nrows, col = 1:ncols)
   expected <- expand.grid(row = 1:6, col = 1:3)
   expect_equal(result, expected)
   expect_equal(nrow(result), 18)
   expect_equal(names(result), c("row", "col"))
-  
+
   # Check that rows are ordered correctly (1,2,3,4,5,6 for each column)
   expect_equal(result$row[1:6], 1:6)
   expect_equal(result$col[1:6], rep(1, 6))
@@ -572,14 +575,14 @@ test_that("calculate_block_layout handles blocking incomplete rows with all colu
   result <- biometryassist:::calculate_block_layout(
     nrows = 8, ncols = 4, brows = 2, bcols = 4, ntrt = 8
   )
-  
+
   # Should return expand.grid(col = 1:ncols, row = 1:nrows)
   # Note the order is col first, then row
   expected <- expand.grid(col = 1:4, row = 1:8)
   expect_equal(result, expected)
   expect_equal(nrow(result), 32)
   expect_equal(names(result), c("col", "row"))
-  
+
   # Check that columns are ordered correctly (1,2,3,4 for each row)
   expect_equal(result$col[1:4], 1:4)
   expect_equal(result$row[1:4], rep(1, 4))
@@ -590,13 +593,13 @@ test_that("calculate_block_layout handles blocking across columns (bcols == ntrt
   result <- biometryassist:::calculate_block_layout(
     nrows = 3, ncols = 6, brows = 1, bcols = 6, ntrt = 6
   )
-  
+
   # Should return expand.grid(col = 1:ncols, row = 1:nrows)
   expected <- expand.grid(col = 1:6, row = 1:3)
   expect_equal(result, expected)
   expect_equal(nrow(result), 18)
   expect_equal(names(result), c("col", "row"))
-  
+
   # Check ordering
   expect_equal(result$col[1:6], 1:6)
   expect_equal(result$row[1:6], rep(1, 6))
@@ -609,16 +612,16 @@ test_that("calculate_block_layout handles blocking incomplete rows and columns (
   result <- biometryassist:::calculate_block_layout(
     nrows = 6, ncols = 4, brows = 3, bcols = 2, ntrt = 6, block_vec = block_vec
   )
-  
+
   expect_equal(nrow(result), 24)
   expect_equal(names(result), c("row", "col"))
   expect_false(any(is.na(result$row)))
   expect_false(any(is.na(result$col)))
-  
+
   # All row and column values should be within bounds
   expect_true(all(result$row >= 1 & result$row <= 6))
   expect_true(all(result$col >= 1 & result$col <= 4))
-  
+
   # Check that block assignments produced correct layout
   # Block 1 should be in rows 1-3, cols 1-2
   block1_rows <- result$row[1:6]
@@ -633,16 +636,16 @@ test_that("calculate_block_layout handles blocking incomplete columns with all r
   result <- biometryassist:::calculate_block_layout(
     nrows = 4, ncols = 6, brows = 4, bcols = 2, ntrt = 8, block_vec = block_vec
   )
-  
+
   expect_equal(nrow(result), 24)
   expect_equal(names(result), c("row", "col"))
   expect_false(any(is.na(result$row)))
   expect_false(any(is.na(result$col)))
-  
+
   # All row and column values should be within bounds
   expect_true(all(result$row >= 1 & result$row <= 4))
   expect_true(all(result$col >= 1 & result$col <= 6))
-  
+
   # Block 1 should be in all rows (1-4), cols 1-2
   block1_rows <- result$row[1:4]
   block1_cols <- result$col[1:4]
@@ -656,7 +659,7 @@ test_that("calculate_block_layout falls back to default for edge cases", {
   result <- biometryassist:::calculate_block_layout(
     nrows = 5, ncols = 5, brows = 5, bcols = 5, ntrt = 10
   )
-  
+
   # Should return expand.grid(row = 1:nrows, col = 1:ncols)
   expected <- expand.grid(row = 1:5, col = 1:5)
   expect_equal(result, expected)
@@ -674,7 +677,7 @@ test_that("calculate_block_layout handles various block configurations correctly
   expect_equal(names(result1), c("row", "col"))
   expect_true(all(result1$row >= 1 & result1$row <= 4))
   expect_true(all(result1$col >= 1 & result1$col <= 3))
-  
+
   # Test 2: 3x4 grid with 1x2 blocks (3 row blocks, 2 column blocks)
   block_vec <- rep(1:6, each = 2)
   result2 <- biometryassist:::calculate_block_layout(
@@ -688,37 +691,39 @@ test_that("calculate_block_layout handles various block configurations correctly
 
 test_that("calculate_block_layout returns correct dimensions for all paths", {
   # Each test should return nrows * ncols total positions
-  
+
   # Path 1: brows == ntrt
   r1 <- biometryassist:::calculate_block_layout(5, 4, 5, 1, 5)
   expect_equal(nrow(r1), 20)
-  
+
   # Path 2: rr > 1 & cc == 1
   r2 <- biometryassist:::calculate_block_layout(6, 3, 2, 3, 6)
   expect_equal(nrow(r2), 18)
-  
+
   # Path 3: bcols == ntrt
   r3 <- biometryassist:::calculate_block_layout(3, 5, 1, 5, 5)
   expect_equal(nrow(r3), 15)
-  
+
   # Path 4: rr > 1 & cc > 1 (with block_vec)
   r4 <- biometryassist:::calculate_block_layout(6, 6, 3, 3, 9, rep(1:4, each = 9))
   expect_equal(nrow(r4), 36)
-  
+
   # Path 5: cc > 1 & rr == 1 (with block_vec)
   r5 <- biometryassist:::calculate_block_layout(3, 6, 3, 2, 6, rep(1:3, each = 6))
   expect_equal(nrow(r5), 18)
-  
+
   # Path 6: default
   r6 <- biometryassist:::calculate_block_layout(4, 4, 4, 4, 8)
   expect_equal(nrow(r6), 16)
+})
+
 # Tests for internal helper functions in design_helpers.R
 
 test_that("get_design_info correctly identifies non-factorial designs", {
   # Test with a CRD design
   crd_design <- agricolae::design.crd(trt = c("A", "B", "C"), r = 3, seed = 42)
   result <- biometryassist:::get_design_info(crd_design)
-  
+
   expect_type(result, "list")
   expect_named(result, c("type", "is_factorial", "base"))
   expect_equal(result$type, "crd")
@@ -728,10 +733,10 @@ test_that("get_design_info correctly identifies non-factorial designs", {
 
 test_that("get_design_info correctly identifies RCBD designs", {
   # Test with an RCBD design
-  rcbd_design <- agricolae::design.rcbd(trt = c("T1", "T2", "T3", "T4"), 
+  rcbd_design <- agricolae::design.rcbd(trt = c("T1", "T2", "T3", "T4"),
                                         r = 4, seed = 42)
   result <- biometryassist:::get_design_info(rcbd_design)
-  
+
   expect_type(result, "list")
   expect_equal(result$type, "rcbd")
   expect_false(result$is_factorial)
@@ -740,10 +745,10 @@ test_that("get_design_info correctly identifies RCBD designs", {
 
 test_that("get_design_info correctly identifies LSD designs", {
   # Test with a Latin Square design
-  lsd_design <- agricolae::design.lsd(trt = c("V1", "V2", "V3", "V4"), 
+  lsd_design <- agricolae::design.lsd(trt = c("V1", "V2", "V3", "V4"),
                                       seed = 42)
   result <- biometryassist:::get_design_info(lsd_design)
-  
+
   expect_type(result, "list")
   expect_equal(result$type, "lsd")
   expect_false(result$is_factorial)
@@ -752,10 +757,10 @@ test_that("get_design_info correctly identifies LSD designs", {
 
 test_that("get_design_info correctly identifies factorial designs with CRD", {
   # Test with a factorial CRD design
-  factorial_crd <- agricolae::design.ab(trt = c(2, 3), r = 2, 
+  factorial_crd <- agricolae::design.ab(trt = c(2, 3), r = 2,
                                         design = "crd", seed = 42)
   result <- biometryassist:::get_design_info(factorial_crd)
-  
+
   expect_type(result, "list")
   expect_named(result, c("type", "is_factorial", "base"))
   expect_equal(result$type, "factorial_crd")
@@ -765,10 +770,10 @@ test_that("get_design_info correctly identifies factorial designs with CRD", {
 
 test_that("get_design_info correctly identifies factorial designs with RCBD", {
   # Test with a factorial RCBD design
-  factorial_rcbd <- agricolae::design.ab(trt = c(3, 2), r = 3, 
+  factorial_rcbd <- agricolae::design.ab(trt = c(3, 2), r = 3,
                                          design = "rcbd", seed = 42)
   result <- biometryassist:::get_design_info(factorial_rcbd)
-  
+
   expect_type(result, "list")
   expect_equal(result$type, "factorial_rcbd")
   expect_true(result$is_factorial)
@@ -777,10 +782,10 @@ test_that("get_design_info correctly identifies factorial designs with RCBD", {
 
 test_that("get_design_info correctly identifies factorial designs with LSD", {
   # Test with a factorial Latin Square design
-  factorial_lsd <- agricolae::design.ab(trt = c(2, 2), r = 1, 
+  factorial_lsd <- agricolae::design.ab(trt = c(2, 2), r = 1,
                                         design = "lsd", seed = 42)
   result <- biometryassist:::get_design_info(factorial_lsd)
-  
+
   expect_type(result, "list")
   expect_equal(result$type, "factorial_lsd")
   expect_true(result$is_factorial)
@@ -789,10 +794,10 @@ test_that("get_design_info correctly identifies factorial designs with LSD", {
 
 test_that("get_design_info handles 3-way factorial designs", {
   # Test with a 3-way factorial design
-  factorial_3way <- agricolae::design.ab(trt = c(2, 2, 2), r = 2, 
+  factorial_3way <- agricolae::design.ab(trt = c(2, 2, 2), r = 2,
                                          design = "crd", seed = 42)
   result <- biometryassist:::get_design_info(factorial_3way)
-  
+
   expect_type(result, "list")
   expect_equal(result$type, "factorial_crd")
   expect_true(result$is_factorial)
@@ -807,18 +812,18 @@ test_that("get_design_info structure is consistent across design types", {
     lsd = agricolae::design.lsd(trt = c("A", "B", "C"), seed = 42),
     factorial = agricolae::design.ab(trt = c(2, 2), r = 2, design = "crd", seed = 42)
   )
-  
+
   for (design in designs) {
     result <- biometryassist:::get_design_info(design)
-    
+
     # Check that all expected fields are present
     expect_named(result, c("type", "is_factorial", "base"))
-    
+
     # Check types of fields
     expect_type(result$type, "character")
     expect_type(result$is_factorial, "logical")
     expect_type(result$base, "character")
-    
+
     # Check that all fields have length 1
     expect_length(result$type, 1)
     expect_length(result$is_factorial, 1)
