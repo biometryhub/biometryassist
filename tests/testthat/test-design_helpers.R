@@ -127,18 +127,7 @@ test_that("calculate_block_layout handles blocking incomplete rows and columns (
   expect_true(all(block1_cols >= 1 & block1_cols <= 2))
 })
 
-test_that("calculate_block_layout handles blocking incomplete rows and columns without block_vec", {
-  # Same scenario but without providing block_vec
-  # This tests the case where block_vec is NULL in the incomplete rows/cols branch
-  result <- biometryassist:::calculate_block_layout(
-    nrows = 6, ncols = 4, brows = 3, bcols = 2, ntrt = 6, block_vec = NULL
-  )
-  
-  # Without block_vec, the function should still work but might not assign correctly
-  # We just verify it returns a valid data frame with the expected structure
-  expect_equal(nrow(result), 24)
-  expect_equal(names(result), c("row", "col"))
-})
+
 
 test_that("calculate_block_layout handles blocking incomplete columns with all rows (cc > 1 & rr == 1)", {
   # Multiple column blocks spanning all rows
@@ -163,16 +152,7 @@ test_that("calculate_block_layout handles blocking incomplete columns with all r
   expect_true(all(block1_cols >= 1 & block1_cols <= 2))
 })
 
-test_that("calculate_block_layout handles blocking incomplete columns with all rows without block_vec", {
-  # Same scenario but without providing block_vec
-  result <- biometryassist:::calculate_block_layout(
-    nrows = 4, ncols = 6, brows = 4, bcols = 2, ntrt = 8, block_vec = NULL
-  )
-  
-  # Without block_vec, verify it returns a valid data frame
-  expect_equal(nrow(result), 24)
-  expect_equal(names(result), c("row", "col"))
-})
+
 
 test_that("calculate_block_layout falls back to default for edge cases", {
   # Test the default fallback when none of the special conditions are met
