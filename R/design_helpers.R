@@ -10,6 +10,13 @@
 #' @return Data frame with row, col positions
 #' @noRd
 calculate_block_layout <- function(nrows, ncols, brows, bcols, ntrt, block_vec = NULL) {
+  reorder_row_col <- function(plan) {
+    if (!all(c("row", "col") %in% names(plan))) {
+      return(plan)
+    }
+    plan[, c("row", "col", setdiff(names(plan), c("row", "col"))), drop = FALSE]
+  }
+
   if (is.null(brows) || is.null(bcols) ||
       anyNA(c(brows, bcols)) ||
       !is.finite(brows) || !is.finite(bcols) ||
@@ -22,19 +29,19 @@ calculate_block_layout <- function(nrows, ncols, brows, bcols, ntrt, block_vec =
   # Blocking across rows: brows == ntrt in a single column
   if (brows == ntrt) {
     plan <- expand.grid(row = 1:nrows, col = 1:ncols)
-    return(plan)
+    return(reorder_row_col(plan))
   }
   
   # Blocking incomplete rows all columns
   if (rr > 1 & cc == 1) {
     plan <- expand.grid(col = 1:ncols, row = 1:nrows)
-    return(plan)
+    return(reorder_row_col(plan))
   }
   
   # Blocking across columns: bcols == ntrt in a single row
   if (bcols == ntrt) {
     plan <- expand.grid(col = 1:ncols, row = 1:nrows)
-    return(plan)
+    return(reorder_row_col(plan))
   }
   
   # Blocking incomplete rows and incomplete columns
@@ -57,7 +64,7 @@ calculate_block_layout <- function(nrows, ncols, brows, bcols, ntrt, block_vec =
       }
     }
     plan$block <- NULL
-    return(plan)
+    return(reorder_row_col(plan))
   }
   
   # Blocking incomplete columns all rows
@@ -78,11 +85,11 @@ calculate_block_layout <- function(nrows, ncols, brows, bcols, ntrt, block_vec =
       i <- i + 1
     }
     plan$block <- NULL
-    return(plan)
+    return(reorder_row_col(plan))
   }
   
   # Default fallback
-  expand.grid(row = 1:nrows, col = 1:ncols)
+  reorder_row_col(expand.grid(row = 1:nrows, col = 1:ncols))
 }
 
 #' Construct Factorial Treatment Labels

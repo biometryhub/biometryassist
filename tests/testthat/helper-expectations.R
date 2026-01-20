@@ -47,3 +47,43 @@ ggplot2_variant <- function() {
     "ggplot2-new"
   }
 }
+
+##### Helpers for design() tests ----
+
+expect_design_output <- function(x,
+                                expected_names = c("design", "plot.des", "satab", "seed"),
+                                expected_seed = NULL,
+                                expect_plot = "plot.des" %in% expected_names) {
+    testthat::expect_type(x, "list")
+    testthat::expect_named(x, expected_names)
+    testthat::expect_true(inherits(x, "design"))
+    testthat::expect_true(is.data.frame(x$design))
+
+    if (!is.null(expected_seed)) {
+        testthat::expect_identical(x$seed, expected_seed)
+    }
+
+    # When plot.des isn't returned, `$` will yield NULL
+    if (isTRUE(expect_plot)) {
+        testthat::expect_false(is.null(x$plot.des))
+    } else {
+        testthat::expect_null(x$plot.des)
+    }
+}
+
+expect_design_df_has_cols <- function(design_df, cols) {
+    testthat::expect_true(is.data.frame(design_df))
+    missing_cols <- setdiff(cols, names(design_df))
+    testthat::expect_length(missing_cols, 0)
+}
+
+expect_design_df_starts_with <- function(design_df, prefix) {
+    testthat::expect_true(length(names(design_df)) >= length(prefix))
+    testthat::expect_identical(names(design_df)[seq_along(prefix)], prefix)
+}
+
+expect_design_df_ends_with <- function(design_df, suffix) {
+    testthat::expect_true(length(names(design_df)) >= length(suffix))
+    idx <- (length(names(design_df)) - length(suffix) + 1L):length(names(design_df))
+    testthat::expect_identical(names(design_df)[idx], suffix)
+}

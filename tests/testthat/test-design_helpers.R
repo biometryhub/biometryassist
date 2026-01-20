@@ -561,7 +561,7 @@ test_that("calculate_block_layout handles blocking across rows (brows == ntrt)",
 
   # Should return expand.grid(row = 1:nrows, col = 1:ncols)
   expected <- expand.grid(row = 1:6, col = 1:3)
-  expect_equal(result, expected)
+  expect_equal(result, expected, ignore_attr = TRUE)
   expect_equal(nrow(result), 18)
   expect_equal(names(result), c("row", "col"))
 
@@ -576,12 +576,13 @@ test_that("calculate_block_layout handles blocking incomplete rows with all colu
     nrows = 8, ncols = 4, brows = 2, bcols = 4, ntrt = 8
   )
 
-  # Should return expand.grid(col = 1:ncols, row = 1:nrows)
-  # Note the order is col first, then row
+  # Should match expand.grid(col = 1:ncols, row = 1:nrows), but with a stable
+  # output column order of row then col
   expected <- expand.grid(col = 1:4, row = 1:8)
+  expected <- expected[, c("row", "col")]
   expect_equal(result, expected)
   expect_equal(nrow(result), 32)
-  expect_equal(names(result), c("col", "row"))
+  expect_equal(names(result), c("row", "col"))
 
   # Check that columns are ordered correctly (1,2,3,4 for each row)
   expect_equal(result$col[1:4], 1:4)
@@ -594,11 +595,13 @@ test_that("calculate_block_layout handles blocking across columns (bcols == ntrt
     nrows = 3, ncols = 6, brows = 1, bcols = 6, ntrt = 6
   )
 
-  # Should return expand.grid(col = 1:ncols, row = 1:nrows)
+  # Should match expand.grid(col = 1:ncols, row = 1:nrows), but with a stable
+  # output column order of row then col
   expected <- expand.grid(col = 1:6, row = 1:3)
+  expected <- expected[, c("row", "col")]
   expect_equal(result, expected)
   expect_equal(nrow(result), 18)
-  expect_equal(names(result), c("col", "row"))
+  expect_equal(names(result), c("row", "col"))
 
   # Check ordering
   expect_equal(result$col[1:6], 1:6)
@@ -662,7 +665,7 @@ test_that("calculate_block_layout falls back to default for edge cases", {
 
   # Should return expand.grid(row = 1:nrows, col = 1:ncols)
   expected <- expand.grid(row = 1:5, col = 1:5)
-  expect_equal(result, expected)
+  expect_equal(result, expected, ignore_attr = TRUE)
   expect_equal(nrow(result), 25)
   expect_equal(names(result), c("row", "col"))
 })

@@ -3,8 +3,10 @@ test_that("CRD designs are supported", {
     d1 <- design(type = "crd", treatments = c(1, 5, 10, 20),
                  reps = 5, nrows = 4, ncols = 5, seed = 42, quiet = TRUE)
 
-    expect_equal(names(d1), c("design", "plot.des", "satab", "seed"))
-    expect_equal(d1$seed, 42)
+    expect_design_output(d1, expected_seed = 42)
+    expect_design_df_starts_with(d1$design, c("row", "col"))
+    expect_design_df_has_cols(d1$design, c("plots", "reps", "treatments"))
+    expect_design_df_ends_with(d1$design, "treatments")
     expect_equal(d1$satab[4], "Residual                                16\n")
     expect_snapshot_output(d1$satab)
     vdiffr::expect_doppelganger(title = "CRD plot produced",
@@ -16,7 +18,10 @@ test_that("RCBD designs are supported", {
     d2 <- design("rcbd", treatments = LETTERS[1:11], reps = 4,
                  nrows = 11, ncols = 4, brows = 11, bcols = 1, seed = 42, quiet = TRUE)
 
-    expect_equal(d2$seed, 42)
+    expect_design_output(d2, expected_seed = 42)
+    expect_design_df_starts_with(d2$design, c("row", "col"))
+    expect_design_df_has_cols(d2$design, c("plots", "block", "treatments"))
+    expect_design_df_ends_with(d2$design, "treatments")
     expect_equal(d2$satab[3],
                  "Block stratum                           3\n")
     expect_snapshot_output(d2$satab)
@@ -29,8 +34,9 @@ test_that("RCBD with row-wise blocks are supported", {
     d2.1 <- design("rcbd", treatments = LETTERS[1:6], reps = 4,
                    nrows = 4, ncols = 6, brows = 1, bcols = 6, seed = 42, quiet = TRUE)
 
-    expect_equal(names(d2.1), c("design", "plot.des", "satab", "seed"))
-    expect_equal(d2.1$seed, 42)
+    expect_design_output(d2.1, expected_seed = 42)
+    expect_design_df_starts_with(d2.1$design, c("row", "col"))
+    expect_design_df_has_cols(d2.1$design, c("plots", "block", "treatments"))
     expect_equal(d2.1$design$block, factor(d2.1$design$row))
     expect_equal(d2.1$satab[6], "Residual                                15\n")
     vdiffr::expect_doppelganger(title = "RCBD with row blocks",
@@ -42,8 +48,9 @@ test_that("RCBD with square blocks are supported", {
     d2.2 <- design("rcbd", treatments = LETTERS[1:6], reps = 4,
                    nrows = 6, ncols = 4, brows = 3, bcols = 2, seed = 42, quiet = TRUE)
 
-    expect_equal(names(d2.2), c("design", "plot.des", "satab", "seed"))
-    expect_equal(d2.2$seed, 42)
+    expect_design_output(d2.2, expected_seed = 42)
+    expect_design_df_starts_with(d2.2$design, c("row", "col"))
+    expect_design_df_has_cols(d2.2$design, c("plots", "block", "treatments"))
     expect_equal(d2.2$satab[6], "Residual                                15\n")
     vdiffr::expect_doppelganger(title = "RCBD with square blocks",
                                 autoplot(d2.2), variant = ggplot2_variant())
@@ -51,10 +58,12 @@ test_that("RCBD with square blocks are supported", {
 
 test_that("LSD designs are supported", {
     # LSD
-    d3 <- design(type = "lsd", c("S1", "S2", "S3", "S4"),
+    d3 <- design(type = "lsd", treatments = c("S1", "S2", "S3", "S4"),
                  nrows = 4, ncols = 4, seed = 42, quiet = TRUE)
 
-    expect_equal(d3$seed, 42)
+    expect_design_output(d3, expected_seed = 42)
+    expect_design_df_has_cols(d3$design, c("plots", "row", "col", "treatments"))
+    expect_design_df_ends_with(d3$design, "treatments")
     expect_equal(d3$satab[6],
                  "Residual                                6\n")
     expect_snapshot_output(d3$satab)
@@ -66,10 +75,11 @@ test_that("Split plot designs are supported", {
     # Split
     d4 <- design(type = "split", treatments = c("A", "B"),
                  sub_treatments = 1:4, reps = 4, nrows = 8,
-                 ncols = 4, brows = 8, bcols = 1, seed = 42,
-                 quiet = TRUE)
+                 ncols = 4, brows = 8, bcols = 1, seed = 42, quiet = TRUE)
 
-    expect_equal(d4$seed, 42)
+    expect_design_output(d4, expected_seed = 42)
+    expect_design_df_starts_with(d4$design, c("row", "col"))
+    expect_design_df_has_cols(d4$design, c("plots", "block", "wholeplots", "subplots", "sub_treatments", "treatments"))
     expect_equal(d4$satab[11],
                  "         treatments:sub_treatments           3\n")
     expect_snapshot_output(d4$satab)
@@ -80,10 +90,14 @@ test_that("Split plot designs are supported", {
 test_that("Split plot designs with names are supported", {
     d4.1 <- design(type = "split", treatments = c("A", "B"),
                    sub_treatments = 1:4, reps = 4, nrows = 8,
-                   ncols = 4, brows = 4, bcols = 2, seed = 42,
+                   ncols = 4, brows = 4, bcols = 2,
                    fac.names = list(Water = c("Irrigated", "Rain-fed"),
-                                    N = seq(50, 200, 50)), quiet = TRUE)
+                                    N = seq(50, 200, 50)),
+                   seed = 42, quiet = TRUE)
 
+    expect_design_output(d4.1, expected_seed = 42)
+    expect_design_df_starts_with(d4.1$design, c("row", "col"))
+    expect_design_df_has_cols(d4.1$design, c("plots", "block", "wholeplots", "subplots", "Water", "N", "treatments"))
     expect_equal(d4.1$satab[11],
                  "         Water:N                             3\n")
     expect_snapshot_output(d4.1$satab)
@@ -96,9 +110,11 @@ test_that("Split plot designs with double row blocks are supported", {
                    sub_treatments = 1:4, reps = 4, nrows = 8,
                    ncols = 4, brows = 1, bcols = 4, seed = 42, quiet = TRUE)
 
+    expect_design_output(d4.2, expected_seed = 42)
+    expect_design_df_starts_with(d4.2$design, c("row", "col"))
+    expect_design_df_has_cols(d4.2$design, c("plots", "block", "wholeplots", "subplots", "sub_treatments", "treatments"))
     expect_equal(d4.2$satab[11],
                  "         treatments:sub_treatments           3\n")
-    expect_equal(d4.2$seed, 42)
     vdiffr::expect_doppelganger(title = "Split plot double row blocks",
                                 autoplot(d4.2), variant = ggplot2_variant())
 })
@@ -108,9 +124,11 @@ test_that("Split plot designs with ntrt == bcol are supported", {
                    sub_treatments = 1:4, reps = 4, nrows = 4,
                    ncols = 8, brows = 1, bcols = 8, seed = 42, quiet = TRUE)
 
+    expect_design_output(d4.3, expected_seed = 42)
+    expect_design_df_starts_with(d4.3$design, c("row", "col"))
+    expect_design_df_has_cols(d4.3$design, c("plots", "block", "wholeplots", "subplots", "sub_treatments", "treatments"))
     expect_equal(d4.3$satab[11],
                  "         treatments:sub_treatments           3\n")
-    expect_equal(d4.3$seed, 42)
     vdiffr::expect_doppelganger(title = "Split plot ntrt == bcol",
                                 autoplot(d4.3), variant = ggplot2_variant())
 })
@@ -118,12 +136,13 @@ test_that("Split plot designs with ntrt == bcol are supported", {
 test_that("Split plot designs with column-wise arrangement are supported", {
     d4.4 <- design(type = "split", treatments = c("A", "B"),
                    sub_treatments = 1:4, reps = 4, nrows = 8,
-                   ncols = 4, brows = 4, bcols = 2, byrow = FALSE,
-                   seed = 42, quiet = TRUE)
+                   ncols = 4, brows = 4, bcols = 2, byrow = FALSE, seed = 42, quiet = TRUE)
 
+    expect_design_output(d4.4, expected_seed = 42)
+    expect_design_df_starts_with(d4.4$design, c("row", "col"))
+    expect_design_df_has_cols(d4.4$design, c("plots", "block", "wholeplots", "subplots", "sub_treatments", "treatments"))
     expect_equal(d4.4$satab[11],
                  "         treatments:sub_treatments           3\n")
-    expect_equal(d4.4$seed, 42)
     vdiffr::expect_doppelganger(title = "Split plot byrow = F",
                                 autoplot(d4.4), variant = ggplot2_variant())
 })
@@ -131,10 +150,13 @@ test_that("Split plot designs with column-wise arrangement are supported", {
 test_that("Crossed CRD designs are supported", {
     # Crossed, CRD
     d5 <- design(type = "crossed:crd", treatments = c(3, 2),
-                 reps = 3, nrows = 6, ncols = 3, seed = 42,
-                 fac.sep = c("", ""), quiet = TRUE)
+                 reps = 3, nrows = 6, ncols = 3,
+                 fac.sep = c("", ""), seed = 42, quiet = TRUE)
 
-    expect_equal(d5$seed, 42)
+    expect_design_output(d5, expected_seed = 42)
+    expect_design_df_starts_with(d5$design, c("row", "col"))
+    expect_design_df_has_cols(d5$design, c("plots", "reps", "A", "B", "treatments"))
+    expect_design_df_ends_with(d5$design, "treatments")
     expect_equal(d5$satab[5],
                  "A:B                                     2\n")
     expect_snapshot_output(d5$satab)
@@ -143,11 +165,14 @@ test_that("Crossed CRD designs are supported", {
 
     # Crossed, CRD with renaming
     d5.1 <- design(type = "crossed:crd", treatments = c(3, 2),
-                   reps = 3, nrows = 6, ncols = 3, seed = 42,
+                   reps = 3, nrows = 6, ncols = 3,
                    fac.names = list(N = c(50, 100, 150),
                                     Water = c("Irrigated", "Rain-fed")),
-                   quiet = TRUE)
+                   seed = 42, quiet = TRUE)
 
+    expect_design_output(d5.1, expected_seed = 42)
+    expect_design_df_starts_with(d5.1$design, c("row", "col"))
+    expect_design_df_has_cols(d5.1$design, c("plots", "reps", "N", "Water", "treatments"))
     expect_equal(d5.1$satab[5],
                  "N:Water                                 2\n")
     expect_snapshot_output(d5.1$satab)
@@ -158,10 +183,11 @@ test_that("Crossed CRD designs are supported", {
 test_that("Crossed RCBD designs are supported", {
     # Crossed RCBD
     d6 <- design(type = "crossed:rcbd", treatments = c(3, 2),
-                 reps = 3, nrows = 6, ncols = 3, brows = 6, bcols = 1,
-                 seed = 42, quiet = TRUE)
+                 reps = 3, nrows = 6, ncols = 3, brows = 6, bcols = 1, seed = 42, quiet = TRUE)
 
-    expect_equal(d6$seed, 42)
+    expect_design_output(d6, expected_seed = 42)
+    expect_design_df_starts_with(d6$design, c("row", "col"))
+    expect_design_df_has_cols(d6$design, c("plots", "block", "A", "B", "treatments"))
     expect_equal(d6$satab[8],
                  "Residual                                10\n")
     expect_snapshot_output(d6$satab)
@@ -174,6 +200,9 @@ test_that("Crossed RCBD designs with row blocks are supported", {
                    reps = 3, nrows = 3, ncols = 6, brows = 1, bcols = 6,
                    fac.sep = c(":", ""), seed = 42, quiet = TRUE)
 
+    expect_design_output(d6.1, expected_seed = 42)
+    expect_design_df_starts_with(d6.1$design, c("row", "col"))
+    expect_design_df_has_cols(d6.1$design, c("plots", "block", "A", "B", "treatments"))
     expect_equal(d6.1$satab[8],
                  "Residual                                10\n")
     vdiffr::expect_doppelganger(title = "Factorial RCBD plot with row blocks",
@@ -182,9 +211,11 @@ test_that("Crossed RCBD designs with row blocks are supported", {
 
 test_that("Crossed RCBD designs with double row blocks are supported", {
     d6.2 <- design(type = "crossed:rcbd", treatments = c(3, 2),
-                   reps = 3, nrows = 6, ncols = 3, brows = 2, bcols = 3,
-                   seed = 42, quiet = TRUE)
+                   reps = 3, nrows = 6, ncols = 3, brows = 2, bcols = 3, seed = 42, quiet = TRUE)
 
+    expect_design_output(d6.2, expected_seed = 42)
+    expect_design_df_starts_with(d6.2$design, c("row", "col"))
+    expect_design_df_has_cols(d6.2$design, c("plots", "block", "A", "B", "treatments"))
     expect_equal(d6.2$satab[8],
                  "Residual                                10\n")
     vdiffr::expect_doppelganger(title = "Factorial RCBD plot double row blocks",
@@ -193,9 +224,11 @@ test_that("Crossed RCBD designs with double row blocks are supported", {
 
 test_that("Crossed RCBD designs with square blocks are supported", {
     d6.3 <- design(type = "crossed:rcbd", treatments = c(3, 2),
-                   reps = 4, nrows = 6, ncols = 4, brows = 3, bcols = 2,
-                   seed = 42, quiet = TRUE)
+                   reps = 4, nrows = 6, ncols = 4, brows = 3, bcols = 2, seed = 42, quiet = TRUE)
 
+    expect_design_output(d6.3, expected_seed = 42)
+    expect_design_df_starts_with(d6.3$design, c("row", "col"))
+    expect_design_df_has_cols(d6.3$design, c("plots", "block", "A", "B", "treatments"))
     vdiffr::expect_doppelganger(title = "Factorial RCBD plot square blocks",
                                 autoplot(d6.3), variant = ggplot2_variant())
 })
@@ -203,10 +236,11 @@ test_that("Crossed RCBD designs with square blocks are supported", {
 test_that("Crossed LSD designs are supported", {
     # Crossed LSD with separator
     d7 <- design(type = "crossed:lsd", treatments = c(3, 2),
-                 nrows = 6, ncols = 6, fac.sep = "_",
-                 seed = 42, quiet = TRUE)
+                 nrows = 6, ncols = 6, fac.sep = "_", seed = 42, quiet = TRUE)
 
-    expect_equal(d7$seed, 42)
+    expect_design_output(d7, expected_seed = 42)
+    expect_design_df_has_cols(d7$design, c("plots", "row", "col", "A", "B", "treatments"))
+    expect_design_df_ends_with(d7$design, "treatments")
     expect_equal(d7$satab[3],
                  "Row                                     5\n")
     expect_snapshot_output(d7$satab)
@@ -216,11 +250,13 @@ test_that("Crossed LSD designs are supported", {
 
 test_that("Crossed LSD designs with names are supported", {
     d7.1 <- design(type = "crossed:lsd", treatments = c(3, 2),
-                   nrows = 6, ncols = 6, seed = 42, quiet = TRUE,
+                   nrows = 6, ncols = 6,
                    fac.names = list(N = c(50, 100, 150),
-                                    W = c("I", "R")))
+                                    W = c("I", "R")),
+                   seed = 42, quiet = TRUE)
 
-    expect_equal(d7.1$seed, 42)
+    expect_design_output(d7.1, expected_seed = 42)
+    expect_design_df_has_cols(d7.1$design, c("plots", "row", "col", "N", "W", "treatments"))
     expect_equal(d7.1$satab[3],
                  "Row                                     5\n")
     vdiffr::expect_doppelganger(title = "Factorial LSD with names",
@@ -229,12 +265,13 @@ test_that("Crossed LSD designs with names are supported", {
 
 test_that("Crossed LSD designs with names and separator are supported", {
     d7.2 <- design(type = "crossed:lsd", treatments = c(3, 2),
-                   nrows = 6, ncols = 6, seed = 42, quiet = TRUE,
+                   nrows = 6, ncols = 6,
                    fac.names = list(N = c(50, 100, 150),
                                     W = c("I", "R")),
-                   fac.sep = c(":", ""))
+                   fac.sep = c(":", ""), seed = 42, quiet = TRUE)
 
-    expect_equal(d7.2$seed, 42)
+    expect_design_output(d7.2, expected_seed = 42)
+    expect_design_df_has_cols(d7.2$design, c("plots", "row", "col", "N", "W", "treatments"))
     expect_equal(d7.2$satab[3],
                  "Row                                     5\n")
     vdiffr::expect_doppelganger(title = "Factorial LSD plot names and sep",
@@ -246,7 +283,8 @@ test_that("Nested designs are supported", {
     d8 <- design(type = "lsd", treatments = c("A1", "A2", "A3", "A4", "B1", "B2", "B3"),
                  nrows = 7, ncols = 7, seed = 42, quiet = TRUE)
 
-    expect_equal(d8$seed, 42)
+    expect_design_output(d8, expected_seed = 42)
+    expect_design_df_has_cols(d8$design, c("plots", "row", "col", "treatments"))
     expect_equal(d8$satab[6],
                  "Residual                                30\n")
     expect_snapshot_output(d8$satab)
@@ -258,29 +296,37 @@ test_that("3 way factorial designs are possible", {
     d9 <- design(type = "crossed:crd", treatments = c(2, 2, 2),
                  reps = 3, nrows = 6, ncols = 4, seed = 42, quiet = TRUE)
 
-    expect_equal(d9$seed, 42)
+    expect_design_output(d9, expected_seed = 42)
+    expect_design_df_starts_with(d9$design, c("row", "col"))
+    expect_design_df_has_cols(d9$design, c("plots", "reps", "A", "B", "C", "treatments"))
     expect_equal(d9$satab[6],
                  "A:B:C                                   1\n")
     expect_snapshot_output(d9$satab)
     vdiffr::expect_doppelganger(title = "3 way factorial",
                                 autoplot(d9), variant = ggplot2_variant())
 
-    d9.1 <- design(type = "crossed:crd", treatments = c(2, 2, 2), quiet = TRUE,
-                   reps = 3, nrows = 6, ncols = 4, seed = 42,
-                   fac.names = list(X = c("A", "B"), Y = 1:2, Z = c(10, 20)))
+    d9.1 <- design(type = "crossed:crd", treatments = c(2, 2, 2),
+                   reps = 3, nrows = 6, ncols = 4,
+                   fac.names = list(X = c("A", "B"), Y = 1:2, Z = c(10, 20)),
+                   seed = 42, quiet = TRUE)
 
-    expect_equal(d9.1$seed, 42)
+    expect_design_output(d9.1, expected_seed = 42)
+    expect_design_df_starts_with(d9.1$design, c("row", "col"))
+    expect_design_df_has_cols(d9.1$design, c("plots", "reps", "X", "Y", "Z", "treatments"))
     expect_equal(d9.1$satab[6],
                  "X:Y:Z                                   1\n")
     expect_snapshot_output(d9.1$satab)
     vdiffr::expect_doppelganger(title = "3 way factorial with names",
                                 autoplot(d9.1), variant = ggplot2_variant())
 
-    d9.2 <- design(type = "crossed:rcbd", treatments = c(2, 2, 2), quiet = TRUE,
-                   reps = 3, nrows = 8, ncols = 3, brows = 8, bcols = 1, seed = 42,
-                   fac.names = list(X = c("A", "B"), Y = 1:2, Z = c(10, 20)))
+    d9.2 <- design(type = "crossed:rcbd", treatments = c(2, 2, 2),
+                   reps = 3, nrows = 8, ncols = 3, brows = 8, bcols = 1,
+                   fac.names = list(X = c("A", "B"), Y = 1:2, Z = c(10, 20)),
+                   seed = 42, quiet = TRUE)
 
-    expect_equal(d9.2$seed, 42)
+    expect_design_output(d9.2, expected_seed = 42)
+    expect_design_df_starts_with(d9.2$design, c("row", "col"))
+    expect_design_df_has_cols(d9.2$design, c("plots", "block", "X", "Y", "Z", "treatments"))
     expect_equal(d9.2$satab[3],
                  "Block stratum                           2\n")
     expect_snapshot_output(d9.2$satab)
@@ -289,11 +335,14 @@ test_that("3 way factorial designs are possible", {
 })
 
 test_that("Adding names to 3 way factorial designs works", {
-    d9.2 <- design(type = "crossed:rcbd", treatments = c(2, 2, 2), quiet = TRUE,
-                   reps = 3, nrows = 8, ncols = 3, brows = 8, bcols = 1, seed = 42,
-                   fac.names = list(X = c("A", "B"), Y = 1:2, Z = c(10, 20)))
+    d9.2 <- design(type = "crossed:rcbd", treatments = c(2, 2, 2),
+                   reps = 3, nrows = 8, ncols = 3, brows = 8, bcols = 1,
+                   fac.names = list(X = c("A", "B"), Y = 1:2, Z = c(10, 20)),
+                   seed = 42, quiet = TRUE)
 
-    expect_equal(d9.2$seed, 42)
+    expect_design_output(d9.2, expected_seed = 42)
+    expect_design_df_starts_with(d9.2$design, c("row", "col"))
+    expect_design_df_has_cols(d9.2$design, c("plots", "block", "X", "Y", "Z", "treatments"))
     expect_equal(d9.2$satab[3],
                  "Block stratum                           2\n")
     expect_snapshot_output(d9.2$satab)

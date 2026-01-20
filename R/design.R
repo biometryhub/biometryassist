@@ -508,7 +508,7 @@ build_crd <- function(design_book, nrows, ncols) {
     plan <- expand.grid(row = 1:nrows, col = 1:ncols)
     des <- cbind(plan, design_book)
 
-    names(des)[names(des) == "r"] <- "rep"
+    names(des)[names(des) == "r"] <- "reps"
 
     des
 }
