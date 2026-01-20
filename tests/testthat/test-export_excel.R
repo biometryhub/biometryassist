@@ -1,4 +1,5 @@
 test_that("export_design_to_excel returns correct layout matrix", {
+  skip_if_not_installed("openxlsx2")
   df <- data.frame(
     row = rep(1:2, each = 3),
     col = rep(1:3, 2),
@@ -12,12 +13,14 @@ test_that("export_design_to_excel returns correct layout matrix", {
 })
 
 test_that("export_design_to_excel errors if required columns are missing", {
+  skip_if_not_installed("openxlsx2")
   df <- data.frame(row = 1:2, treatments = c("A", "B"))
   expect_error(export_design_to_excel(df, value_column = "treatments"),
                "Missing required columns")
 })
 
 test_that("export_design_to_excel works with a list input", {
+  skip_if_not_installed("openxlsx2")
   df <- data.frame(
     row = rep(1:2, each = 2),
     col = rep(1:2, 2),
@@ -63,12 +66,12 @@ test_that("export_design_to_excel uses custom palette", {
 })
 
 test_that("function fails gracefully when openxlsx2 is not available", {
-    mockery::stub(export_design_to_excel, "rlang::is_installed", function(pkg) FALSE)
+  mockery::stub(export_design_to_excel, "rlang::is_installed", function(pkg) FALSE)
 
-    expect_error(
-        export_design_to_excel(test_data),
-        "Package 'openxlsx2' is required.*not installed"
-    )
+  expect_error(
+    export_design_to_excel(test_data),
+    "Package 'openxlsx2' is required.*not installed"
+  )
 })
 
 test_that("color transparency removal works correctly", {
