@@ -621,17 +621,17 @@ test_that("install_asreml verbose parameter validation and messaging", {
 
     # Capture messages when quiet = "verbose"
     expect_message(
-        install_asreml(quiet = "verbose", force = FALSE),
+        suppressMessages(install_asreml(quiet = "verbose", force = FALSE)),
         "\\[DEBUG\\] Starting ASReml-R installation process"
     )
 
     expect_message(
-        install_asreml(quiet = "verbose", force = FALSE),
+        suppressMessages(install_asreml(quiet = "verbose", force = FALSE)),
         "\\[DEBUG\\] Library path:"
     )
 
     expect_message(
-        install_asreml(quiet = "verbose", force = FALSE),
+        suppressMessages(install_asreml(quiet = "verbose", force = FALSE)),
         "\\[DEBUG\\] Force install: FALSE"
     )
 })
@@ -669,12 +669,12 @@ test_that("download_asreml_package verbose parameter works", {
 
     # Test verbose = TRUE produces debug messages
     expect_message(
-        download_asreml_package("http://test.url", verbose = TRUE),
+        suppressMessages(download_asreml_package("http://test.url", verbose = TRUE)),
         "\\[DEBUG\\] Creating temporary file for download"
     )
 
     expect_message(
-        download_asreml_package("http://test.url", verbose = TRUE),
+        suppressMessages(download_asreml_package("http://test.url", verbose = TRUE)),
         "\\[DEBUG\\] Initiating download from:"
     )
 
@@ -695,12 +695,12 @@ test_that("remove_existing_asreml verbose parameter works", {
 
     # Test verbose = TRUE produces debug messages
     expect_message(
-        remove_existing_asreml(verbose = TRUE),
+        suppressMessages(remove_existing_asreml(verbose = TRUE)),
         "\\[DEBUG\\] Checking if asreml namespace is loaded"
     )
 
     expect_message(
-        remove_existing_asreml(verbose = TRUE),
+        suppressMessages(remove_existing_asreml(verbose = TRUE)),
         "\\[DEBUG\\] Unloading asreml namespace"
     )
 
@@ -722,12 +722,12 @@ test_that("install_dependencies verbose parameter works", {
 
     # Test verbose = TRUE produces debug messages for missing dependencies
     expect_message(
-        install_dependencies(quiet = FALSE, library = tempdir(), verbose = TRUE),
+        suppressMessages(install_dependencies(quiet = FALSE, library = tempdir(), verbose = TRUE)),
         "\\[DEBUG\\] Checking required dependencies"
     )
 
     expect_message(
-        install_dependencies(quiet = FALSE, library = tempdir(), verbose = TRUE),
+        suppressMessages(install_dependencies(quiet = FALSE, library = tempdir(), verbose = TRUE)),
         "\\[DEBUG\\] Required dependencies:"
     )
 
@@ -743,7 +743,7 @@ test_that("install_dependencies verbose parameter works", {
     })
     mockery::stub(install_dependencies, "rlang::is_installed", function(...) TRUE)
     expect_message(
-        install_dependencies(quiet = FALSE, library = tempdir(), verbose = TRUE),
+        suppressMessages(install_dependencies(quiet = FALSE, library = tempdir(), verbose = TRUE)),
         "\\[DEBUG\\] All dependencies already satisfied"
     )
 })
@@ -760,12 +760,12 @@ test_that("install_asreml_package verbose parameter works", {
 
     # Test verbose = TRUE produces debug messages
     expect_message(
-        install_asreml_package(temp_file, tempdir(), FALSE, "linux", verbose = TRUE),
+        suppressMessages(install_asreml_package(temp_file, tempdir(), FALSE, "linux", verbose = TRUE)),
         "\\[DEBUG\\] Starting ASReml package installation"
     )
 
     expect_message(
-        install_asreml_package(temp_file, tempdir(), FALSE, "linux", verbose = TRUE),
+        suppressMessages(install_asreml_package(temp_file, tempdir(), FALSE, "linux", verbose = TRUE)),
         "\\[DEBUG\\] Package file:"
     )
 
@@ -779,7 +779,7 @@ test_that("install_asreml_package verbose parameter works", {
     mockery::stub(install_asreml_package, "install.packages", function(...) stop("Installation failed"))
     expect_warning(
         expect_message(
-            result <- install_asreml_package(temp_file, tempdir(), FALSE, "linux", verbose = TRUE),
+            result <- suppressMessages(install_asreml_package(temp_file, tempdir(), FALSE, "linux", verbose = TRUE)),
             "\\[DEBUG\\] Installation error: Installation failed"
         ),
         "Installation failed"
@@ -797,11 +797,11 @@ test_that("manage_file verbose parameter works", {
 
         # Test verbose = TRUE with keep_file = FALSE
         expect_message(
-            manage_file(test_file, FALSE, "test.zip", verbose = TRUE),
+            suppressMessages(manage_file(test_file, FALSE, "test.zip", verbose = TRUE)),
             "\\[DEBUG\\] Managing downloaded file:"
         )
         expect_message(
-            manage_file(test_file, FALSE, "test.zip", verbose = TRUE),
+            suppressMessages(manage_file(test_file, FALSE, "test.zip", verbose = TRUE)),
             "\\[DEBUG\\] Removing downloaded file"
         )
     })
@@ -813,7 +813,7 @@ test_that("manage_file verbose parameter works", {
 
         # Test keep_file = TRUE (current directory)
         expect_message(
-            manage_file(test_file, TRUE, "test.zip", verbose = TRUE),
+            suppressMessages(manage_file(test_file, TRUE, "test.zip", verbose = TRUE)),
             "\\[DEBUG\\] Saving file to current directory: test.zip"
         )
     })
@@ -827,7 +827,7 @@ test_that("manage_file verbose parameter works", {
 
         # Test keep_file = path (specified directory)
         expect_message(
-            manage_file(test_file, subdir, "test.zip", verbose = TRUE),
+            suppressMessages(manage_file(test_file, subdir, "test.zip", verbose = TRUE)),
             "\\[DEBUG\\] Saving file to specified directory: subdir[/\\\\]test.zip"
         )
     })
@@ -840,7 +840,7 @@ test_that("manage_file verbose parameter works", {
         # Test keep_file = invalid path
         expect_message(
             expect_warning(
-                manage_file(test_file, "/nonexistent/path", "test.zip", verbose = TRUE),
+                suppressMessages(manage_file(test_file, "/nonexistent/path", "test.zip", verbose = TRUE)),
                 "Invalid keep_file argument"
             ),
             "\\[DEBUG\\] Invalid keep_file argument, removing file"
@@ -856,7 +856,7 @@ test_that("manage_file verbose parameter works", {
         mockery::stub(manage_file, "file.rename", function(...) stop("move failed"))
         expect_message(
             expect_warning(
-                manage_file(test_file, TRUE, "test.zip", verbose = TRUE),
+                suppressMessages(manage_file(test_file, TRUE, "test.zip", verbose = TRUE)),
                 "Could not save ASReml file to specified location"
             ),
             "\\[DEBUG\\] Failed to move file: move failed"
@@ -878,21 +878,21 @@ test_that("verbose debugging shows OS detection details", {
     # Test that OS detection details are shown in verbose mode
     expect_warning(
         expect_message(
-            install_asreml(quiet = "verbose"),
+            suppressMessages(install_asreml(quiet = "verbose")),
             "\\[DEBUG\\] Detecting operating system and R version"),
         "There was a problem with installation and ASReml-R was not successfully installed\\."
     )
 
     expect_warning(
         expect_message(
-            install_asreml(quiet = "verbose"),
+            suppressMessages(install_asreml(quiet = "verbose")),
             "\\[DEBUG\\] Detected OS:"),
         "There was a problem with installation and ASReml-R was not successfully installed\\."
     )
 
     expect_warning(
         expect_message(
-            install_asreml(quiet = "verbose"),
+            suppressMessages(install_asreml(quiet = "verbose")),
             "\\[DEBUG\\] Detected R version:"),
         "There was a problem with installation and ASReml-R was not successfully installed\\."
     )
@@ -906,7 +906,7 @@ test_that("verbose debugging handles error cases appropriately", {
 
     expect_message(
         expect_error(
-            download_asreml_package("http://fake.url", verbose = TRUE),
+            suppressMessages(download_asreml_package("http://fake.url", verbose = TRUE)),
             "Failed to download ASReml-R package"
         ),
         "\\[DEBUG\\] Download failed with error:"
@@ -917,7 +917,7 @@ test_that("verbose debugging handles error cases appropriately", {
 
     expect_message(
         expect_warning(
-            remove_existing_asreml(verbose = TRUE),
+            suppressMessages(remove_existing_asreml(verbose = TRUE)),
             "Could not remove existing asreml package"
         ),
         "\\[DEBUG\\] Error removing existing package:"
@@ -938,14 +938,14 @@ test_that("install_asreml verbose mode shows version check details", {
 
     expect_warning(
         expect_message(
-            install_asreml(quiet = "verbose", check_version = TRUE),
+            suppressMessages(install_asreml(quiet = "verbose", check_version = TRUE)),
             "\\[DEBUG\\] Checking for newer version availability"),
         "There was a problem with installation and ASReml-R was not successfully installed\\."
     )
 
     expect_warning(
         expect_message(
-            install_asreml(quiet = "verbose", check_version = TRUE),
+            suppressMessages(install_asreml(quiet = "verbose", check_version = TRUE)),
             "\\[DEBUG\\] Newer version available: TRUE"),
         "There was a problem with installation and ASReml-R was not successfully installed\\."
     )
@@ -1019,7 +1019,7 @@ test_that("install_asreml verbose messaging shows mac folder creation", {
     # Test that verbose mode shows the mac folder creation message
     expect_warning(
         expect_message(
-            install_asreml(quiet = "verbose"),
+            suppressMessages(install_asreml(quiet = "verbose")),
             "\\[DEBUG\\] macOS detected - checking/creating Mac folder"
         ),
         "There was a problem with installation and ASReml-R was not successfully installed\\."
@@ -1144,7 +1144,7 @@ test_that("install_asreml verbose messaging shows package removal", {
 
     # Test that verbose mode shows the removal message
     expect_message(
-        install_asreml(force = TRUE, quiet = "verbose"),
+        suppressMessages(install_asreml(force = TRUE, quiet = "verbose")),
         "\\[DEBUG\\] Force=TRUE and existing package found - removing existing installation"
     )
 })

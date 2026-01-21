@@ -160,7 +160,6 @@ palette = "default", onepage = FALSE) {
     }
 
     if(n_groups > 1) {
-        names(output) <- groups
 
         # Add titles to all plots
         titled_plots <- list()
@@ -177,6 +176,7 @@ palette = "default", onepage = FALSE) {
                 rel_heights = c(0.1, 1)
             )
         }
+        names(titled_plots) <- groups
 
         if(onepage) {
             # Calculate number of pages needed
