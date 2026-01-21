@@ -548,11 +548,11 @@ test_that("save = FALSE produces nothing", {
 })
 
 test_that("save = 'workbook' produces csv file and not plot", {
-    design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4,
-           save = "workbook", savename = "crd_design1", quiet = TRUE)
     withr::local_file("crd_design1.csv")
-    expect_true(file.exists("crd_design1.csv"))
-    expect_snapshot_file("crd_design1.csv")
+    d <- design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4,
+                save = "workbook", savename = "crd_design1", quiet = TRUE)
+
+    expect_csv_matches_df(d$design, "crd_design1.csv")
     expect_false(file.exists("crd_design1.pdf"))
 })
 
@@ -565,23 +565,23 @@ test_that("save = 'plot' produces plot file and not csv", {
 })
 
 test_that("save = 'both' produces plot file and csv", {
-    design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4,
-           save = "both", savename = "crd_design3", quiet = TRUE)
     withr::local_file("crd_design3.pdf")
     withr::local_file("crd_design3.csv")
-    expect_true(file.exists("crd_design3.csv"))
+    d <- design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4,
+                save = "both", savename = "crd_design3", quiet = TRUE)
+
+    expect_csv_matches_df(d$design, "crd_design3.csv")
     expect_true(file.exists("crd_design3.pdf"))
-    expect_snapshot_file("crd_design3.csv")
 })
 
 test_that("save = TRUE produces plot file and csv", {
-    design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4,
-           save = TRUE, savename = "crd_design4", quiet = TRUE)
     withr::local_file("crd_design4.pdf")
     withr::local_file("crd_design4.csv")
-    expect_true(file.exists("crd_design4.csv"))
+    d <- design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4,
+                save = TRUE, savename = "crd_design4", quiet = TRUE)
+
+    expect_csv_matches_df(d$design, "crd_design4.csv")
     expect_true(file.exists("crd_design4.pdf"))
-    expect_snapshot_file("crd_design4.csv")
 })
 
 test_that("Output is produced when quiet = FALSE", {

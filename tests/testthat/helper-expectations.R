@@ -87,3 +87,23 @@ expect_design_df_ends_with <- function(design_df, suffix) {
     idx <- (length(names(design_df)) - length(suffix) + 1L):length(names(design_df))
     testthat::expect_identical(names(design_df)[idx], suffix)
 }
+
+expect_csv_matches_df <- function(df, csv_path, tolerance = 1e-6) {
+    testthat::expect_true(file.exists(csv_path))
+    csv <- utils::read.csv(csv_path, check.names = FALSE)
+
+    testthat::expect_true(is.data.frame(df))
+    testthat::expect_equal(dim(csv), dim(df))
+    testthat::expect_identical(colnames(csv), colnames(df))
+
+    for (nm in colnames(df)) {
+        x <- df[[nm]]
+        y <- csv[[nm]]
+
+        if (is.numeric(x) && is.numeric(y)) {
+            testthat::expect_equal(x, y, tolerance = tolerance)
+        } else {
+            testthat::expect_equal(as.character(x), as.character(y))
+        }
+    }
+}

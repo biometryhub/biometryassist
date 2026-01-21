@@ -109,11 +109,8 @@ test_that("save produces output", {
     withr::local_file("pred_vals.csv")
     output <- multiple_comparisons(dat.aov, classify = "Species", save = TRUE, savename = "pred_vals")
     expect_snapshot_output(output)
-    expect_snapshot_file("pred_vals.csv")
-    pred_vals <- read.csv("pred_vals.csv")
-    expect_equal(dim(output), dim(pred_vals))
-    expect_equal(colMeans(output[,c(2:4, 6:8)]), colMeans(pred_vals[,c(2:4, 6:8)]))
-    expect_equal(colnames(output), colnames(pred_vals))
+
+    expect_csv_matches_df(output, "pred_vals.csv")
 })
 
 test_that("Interaction terms work", {
