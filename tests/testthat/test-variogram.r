@@ -139,7 +139,7 @@ test_that("variogram dsum visual regression - minimal", {
     skip_on_ci()
     skip_on_covr()
     skip_if(packageVersion("grid") < "4.2.1")
-    skip_on_os(c("windows", "linux"))
+    skip_on_os(c("mac", "linux"))
 
     # Test only the first plot to minimize fragility
     vdiffr::expect_doppelganger(title = "Variogram dsum first",
