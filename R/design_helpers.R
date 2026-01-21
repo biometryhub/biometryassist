@@ -254,3 +254,127 @@ prepare_split_design <- function(design_book) {
   
   design_book
 }
+
+#' Validate Design Inputs
+#' @noRd
+validate_design_inputs <- function(nrows, ncols, brows, bcols, size, seed) {
+  if (!is.na(brows) && brows > nrows) {
+    stop("brows must not be larger than nrows", call. = FALSE)
+  }
+  
+  if (!is.na(bcols) && bcols > ncols) {
+    stop("bcols must not be larger than ncols", call. = FALSE)
+  }
+  
+  if (!is.numeric(size)) {
+    stop("size must be numeric", call. = FALSE)
+  }
+  
+  if ((!is.logical(seed) || is.na(seed)) && !is.numeric(seed)) {
+    stop("seed must be numeric or TRUE/FALSE", call. = FALSE)
+  }
+}
+
+#' Parse Design Type
+#'
+#' Parses user input to determine base design and whether factorial
+#' @noRd
+parse_design_type <- function(type) {
+  if (length(type) != 1L || is.na(type)) {
+    stop("type must be a single non-missing string", call. = FALSE)
+  }
+  
+  type_lower <- trimws(tolower(as.character(type)))
+  if (!nzchar(type_lower)) {
+    stop("type must be a non-empty string", call. = FALSE)
+  }
+  
+  # Check if factorial (crossed). Require an explicit 'crossed:' prefix.
+  if (grepl("^crossed\\s*:", type_lower)) {
+    base_type <- sub("^crossed\\s*:\\s*", "", type_lower)
+    
+    if (!nzchar(base_type)) {
+      stop("Crossed factorial designs must be specified as 'crossed:<type>'", call. = FALSE)
+    }
+    
+    if (base_type %!in% c("crd", "rcbd", "lsd")) {
+      stop("Crossed designs of type '", base_type, "' are not supported", call. = FALSE)
+    }
+    
+    return(list(
+      base = base_type,
+      is_factorial = TRUE,
+      full_type = paste0("factorial_", base_type)
+    ))
+  }
+  
+  # Non-factorial designs
+  valid_types <- c("crd", "rcbd", "lsd", "split")
+  if (type_lower %!in% valid_types) {
+    stop("Designs of type '", type, "' are not supported", call. = FALSE)
+  }
+  
+  return(list(
+    base = type_lower,
+    is_factorial = FALSE,
+    full_type = type_lower
+  ))
+}
+
+#' Calculate Total Number of Plots
+#' @noRd
+calculate_total_plots <- function(parsed_type, treatments, reps, sub_treatments) {
+  if (parsed_type$is_factorial) {
+    if (parsed_type$base == "lsd") {
+      return(prod(treatments)^2)
+    } else {
+      return(prod(treatments) * reps)
+    }
+  }
+  
+  switch(parsed_type$base,
+         crd = length(treatments) * reps,
+         rcbd = length(treatments) * reps,
+         lsd = length(treatments)^2,
+         split = length(treatments) * length(sub_treatments) * reps,
+         stop("Unknown design type")
+  )
+}
+
+#' Validate Design Dimensions
+#' @noRd
+validate_dimensions <- function(dim, trs) {
+  if (dim > trs) {
+    warning("Area provided is larger than treatments applied. Please check inputs.",
+            call. = FALSE)
+  }
+  
+  if (dim < trs) {
+    warning("Area provided is smaller than treatments applied. Please check inputs.",
+            call. = FALSE)
+  }
+}
+
+#' Handle Save Operations
+#' @noRd
+handle_save <- function(save, savename, plottype, info, ...) {
+  if (!is.logical(save)) {
+    output <- tolower(save)
+  } else if (save) {
+    output <- "both"
+  } else {
+    output <- "none"
+  }
+  
+  if (output == "plot") {
+    ggplot2::ggsave(filename = paste0(savename, ".", plottype), ...)
+  } else if (output == "workbook") {
+    utils::write.csv(info$design, file = paste0(savename, ".csv"), row.names = FALSE)
+  } else if (output == "both") {
+    ggplot2::ggsave(filename = paste0(savename, ".", plottype), ...)
+    utils::write.csv(info$design, file = paste0(savename, ".csv"), row.names = FALSE)
+  } else if (output != "none") {
+    stop("save must be one of 'none'/FALSE, 'both'/TRUE, 'plot', or 'workbook'.",
+         call. = FALSE)
+  }
+}

@@ -195,13 +195,12 @@ anova_split <- function(design_book) {
   totdf <- nrow(design_book) - 1
 
   # Find subplots column (could be 'subplots' or 'splots')
-  subplot_col <- if ("subplots" %in% names(design_book)) {
-    "subplots"
-  } else if ("splots" %in% names(design_book)) {
-    "splots"
-  } else {
+  subplot_col <- intersect(c("subplots", "splots"), names(design_book))
+  
+  if (length(subplot_col) == 0) {
     stop("Cannot find subplot column in design book", call. = FALSE)
   }
+  subplot_col <- subplot_col[1]
 
   numwplots <- nrow(design_book) / n_unique(design_book[[subplot_col]])
 

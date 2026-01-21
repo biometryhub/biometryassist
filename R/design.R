@@ -267,11 +267,11 @@ des_info <- function(design.obj,
 
     if (identical(design_info$type, "split")) {
         treatments <- params$trt1
-        sub_treatments <- params$trt2
-        reps <- params$r
+        sub_treatments <- unique(design.obj$book[,ncol(design.obj$book)])
+        reps <- params$r[1]
     } else {
         treatments <- params$trt
-        reps <- params$r
+        reps <- params$r[1]
     }
 
     # Prefer using the original seed to reproduce the same randomisation.
@@ -319,73 +319,7 @@ des_info <- function(design.obj,
 }
 
 
-# Helper Functions --------------------------------------------------------
-
-#' Validate Design Inputs
-#' @noRd
-validate_design_inputs <- function(nrows, ncols, brows, bcols, size, seed) {
-    if (!is.na(brows) && brows > nrows) {
-        stop("brows must not be larger than nrows", call. = FALSE)
-    }
-
-    if (!is.na(bcols) && bcols > ncols) {
-        stop("bcols must not be larger than ncols", call. = FALSE)
-    }
-
-    if (!is.numeric(size)) {
-        stop("size must be numeric", call. = FALSE)
-    }
-
-    if ((!is.logical(seed) || is.na(seed)) && !is.numeric(seed)) {
-        stop("seed must be numeric or TRUE/FALSE", call. = FALSE)
-    }
-}
-
-#' Parse Design Type
-#'
-#' Parses user input to determine base design and whether factorial
-#' @noRd
-parse_design_type <- function(type) {
-    if (length(type) != 1L || is.na(type)) {
-        stop("type must be a single non-missing string", call. = FALSE)
-    }
-
-    type_lower <- trimws(tolower(as.character(type)))
-    if (!nzchar(type_lower)) {
-        stop("type must be a non-empty string", call. = FALSE)
-    }
-
-    # Check if factorial (crossed). Require an explicit 'crossed:' prefix.
-    if (grepl("^crossed\\s*:", type_lower)) {
-        base_type <- sub("^crossed\\s*:\\s*", "", type_lower)
-
-        if (!nzchar(base_type)) {
-            stop("Crossed factorial designs must be specified as 'crossed:<type>'", call. = FALSE)
-        }
-
-        if (base_type %!in% c("crd", "rcbd", "lsd")) {
-            stop("Crossed designs of type '", base_type, "' are not supported", call. = FALSE)
-        }
-
-        return(list(
-            base = base_type,
-            is_factorial = TRUE,
-            full_type = paste0("factorial_", base_type)
-        ))
-    }
-
-    # Non-factorial designs
-    valid_types <- c("crd", "rcbd", "lsd", "split")
-    if (type_lower %!in% valid_types) {
-        stop("Designs of type '", type, "' are not supported", call. = FALSE)
-    }
-
-    return(list(
-        base = type_lower,
-        is_factorial = FALSE,
-        full_type = type_lower
-    ))
-}
+# Build Functions ---------------------------------------------------------
 
 #' Create Agricolae Design Object
 #'
@@ -393,91 +327,57 @@ parse_design_type <- function(type) {
 #' @noRd
 create_agricolae_design <- function(parsed_type, treatments, reps,
                                     sub_treatments, seed) {
-    seed_value <- if (is.numeric(seed)) seed else 0
+  seed_value <- if (is.numeric(seed)) seed else 0
 
-    if (parsed_type$is_factorial) {
-        if (length(treatments) > 3) {
-            stop("Crossed designs with more than three treatment factors are not supported",
-                 call. = FALSE)
-        }
-
-        outdesign <- agricolae::design.ab(
-            trt = treatments,
-            r = reps,
-            design = parsed_type$base,
-            seed = seed_value
-        )
-    } else {
-        outdesign <- switch(parsed_type$base,
-                            crd = agricolae::design.crd(
-                                trt = treatments,
-                                r = reps,
-                                seed = seed_value
-                            ),
-                            rcbd = agricolae::design.rcbd(
-                                trt = treatments,
-                                r = reps,
-                                seed = seed_value
-                            ),
-                            lsd = {
-                                if (!missing(reps)) {
-                                    message("Number of replicates is not required for Latin Square designs and has been ignored")
-                                }
-                                agricolae::design.lsd(
-                                    trt = treatments,
-                                    seed = seed_value
-                                )
-                            },
-                            split = {
-                                if (is.null(sub_treatments) || anyNA(sub_treatments)) {
-                                    stop("sub_treatments are required for a split plot design", call. = FALSE)
-                                }
-                                agricolae::design.split(
-                                    trt1 = treatments,
-                                    trt2 = sub_treatments,
-                                    r = reps,
-                                    seed = seed_value
-                                )
-                            },
-                            stop("Unknown design type: ", parsed_type$base, call. = FALSE)
-        )
+  if (parsed_type$is_factorial) {
+    if (length(treatments) > 3) {
+      stop("Crossed designs with more than three treatment factors are not supported",
+           call. = FALSE)
     }
 
-    return(outdesign)
-}
-
-#' Calculate Total Number of Plots
-#' @noRd
-calculate_total_plots <- function(parsed_type, treatments, reps, sub_treatments) {
-    if (parsed_type$is_factorial) {
-        if (parsed_type$base == "lsd") {
-            return(prod(treatments)^2)
-        } else {
-            return(prod(treatments) * reps)
-        }
-    }
-
-    switch(parsed_type$base,
-           crd = length(treatments) * reps,
-           rcbd = length(treatments) * reps,
-           lsd = length(treatments)^2,
-           split = length(treatments) * length(sub_treatments) * reps,
-           stop("Unknown design type")
+    outdesign <- agricolae::design.ab(
+      trt = treatments,
+      r = reps,
+      design = parsed_type$base,
+      seed = seed_value
     )
-}
+  } else {
+    outdesign <- switch(parsed_type$base,
+                        crd = agricolae::design.crd(
+                          trt = treatments,
+                          r = reps,
+                          seed = seed_value
+                        ),
+                        rcbd = agricolae::design.rcbd(
+                          trt = treatments,
+                          r = reps,
+                          seed = seed_value
+                        ),
+                        lsd = {
+                          if (!missing(reps)) {
+                            message("Number of replicates is not required for Latin Square designs and has been ignored")
+                          }
+                          agricolae::design.lsd(
+                            trt = treatments,
+                            seed = seed_value
+                          )
+                        },
+                        split = {
+                          if (is.null(sub_treatments) || anyNA(sub_treatments)) {
+                            stop("sub_treatments are required for a split plot design", call. = FALSE)
+                          }
+                          agricolae::design.split(
+                            trt1 = treatments,
+                            trt2 = sub_treatments,
+                            r = reps,
+                            seed = seed_value
+                          )
+                        },
+                        stop("Unknown design type: ", parsed_type$base, call. = FALSE)
+    )
+  }
 
-#' Validate Design Dimensions
-#' @noRd
-validate_dimensions <- function(dim, trs) {
-    if (dim > trs) {
-        warning("Area provided is larger than treatments applied. Please check inputs.",
-                call. = FALSE)
-    }
-
-    if (dim < trs) {
-        warning("Area provided is smaller than treatments applied. Please check inputs.",
-                call. = FALSE)
-    }
+  return(outdesign)
 }
 
 #' Build Design Data Frame
@@ -590,28 +490,4 @@ build_split <- function(design_book, nrows, ncols, brows, bcols, byrow) {
     }
 
     des
-}
-
-#' Handle Save Operations
-#' @noRd
-handle_save <- function(save, savename, plottype, info, ...) {
-    if (!is.logical(save)) {
-        output <- tolower(save)
-    } else if (save) {
-        output <- "both"
-    } else {
-        output <- "none"
-    }
-
-    if (output == "plot") {
-        ggplot2::ggsave(filename = paste0(savename, ".", plottype), ...)
-    } else if (output == "workbook") {
-        write.csv(info$design, file = paste0(savename, ".csv"), row.names = FALSE)
-    } else if (output == "both") {
-        ggplot2::ggsave(filename = paste0(savename, ".", plottype), ...)
-        write.csv(info$design, file = paste0(savename, ".csv"), row.names = FALSE)
-    } else if (output != "none") {
-        stop("save must be one of 'none'/FALSE, 'both'/TRUE, 'plot', or 'workbook'.",
-             call. = FALSE)
-    }
 }

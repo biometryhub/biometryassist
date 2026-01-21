@@ -720,6 +720,38 @@ test_that("calculate_block_layout returns correct dimensions for all paths", {
   expect_equal(nrow(r6), 16)
 })
 
+test_that("calculate_block_layout always returns data frame with row and col columns", {
+  # Test that all return paths produce consistent output with row and col columns
+  # This ensures the reorder_row_col helper function works correctly
+  
+  # Test various configurations
+  test_cases <- list(
+    list(nrows = 5, ncols = 4, brows = 5, bcols = 1, ntrt = 5),
+    list(nrows = 6, ncols = 3, brows = 2, bcols = 3, ntrt = 6),
+    list(nrows = 3, ncols = 5, brows = 1, bcols = 5, ntrt = 5),
+    list(nrows = 6, ncols = 6, brows = 3, bcols = 3, ntrt = 9, block_vec = rep(1:4, each = 9)),
+    list(nrows = 4, ncols = 4, brows = 4, bcols = 4, ntrt = 8)
+  )
+  
+  for (tc in test_cases) {
+    result <- do.call(biometryassist:::calculate_block_layout, tc)
+    
+    # Verify output is a data frame
+    expect_s3_class(result, "data.frame")
+    
+    # Verify it has row and col columns
+    expect_true("row" %in% names(result))
+    expect_true("col" %in% names(result))
+    
+    # Verify row and col are the first two columns (reorder_row_col output)
+    expect_equal(names(result)[1:2], c("row", "col"))
+    
+    # Verify all values are within valid ranges
+    expect_true(all(result$row >= 1 & result$row <= tc$nrows))
+    expect_true(all(result$col >= 1 & result$col <= tc$ncols))
+  }
+})
+
 # Tests for internal helper functions in design_helpers.R
 
 test_that("get_design_info correctly identifies non-factorial designs", {
@@ -833,3 +865,366 @@ test_that("get_design_info structure is consistent across design types", {
     expect_length(result$base, 1)
   }
 })
+
+# Tests for validate_design_inputs() ----
+
+test_that("validate_design_inputs passes valid inputs", {
+  expect_silent(
+    biometryassist:::validate_design_inputs(
+      nrows = 10, ncols = 5, brows = NA, bcols = NA, size = 4, seed = TRUE
+    )
+  )
+  
+  expect_silent(
+    biometryassist:::validate_design_inputs(
+      nrows = 10, ncols = 5, brows = 5, bcols = 2, size = 6, seed = 42
+    )
+  )
+})
+
+test_that("validate_design_inputs errors when brows > nrows", {
+  expect_error(
+    biometryassist:::validate_design_inputs(
+      nrows = 10, ncols = 5, brows = 15, bcols = 2, size = 4, seed = TRUE
+    ),
+    "brows must not be larger than nrows"
+  )
+})
+
+test_that("validate_design_inputs errors when bcols > ncols", {
+  expect_error(
+    biometryassist:::validate_design_inputs(
+      nrows = 10, ncols = 5, brows = 5, bcols = 10, size = 4, seed = TRUE
+    ),
+    "bcols must not be larger than ncols"
+  )
+})
+
+test_that("validate_design_inputs errors when size is not numeric", {
+  expect_error(
+    biometryassist:::validate_design_inputs(
+      nrows = 10, ncols = 5, brows = NA, bcols = NA, size = "large", seed = TRUE
+    ),
+    "size must be numeric"
+  )
+})
+
+test_that("validate_design_inputs errors for invalid seed values", {
+  expect_error(
+    biometryassist:::validate_design_inputs(
+      nrows = 10, ncols = 5, brows = NA, bcols = NA, size = 4, seed = NA
+    ),
+    "seed must be numeric or TRUE/FALSE"
+  )
+  
+  expect_error(
+    biometryassist:::validate_design_inputs(
+      nrows = 10, ncols = 5, brows = NA, bcols = NA, size = 4, seed = "random"
+    ),
+    "seed must be numeric or TRUE/FALSE"
+  )
+})
+
+# Tests for parse_design_type() ----
+
+test_that("parse_design_type handles non-factorial designs", {
+  result <- biometryassist:::parse_design_type("crd")
+  expect_equal(result$base, "crd")
+  expect_false(result$is_factorial)
+  expect_equal(result$full_type, "crd")
+  
+  result <- biometryassist:::parse_design_type("RCBD")
+  expect_equal(result$base, "rcbd")
+  expect_false(result$is_factorial)
+  
+  result <- biometryassist:::parse_design_type("  lsd  ")
+  expect_equal(result$base, "lsd")
+  expect_false(result$is_factorial)
+  
+  result <- biometryassist:::parse_design_type("split")
+  expect_equal(result$base, "split")
+  expect_false(result$is_factorial)
+})
+
+test_that("parse_design_type handles factorial designs", {
+  result <- biometryassist:::parse_design_type("crossed:crd")
+  expect_equal(result$base, "crd")
+  expect_true(result$is_factorial)
+  expect_equal(result$full_type, "factorial_crd")
+  
+  result <- biometryassist:::parse_design_type("CROSSED:RCBD")
+  expect_equal(result$base, "rcbd")
+  expect_true(result$is_factorial)
+  expect_equal(result$full_type, "factorial_rcbd")
+  
+  result <- biometryassist:::parse_design_type("crossed: lsd")
+  expect_equal(result$base, "lsd")
+  expect_true(result$is_factorial)
+})
+
+test_that("parse_design_type errors for invalid types", {
+  expect_error(
+    biometryassist:::parse_design_type("invalid"),
+    "Designs of type 'invalid' are not supported"
+  )
+  
+  expect_error(
+    biometryassist:::parse_design_type(c("crd", "rcbd")),
+    "type must be a single non-missing string"
+  )
+  
+  expect_error(
+    biometryassist:::parse_design_type(NA),
+    "type must be a single non-missing string"
+  )
+  
+  expect_error(
+    biometryassist:::parse_design_type(""),
+    "type must be a non-empty string"
+  )
+})
+
+test_that("parse_design_type errors for invalid factorial types", {
+  expect_error(
+    biometryassist:::parse_design_type("crossed:"),
+    "Crossed factorial designs must be specified as 'crossed:<type>'"
+  )
+  
+  expect_error(
+    biometryassist:::parse_design_type("crossed:split"),
+    "Crossed designs of type 'split' are not supported"
+  )
+  
+  expect_error(
+    biometryassist:::parse_design_type("crossed:invalid"),
+    "Crossed designs of type 'invalid' are not supported"
+  )
+})
+
+# Tests for create_agricolae_design() ----
+
+test_that("create_agricolae_design creates CRD designs", {
+  parsed_type <- list(base = "crd", is_factorial = FALSE, full_type = "crd")
+  result <- biometryassist:::create_agricolae_design(
+    parsed_type, treatments = 1:4, reps = 5, sub_treatments = NULL, seed = 42
+  )
+  
+  expect_equal(result$parameters$design, "crd")
+  expect_equal(result$parameters$seed, 42)
+  expect_equal(nrow(result$book), 20)
+})
+
+test_that("create_agricolae_design creates RCBD designs", {
+  parsed_type <- list(base = "rcbd", is_factorial = FALSE, full_type = "rcbd")
+  result <- biometryassist:::create_agricolae_design(
+    parsed_type, treatments = letters[1:6], reps = 4, sub_treatments = NULL, seed = 123
+  )
+  
+  expect_equal(result$parameters$design, "rcbd")
+  expect_equal(result$parameters$seed, 123)
+  expect_equal(nrow(result$book), 24)
+})
+
+test_that("create_agricolae_design creates LSD designs", {
+  parsed_type <- list(base = "lsd", is_factorial = FALSE, full_type = "lsd")
+  
+  expect_message(
+    result <- biometryassist:::create_agricolae_design(
+      parsed_type, treatments = 1:5, reps = 3, sub_treatments = NULL, seed = 42
+    ),
+    "Number of replicates is not required for Latin Square designs"
+  )
+  
+  expect_equal(result$parameters$design, "lsd")
+  expect_equal(nrow(result$book), 25)
+})
+
+test_that("create_agricolae_design creates split plot designs", {
+  parsed_type <- list(base = "split", is_factorial = FALSE, full_type = "split")
+  result <- biometryassist:::create_agricolae_design(
+    parsed_type, treatments = c("A", "B"), reps = 4, sub_treatments = 1:4, seed = 42
+  )
+  
+  expect_equal(result$parameters$design, "split")
+  expect_equal(nrow(result$book), 32)
+})
+
+test_that("create_agricolae_design errors when split plot missing sub_treatments", {
+  parsed_type <- list(base = "split", is_factorial = FALSE, full_type = "split")
+  
+  expect_error(
+    biometryassist:::create_agricolae_design(
+      parsed_type, treatments = c("A", "B"), reps = 4, sub_treatments = NULL, seed = 42
+    ),
+    "sub_treatments are required for a split plot design"
+  )
+})
+
+test_that("create_agricolae_design creates factorial designs", {
+  parsed_type <- list(base = "crd", is_factorial = TRUE, full_type = "factorial_crd")
+  result <- biometryassist:::create_agricolae_design(
+    parsed_type, treatments = c(3, 2), reps = 3, sub_treatments = NULL, seed = 42
+  )
+  
+  expect_equal(result$parameters$design, "factorial")
+  expect_equal(result$parameters$applied, "crd")
+  expect_equal(nrow(result$book), 18)
+})
+
+test_that("create_agricolae_design errors for >3 factor factorial", {
+  parsed_type <- list(base = "crd", is_factorial = TRUE, full_type = "factorial_crd")
+  
+  expect_error(
+    biometryassist:::create_agricolae_design(
+      parsed_type, treatments = c(2, 2, 2, 2), reps = 3, sub_treatments = NULL, seed = 42
+    ),
+    "Crossed designs with more than three treatment factors are not supported"
+  )
+})
+
+test_that("create_agricolae_design uses seed value correctly", {
+  parsed_type <- list(base = "crd", is_factorial = FALSE, full_type = "crd")
+  
+  result1 <- biometryassist:::create_agricolae_design(
+    parsed_type, treatments = 1:4, reps = 5, sub_treatments = NULL, seed = 42
+  )
+  
+  result2 <- biometryassist:::create_agricolae_design(
+    parsed_type, treatments = 1:4, reps = 5, sub_treatments = NULL, seed = 42
+  )
+  
+  expect_identical(result1$book, result2$book)
+})
+
+# Tests for calculate_total_plots() ----
+
+test_that("calculate_total_plots works for CRD", {
+  parsed_type <- list(base = "crd", is_factorial = FALSE)
+  result <- biometryassist:::calculate_total_plots(
+    parsed_type, treatments = 1:5, reps = 4, sub_treatments = NULL
+  )
+  expect_equal(result, 20)
+})
+
+test_that("calculate_total_plots works for RCBD", {
+  parsed_type <- list(base = "rcbd", is_factorial = FALSE)
+  result <- biometryassist:::calculate_total_plots(
+    parsed_type, treatments = letters[1:6], reps = 3, sub_treatments = NULL
+  )
+  expect_equal(result, 18)
+})
+
+test_that("calculate_total_plots works for LSD", {
+  parsed_type <- list(base = "lsd", is_factorial = FALSE)
+  result <- biometryassist:::calculate_total_plots(
+    parsed_type, treatments = 1:4, reps = NULL, sub_treatments = NULL
+  )
+  expect_equal(result, 16)
+})
+
+test_that("calculate_total_plots works for split plot", {
+  parsed_type <- list(base = "split", is_factorial = FALSE)
+  result <- biometryassist:::calculate_total_plots(
+    parsed_type, treatments = c("A", "B"), reps = 4, sub_treatments = 1:3
+  )
+  expect_equal(result, 24)
+})
+
+test_that("calculate_total_plots works for factorial CRD", {
+  parsed_type <- list(base = "crd", is_factorial = TRUE)
+  result <- biometryassist:::calculate_total_plots(
+    parsed_type, treatments = c(3, 2), reps = 4, sub_treatments = NULL
+  )
+  expect_equal(result, 24)
+})
+
+test_that("calculate_total_plots works for factorial LSD", {
+  parsed_type <- list(base = "lsd", is_factorial = TRUE)
+  result <- biometryassist:::calculate_total_plots(
+    parsed_type, treatments = c(3, 2), reps = NULL, sub_treatments = NULL
+  )
+  expect_equal(result, 36)
+})
+
+test_that("calculate_total_plots works for 3-way factorial", {
+  parsed_type <- list(base = "crd", is_factorial = TRUE)
+  result <- biometryassist:::calculate_total_plots(
+    parsed_type, treatments = c(2, 2, 2), reps = 3, sub_treatments = NULL
+  )
+  expect_equal(result, 24)
+})
+
+# Tests for validate_dimensions() ----
+
+test_that("validate_dimensions warns when area > treatments", {
+  expect_warning(
+    biometryassist:::validate_dimensions(dim = 30, trs = 20),
+    "Area provided is larger than treatments applied"
+  )
+})
+
+test_that("validate_dimensions warns when area < treatments", {
+  expect_warning(
+    biometryassist:::validate_dimensions(dim = 20, trs = 30),
+    "Area provided is smaller than treatments applied"
+  )
+})
+
+test_that("validate_dimensions is silent when area == treatments", {
+  expect_silent(
+    biometryassist:::validate_dimensions(dim = 25, trs = 25)
+  )
+})
+
+# Tests for handle_save() ----
+
+test_that("handle_save does nothing when save = FALSE", {
+  info <- list(design = data.frame(x = 1:5))
+  expect_silent(
+    biometryassist:::handle_save(
+      save = FALSE, savename = "test", plottype = "pdf", info = info
+    )
+  )
+  expect_false(file.exists("test.pdf"))
+  expect_false(file.exists("test.csv"))
+})
+
+test_that("handle_save does nothing when save = 'none'", {
+  info <- list(design = data.frame(x = 1:5))
+  expect_silent(
+    biometryassist:::handle_save(
+      save = "none", savename = "test", plottype = "pdf", info = info
+    )
+  )
+  expect_false(file.exists("test.pdf"))
+  expect_false(file.exists("test.csv"))
+})
+
+test_that("handle_save creates CSV when save = 'workbook'", {
+  withr::local_file("test_save_wb.csv")
+  info <- list(design = data.frame(x = 1:5, y = letters[1:5]))
+  
+  biometryassist:::handle_save(
+    save = "workbook", savename = "test_save_wb", plottype = "pdf", info = info
+  )
+  
+  expect_true(file.exists("test_save_wb.csv"))
+  expect_false(file.exists("test_save_wb.pdf"))
+  
+  # Verify CSV content
+  saved <- read.csv("test_save_wb.csv")
+  expect_equal(nrow(saved), 5)
+  expect_equal(names(saved), c("x", "y"))
+})
+
+test_that("handle_save errors for invalid save option", {
+  info <- list(design = data.frame(x = 1:5))
+  
+  expect_error(
+    biometryassist:::handle_save(
+      save = "invalid", savename = "test", plottype = "pdf", info = info
+    ),
+    "save must be one of 'none'/FALSE, 'both'/TRUE, 'plot', or 'workbook'"
+  )
+})
+
