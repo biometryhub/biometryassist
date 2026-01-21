@@ -1,0 +1,4 @@
+"Species","predicted.value","std.error","df","groups","ci","low","up"
+"setosa",0.25,0.03,147,"a",0.06,0.19,0.3
+"versicolor",1.33,0.03,147,"b",0.06,1.27,1.38
+"virginica",2.03,0.03,147,"c",0.06,1.97,2.08
