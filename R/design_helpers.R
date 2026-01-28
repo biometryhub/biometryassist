@@ -1,3 +1,17 @@
+#' Reorder Plan Columns
+#'
+#' Ensures a consistent output column order for plans that contain `row` and `col`.
+#' If either column is missing, the input is returned unchanged.
+#' @param plan A data frame-like object
+#' @return A data frame with `row` then `col` first, when present
+#' @noRd
+reorder_row_col <- function(plan) {
+  if (!all(c("row", "col") %in% names(plan))) {
+    return(plan)
+  }
+  plan[, c("row", "col", setdiff(names(plan), c("row", "col"))), drop = FALSE]
+}
+
 #' Calculate Block Layout Plan
 #'
 #' Generates row/column positions for blocked designs
@@ -10,13 +24,6 @@
 #' @return Data frame with row, col positions
 #' @noRd
 calculate_block_layout <- function(nrows, ncols, brows, bcols, ntrt, block_vec = NULL) {
-  reorder_row_col <- function(plan) {
-    if (!all(c("row", "col") %in% names(plan))) {
-      return(plan)
-    }
-    plan[, c("row", "col", setdiff(names(plan), c("row", "col"))), drop = FALSE]
-  }
-
   if (is.null(brows) || is.null(bcols) ||
       anyNA(c(brows, bcols)) ||
       !is.finite(brows) || !is.finite(bcols) ||

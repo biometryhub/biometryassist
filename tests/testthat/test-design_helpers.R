@@ -501,6 +501,25 @@ test_that("apply_factor_names correctly identifies 3-factor factorial design", {
   expect_true("F2" %in% colnames(result))
   expect_true("F3" %in% colnames(result))
 })
+
+  # Tests for reorder_row_col() internal helper ----
+
+  test_that("reorder_row_col returns plan unchanged when row/col are missing", {
+    plan <- data.frame(x = 1:3)
+    result <- biometryassist:::reorder_row_col(plan)
+    expect_identical(result, plan)
+  })
+
+  test_that("reorder_row_col reorders row/col to the front when present", {
+    plan <- data.frame(col = 1:2, row = 3:4, block = c("B1", "B2"))
+    result <- biometryassist:::reorder_row_col(plan)
+
+    expect_equal(names(result)[1:2], c("row", "col"))
+    expect_equal(names(result)[3], "block")
+    expect_equal(result$row, plan$row)
+    expect_equal(result$col, plan$col)
+  })
+
 # Tests for calculate_block_layout() helper function
 
 test_that("calculate_block_layout validates brows and bcols parameters", {
@@ -592,7 +611,7 @@ test_that("calculate_block_layout handles blocking incomplete rows with all colu
 test_that("calculate_block_layout handles blocking across columns (bcols == ntrt)", {
   # When bcols equals ntrt, blocks span entire rows
   result <- biometryassist:::calculate_block_layout(
-    nrows = 3, ncols = 6, brows = 1, bcols = 6, ntrt = 6
+    nrows = 3, ncols = 6, brows = 3, bcols = 6, ntrt = 6
   )
 
   # Should match expand.grid(col = 1:ncols, row = 1:nrows), but with a stable
@@ -704,7 +723,7 @@ test_that("calculate_block_layout returns correct dimensions for all paths", {
   expect_equal(nrow(r2), 18)
 
   # Path 3: bcols == ntrt
-  r3 <- biometryassist:::calculate_block_layout(3, 5, 1, 5, 5)
+  r3 <- biometryassist:::calculate_block_layout(3, 5, 3, 5, 5)
   expect_equal(nrow(r3), 15)
 
   # Path 4: rr > 1 & cc > 1 (with block_vec)
@@ -728,7 +747,7 @@ test_that("calculate_block_layout always returns data frame with row and col col
   test_cases <- list(
     list(nrows = 5, ncols = 4, brows = 5, bcols = 1, ntrt = 5),
     list(nrows = 6, ncols = 3, brows = 2, bcols = 3, ntrt = 6),
-    list(nrows = 3, ncols = 5, brows = 1, bcols = 5, ntrt = 5),
+    list(nrows = 3, ncols = 5, brows = 3, bcols = 5, ntrt = 5),
     list(nrows = 6, ncols = 6, brows = 3, bcols = 3, ntrt = 9, block_vec = rep(1:4, each = 9)),
     list(nrows = 4, ncols = 4, brows = 4, bcols = 4, ntrt = 8)
   )
@@ -1152,6 +1171,17 @@ test_that("calculate_total_plots works for 3-way factorial", {
     parsed_type, treatments = c(2, 2, 2), reps = 3, sub_treatments = NULL
   )
   expect_equal(result, 24)
+})
+
+test_that("calculate_total_plots errors for unknown non-factorial design type", {
+  parsed_type <- list(base = "unknown", is_factorial = FALSE)
+
+  expect_error(
+    biometryassist:::calculate_total_plots(
+      parsed_type, treatments = c("A", "B"), reps = 2, sub_treatments = 1:3
+    ),
+    "Unknown design type"
+  )
 })
 
 # Tests for validate_dimensions() ----

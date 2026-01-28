@@ -194,6 +194,7 @@ design <- function(type,
 }
 
 
+
 #' Produce a graph of design layout, skeletal ANOVA table and data frame with complete design
 #'
 #' @description
@@ -247,75 +248,110 @@ des_info <- function(design.obj,
     .Deprecated("design",
                 msg = "des_info() is deprecated and will be removed in a future version. Please use design() instead.")
 
-    # des_info() historically took an agricolae design object and produced the same
-    # outputs as design(). As des_info() is deprecated, keep it as a thin wrapper
-    # to reduce duplicated logic.
+    # Validate inputs
+    rlang::check_dots_used()
+    validate_design_inputs(nrows, ncols, brows, bcols, size, seed = TRUE)
+
+    # Normalize fac.sep
+    if (!missing(fac.sep) && length(fac.sep) == 1) {
+        fac.sep <- rep(fac.sep, times = 2)
+    }
+
+    # Get design information from the existing agricolae object
     design_info <- get_design_info(design.obj)
 
-    type <- if (isTRUE(design_info$is_factorial)) {
-        paste0("crossed:", design_info$base)
-    } else {
-        design_info$type
+    # Validate block parameters
+    validate_block_params(design_info, brows, bcols)
+
+    # Update savename if factorial
+    if (design_info$is_factorial) {
+        savename <- gsub(":", "_", savename)
     }
 
-    params <- design.obj$parameters
+    # Build the design based on type (before applying factor names)
+    des <- build_design(design.obj, design_info$type, nrows, ncols,
+                        brows, bcols, fac.sep, byrow)
 
-    # Extract treatment inputs from the agricolae design object.
-    treatments <- NULL
-    reps <- NULL
-    sub_treatments <- NULL
+    # Sort treatments naturally
+    des$treatments <- factor(des$treatments,
+                             levels = unique(stringi::stri_sort(des$treatments, numeric = TRUE)))
 
-    if (identical(design_info$type, "split")) {
-        treatments <- params$trt1
-        sub_treatments <- unique(design.obj$book[,ncol(design.obj$book)])
-        reps <- params$r[1]
-    } else {
-        treatments <- params$trt
-        reps <- params$r[1]
+    # Apply factor names AFTER building and sorting
+    # This renames the factor columns but preserves the treatments column
+    if (design_info$is_factorial && !is.null(fac.names)) {
+        # For factorial designs, rename the A, B, C columns
+        if (is.list(fac.names)) {
+            factor_cols <- c("A", "B", "C")[1:length(fac.names)]
+            for (i in seq_along(fac.names)) {
+                if (factor_cols[i] %in% names(des)) {
+                    # Apply level names
+                    if (length(levels(des[[factor_cols[i]]])) == length(fac.names[[i]])) {
+                        levels(des[[factor_cols[i]]]) <- fac.names[[i]]
+                    }
+                    # Rename column
+                    names(des)[names(des) == factor_cols[i]] <- names(fac.names)[i]
+                }
+            }
+        }
+    } else if (design_info$type == "split" && !is.null(fac.names)) {
+        # For split designs, rename the treatment columns
+        if (is.list(fac.names)) {
+            trt_cols <- c("treatments", "sub_treatments")
+            for (i in seq_along(fac.names)) {
+                if (i <= 2 && trt_cols[i] %in% names(des)) {
+                    # Apply level names
+                    if (length(levels(des[[trt_cols[i]]])) == length(fac.names[[i]])) {
+                        levels(des[[trt_cols[i]]]) <- fac.names[[i]]
+                    }
+                    # Rename column
+                    names(des)[names(des) == trt_cols[i]] <- names(fac.names)[i]
+                }
+            }
+        } else if (is.character(fac.names) && length(fac.names) >= 2) {
+            # Just rename the columns
+            names(des)[names(des) == "treatments"] <- fac.names[1]
+            names(des)[names(des) == "sub_treatments"] <- fac.names[2]
+        }
     }
 
-    # Prefer using the original seed to reproduce the same randomisation.
-    seed <- params$seed
+    # Create output list
+    output <- list(design = des)
+    class(des) <- c("design", class(des))
 
-    args <- list(
-        type = type,
-        treatments = treatments,
-        nrows = nrows,
-        ncols = ncols,
-        brows = brows,
-        bcols = bcols,
-        byrow = byrow,
-        sub_treatments = sub_treatments,
-        fac.names = fac.names,
-        fac.sep = fac.sep,
-        buffer = buffer,
-        plot = plot,
-        rotation = rotation,
-        size = size,
-        margin = margin,
-        save = save,
-        savename = savename,
-        plottype = plottype,
-        seed = seed,
-        quiet = quiet
-    )
-
-    # reps isn't required for non-factorial LSD.
-    if (!(identical(design_info$type, "lsd") && !isTRUE(design_info$is_factorial))) {
-        args$reps <- reps
+    # Add buffers if requested
+    if (!is.null(buffer)) {
+        has_blocks <- any(grepl("block", tolower(names(des))))
+        des <- create_buffers(des, type = buffer, blocks = has_blocks)
+        output$design <- des
     }
 
-    # Drop NULLs so do.call doesn't pass missing values explicitly.
-    args <- args[!vapply(args, is.null, logical(1))]
-
-    res <- do.call(design, c(args, list(...)))
-
-    if (!isTRUE(return.seed) && "seed" %in% names(res)) {
-        res$seed <- NULL
-        res <- res[names(res) != "seed"]
+    # Create plot
+    if (plot) {
+        output$plot.des <- autoplot(des, rotation = rotation, size = size, margin = margin)
     }
 
-    res
+    # Create SATAB
+    output$satab <- satab(design.obj)
+
+    # Print output if not quiet
+    if (!quiet) {
+        print.satab(output$satab)
+        if (plot) {
+            plot(output$plot.des)
+        }
+    }
+
+    # Handle saving
+    handle_save(save, savename, plottype, output, ...)
+
+    # Add seed if requested
+    if (return.seed) {
+        output$seed <- design.obj$parameters$seed
+    }
+
+    class(output) <- c("design", class(output))
+
+    return(output)
 }
 
 
