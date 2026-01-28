@@ -305,7 +305,9 @@ des_info <- function(design.obj,
     } else if (design_info$type == "split" && !is.null(fac.names)) {
         # For split designs, rename the treatment columns
         if (is.list(fac.names)) {
-            trt_cols <- c("treatments", "sub_treatments")
+            # In split designs, `treatments` is the combined whole+sub treatment.
+            # Apply fac.names to the whole-plot and subplot factor columns.
+            trt_cols <- c("wp_treatments", "sub_treatments")
             for (i in seq_along(fac.names)) {
                 if (i <= 2 && trt_cols[i] %in% names(des)) {
                     # Apply level names
@@ -319,7 +321,7 @@ des_info <- function(design.obj,
             }
         } else if (is.character(fac.names) && length(fac.names) >= 2) {
             # Just rename the columns
-            names(des)[names(des) == "treatments"] <- fac.names[1]
+            names(des)[names(des) == "wp_treatments"] <- fac.names[1]
             names(des)[names(des) == "sub_treatments"] <- fac.names[2]
         }
     }
@@ -521,8 +523,8 @@ build_split <- function(design_book, nrows, ncols, brows, bcols, byrow) {
     trtNams <- names(des[!is.element(names(des), spfacs)])
 
     # Create combined treatment factor
-    des$wp_treatments <- des$treatments
-    des$treatments <- factor(paste(des[, trtNams[1]], des[, trtNams[2]], sep = "_"))
+    des$wp_treatments <- des[[trtNams[1]]]
+    des$treatments <- factor(paste(des[[trtNams[1]]], des[[trtNams[2]]], sep = "_"))
     ntrt <- nlevels(des$treatments)
 
     # Calculate layout
