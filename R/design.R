@@ -138,6 +138,10 @@ design <- function(type,
     # Validate block parameters
     validate_block_params(design_info, brows, bcols)
 
+    # Normalize agricolae book column names so downstream code can rely on
+    # predictable treatment column names.
+    outdesign$book <- normalize_agricolae_book(outdesign$book, design_info)
+
     # Apply factor names if this is a factorial or split design
     if (design_info$is_factorial) {
         outdesign$book <- apply_factor_names(outdesign$book, fac.names, "factorial")
@@ -268,6 +272,10 @@ des_info <- function(design.obj,
         savename <- gsub(":", "_", savename)
     }
 
+    # Normalize agricolae book column names so downstream code can rely on
+    # predictable treatment column names.
+    design.obj$book <- normalize_agricolae_book(design.obj$book, design_info)
+
     # Build the design based on type (before applying factor names)
     des <- build_design(design.obj, design_info$type, nrows, ncols,
                         brows, bcols, fac.sep, byrow)
@@ -284,8 +292,9 @@ des_info <- function(design.obj,
             factor_cols <- c("A", "B", "C")[1:length(fac.names)]
             for (i in seq_along(fac.names)) {
                 if (factor_cols[i] %in% names(des)) {
-                    # Apply level names
-                    if (length(levels(des[[factor_cols[i]]])) == length(fac.names[[i]])) {
+                    # Apply level names (ensure factor first)
+                    des[[factor_cols[i]]] <- as.factor(des[[factor_cols[i]]])
+                    if (nlevels(des[[factor_cols[i]]]) == length(fac.names[[i]])) {
                         levels(des[[factor_cols[i]]]) <- fac.names[[i]]
                     }
                     # Rename column
@@ -300,7 +309,8 @@ des_info <- function(design.obj,
             for (i in seq_along(fac.names)) {
                 if (i <= 2 && trt_cols[i] %in% names(des)) {
                     # Apply level names
-                    if (length(levels(des[[trt_cols[i]]])) == length(fac.names[[i]])) {
+                    des[[trt_cols[i]]] <- as.factor(des[[trt_cols[i]]])
+                    if (nlevels(des[[trt_cols[i]]]) == length(fac.names[[i]])) {
                         levels(des[[trt_cols[i]]]) <- fac.names[[i]]
                     }
                     # Rename column
@@ -526,4 +536,78 @@ build_split <- function(design_book, nrows, ncols, brows, bcols, byrow) {
     }
 
     des
+}
+
+#' Normalize Agricolae Book Column Names
+#'
+#' Agricolae design functions sometimes name treatment columns based on the
+#' expression passed to `trt`/`trt1`/`trt2` (e.g. `"c(1, 5, 10, 20)"`).
+#' This helper standardizes those columns to `treatments` / `sub_treatments`
+#' so downstream code can rely on stable names.
+#' @noRd
+normalize_agricolae_book <- function(design_book, design_info) {
+    if (is.null(design_book) || !is.data.frame(design_book)) {
+        return(design_book)
+    }
+
+    if (isTRUE(design_info$is_factorial)) {
+        return(design_book)
+    }
+
+    rename_col <- function(from, to) {
+        if (from %in% names(design_book) && !to %in% names(design_book)) {
+            names(design_book)[names(design_book) == from] <<- to
+        }
+    }
+
+    struct_cols_common <- c("plots", "block", "r", "row", "col")
+
+    if (identical(design_info$type, "split") || identical(design_info$base, "split")) {
+        # Preferred explicit names
+        rename_col("trt1", "treatments")
+        rename_col("trt2", "sub_treatments")
+
+        # Fallback: infer from position among non-structural columns
+        struct_cols <- c(struct_cols_common, "splots", "wplots", "wholeplots", "subplots")
+        candidates <- setdiff(names(design_book), struct_cols)
+
+        has_main <- "treatments" %in% names(design_book)
+        has_sub <- "sub_treatments" %in% names(design_book)
+
+        if (!has_main && !has_sub && length(candidates) >= 2) {
+            main_col <- candidates[length(candidates) - 1]
+            sub_col <- candidates[length(candidates)]
+            names(design_book)[names(design_book) == main_col] <- "treatments"
+            names(design_book)[names(design_book) == sub_col] <- "sub_treatments"
+        } else {
+            if (!has_main && length(candidates) >= 1) {
+                main_col <- candidates[length(candidates)]
+                names(design_book)[names(design_book) == main_col] <- "treatments"
+                candidates <- setdiff(candidates, main_col)
+            }
+
+            has_sub <- "sub_treatments" %in% names(design_book)
+            if (!has_sub && length(candidates) >= 1) {
+                sub_col <- candidates[length(candidates)]
+                if (sub_col != "treatments") {
+                    names(design_book)[names(design_book) == sub_col] <- "sub_treatments"
+                }
+            }
+        }
+
+        return(design_book)
+    }
+
+    # Non-split, non-factorial designs: ensure a single `treatments` column.
+    rename_col("trt", "treatments")
+
+    if (!"treatments" %in% names(design_book)) {
+        candidates <- setdiff(names(design_book), struct_cols_common)
+        if (length(candidates) >= 1) {
+            trt_col <- candidates[length(candidates)]
+            names(design_book)[names(design_book) == trt_col] <- "treatments"
+        }
+    }
+
+    design_book
 }

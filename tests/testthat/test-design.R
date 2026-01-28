@@ -1008,3 +1008,117 @@ test_that("Arbitrary unquoted column names for plotting works", {
                                 variant = ggplot2_variant())
 })
 
+
+# des_info() (deprecated) tests ----
+
+test_that("des_info() returns a CRD design without plotting", {
+    crd_obj <- agricolae::design.crd(trt = c(1, 5, 10, 20), r = 2, seed = 42)
+
+    # Simulate agricolae naming the treatment column from the expression passed.
+    if (is.data.frame(crd_obj$book)) {
+        struct_cols <- c("plots", "r", "block", "row", "col")
+        candidates <- setdiff(names(crd_obj$book), struct_cols)
+        if (length(candidates) >= 1) {
+            trt_col <- candidates[length(candidates)]
+            names(crd_obj$book)[names(crd_obj$book) == trt_col] <- "c(1, 5, 10, 20)"
+        }
+    }
+
+    expect_warning(
+        out <- des_info(
+            design.obj = crd_obj,
+            nrows = 4,
+            ncols = 2,
+            plot = FALSE,
+            quiet = TRUE,
+            save = FALSE,
+            return.seed = TRUE
+        ),
+        "des_info\\(\\) is deprecated"
+    )
+
+    expect_design_output(out, expected_names = c("design", "satab", "seed"), expected_seed = 42, expect_plot = FALSE)
+    expect_design_df_starts_with(out$design, c("row", "col"))
+    expect_design_df_has_cols(out$design, c("plots", "reps", "treatments"))
+})
+
+test_that("des_info() errors for block designs when brows/bcols are missing", {
+    rcbd_obj <- agricolae::design.rcbd(trt = c("T1", "T2", "T3"), r = 2, seed = 42)
+
+    expect_error(
+        suppressWarnings(
+            des_info(
+                design.obj = rcbd_obj,
+                nrows = 3,
+                ncols = 2,
+                plot = FALSE,
+                quiet = TRUE
+            )
+        ),
+        "brows and bcols must be supplied"
+    )
+})
+
+test_that("des_info() applies fac.names for factorial designs", {
+    fac_obj <- agricolae::design.ab(trt = c(2, 2), r = 2, design = "crd", seed = 42)
+
+    expect_warning(
+        out <- des_info(
+            design.obj = fac_obj,
+            nrows = 4,
+            ncols = 2,
+            fac.names = list(N = c("Low", "High"), Water = c("Dry", "Wet")),
+            plot = FALSE,
+            quiet = TRUE,
+            save = FALSE
+        ),
+        "des_info\\(\\) is deprecated"
+    )
+
+    expect_true("N" %in% names(out$design))
+    expect_true("Water" %in% names(out$design))
+    expect_false("A" %in% names(out$design))
+    expect_false("B" %in% names(out$design))
+    expect_equal(levels(out$design$N), c("Low", "High"))
+    expect_equal(levels(out$design$Water), c("Dry", "Wet"))
+    expect_true("treatments" %in% names(out$design))
+})
+
+test_that("des_info() renames split plot factor columns when fac.names is a character vector", {
+    split_obj <- agricolae::design.split(trt1 = c("A", "B"), trt2 = 1:2, r = 2, seed = 42)
+
+    # Simulate agricolae naming treatment columns from the expressions passed.
+    if (is.data.frame(split_obj$book)) {
+        struct_cols <- c("plots", "block", "r", "row", "col", "splots", "wplots", "wholeplots", "subplots")
+        candidates <- setdiff(names(split_obj$book), struct_cols)
+        if (length(candidates) >= 2) {
+            main_col <- candidates[length(candidates) - 1]
+            sub_col <- candidates[length(candidates)]
+            names(split_obj$book)[names(split_obj$book) == main_col] <- "c(\"A\", \"B\")"
+            names(split_obj$book)[names(split_obj$book) == sub_col] <- "1:2"
+        }
+    }
+
+    expect_warning(
+        out <- des_info(
+            design.obj = split_obj,
+            nrows = 4,
+            ncols = 2,
+            brows = 4,
+            bcols = 2,
+            byrow = FALSE,
+            fac.names = c("Main", "Sub"),
+            plot = FALSE,
+            quiet = TRUE,
+            save = FALSE
+        ),
+        "des_info\\(\\) is deprecated"
+    )
+
+    expect_true("Main" %in% names(out$design))
+    expect_true("Sub" %in% names(out$design))
+    expect_false("treatments" %in% names(out$design))
+    expect_false("sub_treatments" %in% names(out$design))
+    expect_s3_class(out$design$Main, "factor")
+})
+
