@@ -25,15 +25,33 @@ test_that("mct ylab handles call/language labels", {
     expect_identical(attr(out, "ylab"), quote(sqrt(response)))
 })
 
-test_that("transformations are handled", {
+test_that("mct transformation: log", {
     dat.aov.log <- aov(log(Petal.Width) ~ Species, data = iris)
     output.log <- multiple_comparisons(dat.aov.log, classify = "Species", trans = "log", offset = 0)
     output.log2 <- multiple_comparisons(dat.aov.log, classify = "Species", trans = "log", offset = 0, int.type = "1se")
     output.log3 <- multiple_comparisons(dat.aov.log, classify = "Species", trans = "log", offset = 0, int.type = "2se")
+
+    expect_identical(attr(output.log, "ylab"), "Petal.Width")
+    expect_equal(output.log$predicted.value, c(-1.48, 0.27, 0.70), tolerance = 5e-2)
+    expect_equal(output.log2$low, c(0.22, 1.26, 1.94), tolerance = 5e-2)
+    expect_equal(output.log3$up, c(0.25, 1.41, 2.17), tolerance = 5e-2)
+    vdiffr::expect_doppelganger("mct log output", autoplot(output.log))
+})
+
+test_that("mct transformation: sqrt", {
     dat.aov.sqrt <- aov(sqrt(Petal.Width) ~ Species, data = iris)
     output.sqrt <- multiple_comparisons(dat.aov.sqrt, classify = "Species", trans = "sqrt", offset = 0)
     output.sqrt2 <- multiple_comparisons(dat.aov.sqrt, classify = "Species", trans = "sqrt", offset = 0, int.type = "1se")
     output.sqrt3 <- multiple_comparisons(dat.aov.sqrt, classify = "Species", trans = "sqrt", offset = 0, int.type = "2se")
+
+    expect_identical(attr(output.sqrt, "ylab"), "Petal.Width")
+    expect_equal(output.sqrt$predicted.value, c(0.49, 1.15, 1.42), tolerance = 5e-2)
+    expect_equal(output.sqrt2$low, c(0.23, 1.29, 1.98), tolerance = 5e-2)
+    expect_equal(output.sqrt3$up, c(0.27, 1.38, 2.09), tolerance = 5e-2)
+    vdiffr::expect_doppelganger("mct sqrt output", autoplot(output.sqrt))
+})
+
+test_that("mct transformation: logit", {
     dat.aov.logit <- aov(logit(1/Petal.Width) ~ Species, data = iris)
     expect_warning(
         output.logit <- multiple_comparisons(dat.aov.logit, classify = "Species", trans = "logit", offset = 0),
@@ -47,10 +65,28 @@ test_that("transformations are handled", {
         output.logit3 <- multiple_comparisons(dat.aov.logit, classify = "Species", trans = "logit", offset = 0, int.type = "2se"),
         "Some standard errors are very small and would round to zero with 2 decimal places"
     )
+
+    expect_identical(attr(output.logit, "ylab"), "1/Petal.Width")
+    expect_equal(output.logit$predicted.value, c(-5.30, -4.87, -3.07), tolerance = 5e-2)
+    expect_equal(output.logit2$low, c(0.00, 0.01, 0.04), tolerance = 5e-2)
+    expect_equal(output.logit3$up, c(0.01, 0.01, 0.05), tolerance = 5e-2)
+    vdiffr::expect_doppelganger("mct logit output", autoplot(output.logit))
+})
+
+test_that("mct transformation: inverse", {
     dat.aov.inverse <- aov((1/Petal.Width) ~ Species, data = iris)
     output.inverse <- multiple_comparisons(dat.aov.inverse, classify = "Species", trans = "inverse", offset = 0)
     output.inverse2 <- multiple_comparisons(dat.aov.inverse, classify = "Species", trans = "inverse", offset = 0, int.type = "1se")
     output.inverse3 <- multiple_comparisons(dat.aov.inverse, classify = "Species", trans = "inverse", offset = 0, int.type = "2se")
+
+    expect_identical(attr(output.inverse, "ylab"), "Petal.Width")
+    expect_equal(output.inverse$predicted.value, c(0.50, 0.77, 4.79), tolerance = 5e-2)
+    expect_equal(output.inverse2$up, c(3.01, 1.66, 0.22), tolerance = 5e-2)
+    expect_equal(output.inverse3$low, c(1.20, 0.90, 0.20), tolerance = 5e-2)
+    vdiffr::expect_doppelganger("mct inverse output", autoplot(output.inverse))
+})
+
+test_that("mct transformation: power", {
     iris_new <- iris
     iris_new$Petal.Width <- (iris_new$Petal.Width+1)^3
     dat.aov.power <- aov(Petal.Width ~ Species, data = iris_new)
@@ -58,39 +94,157 @@ test_that("transformations are handled", {
     output.power2 <- multiple_comparisons(dat.aov.power, classify = "Species", trans = "power", offset = 1, power = 3, int.type = "1se")
     output.power3 <- multiple_comparisons(dat.aov.power, classify = "Species", trans = "power", offset = 1, power = 3, int.type = "2se")
 
-    # ylab should reflect back-transformed scale (not the model's transformed response)
-    expect_identical(attr(output.log, "ylab"), "Petal.Width")
-    expect_identical(attr(output.sqrt, "ylab"), "Petal.Width")
-    expect_identical(attr(output.inverse, "ylab"), "Petal.Width")
-    expect_identical(attr(output.logit, "ylab"), "1/Petal.Width")
-
-    expect_equal(output.log$predicted.value, c(-1.48, 0.27, 0.70), tolerance = 5e-2)
-    expect_equal(output.log2$low, c(0.22, 1.26, 1.94), tolerance = 5e-2)
-    expect_equal(output.log3$up, c(0.25, 1.41, 2.17), tolerance = 5e-2)
-    expect_equal(output.sqrt$predicted.value, c(0.49, 1.15, 1.42), tolerance = 5e-2)
-    expect_equal(output.sqrt2$low, c(0.23, 1.29, 1.98), tolerance = 5e-2)
-    expect_equal(output.sqrt3$up, c(0.27, 1.38, 2.09), tolerance = 5e-2)
-    expect_equal(output.logit$predicted.value, c(-5.30, -4.87, -3.07), tolerance = 5e-2)
-    expect_equal(output.logit2$low, c(0.00, 0.01, 0.04), tolerance = 5e-2)
-    expect_equal(output.logit3$up, c(0.01, 0.01, 0.05), tolerance = 5e-2)
-    expect_equal(output.inverse$predicted.value, c(0.50, 0.77, 4.79), tolerance = 5e-2)
-    expect_equal(output.inverse2$up, c(3.01, 1.66, 0.22), tolerance = 5e-2)
-    expect_equal(output.inverse3$low, c(1.20, 0.90, 0.20), tolerance = 5e-2)
+    expect_identical(attr(output.power, "ylab"), "Petal.Width")
     expect_equal(output.power$predicted.value, c(1.98, 12.85, 28.38), tolerance = 5e-2)
     expect_equal(output.power2$low, c(0.09, 1.30, 2.03), tolerance = 5e-2)
     expect_equal(output.power3$up, c(0.49, 1.42, 2.10), tolerance = 5e-2)
-
-    vdiffr::expect_doppelganger("mct log output", autoplot(output.log))
-    vdiffr::expect_doppelganger("mct sqrt output", autoplot(output.sqrt))
-    vdiffr::expect_doppelganger("mct logit output", autoplot(output.logit))
-    vdiffr::expect_doppelganger("mct inverse output", autoplot(output.inverse))
     vdiffr::expect_doppelganger("mct power output", autoplot(output.power))
 })
 
-test_that("transformations with no offset produces a warning", {
+test_that("mct transformation: arcsin", {
+    iris_arc <- iris
+    iris_arc$PW <- iris_arc$Petal.Width / max(iris_arc$Petal.Width)
+    dat.aov.arcsin <- aov(asin(sqrt(PW)) ~ Species, data = iris_arc)
+    output.arcsin <- multiple_comparisons(dat.aov.arcsin, classify = "Species", trans = "arcsin", offset = 0)
+
+    expect_identical(attr(output.arcsin, "ylab"), "PW")
+    expect_true("PredictedValue" %in% names(output.arcsin))
+    expect_true(all(output.arcsin$PredictedValue >= 0 & output.arcsin$PredictedValue <= 1))
+    expected_pw_means <- tapply(iris_arc$PW, iris_arc$Species, mean)
+    expect_equal(output.arcsin$PredictedValue,
+                 as.numeric(expected_pw_means[as.character(output.arcsin$Species)]),
+                 tolerance = 5e-2)
+})
+
+test_that("apply_transformation warns when offset is missing", {
+    pp <- data.frame(
+        predicted.value = c(0),
+        std.error = c(0.1),
+        ci = c(0.2)
+    )
+
+    expect_warning(
+        out <- biometryassist:::apply_transformation(pp, trans = "log", offset = NULL, power = NULL),
+        "Offset value assumed to be 0\\. Change with `offset` argument\\."
+    )
+
+    expect_true(all(c("PredictedValue", "ApproxSE", "low", "up") %in% names(out)))
+})
+
+test_that("multiple_comparisons warns when offset is omitted", {
     dat.aov <- aov(log(Petal.Width) ~ Species, data = iris)
-    expect_warning(multiple_comparisons(dat.aov, classify = "Species", trans = "log"),
-                   "Offset value assumed to be 0. Change with `offset` argument.")
+    expect_warning(
+        multiple_comparisons(dat.aov, classify = "Species", trans = "log"),
+        "Offset value assumed to be 0\\. Change with `offset` argument\\."
+    )
+})
+
+test_that("apply_transformation warns for invalid back-transformed values", {
+    # sqrt: negative value after offset removal
+    pp.sqrt <- data.frame(
+        predicted.value = c(0.1),
+        std.error = c(0.1),
+        ci = c(0.2)
+    )
+    expect_warning(
+        out.sqrt <- biometryassist:::apply_transformation(pp.sqrt, trans = "sqrt", offset = 1, power = NULL),
+        "Square root back-transformation produced negative values\\. Check offset parameter\\."
+    )
+    expect_true(out.sqrt$PredictedValue < 0)
+
+    # log: non-positive value after offset removal
+    pp.log <- data.frame(
+        predicted.value = c(0),
+        std.error = c(0.1),
+        ci = c(0.2)
+    )
+    expect_warning(
+        out.log <- biometryassist:::apply_transformation(pp.log, trans = "log", offset = 1, power = NULL),
+        "Log back-transformation produced non-positive values\\. Check offset parameter\\."
+    )
+    expect_true(out.log$PredictedValue <= 0)
+
+    # logit: force exact boundary value with -Inf
+    pp.logit <- data.frame(
+        predicted.value = c(-Inf),
+        std.error = c(0.1),
+        ci = c(0.2)
+    )
+    expect_warning(
+        out.logit <- biometryassist:::apply_transformation(pp.logit, trans = "logit", offset = 0, power = NULL),
+        "Logit back-transformation produced values outside \\(0,1\\)"
+    )
+    expect_true(out.logit$PredictedValue <= 0 || out.logit$PredictedValue >= 1)
+})
+
+test_that("apply_transformation warns for inverse edge cases", {
+    pp.inv <- data.frame(
+        predicted.value = c(0.1),
+        std.error = c(0.1),
+        ci = c(0.2)
+    )
+
+    warnings <- character()
+    out <- withCallingHandlers(
+        biometryassist:::apply_transformation(pp.inv, trans = "inverse", offset = 0, power = NULL),
+        warning = function(w) {
+            warnings <<- c(warnings, conditionMessage(w))
+            invokeRestart("muffleWarning")
+        }
+    )
+
+    expect_true(any(grepl("Inverse transformation: confidence interval crosses zero", warnings, fixed = TRUE)))
+    expect_true("PredictedValue" %in% names(out))
+    expect_true(out$low <= out$up)
+})
+
+test_that("apply_transformation warns for inverse near-zero predicted values", {
+    pp.inv <- data.frame(
+        predicted.value = c(1e-20),
+        std.error = c(0.1),
+        ci = c(1e-25)
+    )
+
+    expect_warning(
+        out <- biometryassist:::apply_transformation(pp.inv, trans = "inverse", offset = 0, power = NULL),
+        "Inverse transformation: predicted values very close to zero detected\\."
+    )
+    expect_true("PredictedValue" %in% names(out))
+})
+
+test_that("apply_transformation power validation and warnings", {
+    pp <- data.frame(
+        predicted.value = c(1),
+        std.error = c(0.1),
+        ci = c(0.2)
+    )
+
+    expect_error(
+        biometryassist:::apply_transformation(pp, trans = "power", offset = 0, power = NULL),
+        "Power transformation requires a non-zero numeric 'power' argument\\."
+    )
+
+    expect_warning(
+        out <- biometryassist:::apply_transformation(pp, trans = "power", offset = 1, power = -1),
+        "Power back-transformation with negative power produced values near zero\\."
+    )
+    expect_true("PredictedValue" %in% names(out))
+})
+
+test_that("apply_transformation arcsin warning and bounds", {
+    pp <- data.frame(
+        predicted.value = c(pi),
+        std.error = c(0.1),
+        ci = c(0.2)
+    )
+
+    expect_warning(
+        out <- biometryassist:::apply_transformation(pp, trans = "arcsin", offset = 0, power = NULL),
+        "Arcsin transformation: some predicted values outside \\[-pi/2, pi/2\\]\\."
+    )
+
+    expect_true("PredictedValue" %in% names(out))
+    expect_true(out$PredictedValue >= 0 && out$PredictedValue <= 1)
 })
 
 test_that("ordering output works", {
