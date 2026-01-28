@@ -35,7 +35,7 @@ multiple_comparisons(
 
 \item{int.type}{The type of confidence interval to calculate. One of \code{ci}, \code{tukey}, \verb{1se}, \verb{2se}, or \code{none}. Default is \code{ci}.}
 
-\item{trans}{Transformation that was applied to the response variable. One of \code{log}, \code{sqrt}, \code{logit}, \code{power} or \code{inverse}. Default is \code{NULL}.}
+\item{trans}{Transformation that was applied to the response variable. One of \code{log}, \code{sqrt}, \code{logit}, \code{power}, \code{inverse}, or \code{arcsin}. Default is \code{NULL}.}
 
 \item{offset}{Numeric offset applied to response variable prior to transformation. Default is \code{NULL}. Use 0 if no offset was applied to the transformed data. See Details for more information.}
 
