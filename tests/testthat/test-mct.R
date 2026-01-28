@@ -6,6 +6,25 @@ test_that("mct produces output", {
     vdiffr::expect_doppelganger("mct output", autoplot(output))
 })
 
+test_that("mct ylab handles call/language labels", {
+    pp <- data.frame(
+        trt = factor(c("A", "B")),
+        predicted.value = c(1, 2),
+        std.error = c(0.1, 0.1),
+        Df = c(10, 10),
+        ci = c(0.2, 0.2),
+        low = c(0.8, 1.8),
+        up = c(1.2, 2.2),
+        groups = c("a", "b")
+    )
+
+    out <- biometryassist:::add_attributes(pp, ylab = quote(sqrt(response)),
+                                          crit_val = matrix(0, nrow = 2, ncol = 2),
+                                          aliased_names = NULL)
+
+    expect_identical(attr(out, "ylab"), quote(sqrt(response)))
+})
+
 test_that("transformations are handled", {
     dat.aov.log <- aov(log(Petal.Width) ~ Species, data = iris)
     output.log <- multiple_comparisons(dat.aov.log, classify = "Species", trans = "log", offset = 0)
@@ -39,6 +58,12 @@ test_that("transformations are handled", {
     output.power2 <- multiple_comparisons(dat.aov.power, classify = "Species", trans = "power", offset = 1, power = 3, int.type = "1se")
     output.power3 <- multiple_comparisons(dat.aov.power, classify = "Species", trans = "power", offset = 1, power = 3, int.type = "2se")
 
+    # ylab should reflect back-transformed scale (not the model's transformed response)
+    expect_identical(attr(output.log, "ylab"), "Petal.Width")
+    expect_identical(attr(output.sqrt, "ylab"), "Petal.Width")
+    expect_identical(attr(output.inverse, "ylab"), "Petal.Width")
+    expect_identical(attr(output.logit, "ylab"), "1/Petal.Width")
+
     expect_equal(output.log$predicted.value, c(-1.48, 0.27, 0.70), tolerance = 5e-2)
     expect_equal(output.log2$low, c(0.22, 1.26, 1.94), tolerance = 5e-2)
     expect_equal(output.log3$up, c(0.25, 1.41, 2.17), tolerance = 5e-2)
@@ -49,8 +74,8 @@ test_that("transformations are handled", {
     expect_equal(output.logit2$low, c(0.00, 0.01, 0.04), tolerance = 5e-2)
     expect_equal(output.logit3$up, c(0.01, 0.01, 0.05), tolerance = 5e-2)
     expect_equal(output.inverse$predicted.value, c(0.50, 0.77, 4.79), tolerance = 5e-2)
-    expect_equal(output.inverse2$low, c(3.01, 1.66, 0.22), tolerance = 5e-2)
-    expect_equal(output.inverse3$up, c(1.20, 0.90, 0.20), tolerance = 5e-2)
+    expect_equal(output.inverse2$up, c(3.01, 1.66, 0.22), tolerance = 5e-2)
+    expect_equal(output.inverse3$low, c(1.20, 0.90, 0.20), tolerance = 5e-2)
     expect_equal(output.power$predicted.value, c(1.98, 12.85, 28.38), tolerance = 5e-2)
     expect_equal(output.power2$low, c(0.09, 1.30, 2.03), tolerance = 5e-2)
     expect_equal(output.power3$up, c(0.49, 1.42, 2.10), tolerance = 5e-2)

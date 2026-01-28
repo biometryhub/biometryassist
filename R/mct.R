@@ -6,7 +6,7 @@
 #' @param classify Name of predictor variable as string.
 #' @param sig The significance level, numeric between 0 and 1. Default is 0.05.
 #' @param int.type The type of confidence interval to calculate. One of `ci`, `tukey`, `1se`, `2se`, or `none`. Default is `ci`.
-#' @param trans Transformation that was applied to the response variable. One of `log`, `sqrt`, `logit`, `power` or `inverse`. Default is `NULL`.
+#' @param trans Transformation that was applied to the response variable. One of `log`, `sqrt`, `logit`, `power`, `inverse`, or `arcsin`. Default is `NULL`.
 #' @param offset Numeric offset applied to response variable prior to transformation. Default is `NULL`. Use 0 if no offset was applied to the transformed data. See Details for more information.
 #' @param power Numeric power applied to response variable with power transformation. Default is `NULL`. See Details for more information.
 #' @param decimals Controls rounding of decimal places in output. Default is 2 decimal places.
@@ -284,7 +284,7 @@ multiple_comparisons <- function(model.obj,
     }
 
     # Add attributes
-    pp <- add_attributes(pp, ylab, crit_val, aliased)
+    pp <- add_attributes(pp, ylab, crit_val, aliased, trans)
 
     # Plot if requested
     if (plot) {
@@ -436,43 +436,141 @@ add_confidence_intervals <- function(pp, int.type, sig, ndf) {
 apply_transformation <- function(pp, trans, offset, power) {
     # Set default offset if not provided
     if (is.null(offset)) {
-        warning("Offset value assumed to be 0. Change with `offset` argument.")
+        warning("Offset value assumed to be 0. Change with `offset` argument.", call. = FALSE)
         offset <- 0
     }
 
     # Apply appropriate transformation
     if (trans == "sqrt") {
-        pp$PredictedValue <- (pp$predicted.value)^2 - ifelse(!is.null(offset), offset, 0)
-        pp$ApproxSE <- 2 * abs(pp$std.error) * sqrt(pp$PredictedValue)
+        # From paper: g(x) = sqrt(x), g^-1(y) = y^2, g'(x) = 1/(2*sqrt(x))
+        # Back-transformed value: X~ = Y^2 - offset
+        # Approx SE: ~X = 2*sqrt(X~ + offset)*Y_se
+        pp$PredictedValue <- (pp$predicted.value)^2 - offset
 
-        pp$low <- (pp$predicted.value - pp$ci)^2 - ifelse(!is.null(offset), offset, 0)
-        pp$up <- (pp$predicted.value + pp$ci)^2 - ifelse(!is.null(offset), offset, 0)
+        # Bounds check: predicted values should be non-negative after transformation
+        if (any(pp$PredictedValue < 0, na.rm = TRUE)) {
+            warning("Square root back-transformation produced negative values. Check offset parameter.", call. = FALSE)
+        }
+
+        # SE uses value on original scale (before offset removal) per paper formula
+        pp$ApproxSE <- 2 * abs(pp$std.error) * abs(pp$predicted.value)
+
+        pp$low <- (pp$predicted.value - pp$ci)^2 - offset
+        pp$up <- (pp$predicted.value + pp$ci)^2 - offset
+
     } else if (trans == "log") {
-        pp$PredictedValue <- exp(pp$predicted.value) - ifelse(!is.null(offset), offset, 0)
-        pp$ApproxSE <- abs(pp$std.error) * pp$PredictedValue
+        # From paper: g(x) = ln(x), g^-1(y) = exp(y), g'(x) = 1/x
+        # Back-transformed value: X~ = exp(Y) - offset
+        # Approx SE: ~X = X~*Y_se (where X~ is before offset removal)
+        x_tilde <- exp(pp$predicted.value)
+        pp$PredictedValue <- x_tilde - offset
 
-        pp$low <- exp(pp$predicted.value - pp$ci) - ifelse(!is.null(offset), offset, 0)
-        pp$up <- exp(pp$predicted.value + pp$ci) - ifelse(!is.null(offset), offset, 0)
+        # Bounds check: values should be positive after offset removal
+        if (any(pp$PredictedValue <= 0, na.rm = TRUE)) {
+            warning("Log back-transformation produced non-positive values. Check offset parameter.", call. = FALSE)
+        }
+
+        # SE uses back-transformed value before offset removal
+        pp$ApproxSE <- abs(pp$std.error) * x_tilde
+
+        pp$low <- exp(pp$predicted.value - pp$ci) - offset
+        pp$up <- exp(pp$predicted.value + pp$ci) - offset
+
     } else if (trans == "logit") {
+        # From paper: g(x) = ln(x/(1-x)), g^-1(y) = exp(y)/(1+exp(y)), g'(x) = 1/(x(1-x))
+        # Back-transformed value: X~ = exp(Y)/(1+exp(Y))
+        # Approx SE: ~X = X~*(1-X~)*Y_se
         pp$PredictedValue <- exp(pp$predicted.value) / (1 + exp(pp$predicted.value))
+
+        # Bounds check: values should be in (0, 1)
+        if (any(pp$PredictedValue <= 0 | pp$PredictedValue >= 1, na.rm = TRUE)) {
+            warning("Logit back-transformation produced values outside (0,1). This may indicate numerical issues.", call. = FALSE)
+        }
+
         pp$ApproxSE <- pp$PredictedValue * (1 - pp$PredictedValue) * abs(pp$std.error)
 
         ll <- pp$predicted.value - pp$ci
         pp$low <- exp(ll) / (1 + exp(ll))
         uu <- pp$predicted.value + pp$ci
         pp$up <- exp(uu) / (1 + exp(uu))
-    } else if (trans == "power") {
-        pp$PredictedValue <- (pp$predicted.value)^(1/power) - ifelse(!is.null(offset), offset, 0)
-        pp$ApproxSE <- pp$std.error / abs(power * pp$PredictedValue^(power-1))
 
-        pp$low <- (pp$predicted.value - pp$ci)^(1/power) - ifelse(!is.null(offset), offset, 0)
-        pp$up <- (pp$predicted.value + pp$ci)^(1/power) - ifelse(!is.null(offset), offset, 0)
+    } else if (trans == "power") {
+        # From paper: g(x) = x^a, g^-1(y) = y^(1/a), g'(x) = a*x^(a-1)
+        # Back-transformed value: X~ = Y^(1/a) - offset
+        # Approx SE: ~X = Y_se / |a*X~^(a-1)| (where X~ is before offset removal)
+        if (is.null(power) || !is.numeric(power) || power == 0) {
+            stop("Power transformation requires a non-zero numeric 'power' argument.", call. = FALSE)
+        }
+
+        x_tilde <- (pp$predicted.value)^(1/power)
+        pp$PredictedValue <- x_tilde - offset
+
+        # Bounds check depends on power sign and offset
+        if (power < 0 && any(abs(pp$PredictedValue) < .Machine$double.eps, na.rm = TRUE)) {
+            warning("Power back-transformation with negative power produced values near zero.", call. = FALSE)
+        }
+
+        # SE uses back-transformed value before offset removal (x_tilde not PredictedValue)
+        pp$ApproxSE <- abs(pp$std.error) / abs(power * x_tilde^(power - 1))
+
+        pp$low <- (pp$predicted.value - pp$ci)^(1/power) - offset
+        pp$up <- (pp$predicted.value + pp$ci)^(1/power) - offset
+
     } else if (trans == "inverse") {
-        pp$PredictedValue <- 1/pp$predicted.value
+        # From paper: g(x) = 1/x, g^-1(y) = 1/y, g'(x) = -1/x^2
+        # Back-transformed value: X~ = 1/Y
+        # Approx SE: ~X = X~^2*Y_se (using absolute value of g'(x))
+
+        # Bounds check: avoid division by zero
+        if (any(abs(pp$predicted.value) < .Machine$double.eps, na.rm = TRUE)) {
+            warning("Inverse transformation: predicted values very close to zero detected.", call. = FALSE)
+        }
+
+        pp$PredictedValue <- 1 / pp$predicted.value
         pp$ApproxSE <- abs(pp$std.error) * pp$PredictedValue^2
 
-        pp$low <- 1/(pp$predicted.value - pp$ci)
-        pp$up <- 1/(pp$predicted.value + pp$ci)
+        # Check for sign changes across confidence interval
+        lower_bound <- pp$predicted.value - pp$ci
+        upper_bound <- pp$predicted.value + pp$ci
+
+        if (any(sign(lower_bound) != sign(upper_bound), na.rm = TRUE)) {
+            warning("Inverse transformation: confidence interval crosses zero. Results may be unreliable.", call. = FALSE)
+        }
+
+        # Inverse function is monotone decreasing, so bounds swap
+        # Use pmin/pmax to ensure pp$low < pp$up regardless of sign
+        inv_lower <- 1 / (pp$predicted.value + pp$ci)
+        inv_upper <- 1 / (pp$predicted.value - pp$ci)
+
+        pp$low <- pmin(inv_lower, inv_upper)
+        pp$up <- pmax(inv_lower, inv_upper)
+
+    } else if (trans == "arcsin") {
+        # From paper: g(x) = sin^-1(sqrt(x)), g^-1(y) = sin(y)^2,
+        # g'(x) = 1/(2*sqrt(x)*cos(sin^-1(sqrt(x))))
+        # Back-transformed value: X~ = sin(Y)^2
+        # Approx SE: ~X = 2*sqrt(X~)*cos(sin^-1(sqrt(X~)))*Y_se
+
+        # Bounds check: predicted.value should be in valid arcsin range
+        if (any(pp$predicted.value < -pi/2 | pp$predicted.value > pi/2, na.rm = TRUE)) {
+            warning("Arcsin transformation: some predicted values outside [-pi/2, pi/2].", call. = FALSE)
+        }
+
+        pp$PredictedValue <- sin(pp$predicted.value)^2
+
+        # Bounds check: values should be in [0, 1]
+        if (any(pp$PredictedValue < 0 | pp$PredictedValue > 1, na.rm = TRUE)) {
+            warning("Arcsin back-transformation produced values outside [0,1]. This may indicate numerical issues.", call. = FALSE)
+        }
+
+        # Simplify: cos(asin(sqrt(x))) = sqrt(1 - x) for x in [0,1]
+        pp$ApproxSE <- 2 * abs(pp$std.error) * sqrt(pp$PredictedValue * (1 - pp$PredictedValue))
+
+        pp$low <- sin(pp$predicted.value - pp$ci)^2
+        pp$up <- sin(pp$predicted.value + pp$ci)^2
+
+    } else {
+        stop("Invalid trans value. Must be one of: 'sqrt', 'log', 'logit', 'power', 'inverse', 'arcsin'.", call. = FALSE)
     }
 
     return(pp)
@@ -546,11 +644,33 @@ format_output <- function(pp, descending, vars, decimals) {
 }
 
 #' @noRd
-add_attributes <- function(pp, ylab, crit_val, aliased_names) {
-    # # If there are brackets in the label, grab the text from inside
-    # if (is.call(ylab)) {
-    #     ylab <- as.character(ylab)[2]
-    # }
+strip_transformation_from_label <- function(ylab, trans) {
+    if (is.null(trans)) {
+        return(ylab)
+    }
+
+    # Convert to character
+    ylab_char <- if (is.language(ylab)) deparse(ylab) else as.character(ylab)
+
+    # Simple pattern matching for common transformations
+    stripped <- switch(trans,
+                       "log" = sub("^log(10)?\\((.+)\\)$", "\\2", ylab_char),
+                       "sqrt" = sub("^sqrt\\((.+)\\)$", "\\1", ylab_char),
+                       "logit" = sub("^logit\\((.+)\\)$", "\\1", ylab_char),
+                       "arcsin" = sub("^a?r?c?sin\\(sqrt\\((.+)\\)\\)$", "\\1", ylab_char),
+                       "inverse" = sub("^\\(?1/([^)]+)\\)?$", "\\1", ylab_char),
+                       "power" = sub("^\\(?(.+?)\\)?\\^.+$", "\\1", ylab_char),
+                       ylab_char  # default: return as-is
+    )
+
+    return(stripped)
+}
+
+#' @noRd
+add_attributes <- function(pp, ylab, crit_val, aliased_names, trans = NULL) {
+    # Strip transformation from ylab if trans is provided
+    ylab <- strip_transformation_from_label(ylab, trans)
+
     attr(pp, "ylab") <- ylab
 
     # Add class

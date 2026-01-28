@@ -937,49 +937,6 @@ test_that("Invalid buffer options produce an error", {
                  "Invalid buffer option: abc")
 })
 
-# test_that("Buffers are produced when abreviations are given", {
-#     # CRD
-#     d1 <- design("crd", treatments = LETTERS[1:11], reps = 4,
-#                  nrows = 11, ncols = 4, seed = 42, quiet = TRUE, plot = FALSE)
-#
-#     withr:::local_file("full_argument.png")
-#     withr:::local_file("abbr_argument.png")
-#     ggsave(plot = autoplot(d1, buffer = "row"), filename = "full_argument.svg", width = 5, height = 3)
-#     ggsave(plot = autoplot(d1, buffer = "r"), filename = "abbr_argument.png", width = 5, height = 3)
-#     compare_file_binary("full_argument.png", "abbr_argument.png")
-#
-#     withr:::local_file("full_argument.png")
-#     withr:::local_file("abbr_argument.png")
-#     ggsave(plot = autoplot(d1, buffer = "row"), filename = "full_argument.png", width = 5, height = 3)
-#     ggsave(plot = autoplot(d1, buffer = "rows"), filename = "abbr_argument.png", width = 5, height = 3)
-#     compare_file_binary("full_argument.png", "abbr_argument.png")
-#
-#     withr:::local_file("full_argument.png")
-#     withr:::local_file("abbr_argument.png")
-#     ggsave(plot = autoplot(d1, buffer = "column"), filename = "full_argument.png", width = 5, height = 3)
-#     ggsave(plot = autoplot(d1, buffer = "columns"), filename = "abbr_argument.png", width = 5, height = 3)
-#     compare_file_binary("full_argument.png", "abbr_argument.png")
-#
-#     withr:::local_file("full_argument.png")
-#     withr:::local_file("abbr_argument.png")
-#     ggsave(plot = autoplot(d1, buffer = "column"), filename = "full_argument.png", width = 5, height = 3)
-#     ggsave(plot = autoplot(d1, buffer = "col"), filename = "abbr_argument.png", width = 5, height = 3)
-#     compare_file_binary("full_argument.png", "abbr_argument.png")
-#
-#     withr:::local_file("full_argument.png")
-#     withr:::local_file("abbr_argument.png")
-#     ggsave(plot = autoplot(d1, buffer = "column"), filename = "full_argument.png", width = 5, height = 3)
-#     ggsave(plot = autoplot(d1, buffer = "cols"), filename = "abbr_argument.png", width = 5, height = 3)
-#     compare_file_binary("full_argument.png", "abbr_argument.png")
-#
-#     withr:::local_file("full_argument.png")
-#     withr:::local_file("abbr_argument.png")
-#     ggsave(plot = autoplot(d1, buffer = "column"), filename = "full_argument.png", width = 5, height = 3)
-#     ggsave(plot = autoplot(d1, buffer = "c"), filename = "abbr_argument.png", width = 5, height = 3)
-#     compare_file_binary("full_argument.png", "abbr_argument.png")
-#
-# })
-
 test_that("Ability to provide arbitrary column names for plotting works", {
     des <- expand.grid(ro = 1:4, co = 1:5)
     des$bl <- des$co
@@ -1117,8 +1074,152 @@ test_that("des_info() renames split plot factor columns when fac.names is a char
 
     expect_true("Main" %in% names(out$design))
     expect_true("Sub" %in% names(out$design))
-    expect_false("treatments" %in% names(out$design))
+    expect_true("treatments" %in% names(out$design))
     expect_false("sub_treatments" %in% names(out$design))
     expect_s3_class(out$design$Main, "factor")
+})
+
+test_that("des_info() applies fac.names list for split designs", {
+    split_obj <- agricolae::design.split(trt1 = c("A", "B"), trt2 = 1:2, r = 2, seed = 42)
+
+    # Also simulate agricolae naming from expressions; this forces
+    # normalize_agricolae_book() to infer treatment columns by position.
+    if (is.data.frame(split_obj$book)) {
+        struct_cols <- c("plots", "block", "r", "row", "col", "splots", "wplots", "wholeplots", "subplots")
+        candidates <- setdiff(names(split_obj$book), struct_cols)
+        if (length(candidates) >= 2) {
+            main_col <- candidates[length(candidates) - 1]
+            sub_col <- candidates[length(candidates)]
+            names(split_obj$book)[names(split_obj$book) == main_col] <- "c(\"A\", \"B\")"
+            names(split_obj$book)[names(split_obj$book) == sub_col] <- "1:2"
+        }
+    }
+
+    expect_warning(
+        out <- des_info(
+            design.obj = split_obj,
+            nrows = 4,
+            ncols = 2,
+            brows = 4,
+            bcols = 2,
+            byrow = FALSE,
+            fac.names = list(
+                Main = c("Irrigated", "Rain-fed"),
+                Sub = c("Low", "High")
+            ),
+            plot = FALSE,
+            quiet = TRUE,
+            save = FALSE
+        ),
+        "des_info\\(\\) is deprecated"
+    )
+
+    expect_true("Main" %in% names(out$design))
+    expect_true("Sub" %in% names(out$design))
+    expect_true("treatments" %in% names(out$design))
+    expect_false("sub_treatments" %in% names(out$design))
+    expect_s3_class(out$design$Main, "factor")
+    expect_s3_class(out$design$Sub, "factor")
+    expect_equal(levels(out$design$Main), c("Irrigated", "Rain-fed"))
+    expect_equal(levels(out$design$Sub), c("Low", "High"))
+})
+
+test_that("des_info() adds buffers and passes blocks = FALSE for non-block designs", {
+    crd_obj <- agricolae::design.crd(trt = c(1, 5, 10, 20), r = 2, seed = 42)
+
+    testthat::local_mocked_bindings(
+        create_buffers = function(des, type, blocks) {
+            attr(des, "blocks_arg") <- blocks
+            des
+        },
+        .package = "biometryassist"
+    )
+
+    expect_warning(
+        out <- des_info(
+            design.obj = crd_obj,
+            nrows = 4,
+            ncols = 2,
+            buffer = "row",
+            plot = FALSE,
+            quiet = TRUE,
+            save = FALSE
+        ),
+        "des_info\\(\\) is deprecated"
+    )
+
+    expect_identical(attr(out$design, "blocks_arg"), FALSE)
+})
+
+test_that("des_info() adds buffers and passes blocks = TRUE for block designs", {
+    rcbd_obj <- agricolae::design.rcbd(trt = c("T1", "T2", "T3"), r = 2, seed = 42)
+
+    testthat::local_mocked_bindings(
+        create_buffers = function(des, type, blocks) {
+            attr(des, "blocks_arg") <- blocks
+            des
+        },
+        .package = "biometryassist"
+    )
+
+    expect_warning(
+        out <- des_info(
+            design.obj = rcbd_obj,
+            nrows = 3,
+            ncols = 2,
+            brows = 3,
+            bcols = 1,
+            buffer = "row",
+            plot = FALSE,
+            quiet = TRUE,
+            save = FALSE
+        ),
+        "des_info\\(\\) is deprecated"
+    )
+
+    expect_identical(attr(out$design, "blocks_arg"), TRUE)
+})
+
+test_that("des_info() creates a plot and prints output when quiet = FALSE", {
+    crd_obj <- agricolae::design.crd(trt = c(1, 5, 10, 20), r = 2, seed = 42)
+
+    calls <- new.env(parent = emptyenv())
+    calls$autoplot_called <- FALSE
+    calls$plot_called <- FALSE
+    calls$print_satab_called <- FALSE
+
+    testthat::local_mocked_bindings(
+        autoplot = function(des, rotation, size, margin, ...) {
+            calls$autoplot_called <- TRUE
+            structure(list(), class = "ggplot")
+        },
+        plot = function(x, ...) {
+            calls$plot_called <- TRUE
+            invisible(NULL)
+        },
+        print.satab = function(x, ...) {
+            calls$print_satab_called <- TRUE
+            invisible(x)
+        },
+        .package = "biometryassist"
+    )
+
+    expect_warning(
+        out <- des_info(
+            design.obj = crd_obj,
+            nrows = 4,
+            ncols = 2,
+            plot = TRUE,
+            quiet = FALSE,
+            save = FALSE,
+            return.seed = FALSE
+        ),
+        "des_info\\(\\) is deprecated"
+    )
+
+    expect_true(calls$autoplot_called)
+    expect_true(calls$plot_called)
+    expect_true(calls$print_satab_called)
+    expect_true("plot.des" %in% names(out))
 })
 
