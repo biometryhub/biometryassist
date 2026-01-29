@@ -109,7 +109,7 @@ design <- function(type,
     rlang::check_dots_used()
     validate_design_inputs(nrows, ncols, brows, bcols, size, seed)
 
-    # Normalize fac.sep
+    # Normalise fac.sep
     if (!missing(fac.sep) && length(fac.sep) == 1) {
         fac.sep <- rep(fac.sep, times = 2)
     }
@@ -138,9 +138,9 @@ design <- function(type,
     # Validate block parameters
     validate_block_params(design_info, brows, bcols)
 
-    # Normalize agricolae book column names so downstream code can rely on
+    # Normalise agricolae book column names so downstream code can rely on
     # predictable treatment column names.
-    outdesign$book <- normalize_agricolae_book(outdesign$book, design_info)
+    outdesign$book <- normalise_agricolae_book(outdesign$book, design_info)
 
     # Apply factor names if this is a factorial or split design
     if (design_info$is_factorial) {
@@ -256,7 +256,7 @@ des_info <- function(design.obj,
     rlang::check_dots_used()
     validate_design_inputs(nrows, ncols, brows, bcols, size, seed = TRUE)
 
-    # Normalize fac.sep
+    # Normalise fac.sep
     if (!missing(fac.sep) && length(fac.sep) == 1) {
         fac.sep <- rep(fac.sep, times = 2)
     }
@@ -272,9 +272,9 @@ des_info <- function(design.obj,
         savename <- gsub(":", "_", savename)
     }
 
-    # Normalize agricolae book column names so downstream code can rely on
+    # Normalise agricolae book column names so downstream code can rely on
     # predictable treatment column names.
-    design.obj$book <- normalize_agricolae_book(design.obj$book, design_info)
+    design.obj$book <- normalise_agricolae_book(design.obj$book, design_info)
 
     # Build the design based on type (before applying factor names)
     des <- build_design(design.obj, design_info$type, nrows, ncols,
@@ -540,14 +540,14 @@ build_split <- function(design_book, nrows, ncols, brows, bcols, byrow) {
     des
 }
 
-#' Normalize Agricolae Book Column Names
+#' Normalise Agricolae Book Column Names
 #'
 #' Agricolae design functions sometimes name treatment columns based on the
 #' expression passed to `trt`/`trt1`/`trt2` (e.g. `"c(1, 5, 10, 20)"`).
-#' This helper standardizes those columns to `treatments` / `sub_treatments`
+#' This helper standardises those columns to `treatments` / `sub_treatments`
 #' so downstream code can rely on stable names.
 #' @noRd
-normalize_agricolae_book <- function(design_book, design_info) {
+normalise_agricolae_book <- function(design_book, design_info) {
     if (is.null(design_book) || !is.data.frame(design_book)) {
         return(design_book)
     }
