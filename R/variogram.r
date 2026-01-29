@@ -232,18 +232,13 @@ palette = "default", onepage = FALSE) {
 #' }
 #'
 vario_df <- function(model.obj, Row = NA, Column = NA) {
-    # The 'z' value for the variogram is the residuals
-    # Need to be able to pull out the x/y from the model object
 
     if(length(names(model.obj$R.param)) > 1) {
-        # More than one residual component (e.g. from dsum())
-        # Do we need to check the names match in all the levels? Probably...
         if(!is.null(attr(model.obj$formulae$residual,"specials")$dsum)) {
             dsum_col <- as.character(model.obj$formulae$residual[[2]][[2]][[2]][[3]])
         }
         levs <- names(model.obj$R.param)
         dims <- setdiff(names(model.obj$R.param[[1]]), "variance")
-
     }
     else {
         dims <- unlist(strsplit(names(model.obj$R.param[1]), ":"))
@@ -271,54 +266,99 @@ vario_df <- function(model.obj, Row = NA, Column = NA) {
 
         Resid <- residuals(model.obj)[model_frame$units]
 
-        vario <- expand.grid(Row = 0:(nrows-1), Column = 0:(ncols-1))
-
-        # Ignore the 0, 0 case (gamma=0, counted row*cols times)
-        gammas <- rep(0, nrows*ncols)
-        nps <- rep(nrows*ncols, nrows*ncols)
-
-        for (index in 2:nrow(vario)) {
-            i <- vario[index, 'Row']
-            j <- vario[index, 'Column']
-
-            gamma <- 0
-            np <- 0
-            for (val_index in 1:nrow(vario)) {
-
-                # Deliberate double-counting so that offset handling is easy
-                # (so e.g. we compute distance from (1,1)->(2,3), and then again
-                # later from (2,3)->(1,1)).
-                for (offset in unique(list(c(i, j), c(-i, j), c(i, -j), c(-i, -j)))) {
-                    row <- Row[val_index] + offset[1]
-                    col <- Column[val_index] + offset[2]
-
-                    if(0 < row && row <= nrows && 0 < col && col <= ncols && !is.na(Resid[val_index])) {
-                        other <- Resid[Row == row & Column == col]
-
-                        if(!is.na(other)) {
-                            gamma <- gamma + (Resid[val_index] - other)^2
-                            np <- np + 1
-                        }
-                    }
-                }
+        # Create a matrix of residuals indexed by Row and Column
+        resid_matrix <- matrix(NA, nrow = nrows, ncol = ncols)
+        for(k in seq_along(Row)) {
+            if(!is.na(Resid[k])) {
+                resid_matrix[Row[k], Column[k]] <- Resid[k]
             }
-            # Since we double-counted precisely, halve to get the correct answer.
-            np <- np / 2
-            gamma <- gamma / 2
-
-            if(np > 0) {
-                gamma <- gamma / (2*np)
-            }
-
-            gammas[index] <- gamma
-            nps[index] <- np
         }
-        nps[1] <- nps[1]-sum(is.na(Resid))
+
+        # Generate all lag combinations
+        vario <- expand.grid(Row = 0:(nrows-1), Column = 0:(ncols-1))
+        n_lags <- nrow(vario)
+
+        # Pre-allocate results
+        gammas <- numeric(n_lags)
+        nps <- numeric(n_lags)
+
+        # Vectorized computation for all lags
+        for(index in 2:n_lags) {
+            row_lag <- vario[index, 'Row']
+            col_lag <- vario[index, 'Column']
+
+            # Calculate for all four symmetric offsets and combine
+            gamma_total <- 0
+            n_total <- 0
+
+            # Offset combinations
+            offset_list <- list(
+                c(row_lag, col_lag),
+                c(-row_lag, col_lag),
+                c(row_lag, -col_lag),
+                c(-row_lag, -col_lag)
+            )
+
+            # Remove duplicates (e.g., when row_lag or col_lag is 0)
+            offset_list <- unique(offset_list)
+
+            for(offset in offset_list) {
+                dr <- offset[1]
+                dc <- offset[2]
+
+                # Determine valid row and column ranges
+                if(dr >= 0) {
+                    row_from <- 1:(nrows - dr)
+                    row_to <- (1 + dr):nrows
+                } else {
+                    row_from <- (1 - dr):nrows
+                    row_to <- 1:(nrows + dr)
+                }
+
+                if(dc >= 0) {
+                    col_from <- 1:(ncols - dc)
+                    col_to <- (1 + dc):ncols
+                } else {
+                    col_from <- (1 - dc):ncols
+                    col_to <- 1:(ncols + dc)
+                }
+
+                # Extract sub-matrices
+                mat_from <- resid_matrix[row_from, col_from, drop = FALSE]
+                mat_to <- resid_matrix[row_to, col_to, drop = FALSE]
+
+                # Compute squared differences where both values exist
+                valid_pairs <- !is.na(mat_from) & !is.na(mat_to)
+                sq_diff <- (mat_from - mat_to)^2
+
+                # Sum the valid squared differences
+                gamma_total <- gamma_total + sum(sq_diff[valid_pairs], na.rm = TRUE)
+                n_total <- n_total + sum(valid_pairs)
+            }
+
+            # Account for double counting
+            n_total <- n_total / 2
+            gamma_total <- gamma_total / 2
+
+            # Store results
+            if(n_total > 0) {
+                gammas[index] <- gamma_total / (2 * n_total)
+            } else {
+                gammas[index] <- 0
+            }
+            nps[index] <- n_total
+        }
+
+        # Handle the (0,0) case
+        nps[1] <- nrows * ncols - sum(is.na(Resid))
+        gammas[1] <- 0
+
         vario <- cbind(vario, data.frame(gamma = gammas, np = nps, groups = levs[level]))
         output <- rbind(output, vario)
         Row <- NULL
         Column <- NULL
     }
+
     colnames(output) <- c(dims, "gamma", "np", "groups")
     class(output) <- c("variogram", "data.frame")
 
