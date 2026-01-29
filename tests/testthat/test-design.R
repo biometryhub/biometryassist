@@ -1144,6 +1144,41 @@ test_that("des_info() applies fac.names list for split designs", {
     expect_equal(levels(out$design$Sub), c("Low", "High"))
 })
 
+test_that("normalise_agricolae_book() renames split trt1/trt2 columns", {
+    design_info <- list(is_factorial = FALSE, type = "split", base = "split")
+
+    design_book <- data.frame(
+        plots = 1:2,
+        trt1 = c("A", "B"),
+        trt2 = c("Low", "High")
+    )
+
+    out <- biometryassist:::normalise_agricolae_book(design_book, design_info)
+
+    expect_true("treatments" %in% names(out))
+    expect_true("sub_treatments" %in% names(out))
+    expect_false("trt1" %in% names(out))
+    expect_false("trt2" %in% names(out))
+})
+
+test_that("normalise_agricolae_book() infers split sub_treatments from candidates", {
+    design_info <- list(is_factorial = FALSE, type = "split", base = "split")
+
+    # Simulate a split book where the main treatment column has already been
+    # standardised, but the subplot column has not.
+    design_book <- data.frame(
+        plots = 1:2,
+        treatments = c("A", "B"),
+        subplot_col = c("Low", "High")
+    )
+
+    out <- biometryassist:::normalise_agricolae_book(design_book, design_info)
+
+    expect_true("treatments" %in% names(out))
+    expect_true("sub_treatments" %in% names(out))
+    expect_false("subplot_col" %in% names(out))
+})
+
 test_that("des_info() adds buffers and passes blocks = FALSE for non-block designs", {
     crd_obj <- agricolae::design.crd(trt = c(1, 5, 10, 20), r = 2, seed = 42)
 
