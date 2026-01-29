@@ -1041,6 +1041,26 @@ test_that("des_info() applies fac.names for factorial designs", {
     expect_true("treatments" %in% names(out$design))
 })
 
+test_that("des_info() recycles fac.sep when length 1", {
+    fac_obj <- agricolae::design.ab(trt = c(2, 2), r = 2, design = "crd", seed = 42)
+
+    expect_warning(
+        out <- des_info(
+            design.obj = fac_obj,
+            nrows = 4,
+            ncols = 2,
+            fac.sep = ":",
+            plot = FALSE,
+            quiet = TRUE,
+            save = FALSE
+        ),
+        "des_info\\(\\) is deprecated"
+    )
+
+    expect_true("treatments" %in% names(out$design))
+    expect_true(any(grepl(":", as.character(out$design$treatments), fixed = TRUE)))
+})
+
 test_that("des_info() renames split plot factor columns when fac.names is a character vector", {
     split_obj <- agricolae::design.split(trt1 = c("A", "B"), trt2 = 1:2, r = 2, seed = 42)
 
