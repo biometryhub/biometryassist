@@ -130,17 +130,17 @@ handle_deprecated_param <- function(old_param, new_param = NULL, custom_msg = NU
 #' design plots. Supports predefined palettes (ColorBrewer, Viridis) or custom colours.
 #'
 #' @param palette Either a single string naming a predefined palette or a vector of custom colours
-#' @param ntrt Integer number of treatments (determines required palette length)
+#' @param n Integer number of required palette length
 #'
-#' @return Character vector of hex colour codes of length `ntrt`
+#' @return Character vector of hex colour codes of length `n`
 #'
 #' @keywords internal
-setup_colour_palette <- function(palette, ntrt) {
+setup_colour_palette <- function(palette, n) {
     # Handle custom colour palettes (vector of colours)
     if(length(palette) > 1) {
-        if(length(palette) != ntrt) {
+        if(length(palette) != n) {
             stop("palette needs to be a single string to choose a predefined palette, or ",
-                 ntrt, " custom colours.")
+                 n, " custom colours.")
         }
         return(palette)
     }
@@ -150,7 +150,11 @@ setup_colour_palette <- function(palette, ntrt) {
 
     # Default Spectral palette
     if(palette == "default") {
-        return(grDevices::colorRampPalette(scales::brewer_pal(palette = "Spectral")(11))(ntrt))
+        return(grDevices::colorRampPalette(scales::brewer_pal(palette = "Spectral")(11))(n))
+    }
+
+    if(palette == "rainbow") {
+        return(grDevices::rainbow(n))
     }
 
     # colourBrewer palettes
@@ -171,27 +175,27 @@ setup_colour_palette <- function(palette, ntrt) {
                                  "set3" = "Set3",
                                  "paired" = "Paired"
         )
-        return(grDevices::colorRampPalette(scales::brewer_pal(palette = palette_proper)(11))(ntrt))
+        return(grDevices::colorRampPalette(scales::brewer_pal(palette = palette_proper)(11))(n))
     }
 
     # colour blind friendly palettes (viridis family)
     viridis_patterns <- c("colou?r([[:punct:]]|[[:space:]]?)blind", "cb", "viridis")
     if(any(sapply(viridis_patterns, function(pattern) grepl(pattern, palette, ignore.case = TRUE)))) {
-        return(scales::viridis_pal(option = "viridis")(ntrt))
+        return(scales::viridis_pal(option = "viridis")(n))
     }
 
     # Other viridis options
     viridis_options <- c("magma", "inferno", "cividis", "plasma", "rocket", "mako", "turbo")
     if(palette %in% viridis_options) {
-        return(scales::viridis_pal(option = palette)(ntrt))
+        return(scales::viridis_pal(option = palette)(n))
     }
 
     # If we get here, the palette name is invalid
     valid_options <- c("default", brewer_palettes, "colour blind", "colour blind",
-                       "cb", viridis_options)
+                       "cb", viridis_options, "rainbow")
     stop("Invalid value for palette. Valid options are: ",
          paste(valid_options, collapse = ", "),
-         ", or a vector of ", ntrt, " custom colours.", call. = FALSE)
+         ", or a vector of ", n, " custom colours.", call. = FALSE)
 }
 
 

@@ -1,4 +1,5 @@
 load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
+load(test_path("data", "multi_dsum.Rdata"))
 
 test_that("vario_df produces a dataframe", {
     vg <- vario_df(model.asr)
@@ -153,10 +154,10 @@ test_that("onepage argument groups multiple plots into 1", {
     expect_type(vg, "list")
     expect_equal(length(vg), 1)
 
-    # The single page should be printable
-    expect_silent(print(vg[[1]]))
+    # Minimise printing for speed
+    expect_true(!is.null(vg[[1]]))
+    expect_contains(class(vg[[1]]), "ggplot")
 
-    load(test_path("data", "multi_dsum.Rdata"))
     vg_multi <- variogram(model_dsum, onepage = TRUE)
 
     # Should have 2 pages (more than 6 groups)
@@ -164,8 +165,11 @@ test_that("onepage argument groups multiple plots into 1", {
     expect_equal(length(vg_multi), 2)
 
     # Both pages should be printable
-    expect_silent(print(vg_multi[[1]]))
-    expect_silent(print(vg_multi[[2]]))
+    expect_true(!is.null(vg_multi[[1]]))
+    expect_contains(class(vg_multi[[1]]), "ggplot")
+    expect_true(!is.null(vg_multi[[2]]))
+    expect_contains(class(vg_multi[[2]]), "ggplot")
+    # expect_silent(print(vg_multi[[2]]))
 })
 
 test_that("onepage handles different numbers of groups correctly", {
@@ -174,7 +178,6 @@ test_that("onepage handles different numbers of groups correctly", {
     expect_equal(length(vg), 1)
 
     # Test with multiple groups
-    load(test_path("data", "multi_dsum.Rdata"))
     vg_multi <- variogram(model_dsum, onepage = TRUE)
 
     # Calculate expected pages

@@ -4,15 +4,15 @@
 \alias{setup_colour_palette}
 \title{Setup Colour Palette for Plotting}
 \usage{
-setup_colour_palette(palette, ntrt)
+setup_colour_palette(palette, n)
 }
 \arguments{
 \item{palette}{Either a single string naming a predefined palette or a vector of custom colours}
 
-\item{ntrt}{Integer number of treatments (determines required palette length)}
+\item{n}{Integer number of required palette length}
 }
 \value{
-Character vector of hex colour codes of length \code{ntrt}
+Character vector of hex colour codes of length \code{n}
 }
 \description{
 Internal helper function to generate or validate colour palettes for experimental

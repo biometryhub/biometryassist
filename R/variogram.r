@@ -15,8 +15,9 @@
 #' @importFrom pracma interp2
 #' @importFrom grDevices rainbow
 #' @importFrom lattice wireframe
-#' @importFrom cowplot plot_grid
 #' @importFrom ggplot2 ggplot geom_tile coord_equal geom_contour scale_fill_gradientn theme_bw scale_x_continuous scale_y_continuous theme labs
+#' @importFrom patchwork wrap_elements wrap_plots plot_layout
+#' @importFrom grid grid.grabExpr
 #'
 #' @references S. P. Kaluzny, S. C. Vega, T. P. Cardoso, A. A. Shelly, "S+SpatialStats: User’s Manual for Windows® and UNIX®" _Springer New York_, 2013, p. 68, https://books.google.com.au/books?id=iADkBwvario_pointsQBAJ.
 #' @references A. R. Gilmour, B. R. Cullis, A. P. Verbyla, "Accounting for Natural and Extraneous Variation in the Analysis of Field Experiments." _Journal of Agricultural, Biological, and Environmental Statistics 2, no. 3_, 1997, pp. 269–93, https://doi.org/10.2307/1400446.
@@ -35,7 +36,7 @@
 #' @export
 
 variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE,
-palette = "default", onepage = FALSE) {
+palette = "rainbow", onepage = FALSE) {
 
     if(!(inherits(model.obj, "asreml"))) {
         stop("model.obj must be an asreml model object", call. = FALSE)
@@ -95,62 +96,68 @@ palette = "default", onepage = FALSE) {
             ggplot2::theme(legend.position = "none", aspect.ratio = 0.3) +
             ggplot2::labs(y = paste(row, "Lag", sep = " "), x = paste(column, "Lag", sep = " "))
 
-        if(tolower(palette) == "rainbow" | tolower(palette) == "default") {
-            a <- a + ggplot2::scale_fill_gradientn(colours = grDevices::rainbow(100))
+        # First adjust the lattice spacing
+        oldpar <- lattice::trellis.par.get()
+        on.exit(lattice::trellis.par.set(oldpar), add = TRUE)
 
-            b <- lattice::wireframe(z ~ y * x, data = gdat, aspect = c(61/87, 0.4),
-                                    scales = list(cex = 0.5, arrows = FALSE),
-                                    drape = TRUE, colorkey = FALSE,
-                                    par.settings = list(axis.line = list(col = 'transparent')),
-                                    xlab = list(label = paste(column, "Lag", sep = " "), cex = .8, rot = 20),
-                                    ylab = list(label = paste(row, "Lag", sep = " "), cex = .8, rot = -18),
-                                    zlab = list(label = NULL, cex.axis = 0.5),
-                                    col.regions = grDevices::rainbow(100))
-        }
-        else if(any(grepl("(colou?r([[:punct:]]|[[:space:]]?)blind)|cb|viridis", palette, ignore.case = T))) {
-            a <- a + ggplot2::scale_fill_gradientn(colours = scales::viridis_pal(option = "viridis")(50))
+        lattice::trellis.par.set(
+            layout.heights = list(
+                top.padding = 0,
+                main.key.padding = 0,
+                key.axis.padding = 0,
+                axis.xlab.padding = 0,
+                xlab.key.padding = 0,
+                key.sub.padding = 0,
+                bottom.padding = 0
+            ),
+            layout.widths = list(
+                left.padding = 0,
+                right.padding = 0,
+                axis.key.padding = 0,
+                key.right = 0,
+                key.left = 0
+            )
+        )
 
-            # Create the lattice plot
-            b <- lattice::wireframe(z ~ y * x, data = gdat, aspect = c(61/87, 0.4),
-                                    scales = list(cex = 0.5, arrows = FALSE),
-                                    drape = TRUE, colorkey = FALSE,
-                                    par.settings = list(axis.line = list(col = 'transparent')),
-                                    xlab = list(label = paste(column, "Lag", sep = " "), cex = .8, rot = 20),
-                                    ylab = list(label = paste(row, "Lag", sep = " "), cex = .8, rot = -18),
-                                    zlab = list(label = NULL, cex.axis = 0.5),
-                                    col.regions = scales::viridis_pal(option = "viridis")(100))
-        }
-        else if(tolower(trimws(palette)) %in% c("magma", "inferno", "cividis", "plasma", "rocket", "mako", "turbo")) {
-            a <- a + ggplot2::scale_fill_gradientn(colours = scales::viridis_pal(option = palette)(50))
+        col_regions <- setup_colour_palette(palette, n = 100)
 
-            # Create the lattice plot
-            b <- lattice::wireframe(z ~ y * x, data = gdat, aspect = c(61/87, 0.4),
-                                    scales = list(cex = 0.5, arrows = FALSE),
-                                    drape = TRUE, colorkey = FALSE,
-                                    par.settings = list(axis.line = list(col = 'transparent')),
-                                    xlab = list(label = paste(column, "Lag", sep = " "), cex = .8, rot = 20),
-                                    ylab = list(label = paste(row, "Lag", sep = " "), cex = .8, rot = -18),
-                                    zlab = list(label = NULL, cex.axis = 0.5),
-                                    col.regions = scales::viridis_pal(option = palette)(100))
-        }
+        # Create the lattice plot
+        b <- lattice::wireframe(
+            z ~ y * x,
+            data = gdat,
+            aspect = c(61/87, 0.45),
+            scales = list(cex = 0.5, arrows = FALSE),
+            drape = TRUE,
+            colorkey = FALSE,
+            zlim = range(gdat$z, finite = TRUE),
+            par.settings = list(axis.line = list(col = "transparent")),
+            xlab = list(label = paste(column, "Lag"), cex = .8, rot = 20),
+            ylab = list(label = paste(row, "Lag"), cex = .8, rot = -30),
+            zlab = list(label = NULL, cex.axis = 0.5), 
+            col.regions = col_regions
+        )
 
-        else if(tolower(trimws(palette)) %in% c("spectral")) {
-            a <- a + ggplot2::scale_fill_gradientn(colours = scales::brewer_pal(palette = palette)(11))
 
-            # Create the lattice plot
-            b <- lattice::wireframe(z ~ y * x, data = gdat, aspect = c(61/87, 0.4),
-                                    scales = list(cex = 0.5, arrows = FALSE),
-                                    drape = TRUE, colorkey = FALSE,
-                                    par.settings = list(axis.line = list(col = 'transparent')),
-                                    xlab = list(label = paste(column, "Lag", sep = " "), cex = .8, rot = 20),
-                                    ylab = list(label = paste(row, "Lag", sep = " "), cex = .8, rot = -18),
-                                    zlab = list(label = NULL, cex.axis = 0.5),
-                                    col.regions = scales::brewer_pal(palette = palette)(11))
-        }
-        else {
-            stop("Invalid value for palette.", call. = FALSE)
-        }
-        output[[i]] <- cowplot::plot_grid(b, a, nrow = 2, scale = c(2, 1))
+        # b <- lattice:::update.trellis(
+        #     base_wireframe,
+            
+        # )
+
+        a <- a + ggplot2::scale_fill_gradientn(colours = col_regions)
+
+        lattice_grob <- grid::grid.grabExpr(
+            print(b, newpage = FALSE)
+        )
+
+        lg <- patchwork::wrap_elements(full = lattice_grob)
+
+        pw <- (lg / a) +
+            patchwork::plot_layout(heights = c(2, 1)) &
+            ggplot2::theme(plot.margin = grid::unit(c(0, 0, 0, 0), "pt"))
+
+        output[[i]] <- pw
+        class(output[[i]]) <- c("variogram_plot", class(output[[i]]))
+
         if(!orig_row) {
             row <- NA
         }
@@ -164,17 +171,16 @@ palette = "default", onepage = FALSE) {
         # Add titles to all plots
         titled_plots <- list()
         for(j in seq_along(output)) {
-            title <- cowplot::ggdraw() +
-                cowplot::draw_label(groups[j],
-                                  fontface = 'bold',
-                                  x = 0.1,
-                                  hjust = 0)
-            titled_plots[[j]] <- cowplot::plot_grid(
-                title,
-                output[[j]],
-                nrow = 2,
-                rel_heights = c(0.1, 1)
-            )
+            title_grob <- grid::textGrob(groups[j], gp = grid::gpar(fontface = 'bold'),
+                                         hjust = 0, x = 0.1)
+                title <- patchwork::wrap_elements(full = title_grob)
+                titled_plots[[j]] <- patchwork::wrap_plots(
+                    title,
+                    output[[j]],
+                    ncol = 1,
+                    heights = c(1, 20)
+                )
+            class(titled_plots[[j]]) <- c("variogram_plot", class(titled_plots[[j]]))
         }
         names(titled_plots) <- groups
 
@@ -194,11 +200,12 @@ palette = "default", onepage = FALSE) {
                 n_rows <- ceiling(n_plots_on_page/3)
 
                 # Create combined plot for current page
-                pages[[page]] <- cowplot::plot_grid(
-                    plotlist = titled_plots[start_idx:end_idx],
-                    ncol = n_cols,
-                    nrow = n_rows
-                )
+                    pages[[page]] <- patchwork::wrap_plots(
+                        titled_plots[start_idx:end_idx],
+                        ncol = n_cols,
+                        nrow = n_rows
+                    )
+                class(pages[[page]]) <- c("variogram_plot", class(pages[[page]]))
             }
 
             return(pages)
@@ -368,3 +375,15 @@ vario_df <- function(model.obj, Row = NA, Column = NA) {
 
     return(output)
 }
+
+
+#' #' @export
+#' print.variogram_plot <- function(x, ...) {
+#'     if (inherits(x, "patchwork")) {
+#'         print(x)
+#'     } else {
+#'         grid::grid.newpage()
+#'         grid::grid.draw(x)
+#'     }
+#'     invisible(x)
+#' }
