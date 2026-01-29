@@ -105,7 +105,10 @@ test_that("mct transformation: arcsin", {
     iris_arc <- iris
     iris_arc$PW <- iris_arc$Petal.Width / max(iris_arc$Petal.Width)
     dat.aov.arcsin <- aov(asin(sqrt(PW)) ~ Species, data = iris_arc)
-    output.arcsin <- multiple_comparisons(dat.aov.arcsin, classify = "Species", trans = "arcsin", offset = 0)
+    expect_warning(output.arcsin <- multiple_comparisons(dat.aov.arcsin,
+                                                         classify = "Species",
+                                                         trans = "arcsin", offset = 0),
+                   "There are unevaluated constants in the response formula")
 
     expect_identical(attr(output.arcsin, "ylab"), "PW")
     expect_true("PredictedValue" %in% names(output.arcsin))
@@ -245,6 +248,45 @@ test_that("apply_transformation arcsin warning and bounds", {
 
     expect_true("PredictedValue" %in% names(out))
     expect_true(out$PredictedValue >= 0 && out$PredictedValue <= 1)
+})
+
+test_that("apply_transformation arcsin warns when back-transformation is outside [0,1]", {
+    # This branch is numerically very hard to reach with real sin() output because sin(x)^2
+    # should be in [0,1]. Here we temporarily override `sin()` and `sqrt()` in the
+    # apply_transformation() function environment to force an out-of-bounds value.
+    fn2 <- biometryassist:::apply_transformation
+    fn2_env <- new.env(parent = environment(fn2))
+    fn2_env$sin <- function(x) rep(2, length(x))
+    fn2_env$sqrt <- function(x) rep(0, length(x))
+    environment(fn2) <- fn2_env
+
+    pp <- data.frame(
+        predicted.value = c(0),
+        std.error = c(0.1),
+        ci = c(0.2)
+    )
+
+    expect_warning(
+        out <- fn2(pp, trans = "arcsin", offset = 0, power = NULL),
+        "Arcsin back-transformation produced values outside \\[0,1\\]\\. This may indicate numerical issues\\."
+    )
+
+    expect_true("PredictedValue" %in% names(out))
+    expect_true(out$PredictedValue > 1)
+})
+
+test_that("apply_transformation errors on invalid trans", {
+    pp <- data.frame(
+        predicted.value = c(0),
+        std.error = c(0.1),
+        ci = c(0.2)
+    )
+
+    expect_error(
+        biometryassist:::apply_transformation(pp, trans = "not-a-transformation", offset = 0, power = NULL),
+        "Invalid trans value\\. Must be one of: 'sqrt', 'log', 'logit', 'power', 'inverse', 'arcsin'\\.",
+        fixed = FALSE
+    )
 })
 
 test_that("ordering output works", {
