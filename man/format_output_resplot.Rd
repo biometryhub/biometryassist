@@ -4,7 +4,14 @@
 \alias{format_output_resplot}
 \title{Format final output based on facet structure}
 \usage{
-format_output_resplot(output, facet, facet_name, onepage, onepage_cols)
+format_output_resplot(
+  output,
+  facet,
+  facet_name,
+  onepage,
+  onepage_cols,
+  label.size
+)
 }
 \arguments{
 \item{output}{List of plot objects}
