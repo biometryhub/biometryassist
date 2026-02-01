@@ -126,7 +126,17 @@ test_that("onepage is ignored for single plots", {
 test_that("onepage produces plots with up to 6 on a page and column changes work", {
     # Test basic onepage functionality
     p1 <- suppressWarnings(resplot(complex_model.asr))
-    p2 <- suppressWarnings(resplot(complex_model.asr, onepage = TRUE))
+
+    # Avoid recomputing the same underlying diagnostic plots multiple times.
+    # `onepage` is only a formatting step (see internal `format_output_resplot()`).
+    p2 <- biometryassist:::format_output_resplot(
+        output = p1,
+        facet = length(p1),
+        facet_name = names(p1),
+        onepage = TRUE,
+        onepage_cols = 3,
+        label.size = 10
+    )
     p3 <- resplot(model_dsum, onepage = TRUE)
 
     expect_equal(length(p1), 3)
@@ -144,8 +154,22 @@ test_that("onepage produces plots with up to 6 on a page and column changes work
     expect_false(equivalent_ggplot2(p1[[1]], p2[[1]]))
 
     # Test column changes in same test to avoid redundant model loading
-    p4 <- suppressWarnings(resplot(complex_model.asr, onepage = TRUE, onepage_cols = 3))
-    p5 <- suppressWarnings(resplot(complex_model.asr, onepage = TRUE, onepage_cols = 2))
+    p4 <- biometryassist:::format_output_resplot(
+        output = p1,
+        facet = length(p1),
+        facet_name = names(p1),
+        onepage = TRUE,
+        onepage_cols = 3,
+        label.size = 10
+    )
+    p5 <- biometryassist:::format_output_resplot(
+        output = p1,
+        facet = length(p1),
+        facet_name = names(p1),
+        onepage = TRUE,
+        onepage_cols = 2,
+        label.size = 10
+    )
 
     expect_equal(length(p4), length(p5))
     expect_false(equivalent_ggplot2(p4[[1]], p5[[1]]))
