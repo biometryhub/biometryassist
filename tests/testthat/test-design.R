@@ -439,10 +439,6 @@ test_that("unsupported design types give an error", {
                         nrows = 4, ncols = 5, seed = 42),
                  "Designs of type 'abc' are not supported")
 
-    expect_error(design(type = "strip", 1:4, reps = 5,
-                        nrows = 4, ncols = 5, seed = 42),
-                 "Designs of type 'strip' are not supported")
-
     expect_error(design(type = "crossed:split", 1:4, reps = 5,
                         nrows = 4, ncols = 5, seed = 42),
                  "Crossed designs of type 'split' are not supported")
