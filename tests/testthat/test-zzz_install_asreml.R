@@ -619,21 +619,12 @@ test_that("install_asreml verbose parameter validation and messaging", {
     mockery::stub(install_asreml, "newer_version", function() FALSE)
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
 
-    # Capture messages when quiet = "verbose"
-    expect_message(
-        install_asreml(quiet = "verbose", force = FALSE),
-        "\\[DEBUG\\] Starting ASReml-R installation process"
-    )
+    # Capture all messages from a single run (prevents noisy [DEBUG] output)
+    msgs <- capture_messages_text(install_asreml(quiet = "verbose", force = FALSE))
 
-    expect_message(
-        install_asreml(quiet = "verbose", force = FALSE),
-        "\\[DEBUG\\] Library path:"
-    )
-
-    expect_message(
-        install_asreml(quiet = "verbose", force = FALSE),
-        "\\[DEBUG\\] Force install: FALSE"
-    )
+    expect_match(msgs, "\\[DEBUG\\] Starting ASReml-R installation process")
+    expect_match(msgs, "\\[DEBUG\\] Library path:")
+    expect_match(msgs, "\\[DEBUG\\] Force install: FALSE")
 })
 
 test_that("verbose messaging works correctly with different quiet settings", {
@@ -647,13 +638,9 @@ test_that("verbose messaging works correctly with different quiet settings", {
     expect_silent(install_asreml(quiet = TRUE, force = FALSE))
 
     # Test quiet = FALSE (normal messages but no debug)
-    expect_message(
-        install_asreml(quiet = FALSE, force = FALSE),
-        "already installed"
-    )
-
-    # Should NOT see debug messages with quiet = FALSE
-    expect_no_message(install_asreml(quiet = FALSE, force = FALSE), message = "\\[DEBUG\\]")
+    msgs <- capture_messages_text(install_asreml(quiet = FALSE, force = FALSE))
+    expect_match(msgs, "already installed")
+    expect_false(grepl("\\[DEBUG\\]", msgs))
 })
 
 test_that("download_asreml_package verbose parameter works", {
@@ -668,20 +655,13 @@ test_that("download_asreml_package verbose parameter works", {
     mockery::stub(download_asreml_package, "normalizePath", function(x) x)
 
     # Test verbose = TRUE produces debug messages
-    expect_message(
-        download_asreml_package("http://test.url", verbose = TRUE),
-        "\\[DEBUG\\] Creating temporary file for download"
-    )
-
-    expect_message(
-        download_asreml_package("http://test.url", verbose = TRUE),
-        "\\[DEBUG\\] Initiating download from:"
-    )
+    msgs <- capture_messages_text(download_asreml_package("http://test.url", verbose = TRUE))
+    expect_match(msgs, "\\[DEBUG\\] Creating temporary file for download")
+    expect_match(msgs, "\\[DEBUG\\] Initiating download from:")
 
     # Test verbose = FALSE produces no debug messages
-    expect_no_message(download_asreml_package("http://test.url", verbose = FALSE),
-                      message = "\\[DEBUG\\]"
-    )
+    msgs <- capture_messages_text(download_asreml_package("http://test.url", verbose = FALSE))
+    expect_false(grepl("\\[DEBUG\\]", msgs))
 })
 
 test_that("remove_existing_asreml verbose parameter works", {
@@ -694,20 +674,13 @@ test_that("remove_existing_asreml verbose parameter works", {
     mockery::stub(remove_existing_asreml, "remove.packages", function(pkg) {})
 
     # Test verbose = TRUE produces debug messages
-    expect_message(
-        remove_existing_asreml(verbose = TRUE),
-        "\\[DEBUG\\] Checking if asreml namespace is loaded"
-    )
-
-    expect_message(
-        remove_existing_asreml(verbose = TRUE),
-        "\\[DEBUG\\] Unloading asreml namespace"
-    )
+    msgs <- capture_messages_text(remove_existing_asreml(verbose = TRUE))
+    expect_match(msgs, "\\[DEBUG\\] Checking if asreml namespace is loaded")
+    expect_match(msgs, "\\[DEBUG\\] Unloading asreml namespace")
 
     # Test verbose = FALSE produces no debug messages
-    expect_no_message(
-        remove_existing_asreml(verbose = FALSE), message = "\\[DEBUG\\]"
-    )
+    msgs <- capture_messages_text(remove_existing_asreml(verbose = FALSE))
+    expect_false(grepl("\\[DEBUG\\]", msgs))
 })
 
 test_that("install_dependencies verbose parameter works", {
@@ -721,31 +694,21 @@ test_that("install_dependencies verbose parameter works", {
     mockery::stub(install_dependencies, "install.packages", function(...) {})
 
     # Test verbose = TRUE produces debug messages for missing dependencies
-    expect_message(
-        install_dependencies(quiet = FALSE, library = tempdir(), verbose = TRUE),
-        "\\[DEBUG\\] Checking required dependencies"
-    )
-
-    expect_message(
-        install_dependencies(quiet = FALSE, library = tempdir(), verbose = TRUE),
-        "\\[DEBUG\\] Required dependencies:"
-    )
+    msgs <- capture_messages_text(install_dependencies(quiet = FALSE, library = tempdir(), verbose = TRUE))
+    expect_match(msgs, "\\[DEBUG\\] Checking required dependencies")
+    expect_match(msgs, "\\[DEBUG\\] Required dependencies:")
 
     # Test verbose = FALSE produces no debug messages
-    expect_no_message(
-        install_dependencies(quiet = FALSE, library = tempdir(), verbose = FALSE),
-        message = "\\[DEBUG\\]"
-    )
+    msgs <- capture_messages_text(install_dependencies(quiet = FALSE, library = tempdir(), verbose = FALSE))
+    expect_false(grepl("\\[DEBUG\\]", msgs))
 
     # ---- NEW: Test all dependencies present triggers "All dependencies already satisfied" ----
     mockery::stub(install_dependencies, "installed.packages", function(...) {
         matrix(c("data.table", "ggplot2", "jsonlite"), ncol = 1, dimnames = list(c("data.table", "ggplot2", "jsonlite"), "Package"))
     })
     mockery::stub(install_dependencies, "rlang::is_installed", function(...) TRUE)
-    expect_message(
-        install_dependencies(quiet = FALSE, library = tempdir(), verbose = TRUE),
-        "\\[DEBUG\\] All dependencies already satisfied"
-    )
+    msgs <- capture_messages_text(install_dependencies(quiet = FALSE, library = tempdir(), verbose = TRUE))
+    expect_match(msgs, "\\[DEBUG\\] All dependencies already satisfied")
 })
 
 test_that("install_asreml_package verbose parameter works", {
@@ -759,31 +722,23 @@ test_that("install_asreml_package verbose parameter works", {
     mockery::stub(install_asreml_package, "rlang::is_installed", function(...) TRUE)
 
     # Test verbose = TRUE produces debug messages
-    expect_message(
-        install_asreml_package(temp_file, tempdir(), FALSE, "linux", verbose = TRUE),
-        "\\[DEBUG\\] Starting ASReml package installation"
-    )
-
-    expect_message(
-        install_asreml_package(temp_file, tempdir(), FALSE, "linux", verbose = TRUE),
-        "\\[DEBUG\\] Package file:"
-    )
+    msgs <- capture_messages_text(install_asreml_package(temp_file, tempdir(), FALSE, "linux", verbose = TRUE))
+    expect_match(msgs, "\\[DEBUG\\] Starting ASReml package installation")
+    expect_match(msgs, "\\[DEBUG\\] Package file:")
 
     # Test verbose = FALSE produces no debug messages
-    expect_no_message(
-        install_asreml_package(temp_file, tempdir(), FALSE, "linux", verbose = FALSE),
-        message = "\\[DEBUG\\]"
-    )
+    msgs <- capture_messages_text(install_asreml_package(temp_file, tempdir(), FALSE, "linux", verbose = FALSE))
+    expect_false(grepl("\\[DEBUG\\]", msgs))
 
     # ---- NEW: Test error handling with verbose ----
     mockery::stub(install_asreml_package, "install.packages", function(...) stop("Installation failed"))
-    expect_warning(
-        expect_message(
+    msgs <- capture_messages_text(
+        expect_warning(
             result <- install_asreml_package(temp_file, tempdir(), FALSE, "linux", verbose = TRUE),
-            "\\[DEBUG\\] Installation error: Installation failed"
-        ),
-        "Installation failed"
+            "Installation failed"
+        )
     )
+    expect_match(msgs, "\\[DEBUG\\] Installation error: Installation failed")
     expect_false(result)
 })
 
@@ -796,14 +751,9 @@ test_that("manage_file verbose parameter works", {
         writeLines("test content", test_file)
 
         # Test verbose = TRUE with keep_file = FALSE
-        expect_message(
-            manage_file(test_file, FALSE, "test.zip", verbose = TRUE),
-            "\\[DEBUG\\] Managing downloaded file:"
-        )
-        expect_message(
-            manage_file(test_file, FALSE, "test.zip", verbose = TRUE),
-            "\\[DEBUG\\] Removing downloaded file"
-        )
+        msgs <- capture_messages_text(manage_file(test_file, FALSE, "test.zip", verbose = TRUE))
+        expect_match(msgs, "\\[DEBUG\\] Managing downloaded file:")
+        expect_match(msgs, "\\[DEBUG\\] Removing downloaded file")
     })
 
     withr::with_tempdir({
@@ -812,10 +762,8 @@ test_that("manage_file verbose parameter works", {
         writeLines("test content", test_file)
 
         # Test keep_file = TRUE (current directory)
-        expect_message(
-            manage_file(test_file, TRUE, "test.zip", verbose = TRUE),
-            "\\[DEBUG\\] Saving file to current directory: test.zip"
-        )
+        msgs <- capture_messages_text(manage_file(test_file, TRUE, "test.zip", verbose = TRUE))
+        expect_match(msgs, "\\[DEBUG\\] Saving file to current directory: test.zip")
     })
 
     withr::with_tempdir({
@@ -826,10 +774,8 @@ test_that("manage_file verbose parameter works", {
         dir.create(subdir)
 
         # Test keep_file = path (specified directory)
-        expect_message(
-            manage_file(test_file, subdir, "test.zip", verbose = TRUE),
-            "\\[DEBUG\\] Saving file to specified directory: subdir[/\\\\]test.zip"
-        )
+        msgs <- capture_messages_text(manage_file(test_file, subdir, "test.zip", verbose = TRUE))
+        expect_match(msgs, "\\[DEBUG\\] Saving file to specified directory: subdir[/\\\\]test.zip")
     })
 
     withr::with_tempdir({
@@ -838,13 +784,13 @@ test_that("manage_file verbose parameter works", {
         writeLines("test content", test_file)
 
         # Test keep_file = invalid path
-        expect_message(
+        msgs <- capture_messages_text(
             expect_warning(
                 manage_file(test_file, "/nonexistent/path", "test.zip", verbose = TRUE),
                 "Invalid keep_file argument"
-            ),
-            "\\[DEBUG\\] Invalid keep_file argument, removing file"
+            )
         )
+        expect_match(msgs, "\\[DEBUG\\] Invalid keep_file argument, removing file")
     })
 
     withr::with_tempdir({
@@ -854,13 +800,13 @@ test_that("manage_file verbose parameter works", {
 
         # Mock file.rename to fail to trigger error branch
         mockery::stub(manage_file, "file.rename", function(...) stop("move failed"))
-        expect_message(
+        msgs <- capture_messages_text(
             expect_warning(
                 manage_file(test_file, TRUE, "test.zip", verbose = TRUE),
                 "Could not save ASReml file to specified location"
-            ),
-            "\\[DEBUG\\] Failed to move file: move failed"
+            )
         )
+        expect_match(msgs, "\\[DEBUG\\] Failed to move file: move failed")
     })
 })
 
@@ -876,26 +822,15 @@ test_that("verbose debugging shows OS detection details", {
     mockery::stub(install_asreml, "manage_file", function(...) TRUE)
 
     # Test that OS detection details are shown in verbose mode
-    expect_warning(
-        expect_message(
+    msgs <- capture_messages_text(
+        expect_warning(
             install_asreml(quiet = "verbose"),
-            "\\[DEBUG\\] Detecting operating system and R version"),
-        "There was a problem with installation and ASReml-R was not successfully installed\\."
+            "There was a problem with installation and ASReml-R was not successfully installed\\."
+        )
     )
-
-    expect_warning(
-        expect_message(
-            install_asreml(quiet = "verbose"),
-            "\\[DEBUG\\] Detected OS:"),
-        "There was a problem with installation and ASReml-R was not successfully installed\\."
-    )
-
-    expect_warning(
-        expect_message(
-            install_asreml(quiet = "verbose"),
-            "\\[DEBUG\\] Detected R version:"),
-        "There was a problem with installation and ASReml-R was not successfully installed\\."
-    )
+    expect_match(msgs, "\\[DEBUG\\] Detecting operating system and R version")
+    expect_match(msgs, "\\[DEBUG\\] Detected OS:")
+    expect_match(msgs, "\\[DEBUG\\] Detected R version:")
 })
 
 test_that("verbose debugging handles error cases appropriately", {
@@ -904,24 +839,24 @@ test_that("verbose debugging handles error cases appropriately", {
     # Test download failure with verbose messaging
     mockery::stub(download_asreml_package, "curl::curl_fetch_disk", function(...) stop("Network error"))
 
-    expect_message(
+    msgs <- capture_messages_text(
         expect_error(
             download_asreml_package("http://fake.url", verbose = TRUE),
             "Failed to download ASReml-R package"
-        ),
-        "\\[DEBUG\\] Download failed with error:"
+        )
     )
+    expect_match(msgs, "\\[DEBUG\\] Download failed with error:")
 
     # Test removal error with verbose messaging
     mockery::stub(remove_existing_asreml, "remove.packages", function(...) stop("Remove failed"))
 
-    expect_message(
+    msgs <- capture_messages_text(
         expect_warning(
             remove_existing_asreml(verbose = TRUE),
             "Could not remove existing asreml package"
-        ),
-        "\\[DEBUG\\] Error removing existing package:"
+        )
     )
+    expect_match(msgs, "\\[DEBUG\\] Error removing existing package:")
 })
 
 test_that("install_asreml verbose mode shows version check details", {
@@ -936,19 +871,14 @@ test_that("install_asreml verbose mode shows version check details", {
     mockery::stub(install_asreml, "install_asreml_package", function(...) TRUE)
     mockery::stub(install_asreml, "manage_file", function(...) TRUE)
 
-    expect_warning(
-        expect_message(
+    msgs <- capture_messages_text(
+        expect_warning(
             install_asreml(quiet = "verbose", check_version = TRUE),
-            "\\[DEBUG\\] Checking for newer version availability"),
-        "There was a problem with installation and ASReml-R was not successfully installed\\."
+            "There was a problem with installation and ASReml-R was not successfully installed\\."
+        )
     )
-
-    expect_warning(
-        expect_message(
-            install_asreml(quiet = "verbose", check_version = TRUE),
-            "\\[DEBUG\\] Newer version available: TRUE"),
-        "There was a problem with installation and ASReml-R was not successfully installed\\."
-    )
+    expect_match(msgs, "\\[DEBUG\\] Checking for newer version availability")
+    expect_match(msgs, "\\[DEBUG\\] Newer version available: TRUE")
 })
 
 test_that("install_asreml calls create_mac_folder on macOS", {
@@ -1017,13 +947,13 @@ test_that("install_asreml verbose messaging shows mac folder creation", {
     mockery::stub(install_asreml, "manage_file", function(...) TRUE)
 
     # Test that verbose mode shows the mac folder creation message
-    expect_warning(
-        expect_message(
+    msgs <- capture_messages_text(
+        expect_warning(
             install_asreml(quiet = "verbose"),
-            "\\[DEBUG\\] macOS detected - checking/creating Mac folder"
-        ),
-        "There was a problem with installation and ASReml-R was not successfully installed\\."
+            "There was a problem with installation and ASReml-R was not successfully installed\\."
+        )
     )
+    expect_match(msgs, "\\[DEBUG\\] macOS detected - checking/creating Mac folder")
 })
 
 test_that("install_asreml removes existing package when force=TRUE on non-Linux systems", {
@@ -1143,10 +1073,8 @@ test_that("install_asreml verbose messaging shows package removal", {
     })
 
     # Test that verbose mode shows the removal message
-    expect_message(
-        install_asreml(force = TRUE, quiet = "verbose"),
-        "\\[DEBUG\\] Force=TRUE and existing package found - removing existing installation"
-    )
+    msgs <- capture_messages_text(install_asreml(force = TRUE, quiet = "verbose"))
+    expect_match(msgs, "\\[DEBUG\\] Force=TRUE and existing package found - removing existing installation")
 })
 
 test_that("get_version_table handles missing version headers", {
