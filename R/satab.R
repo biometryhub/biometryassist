@@ -29,7 +29,69 @@ get_anova_structure <- function(design_type, design_book) {
     factorial_rcbd = anova_factorial_rcbd(design_book),
     factorial_lsd = anova_factorial_lsd(design_book),
     split = anova_split(design_book),
+    strip = anova_strip(design_book),
     stop("Unknown design type: ", design_type, call. = FALSE)
+  )
+}
+
+#' ANOVA structure for Strip Plot
+#' @noRd
+anova_strip <- function(design_book) {
+  if (!"block" %in% names(design_book)) {
+    stop("Expected a 'block' column in strip plot design", call. = FALSE)
+  }
+
+  # Treatment columns are the columns that aren't structural columns.
+  structural_cols <- c("plots", "block", "wholeplots", "wplots", "subplots", "splots")
+  trt_cols <- setdiff(names(design_book), structural_cols)
+
+  if (length(trt_cols) != 2) {
+    stop("Expected 2 treatment columns in strip plot design, found ",
+         length(trt_cols), call. = FALSE)
+  }
+
+  trtAname <- trt_cols[1]
+  trtBname <- trt_cols[2]
+
+  r <- n_unique(design_book$block)
+  a <- n_unique(design_book[[trtAname]])
+  b <- n_unique(design_book[[trtBname]])
+
+  blkdf <- r - 1
+  totdf <- nrow(design_book) - 1
+  trtAdf <- a - 1
+  trtBdf <- b - 1
+  trtABdf <- trtAdf * trtBdf
+
+  # Typical strip-plot error strata dfs
+  errAdf <- (r - 1) * trtAdf
+  errBdf <- (r - 1) * trtBdf
+  errABdf <- (r - 1) * trtABdf
+
+  list(
+    sources = c(
+      "Block stratum",
+      trtAname, paste0(trtAname, " Residual"),
+      trtBname, paste0(trtBname, " Residual"),
+      paste(trtAname, trtBname, sep = ":"),
+      "Interaction Residual",
+      "Total"
+    ),
+    df = c(
+      blkdf,
+      trtAdf, errAdf,
+      trtBdf, errBdf,
+      trtABdf,
+      errABdf,
+      totdf
+    ),
+    strata = list(
+      block = 1,
+      stripA = 2:3,
+      stripB = 4:5,
+      interaction = 6:7
+    ),
+    names = c(trtAname, trtBname)
   )
 }
 

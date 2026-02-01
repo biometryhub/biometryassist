@@ -87,6 +87,35 @@ test_that("Split plot designs are supported", {
                                 autoplot(d4), variant = ggplot2_variant())
 })
 
+test_that("Strip plot designs are supported", {
+    d_strip <- design(type = "strip", treatments = c("A", "B", "C", "D"),
+                      sub_treatments = c("E", "F"), reps = 4, nrows = 8,
+                      ncols = 4, brows = 4, bcols = 2, seed = 42, quiet = TRUE)
+
+    expect_design_output(d_strip, expected_seed = 42)
+    expect_design_df_starts_with(d_strip$design, c("row", "col"))
+    expect_design_df_has_cols(d_strip$design, c("plots", "block", "wholeplots", "subplots",
+                                               "wp_treatments", "sub_treatments", "treatments"))
+
+    # Strip-plot structural constraint: within each block, each within-block row
+    # has a single wp_treatments value; within each within-block column has a
+    # single sub_treatments value.
+    by_block_row <- aggregate(wp_treatments ~ block + row,
+                              data = d_strip$design,
+                              FUN = function(x) length(unique(x)))
+    expect_true(all(by_block_row$wp_treatments == 1))
+
+    by_block_col <- aggregate(sub_treatments ~ block + col,
+                              data = d_strip$design,
+                              FUN = function(x) length(unique(x)))
+    expect_true(all(by_block_col$sub_treatments == 1))
+
+    satab_text <- paste0(d_strip$satab, collapse = "")
+    expect_match(satab_text, "Block stratum\\s+3")
+    expect_match(satab_text, "Interaction Residual\\s+9")
+    expect_match(satab_text, "Total\\s+31")
+})
+
 test_that("Split plot designs with names are supported", {
     d4.1 <- design(type = "split", treatments = c("A", "B"),
                    sub_treatments = 1:4, reps = 4, nrows = 8,

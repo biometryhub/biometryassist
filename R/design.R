@@ -1,14 +1,14 @@
 #' Create a complete experimental design with graph of design layout and skeletal ANOVA table
 #'
-#' @param type The type of design. Supported design types are `crd`, `rcbd`, `lsd`, `crossed:<type>` where `<type>` is one of the previous types, and `split`. See Details for more information.
+#' @param type The design type. One of `crd`, `rcbd`, `lsd`, `split`, `strip`, or a crossed factorial specified as `crossed:<base>` where `<base>` is one of `crd`, `rcbd`, or `lsd`.
 #' @param treatments A vector containing the treatment names or labels.
 #' @param reps The number of replicates. Ignored for Latin Square Designs.
 #' @param nrows The number of rows in the design.
 #' @param ncols The number of columns in the design.
-#' @param brows For RCBD and Split Plot designs. The number of rows in a block.
-#' @param bcols For RCBD and Split Plot designs. The number of columns in a block.
-#' @param byrow For split-plot only. Logical (default `TRUE`). Provides a way to arrange plots within whole-plots when there are multiple possible arrangements.
-#' @param sub_treatments A vector of treatments for sub-plots in a split plot design.
+#' @param brows For RCBD, split-plot and strip-plot designs. The number of rows in a block.
+#' @param bcols For RCBD, split-plot and strip-plot designs. The number of columns in a block.
+#' @param byrow For split-plot and strip-plot designs. Logical (default `TRUE`). Controls the within-block arrangement when there are multiple valid layouts.
+#' @param sub_treatments A vector of treatments for the sub-plot factor (required for `split` and `strip`).
 #' @param fac.names Allows renaming of the `A` level of factorial designs (i.e. those using [agricolae::design.ab()]) by passing (optionally named) vectors of new labels to be applied to the factors within a list. See examples and details for more information.
 #' @param fac.sep The separator used by `fac.names`. Used to combine factorial design levels. If a vector of 2 levels is supplied, the first separates factor levels and label, and the second separates the different factors.
 #' @param buffer A string specifying the buffer plots to include for plotting. Default is `NULL` (no buffers plotted). Other options are "edge" (outer edge of trial area), "rows" (between rows), "columns" (between columns), "double row" (a buffer row each side of a treatment row) or "double column" (a buffer row each side of a treatment column). "blocks" (a buffer around each treatment block) will be implemented in a future release.
@@ -23,7 +23,7 @@
 #' @param quiet Logical (default `FALSE`). Hide the output.
 #' @param ... Additional parameters passed to [ggplot2::ggsave()] for saving the plot.
 #'
-#' @details The designs currently supported by `type` are Completely Randomised designs (`crd`), Randomised Complete Block designs (`rcbd`), Latin Square Designs (`lsd`), Factorial with crossed structure (use `crossed:<type>` where `<type>` is one of the previous types e.g. `crossed:crd`) and Split Plot designs (`split`). Nested factorial designs are supported through manual setup, see Examples.
+#' @details Supported designs are Completely Randomised (`crd`), Randomised Complete Block (`rcbd`), Latin Square (`lsd`), split-plot (`split`), strip-plot (`strip`), and crossed factorial designs via `crossed:<base>` where `<base>` is `crd`, `rcbd`, or `lsd` (e.g. `crossed:crd`).
 #' @details If `save = TRUE` (or `"both"`), both the plot and the workbook will be saved to the current working directory, with filename given by `savename`. If one of either `"plot"` or `"workbook"` is specified, only that output is saved. If `save = FALSE` (the default, or equivalently `"none"`), nothing will be output.
 #' @details `fac.names` can be supplied to provide more intuitive names for factors and their levels in factorial and split plot designs. They can be specified in a list format, for example `fac.names = list(A_names = c("a", "b", "c"), B_names = c("x", "y", "z"))`. This will result a design output with a column named `A_names` with levels `a, b, c` and another named `B_names` with levels `x, y, z`. Labels can also be supplied as a character vector (e.g. `c("A", "B")`) which will result in only the treatment column names being renamed. Only the first two elements of the list will be used, except in the case of a 3-way factorial design.
 #' @details `...` allows extra arguments to be passed to `ggsave()` for output of the plot. The details of possible arguments can be found in  [ggplot2::ggsave()].
@@ -145,7 +145,7 @@ design <- function(type,
     # Apply factor names if this is a factorial or split design
     if (design_info$is_factorial) {
         outdesign$book <- apply_factor_names(outdesign$book, fac.names, "factorial")
-    } else if (design_info$type == "split") {
+    } else if (design_info$type %in% c("split", "strip")) {
         outdesign$book <- apply_factor_names(outdesign$book, fac.names, "split")
     }
 
@@ -302,7 +302,7 @@ des_info <- function(design.obj,
                 }
             }
         }
-    } else if (design_info$type == "split" && !is.null(fac.names)) {
+    } else if ((design_info$type == "split" || design_info$type == "strip") && !is.null(fac.names)) {
         # For split designs, rename the treatment columns
         if (is.list(fac.names)) {
             # In split designs, `treatments` is the combined whole+sub treatment.
@@ -421,6 +421,17 @@ create_agricolae_design <- function(parsed_type, treatments, reps,
                             seed = seed_value
                           )
                         },
+                        strip = {
+                          if (is.null(sub_treatments) || anyNA(sub_treatments)) {
+                            stop("sub_treatments are required for a strip plot design", call. = FALSE)
+                          }
+                          agricolae::design.strip(
+                            trt1 = treatments,
+                            trt2 = sub_treatments,
+                            r = reps,
+                            seed = seed_value
+                          )
+                        },
                         stop("Unknown design type: ", parsed_type$base, call. = FALSE)
     )
   }
@@ -444,6 +455,7 @@ build_design <- function(design.obj, design_type, nrows, ncols,
                                                         brows, bcols, fac.sep),
                   factorial_lsd = build_factorial_lsd(design.obj$book, fac.sep),
                   split = build_split(design.obj$book, nrows, ncols, brows, bcols, byrow),
+                  strip = build_strip(design.obj$book, nrows, ncols, brows, bcols, byrow),
                   stop("Unsupported design type: ", design_type, call. = FALSE)
     )
 
@@ -540,6 +552,115 @@ build_split <- function(design_book, nrows, ncols, brows, bcols, byrow) {
     des
 }
 
+#' Build Strip Plot Design
+#' @noRd
+build_strip <- function(design_book, nrows, ncols, brows, bcols, byrow) {
+    if (anyNA(c(brows, bcols))) {
+        stop("Strip plot designs require brows and bcols.", call. = FALSE)
+    }
+
+    if (brows <= 1 || bcols <= 1) {
+        stop(
+            "Strip plot designs require blocks with more than one row and more than one column (brows > 1 and bcols > 1).",
+            call. = FALSE
+        )
+    }
+
+    if ((nrows %% brows) != 0 || (ncols %% bcols) != 0) {
+        stop(
+            "For strip plot designs, nrows must be a multiple of brows and ncols must be a multiple of bcols so blocks tile the layout.",
+            call. = FALSE
+        )
+    }
+
+    if (!all(c("treatments", "sub_treatments") %in% names(design_book))) {
+        stop(
+            "Expected strip plot design book to contain 'treatments' and 'sub_treatments' columns.",
+            call. = FALSE
+        )
+    }
+
+    if (nrow(design_book) != (nrows * ncols)) {
+        stop(
+            "Strip plot layout area (nrows * ncols) must match the number of plots implied by reps, treatments, and sub_treatments.",
+            call. = FALSE
+        )
+    }
+
+    # Determine row-strip and column-strip treatment levels from the design book.
+    # For classic strip-plot designs, one treatment is applied to each row and
+    # one (different) treatment is applied to each column within each block.
+    row_levels <- if (is.factor(design_book$treatments)) levels(design_book$treatments) else unique(design_book$treatments)
+    col_levels <- if (is.factor(design_book$sub_treatments)) levels(design_book$sub_treatments) else unique(design_book$sub_treatments)
+
+    if (length(row_levels) != brows) {
+        stop(
+            "Strip plot designs apply one treatment to each row within a block, so length(treatments) must equal brows.",
+            call. = FALSE
+        )
+    }
+
+    if (length(col_levels) != bcols) {
+        stop(
+            "Strip plot designs apply one treatment to each column within a block, so length(sub_treatments) must equal bcols.",
+            call. = FALSE
+        )
+    }
+
+    # Create a deterministic tiling of blocks across the whole layout.
+    # Block numbering is row-major across block tiles.
+    rr <- as.integer(nrows / brows)
+    cc <- as.integer(ncols / bcols)
+
+    if ("block" %in% names(design_book) && n_unique(design_book$block) != (rr * cc)) {
+        stop(
+            "Strip plot designs require one block per replicate; the number of blocks implied by brows/bcols does not match the design book.",
+            call. = FALSE
+        )
+    }
+
+    plan <- expand.grid(row = 1:nrows, col = 1:ncols)
+    plan$block <- ((plan$row - 1L) %/% brows) * cc + ((plan$col - 1L) %/% bcols) + 1L
+
+    # Within-block indices identify the row-strip and column-strip.
+    wholeplots <- ((plan$row - 1L) %% brows) + 1L
+    subplots <- ((plan$col - 1L) %% bcols) + 1L
+
+    # Assign treatments so that within each block:
+    # - all plots in the same within-block row share the row treatment
+    # - all plots in the same within-block column share the column treatment
+    wp_treatments <- vector(mode = "character", length = nrow(plan))
+    sp_treatments <- vector(mode = "character", length = nrow(plan))
+
+    for (blk in sort(unique(plan$block))) {
+        idx <- which(plan$block == blk)
+        row_map <- sample(row_levels, size = brows, replace = FALSE)
+        col_map <- sample(col_levels, size = bcols, replace = FALSE)
+        wp_treatments[idx] <- row_map[wholeplots[idx]]
+        sp_treatments[idx] <- col_map[subplots[idx]]
+    }
+
+    des <- cbind(
+        plan,
+        plots = seq_len(nrow(plan)),
+        wholeplots = wholeplots,
+        subplots = subplots,
+        wp_treatments = wp_treatments,
+        sub_treatments = sp_treatments
+    )
+
+    des$treatments <- factor(paste(des$wp_treatments, des$sub_treatments, sep = "_"))
+
+    # Order by column within blocks if requested (keeps treatments fixed,
+    # but swaps the coordinates to provide the alternative arrangement).
+    if (!byrow) {
+        des[, c("row", "col", "block")] <- des[order(des$block, des$col, des$row),
+                                                 c("row", "col", "block")]
+    }
+
+    des
+}
+
 #' Normalise Agricolae Book Column Names
 #'
 #' Agricolae design functions sometimes name treatment columns based on the
@@ -564,7 +685,8 @@ normalise_agricolae_book <- function(design_book, design_info) {
 
     struct_cols_common <- c("plots", "block", "r", "row", "col")
 
-    if (identical(design_info$type, "split") || identical(design_info$base, "split")) {
+    if (identical(design_info$type, "split") || identical(design_info$base, "split") ||
+        identical(design_info$type, "strip") || identical(design_info$base, "strip")) {
         # Preferred explicit names
         rename_col("trt1", "treatments")
         rename_col("trt2", "sub_treatments")

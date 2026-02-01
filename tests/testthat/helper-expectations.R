@@ -107,3 +107,13 @@ expect_csv_matches_df <- function(df, csv_path, tolerance = 1e-6) {
         }
     }
 }
+
+# Helpers for capturing condition output in tests
+
+capture_messages_text <- function(expr) {
+  paste(testthat::capture_messages(expr), collapse = "\n")
+}
+
+capture_warnings_text <- function(expr) {
+  paste(testthat::capture_warnings(expr), collapse = "\n")
+}

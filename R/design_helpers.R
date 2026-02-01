@@ -32,25 +32,25 @@ calculate_block_layout <- function(nrows, ncols, brows, bcols, ntrt, block_vec =
   }
   rr <- nrows / brows
   cc <- ncols / bcols
-  
+
   # Blocking across rows: brows == ntrt in a single column
   if (brows == ntrt) {
     plan <- expand.grid(row = 1:nrows, col = 1:ncols)
     return(reorder_row_col(plan))
   }
-  
+
   # Blocking incomplete rows all columns
   if (rr > 1 & cc == 1) {
     plan <- expand.grid(col = 1:ncols, row = 1:nrows)
     return(reorder_row_col(plan))
   }
-  
+
   # Blocking across columns: bcols == ntrt in a single row
   if (bcols == ntrt) {
     plan <- expand.grid(col = 1:ncols, row = 1:nrows)
     return(reorder_row_col(plan))
   }
-  
+
   # Blocking incomplete rows and incomplete columns
   if (rr > 1 & cc > 1) {
     plan <- expand.grid(row = 1:nrows, col = 1:ncols)
@@ -59,9 +59,9 @@ calculate_block_layout <- function(nrows, ncols, brows, bcols, ntrt, block_vec =
     }
     plan$col <- NA
     plan$row <- NA
-    
+
     pp <- expand.grid(col = 1:bcols, row = 1:brows)
-    
+
     i <- 1
     for (j in 1:rr) {
       for (k in 1:cc) {
@@ -73,7 +73,7 @@ calculate_block_layout <- function(nrows, ncols, brows, bcols, ntrt, block_vec =
     plan$block <- NULL
     return(reorder_row_col(plan))
   }
-  
+
   # Blocking incomplete columns all rows
   if (cc > 1 & rr == 1) {
     plan <- expand.grid(row = 1:nrows, col = 1:ncols)
@@ -82,9 +82,9 @@ calculate_block_layout <- function(nrows, ncols, brows, bcols, ntrt, block_vec =
     }
     plan$col <- NA
     plan$row <- NA
-    
+
     pp <- expand.grid(col = 1:bcols, row = 1:brows)
-    
+
     i <- 1
     for (k in 1:cc) {
       plan$col[plan$block == i] <- pp$col + (k - 1) * bcols
@@ -94,7 +94,7 @@ calculate_block_layout <- function(nrows, ncols, brows, bcols, ntrt, block_vec =
     plan$block <- NULL
     return(reorder_row_col(plan))
   }
-  
+
   # Default fallback
   reorder_row_col(expand.grid(row = 1:nrows, col = 1:ncols))
 }
@@ -207,7 +207,7 @@ apply_factor_names <- function(design_book, fac.names, design_type = "factorial"
 #' @noRd
 get_design_info <- function(design_obj) {
   base_design <- design_obj$parameters$design
-  
+
   if (base_design == "factorial") {
     applied <- design_obj$parameters$applied
     list(
@@ -232,10 +232,20 @@ get_design_info <- function(design_obj) {
 #' @param bcols Columns per block
 #' @noRd
 validate_block_params <- function(design_info, brows, bcols) {
-  needs_blocks <- design_info$base %in% c("rcbd", "split")
-  
+  needs_blocks <- design_info$base %in% c("rcbd", "split", "strip")
+
   if (needs_blocks && anyNA(c(brows, bcols))) {
     stop("Design has blocks so brows and bcols must be supplied.", call. = FALSE)
+  }
+
+  # Strip-plot designs require blocks that have both multiple rows and columns
+  # so that row-strips and column-strips can be applied within each block.
+  if (identical(design_info$base, "strip") && (brows <= 1 || bcols <= 1)) {
+    stop(
+      "Strip plot designs require blocks with more than one row and more than one column. ",
+      "Please supply brows > 1 and bcols > 1.",
+      call. = FALSE
+    )
   }
 }
 
@@ -249,16 +259,39 @@ prepare_split_design <- function(design_book) {
   numsp <- max(as.numeric(design_book$splots))
   lenblk <- as.vector(table(design_book$block)[1])
   numwp <- lenblk / numsp
-  
+
   design_book$wplots <- rep(
     rep(1:numwp, each = numsp),
     max(as.numeric(design_book$block))
   )
-  
+
   design_book <- design_book[, c(1, 3, 6, 2, 4, 5)]
   colnames(design_book)[colnames(design_book) == "wplots"] <- "wholeplots"
   colnames(design_book)[colnames(design_book) == "splots"] <- "subplots"
-  
+
+  design_book
+}
+
+#' Prepare Strip Plot Design
+#'
+#' Adds wholeplot and subplot columns to strip plot design
+#' @param design_book The design book
+#' @return Modified design book
+#' @noRd
+prepare_strip_design <- function(design_book) {
+  # numsp <- max(as.numeric(design_book$splots))
+  lenblk <- as.vector(table(design_book$block)[1])
+  numwp <- lenblk / numsp
+
+  design_book$wplots <- rep(
+    rep(1:numwp, each = numsp),
+    max(as.numeric(design_book$block))
+  )
+
+  design_book <- design_book[, c(1, 3, 6, 2, 4, 5)]
+  colnames(design_book)[colnames(design_book) == "wplots"] <- "wholeplots"
+  colnames(design_book)[colnames(design_book) == "splots"] <- "subplots"
+
   design_book
 }
 
@@ -268,15 +301,15 @@ validate_design_inputs <- function(nrows, ncols, brows, bcols, size, seed) {
   if (!is.na(brows) && brows > nrows) {
     stop("brows must not be larger than nrows", call. = FALSE)
   }
-  
+
   if (!is.na(bcols) && bcols > ncols) {
     stop("bcols must not be larger than ncols", call. = FALSE)
   }
-  
+
   if (!is.numeric(size)) {
     stop("size must be numeric", call. = FALSE)
   }
-  
+
   if ((!is.logical(seed) || is.na(seed)) && !is.numeric(seed)) {
     stop("seed must be numeric or TRUE/FALSE", call. = FALSE)
   }
@@ -290,37 +323,37 @@ parse_design_type <- function(type) {
   if (length(type) != 1L || is.na(type)) {
     stop("type must be a single non-missing string", call. = FALSE)
   }
-  
+
   type_lower <- trimws(tolower(as.character(type)))
   if (!nzchar(type_lower)) {
     stop("type must be a non-empty string", call. = FALSE)
   }
-  
+
   # Check if factorial (crossed). Require an explicit 'crossed:' prefix.
   if (grepl("^crossed\\s*:", type_lower)) {
     base_type <- sub("^crossed\\s*:\\s*", "", type_lower)
-    
+
     if (!nzchar(base_type)) {
       stop("Crossed factorial designs must be specified as 'crossed:<type>'", call. = FALSE)
     }
-    
+
     if (base_type %!in% c("crd", "rcbd", "lsd")) {
       stop("Crossed designs of type '", base_type, "' are not supported", call. = FALSE)
     }
-    
+
     return(list(
       base = base_type,
       is_factorial = TRUE,
       full_type = paste0("factorial_", base_type)
     ))
   }
-  
+
   # Non-factorial designs
-  valid_types <- c("crd", "rcbd", "lsd", "split")
+  valid_types <- c("crd", "rcbd", "lsd", "split", "strip")
   if (type_lower %!in% valid_types) {
     stop("Designs of type '", type, "' are not supported", call. = FALSE)
   }
-  
+
   return(list(
     base = type_lower,
     is_factorial = FALSE,
@@ -338,12 +371,13 @@ calculate_total_plots <- function(parsed_type, treatments, reps, sub_treatments)
       return(prod(treatments) * reps)
     }
   }
-  
+
   switch(parsed_type$base,
          crd = length(treatments) * reps,
          rcbd = length(treatments) * reps,
          lsd = length(treatments)^2,
          split = length(treatments) * length(sub_treatments) * reps,
+         strip = length(treatments) * length(sub_treatments) * reps,
          stop("Unknown design type")
   )
 }
@@ -355,7 +389,7 @@ validate_dimensions <- function(dim, trs) {
     warning("Area provided is larger than treatments applied. Please check inputs.",
             call. = FALSE)
   }
-  
+
   if (dim < trs) {
     warning("Area provided is smaller than treatments applied. Please check inputs.",
             call. = FALSE)
@@ -372,7 +406,7 @@ handle_save <- function(save, savename, plottype, info, ...) {
   } else {
     output <- "none"
   }
-  
+
   if (output == "plot") {
     ggplot2::ggsave(filename = paste0(savename, ".", plottype), ...)
   } else if (output == "workbook") {
