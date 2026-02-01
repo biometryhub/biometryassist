@@ -30,7 +30,7 @@ design(
 )
 }
 \arguments{
-\item{type}{The type of design. Supported design types are \code{crd}, \code{rcbd}, \code{lsd}, \verb{crossed:<type>} where \verb{<type>} is one of the previous types, and \code{split}. See Details for more information.}
+\item{type}{The design type. One of \code{crd}, \code{rcbd}, \code{lsd}, \code{split}, \code{strip}, or a crossed factorial specified as \verb{crossed:<base>} where \verb{<base>} is one of \code{crd}, \code{rcbd}, or \code{lsd}.}
 
 \item{treatments}{A vector containing the treatment names or labels.}
 
@@ -40,13 +40,13 @@ design(
 
 \item{ncols}{The number of columns in the design.}
 
-\item{brows}{For RCBD and Split Plot designs. The number of rows in a block.}
+\item{brows}{For RCBD, split-plot and strip-plot designs. The number of rows in a block.}
 
-\item{bcols}{For RCBD and Split Plot designs. The number of columns in a block.}
+\item{bcols}{For RCBD, split-plot and strip-plot designs. The number of columns in a block.}
 
-\item{byrow}{For split-plot only. Logical (default \code{TRUE}). Provides a way to arrange plots within whole-plots when there are multiple possible arrangements.}
+\item{byrow}{For split-plot and strip-plot designs. Logical (default \code{TRUE}). Controls the within-block arrangement when there are multiple valid layouts.}
 
-\item{sub_treatments}{A vector of treatments for sub-plots in a split plot design.}
+\item{sub_treatments}{A vector of treatments for the sub-plot factor (required for \code{split} and \code{strip}).}
 
 \item{fac.names}{Allows renaming of the \code{A} level of factorial designs (i.e. those using \code{\link[agricolae:design.ab]{agricolae::design.ab()}}) by passing (optionally named) vectors of new labels to be applied to the factors within a list. See examples and details for more information.}
 
@@ -81,7 +81,7 @@ A list containing a data frame with the complete design (\verb{$design}), a ggpl
 Create a complete experimental design with graph of design layout and skeletal ANOVA table
 }
 \details{
-The designs currently supported by \code{type} are Completely Randomised designs (\code{crd}), Randomised Complete Block designs (\code{rcbd}), Latin Square Designs (\code{lsd}), Factorial with crossed structure (use \verb{crossed:<type>} where \verb{<type>} is one of the previous types e.g. \code{crossed:crd}) and Split Plot designs (\code{split}). Nested factorial designs are supported through manual setup, see Examples.
+Supported designs are Completely Randomised (\code{crd}), Randomised Complete Block (\code{rcbd}), Latin Square (\code{lsd}), split-plot (\code{split}), strip-plot (\code{strip}), and crossed factorial designs via \verb{crossed:<base>} where \verb{<base>} is \code{crd}, \code{rcbd}, or \code{lsd} (e.g. \code{crossed:crd}).
 
 If \code{save = TRUE} (or \code{"both"}), both the plot and the workbook will be saved to the current working directory, with filename given by \code{savename}. If one of either \code{"plot"} or \code{"workbook"} is specified, only that output is saved. If \code{save = FALSE} (the default, or equivalently \code{"none"}), nothing will be output.
 

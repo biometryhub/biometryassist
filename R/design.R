@@ -9,7 +9,7 @@
 #' @param bcols For RCBD, split-plot and strip-plot designs. The number of columns in a block.
 #' @param byrow For split-plot and strip-plot designs. Logical (default `TRUE`). Controls the within-block arrangement when there are multiple valid layouts.
 #' @param sub_treatments A vector of treatments for the sub-plot factor (required for `split` and `strip`).
-#' @param fac.names Allows renaming of the `A` level of factorial designs (i.e. those using [agricolae::design.ab()]) by passing (optionally named) vectors of new labels to be applied to the factors within a list. See examples and details for more information.
+#' @param fac.names Allows renaming of the `A` level of factorial designs by passing (optionally named) vectors of new labels to be applied to the factors within a list. See examples and details for more information.
 #' @param fac.sep The separator used by `fac.names`. Used to combine factorial design levels. If a vector of 2 levels is supplied, the first separates factor levels and label, and the second separates the different factors.
 #' @param buffer A string specifying the buffer plots to include for plotting. Default is `NULL` (no buffers plotted). Other options are "edge" (outer edge of trial area), "rows" (between rows), "columns" (between columns), "double row" (a buffer row each side of a treatment row) or "double column" (a buffer row each side of a treatment column). "blocks" (a buffer around each treatment block) will be implemented in a future release.
 #' @param plot Logical (default `TRUE`). If `TRUE`, display a plot of the generated design. A plot can always be produced later using [autoplot()].
@@ -372,6 +372,8 @@ des_info <- function(design.obj,
 #' Create Agricolae Design Object
 #'
 #' Calls the appropriate agricolae design function
+#' @importFrom agricolae design.ab design.crd design.rcbd design.lsd design.split design.strip
+#'
 #' @noRd
 create_agricolae_design <- function(parsed_type, treatments, reps,
                                     sub_treatments, seed) {
