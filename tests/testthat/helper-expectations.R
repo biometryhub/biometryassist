@@ -59,13 +59,22 @@ expect_design_output <- function(x,
     testthat::expect_true(inherits(x, "design"))
     testthat::expect_true(is.data.frame(x$design))
 
+    testthat::expect_true(!is.null(x$satab))
+    testthat::expect_true(inherits(x$satab, "satab"))
+
     if (!is.null(expected_seed)) {
         testthat::expect_identical(x$seed, expected_seed)
+    }
+
+    if ("seed" %in% expected_names) {
+        testthat::expect_true(length(x$seed) == 1L)
+        testthat::expect_true(is.numeric(x$seed))
     }
 
     # When plot.des isn't returned, `$` will yield NULL
     if (isTRUE(expect_plot)) {
         testthat::expect_false(is.null(x$plot.des))
+        testthat::expect_true(inherits(x$plot.des, c("ggplot", "patchwork")))
     } else {
         testthat::expect_null(x$plot.des)
     }

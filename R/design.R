@@ -82,6 +82,10 @@
 #'                   reps = 4, nrows = 8, ncols = 4, brows = 4, bcols = 2,
 #'                   byrow = FALSE, seed = 42)
 #'
+#' # Strip plot design
+#' des.out <- design(type = "strip", treatments = c("A", "B", "C"), sub_treatments = 1:4,
+#'                   reps = 4, nrows = 12, ncols = 4, brows = 3, bcols = 4, seed = 42)
+#'
 design <- function(type,
                    treatments,
                    reps,
@@ -557,69 +561,17 @@ build_split <- function(design_book, nrows, ncols, brows, bcols, byrow) {
 #' Build Strip Plot Design
 #' @noRd
 build_strip <- function(design_book, nrows, ncols, brows, bcols, byrow) {
-    if (anyNA(c(brows, bcols))) {
-        stop("Strip plot designs require brows and bcols.", call. = FALSE)
-    }
-
-    if (brows <= 1 || bcols <= 1) {
-        stop(
-            "Strip plot designs require blocks with more than one row and more than one column (brows > 1 and bcols > 1).",
-            call. = FALSE
-        )
-    }
-
-    if ((nrows %% brows) != 0 || (ncols %% bcols) != 0) {
-        stop(
-            "For strip plot designs, nrows must be a multiple of brows and ncols must be a multiple of bcols so blocks tile the layout.",
-            call. = FALSE
-        )
-    }
-
-    if (!all(c("treatments", "sub_treatments") %in% names(design_book))) {
-        stop(
-            "Expected strip plot design book to contain 'treatments' and 'sub_treatments' columns.",
-            call. = FALSE
-        )
-    }
-
-    if (nrow(design_book) != (nrows * ncols)) {
-        stop(
-            "Strip plot layout area (nrows * ncols) must match the number of plots implied by reps, treatments, and sub_treatments.",
-            call. = FALSE
-        )
-    }
+    strip_info <- validate_strip_inputs(design_book, nrows, ncols, brows, bcols)
 
     # Determine row-strip and column-strip treatment levels from the design book.
     # For classic strip-plot designs, one treatment is applied to each row and
     # one (different) treatment is applied to each column within each block.
-    row_levels <- if (is.factor(design_book$treatments)) levels(design_book$treatments) else unique(design_book$treatments)
-    col_levels <- if (is.factor(design_book$sub_treatments)) levels(design_book$sub_treatments) else unique(design_book$sub_treatments)
-
-    if (length(row_levels) != brows) {
-        stop(
-            "Strip plot designs apply one treatment to each row within a block, so length(treatments) must equal brows.",
-            call. = FALSE
-        )
-    }
-
-    if (length(col_levels) != bcols) {
-        stop(
-            "Strip plot designs apply one treatment to each column within a block, so length(sub_treatments) must equal bcols.",
-            call. = FALSE
-        )
-    }
+    row_levels <- strip_info$row_levels
+    col_levels <- strip_info$col_levels
 
     # Create a deterministic tiling of blocks across the whole layout.
     # Block numbering is row-major across block tiles.
-    rr <- as.integer(nrows / brows)
-    cc <- as.integer(ncols / bcols)
-
-    if ("block" %in% names(design_book) && n_unique(design_book$block) != (rr * cc)) {
-        stop(
-            "Strip plot designs require one block per replicate; the number of blocks implied by brows/bcols does not match the design book.",
-            call. = FALSE
-        )
-    }
+    cc <- strip_info$cc
 
     plan <- expand.grid(row = 1:nrows, col = 1:ncols)
     plan$block <- ((plan$row - 1L) %/% brows) * cc + ((plan$col - 1L) %/% bcols) + 1L

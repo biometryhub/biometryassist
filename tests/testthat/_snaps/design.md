@@ -146,20 +146,6 @@
     =============================================
     Total                                   23
 
----
-
-    Source of Variation                     df
-    =============================================
-    Block stratum                           2
-    ---------------------------------------------
-    X                                       1
-    Y                                       1
-    Z                                       1
-    X:Y:Z                                   1
-    Residual                                17
-    =============================================
-    Total                                   23
-
 # Adding names to 3 way factorial designs works
 
     Source of Variation                     df

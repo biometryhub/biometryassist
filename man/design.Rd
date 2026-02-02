@@ -48,7 +48,7 @@ design(
 
 \item{sub_treatments}{A vector of treatments for the sub-plot factor (required for \code{split} and \code{strip}).}
 
-\item{fac.names}{Allows renaming of the \code{A} level of factorial designs (i.e. those using \code{\link[agricolae:design.ab]{agricolae::design.ab()}}) by passing (optionally named) vectors of new labels to be applied to the factors within a list. See examples and details for more information.}
+\item{fac.names}{Allows renaming of the \code{A} level of factorial designs by passing (optionally named) vectors of new labels to be applied to the factors within a list. See examples and details for more information.}
 
 \item{fac.sep}{The separator used by \code{fac.names}. Used to combine factorial design levels. If a vector of 2 levels is supplied, the first separates factor levels and label, and the second separates the different factors.}
 
@@ -133,5 +133,9 @@ des.out <- design(type = "split", treatments = c("A", "B"), sub_treatments = 1:4
 des.out <- design(type = "split", treatments = c("A", "B"), sub_treatments = 1:4,
                   reps = 4, nrows = 8, ncols = 4, brows = 4, bcols = 2,
                   byrow = FALSE, seed = 42)
+
+# Strip plot design
+des.out <- design(type = "strip", treatments = c("A", "B", "C"), sub_treatments = 1:4,
+                  reps = 4, nrows = 12, ncols = 4, brows = 3, bcols = 4, seed = 42)
 
 }

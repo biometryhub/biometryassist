@@ -249,6 +249,88 @@ validate_block_params <- function(design_info, brows, bcols) {
   }
 }
 
+#' Validate Strip-Plot Layout Inputs
+#'
+#' Centralises strip-plot-specific validation and returns derived layout info.
+#' @param design_book The design book data frame
+#' @param nrows Number of rows in the overall layout
+#' @param ncols Number of columns in the overall layout
+#' @param brows Rows per block
+#' @param bcols Columns per block
+#' @return List with row_levels, col_levels, rr and cc
+#' @noRd
+validate_strip_inputs <- function(design_book, nrows, ncols, brows, bcols) {
+  if (anyNA(c(brows, bcols))) {
+    stop("Strip plot designs require brows and bcols.", call. = FALSE)
+  }
+
+  if (brows <= 1 || bcols <= 1) {
+    stop(
+      "Strip plot designs require blocks with more than one row and more than one column (brows > 1 and bcols > 1).",
+      call. = FALSE
+    )
+  }
+
+  if ((nrows %% brows) != 0 || (ncols %% bcols) != 0) {
+    stop(
+      "For strip plot designs, nrows must be a multiple of brows and ncols must be a multiple of bcols so blocks tile the layout.",
+      call. = FALSE
+    )
+  }
+
+  if (!all(c("treatments", "sub_treatments") %in% names(design_book))) {
+    stop(
+      "Expected strip plot design book to contain 'treatments' and 'sub_treatments' columns.",
+      call. = FALSE
+    )
+  }
+
+  if (nrow(design_book) != (nrows * ncols)) {
+    stop(
+      "Strip plot layout area (nrows * ncols) must match the number of plots implied by reps, treatments, and sub_treatments.",
+      call. = FALSE
+    )
+  }
+
+  row_levels <- if (is.factor(design_book$treatments)) {
+    levels(design_book$treatments)
+  } else {
+    unique(design_book$treatments)
+  }
+
+  col_levels <- if (is.factor(design_book$sub_treatments)) {
+    levels(design_book$sub_treatments)
+  } else {
+    unique(design_book$sub_treatments)
+  }
+
+  if (length(row_levels) != brows) {
+    stop(
+      "Strip plot designs apply one treatment to each row within a block, so length(treatments) must equal brows.",
+      call. = FALSE
+    )
+  }
+
+  if (length(col_levels) != bcols) {
+    stop(
+      "Strip plot designs apply one treatment to each column within a block, so length(sub_treatments) must equal bcols.",
+      call. = FALSE
+    )
+  }
+
+  rr <- as.integer(nrows / brows)
+  cc <- as.integer(ncols / bcols)
+
+  if ("block" %in% names(design_book) && n_unique(design_book$block) != (rr * cc)) {
+    stop(
+      "Strip plot designs require one block per replicate; the number of blocks implied by brows/bcols does not match the design book.",
+      call. = FALSE
+    )
+  }
+
+  list(row_levels = row_levels, col_levels = col_levels, rr = rr, cc = cc)
+}
+
 #' Prepare Split Plot Design
 #'
 #' Adds wholeplot and subplot columns to split design
@@ -257,29 +339,6 @@ validate_block_params <- function(design_info, brows, bcols) {
 #' @noRd
 prepare_split_design <- function(design_book) {
   numsp <- max(as.numeric(design_book$splots))
-  lenblk <- as.vector(table(design_book$block)[1])
-  numwp <- lenblk / numsp
-
-  design_book$wplots <- rep(
-    rep(1:numwp, each = numsp),
-    max(as.numeric(design_book$block))
-  )
-
-  design_book <- design_book[, c(1, 3, 6, 2, 4, 5)]
-  colnames(design_book)[colnames(design_book) == "wplots"] <- "wholeplots"
-  colnames(design_book)[colnames(design_book) == "splots"] <- "subplots"
-
-  design_book
-}
-
-#' Prepare Strip Plot Design
-#'
-#' Adds wholeplot and subplot columns to strip plot design
-#' @param design_book The design book
-#' @return Modified design book
-#' @noRd
-prepare_strip_design <- function(design_book) {
-  # numsp <- max(as.numeric(design_book$splots))
   lenblk <- as.vector(table(design_book$block)[1])
   numwp <- lenblk / numsp
 

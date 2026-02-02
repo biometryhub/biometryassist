@@ -95,7 +95,7 @@ test_that("Strip plot designs are supported", {
     expect_design_output(d_strip, expected_seed = 42)
     expect_design_df_starts_with(d_strip$design, c("row", "col"))
     expect_design_df_has_cols(d_strip$design, c("plots", "block", "wholeplots", "subplots",
-                                               "wp_treatments", "sub_treatments", "treatments"))
+                                                "wp_treatments", "sub_treatments", "treatments"))
 
     # Strip-plot structural constraint: within each block, each within-block row
     # has a single wp_treatments value; within each within-block column has a
@@ -347,20 +347,6 @@ test_that("3 way factorial designs are possible", {
     expect_snapshot_output(d9.1$satab)
     vdiffr::expect_doppelganger(title = "3 way factorial with names",
                                 autoplot(d9.1), variant = ggplot2_variant())
-
-    d9.2 <- design(type = "crossed:rcbd", treatments = c(2, 2, 2),
-                   reps = 3, nrows = 8, ncols = 3, brows = 8, bcols = 1,
-                   fac.names = list(X = c("A", "B"), Y = 1:2, Z = c(10, 20)),
-                   seed = 42, quiet = TRUE)
-
-    expect_design_output(d9.2, expected_seed = 42)
-    expect_design_df_starts_with(d9.2$design, c("row", "col"))
-    expect_design_df_has_cols(d9.2$design, c("plots", "block", "X", "Y", "Z", "treatments"))
-    expect_equal(d9.2$satab[3],
-                 "Block stratum                           2\n")
-    expect_snapshot_output(d9.2$satab)
-    vdiffr::expect_doppelganger(title = "3 way rcbd factorial no names",
-                                autoplot(d9.2), variant = ggplot2_variant())
 })
 
 test_that("Adding names to 3 way factorial designs works", {
@@ -372,6 +358,9 @@ test_that("Adding names to 3 way factorial designs works", {
     expect_design_output(d9.2, expected_seed = 42)
     expect_design_df_starts_with(d9.2$design, c("row", "col"))
     expect_design_df_has_cols(d9.2$design, c("plots", "block", "X", "Y", "Z", "treatments"))
+    expect_identical(levels(d9.2$design$X), c("A", "B"))
+    expect_identical(levels(d9.2$design$Y), as.character(1:2))
+    expect_identical(levels(d9.2$design$Z), as.character(c(10, 20)))
     expect_equal(d9.2$satab[3],
                  "Block stratum                           2\n")
     expect_snapshot_output(d9.2$satab)
@@ -582,9 +571,11 @@ test_that("save = 'workbook' produces csv file and not plot", {
 })
 
 test_that("save = 'plot' produces plot file and not csv", {
-    design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4,
-           save = "plot", savename = "crd_design2", quiet = TRUE)
     withr::local_file("crd_design2.pdf")
+    expect_message(
+        design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4,
+               save = "plot", savename = "crd_design2", quiet = TRUE),
+        "Saving [0-9]\\.?[0-9]* x [0-9]\\.?[0-9]* in image")
     expect_false(file.exists("crd_design2.csv"))
     expect_true(file.exists("crd_design2.pdf"))
 })
@@ -592,8 +583,10 @@ test_that("save = 'plot' produces plot file and not csv", {
 test_that("save = 'both' produces plot file and csv", {
     withr::local_file("crd_design3.pdf")
     withr::local_file("crd_design3.csv")
-    d <- design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4,
-                save = "both", savename = "crd_design3", quiet = TRUE)
+    expect_message(
+        d <- design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4,
+                    save = "both", savename = "crd_design3", quiet = TRUE),
+        "Saving [0-9]\\.?[0-9]* x [0-9]\\.?[0-9]* in image")
 
     expect_csv_matches_df(d$design, "crd_design3.csv")
     expect_true(file.exists("crd_design3.pdf"))
@@ -602,8 +595,10 @@ test_that("save = 'both' produces plot file and csv", {
 test_that("save = TRUE produces plot file and csv", {
     withr::local_file("crd_design4.pdf")
     withr::local_file("crd_design4.csv")
-    d <- design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4,
-                save = TRUE, savename = "crd_design4", quiet = TRUE)
+    expect_message(
+        d <- design("crd", treatments = 1:11, reps = 4, nrows = 11, ncols = 4,
+                    save = TRUE, savename = "crd_design4", quiet = TRUE),
+        "Saving [0-9]\\.?[0-9]* x [0-9]\\.?[0-9]* in image")
 
     expect_csv_matches_df(d$design, "crd_design4.csv")
     expect_true(file.exists("crd_design4.pdf"))
@@ -885,7 +880,7 @@ test_that("Invalid palette option produces error", {
 test_that("Adding buffers to plots works", {
     # CRD
     d1_nobuffer <- design("crd", treatments = LETTERS[1:11], reps = 4,
-                 nrows = 11, ncols = 4, seed = 42, quiet = TRUE)
+                          nrows = 11, ncols = 4, seed = 42, quiet = TRUE)
     d1 <- design("crd", treatments = LETTERS[1:11], reps = 4,
                  nrows = 11, ncols = 4, seed = 42, quiet = TRUE, buffer = "row")
     d2 <- design("crd", treatments = LETTERS[1:11], reps = 4,
@@ -952,8 +947,8 @@ test_that("Adding buffers to plots works for RCBD", {
 test_that("Invalid buffer options produce an error", {
     # RCBD
     expect_error(design("rcbd", treatments = LETTERS[1:11], reps = 4,
-                 nrows = 11, ncols = 4, brows = 11, bcols = 1,
-                 seed = 42, quiet = TRUE, buffer = "block"),
+                        nrows = 11, ncols = 4, brows = 11, bcols = 1,
+                        seed = 42, quiet = TRUE, buffer = "block"),
                  "Block buffers are not yet supported\\.")
 
     expect_error(design("rcbd", treatments = LETTERS[1:11], reps = 4,
