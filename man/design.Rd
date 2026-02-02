@@ -32,7 +32,7 @@ design(
 \arguments{
 \item{type}{The design type. One of \code{crd}, \code{rcbd}, \code{lsd}, \code{split}, \code{strip}, or a crossed factorial specified as \verb{crossed:<base>} where \verb{<base>} is one of \code{crd}, \code{rcbd}, or \code{lsd}.}
 
-\item{treatments}{A vector containing the treatment names or labels.}
+\item{treatments}{A vector containing the treatment names or labels. For split-plot designs, these treatments are applied to whole-plots. For strip-plot designs, these treatments are applied to row-strips (entire rows within each block receive the same treatment).}
 
 \item{reps}{The number of replicates. Ignored for Latin Square Designs.}
 
@@ -46,7 +46,7 @@ design(
 
 \item{byrow}{For split-plot and strip-plot designs. Logical (default \code{TRUE}). Controls the within-block arrangement when there are multiple valid layouts.}
 
-\item{sub_treatments}{A vector of treatments for the sub-plot factor (required for \code{split} and \code{strip}).}
+\item{sub_treatments}{A vector of treatments for the sub-plot factor (required for \code{split} and \code{strip}). For strip-plot designs, these treatments are applied to column-strips (entire columns within each block receive the same treatment). To apply treatments to columns instead of rows, swap the \code{treatments} and \code{sub_treatments} arguments.}
 
 \item{fac.names}{Allows renaming of the \code{A} level of factorial designs by passing (optionally named) vectors of new labels to be applied to the factors within a list. See examples and details for more information.}
 

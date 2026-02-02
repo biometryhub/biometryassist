@@ -1,14 +1,14 @@
 #' Create a complete experimental design with graph of design layout and skeletal ANOVA table
 #'
 #' @param type The design type. One of `crd`, `rcbd`, `lsd`, `split`, `strip`, or a crossed factorial specified as `crossed:<base>` where `<base>` is one of `crd`, `rcbd`, or `lsd`.
-#' @param treatments A vector containing the treatment names or labels.
+#' @param treatments A vector containing the treatment names or labels. For split-plot designs, these treatments are applied to whole-plots. For strip-plot designs, these treatments are applied to row-strips (entire rows within each block receive the same treatment).
 #' @param reps The number of replicates. Ignored for Latin Square Designs.
 #' @param nrows The number of rows in the design.
 #' @param ncols The number of columns in the design.
 #' @param brows For RCBD, split-plot and strip-plot designs. The number of rows in a block.
 #' @param bcols For RCBD, split-plot and strip-plot designs. The number of columns in a block.
 #' @param byrow For split-plot and strip-plot designs. Logical (default `TRUE`). Controls the within-block arrangement when there are multiple valid layouts.
-#' @param sub_treatments A vector of treatments for the sub-plot factor (required for `split` and `strip`).
+#' @param sub_treatments A vector of treatments for the sub-plot factor (required for `split` and `strip`). For strip-plot designs, these treatments are applied to column-strips (entire columns within each block receive the same treatment). To apply treatments to columns instead of rows, swap the `treatments` and `sub_treatments` arguments.
 #' @param fac.names Allows renaming of the `A` level of factorial designs by passing (optionally named) vectors of new labels to be applied to the factors within a list. See examples and details for more information.
 #' @param fac.sep The separator used by `fac.names`. Used to combine factorial design levels. If a vector of 2 levels is supplied, the first separates factor levels and label, and the second separates the different factors.
 #' @param buffer A string specifying the buffer plots to include for plotting. Default is `NULL` (no buffers plotted). Other options are "edge" (outer edge of trial area), "rows" (between rows), "columns" (between columns), "double row" (a buffer row each side of a treatment row) or "double column" (a buffer row each side of a treatment column). "blocks" (a buffer around each treatment block) will be implemented in a future release.
