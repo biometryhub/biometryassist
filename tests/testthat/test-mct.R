@@ -1,5 +1,260 @@
 dat.aov <- aov(Petal.Width ~ Species, data = iris)
 
+# ============================================================================
+# NEW TESTS FOR LIST STRUCTURE AND P-VALUE MATRIX
+# ============================================================================
+
+test_that("multiple_comparisons returns a list with correct structure", {
+    output <- multiple_comparisons(dat.aov, classify = "Species")
+
+    # Test that output is a list
+    expect_type(output, "list")
+    expect_s3_class(output, "mct")
+
+    # Test that all expected elements are present
+    expect_true("predictions" %in% names(output))
+    expect_true("pairwise_pvalues" %in% names(output))
+    expect_true("hsd" %in% names(output))
+    expect_true("sig_level" %in% names(output))
+
+    # Test that each element has the correct type
+    expect_s3_class(output$predictions, "data.frame")
+    expect_type(output$pairwise_pvalues, "double")
+    expect_true(is.matrix(output$pairwise_pvalues))
+    expect_type(output$hsd, "double")
+    expect_type(output$sig_level, "double")
+})
+
+test_that("predictions component has correct structure", {
+    output <- multiple_comparisons(dat.aov, classify = "Species")
+    pred <- output$predictions
+
+    # Check it's a data frame
+    expect_s3_class(pred, "data.frame")
+
+    # Check expected columns exist
+    expect_true("Species" %in% colnames(pred))
+    expect_true("predicted.value" %in% colnames(pred))
+    expect_true("std.error" %in% colnames(pred))
+    expect_true("low" %in% colnames(pred))
+    expect_true("up" %in% colnames(pred))
+    expect_true("groups" %in% colnames(pred))
+
+    # Check number of rows
+    expect_equal(nrow(pred), 3)  # 3 species
+
+    # Check values are correct
+    expect_equal(pred$predicted.value, c(0.25, 1.33, 2.03), tolerance = 5e-2)
+})
+
+test_that("p-value matrix has correct properties", {
+    output <- multiple_comparisons(dat.aov, classify = "Species")
+    pvals <- output$pairwise_pvalues
+
+    # Check it's a matrix
+    expect_true(is.matrix(pvals))
+
+    # Check dimensions
+    expect_equal(nrow(pvals), 3)
+    expect_equal(ncol(pvals), 3)
+
+    # Check row and column names
+    expect_equal(rownames(pvals), c("setosa", "versicolor", "virginica"))
+    expect_equal(colnames(pvals), c("setosa", "versicolor", "virginica"))
+
+    # Check diagonal is 1 (no difference with itself)
+    expect_equal(diag(pvals), c(setosa=1, versicolor=1, virginica=1))
+
+    # Check all values are in [0, 1]
+    expect_true(all(pvals >= 0 & pvals <= 1))
+
+    # Check symmetry
+    expect_true(isSymmetric(pvals))
+
+    # Check that p-values match expected significance
+    # setosa vs versicolor should be significant (different groups)
+    expect_true(pvals["setosa", "versicolor"] < 0.05)
+    # setosa vs virginica should be significant
+    expect_true(pvals["setosa", "virginica"] < 0.05)
+    # versicolor vs virginica should be significant
+    expect_true(pvals["versicolor", "virginica"] < 0.05)
+})
+
+test_that("calculate_pvalue_matrix supports Matrix SED inputs", {
+    skip_if_not_installed("Matrix")
+
+    pp <- data.frame(
+        predicted.value = c(10, 12, 13, 15),
+        Names = c("A", "B", "C", "D")
+    )
+
+    sed_base <- matrix(0.5, nrow = 4, ncol = 4)
+    diag(sed_base) <- NA_real_
+
+    # Create a packed symmetric *dense* Matrix (dspMatrix).
+    # Using sparse=TRUE yields a dsCMatrix which cannot be coerced to dspMatrix.
+    sed_mat <- as(
+        Matrix::forceSymmetric(Matrix::Matrix(sed_base, sparse = FALSE), uplo = "U"),
+        "packedMatrix"
+    )
+
+    pvals <- biometryassist:::calculate_pvalue_matrix(pp, sed_mat, ndf = 10)
+
+    expect_true(is.matrix(pvals))
+    expect_type(pvals, "double")
+    expect_true(isSymmetric(pvals))
+    expect_equal(rownames(pvals), pp$Names)
+    expect_equal(colnames(pvals), pp$Names)
+    expect_true(all(pvals[upper.tri(pvals)] >= 0 & pvals[upper.tri(pvals)] <= 1, na.rm = TRUE))
+})
+
+test_that("HSD value is accessible and correct", {
+    output <- multiple_comparisons(dat.aov, classify = "Species")
+
+    # Check HSD is numeric
+    expect_type(output$hsd, "double")
+
+    # Check HSD is positive
+    expect_true(output$hsd > 0)
+
+    # Check HSD is accessible via attribute for backward compatibility
+    expect_equal(attr(output, "HSD"), output$hsd)
+})
+
+test_that("sig_level is stored correctly", {
+    output1 <- multiple_comparisons(dat.aov, classify = "Species", sig = 0.05)
+    expect_equal(output1$sig_level, 0.05)
+
+    output2 <- multiple_comparisons(dat.aov, classify = "Species", sig = 0.01)
+    expect_equal(output2$sig_level, 0.01)
+})
+
+test_that("p-value matrix calculation with interaction terms", {
+    # Create data with two factors
+    set.seed(123)
+    factorial_data <- expand.grid(
+        Factor1 = factor(c("A", "B")),
+        Factor2 = factor(c("X", "Y")),
+        Rep = 1:5
+    )
+    factorial_data$Response <- rnorm(nrow(factorial_data),
+                                     mean = 50 + as.numeric(factorial_data$Factor1) * 10 +
+                                         as.numeric(factorial_data$Factor2) * 5,
+                                     sd = 5)
+
+    model_int <- aov(Response ~ Factor1 * Factor2, data = factorial_data)
+    output <- multiple_comparisons(model_int, classify = "Factor1:Factor2")
+
+    # Check matrix dimensions (2 * 2 = 4 combinations)
+    expect_equal(nrow(output$pairwise_pvalues), 4)
+    expect_equal(ncol(output$pairwise_pvalues), 4)
+
+    # Check row/column names are treatment combinations
+    expected_names <- c("A_X", "A_Y", "B_X", "B_Y")
+    expect_equal(sort(rownames(output$pairwise_pvalues)), sort(expected_names))
+
+    # Check matrix properties
+    expect_true(isSymmetric(output$pairwise_pvalues))
+    expect_equal(diag(output$pairwise_pvalues), rep(1, 4), ignore_attr = TRUE)
+})
+
+test_that("p-values without letter groups still calculated", {
+    output <- multiple_comparisons(dat.aov, classify = "Species", groups = FALSE)
+
+    # Check predictions doesn't have groups column
+    expect_false("groups" %in% colnames(output$predictions))
+
+    # Check p-value matrix is still created
+    expect_true("pairwise_pvalues" %in% names(output))
+    expect_true(is.matrix(output$pairwise_pvalues))
+    expect_equal(nrow(output$pairwise_pvalues), 3)
+})
+
+test_that("print.mct shows list structure information", {
+    output <- multiple_comparisons(dat.aov, classify = "Species")
+
+    # Capture print output
+    printed <- capture.output(print(output))
+
+    # Check for key elements in output
+    expect_true(any(grepl("Multiple Comparisons", printed)))
+    expect_true(any(grepl("Significance level", printed)))
+    expect_true(any(grepl("HSD", printed)))
+    expect_true(any(grepl("Predicted values", printed)))
+})
+
+test_that("aliased treatments in list structure", {
+    CO_2 <- CO2
+    CO_2$uptake[CO_2$Type=="Quebec" & CO_2$Treatment=="nonchilled"] <- NA
+    model <- aov(uptake~Type+Treatment+Type:Treatment, data = CO_2)
+
+    expect_warning(
+        output <- multiple_comparisons(model, classify = "Type:Treatment"),
+        "A level of Type\\:Treatment is aliased"
+    )
+
+    # Check aliased is stored in list
+    expect_true("aliased" %in% names(output))
+    expect_equal(output$aliased, "Quebec:nonchilled")
+
+    # Check aliased is also in attributes for backward compatibility
+    expect_equal(attr(output, "aliased"), "Quebec:nonchilled")
+})
+
+test_that("backward compatibility: attributes still accessible", {
+    output <- multiple_comparisons(dat.aov, classify = "Species")
+
+    # Check attributes that should be preserved
+    expect_false(is.null(attr(output, "ylab")))
+    expect_false(is.null(attr(output, "HSD")))
+    expect_equal(attr(output, "HSD"), output$hsd)
+})
+
+test_that("list elements accessible via $ and [[", {
+    output <- multiple_comparisons(dat.aov, classify = "Species")
+
+    # Test $ access
+    expect_s3_class(output$predictions, "data.frame")
+    expect_true(is.matrix(output$pairwise_pvalues))
+    expect_type(output$hsd, "double")
+    expect_type(output$sig_level, "double")
+
+    # Test [[ access
+    expect_identical(output$predictions, output[[1]])
+    expect_identical(output$pairwise_pvalues, output[[2]])
+    expect_identical(output$hsd, output[[3]])
+    expect_identical(output$sig_level, output[[4]])
+})
+
+test_that("p-value matrix with different interval types", {
+    # All interval types should produce the same p-value matrix
+    output_ci <- multiple_comparisons(dat.aov, classify = "Species", int.type = "ci")
+    output_tukey <- multiple_comparisons(dat.aov, classify = "Species", int.type = "tukey")
+    output_1se <- multiple_comparisons(dat.aov, classify = "Species", int.type = "1se")
+
+    # P-values should be identical regardless of interval type
+    expect_equal(output_ci$pairwise_pvalues, output_tukey$pairwise_pvalues)
+    expect_equal(output_ci$pairwise_pvalues, output_1se$pairwise_pvalues)
+})
+
+test_that("p-value matrix with transformations", {
+    dat.aov.log <- aov(log(Petal.Width) ~ Species, data = iris)
+    output <- multiple_comparisons(dat.aov.log, classify = "Species",
+                                   trans = "log", offset = 0)
+
+    # Check p-value matrix exists and has correct properties
+    expect_true("pairwise_pvalues" %in% names(output))
+    expect_true(is.matrix(output$pairwise_pvalues))
+    expect_equal(nrow(output$pairwise_pvalues), 3)
+    expect_true(isSymmetric(output$pairwise_pvalues))
+    expect_equal(diag(output$pairwise_pvalues), rep(1, 3), ignore_attr = TRUE)
+})
+
+
+# ============================================================================
+# ORIGINAL TESTS (Updated to work with new structure)
+# ============================================================================
+
 test_that("mct produces output", {
     tmp <- withr::local_tempdir()
     withr::with_dir(tmp, {
@@ -8,7 +263,7 @@ test_that("mct produces output", {
         output <- multiple_comparisons(dat.aov, classify = "Species", plot = TRUE)
         while (grDevices::dev.cur() > 1) grDevices::dev.off()
 
-        expect_equal(output$predicted.value, c(0.25, 1.33, 2.03), tolerance = 5e-2)
+        expect_equal(output$predictions$predicted.value, c(0.25, 1.33, 2.03), tolerance = 5e-2)
         vdiffr::expect_doppelganger("mct output", autoplot(output))
     })
 })
@@ -25,9 +280,11 @@ test_that("mct ylab handles call/language labels", {
         groups = c("a", "b")
     )
 
+    # Note: This test uses internal function, may need adjustment
+    # based on how add_attributes is updated
     out <- biometryassist:::add_attributes(pp, ylab = quote(sqrt(response)),
-                                          crit_val = matrix(0, nrow = 2, ncol = 2),
-                                          aliased_names = NULL)
+                                           crit_val = matrix(0, nrow = 2, ncol = 2),
+                                           aliased_names = NULL)
 
     expect_identical(attr(out, "ylab"), quote(sqrt(response)))
 })
@@ -39,9 +296,9 @@ test_that("mct transformation: log", {
     output.log3 <- multiple_comparisons(dat.aov.log, classify = "Species", trans = "log", offset = 0, int.type = "2se")
 
     expect_identical(attr(output.log, "ylab"), "Petal.Width")
-    expect_equal(output.log$predicted.value, c(-1.48, 0.27, 0.70), tolerance = 5e-2)
-    expect_equal(output.log2$low, c(0.22, 1.26, 1.94), tolerance = 5e-2)
-    expect_equal(output.log3$up, c(0.25, 1.41, 2.17), tolerance = 5e-2)
+    expect_equal(output.log$predictions$predicted.value, c(-1.48, 0.27, 0.70), tolerance = 5e-2)
+    expect_equal(output.log2$predictions$low, c(0.22, 1.26, 1.94), tolerance = 5e-2)
+    expect_equal(output.log3$predictions$up, c(0.25, 1.41, 2.17), tolerance = 5e-2)
     vdiffr::expect_doppelganger("mct log output", autoplot(output.log))
 })
 
@@ -52,9 +309,9 @@ test_that("mct transformation: sqrt", {
     output.sqrt3 <- multiple_comparisons(dat.aov.sqrt, classify = "Species", trans = "sqrt", offset = 0, int.type = "2se")
 
     expect_identical(attr(output.sqrt, "ylab"), "Petal.Width")
-    expect_equal(output.sqrt$predicted.value, c(0.49, 1.15, 1.42), tolerance = 5e-2)
-    expect_equal(output.sqrt2$low, c(0.23, 1.29, 1.98), tolerance = 5e-2)
-    expect_equal(output.sqrt3$up, c(0.27, 1.38, 2.09), tolerance = 5e-2)
+    expect_equal(output.sqrt$predictions$predicted.value, c(0.49, 1.15, 1.42), tolerance = 5e-2)
+    expect_equal(output.sqrt2$predictions$low, c(0.23, 1.29, 1.98), tolerance = 5e-2)
+    expect_equal(output.sqrt3$predictions$up, c(0.27, 1.38, 2.09), tolerance = 5e-2)
     vdiffr::expect_doppelganger("mct sqrt output", autoplot(output.sqrt))
 })
 
@@ -74,9 +331,9 @@ test_that("mct transformation: logit", {
     )
 
     expect_identical(attr(output.logit, "ylab"), "1/Petal.Width")
-    expect_equal(output.logit$predicted.value, c(-5.30, -4.87, -3.07), tolerance = 5e-2)
-    expect_equal(output.logit2$low, c(0.00, 0.01, 0.04), tolerance = 5e-2)
-    expect_equal(output.logit3$up, c(0.01, 0.01, 0.05), tolerance = 5e-2)
+    expect_equal(output.logit$predictions$predicted.value, c(-5.30, -4.87, -3.07), tolerance = 5e-2)
+    expect_equal(output.logit2$predictions$low, c(0.00, 0.01, 0.04), tolerance = 5e-2)
+    expect_equal(output.logit3$predictions$up, c(0.01, 0.01, 0.05), tolerance = 5e-2)
     vdiffr::expect_doppelganger("mct logit output", autoplot(output.logit))
 })
 
@@ -87,9 +344,9 @@ test_that("mct transformation: inverse", {
     output.inverse3 <- multiple_comparisons(dat.aov.inverse, classify = "Species", trans = "inverse", offset = 0, int.type = "2se")
 
     expect_identical(attr(output.inverse, "ylab"), "Petal.Width")
-    expect_equal(output.inverse$predicted.value, c(0.50, 0.77, 4.79), tolerance = 5e-2)
-    expect_equal(output.inverse2$up, c(3.01, 1.66, 0.22), tolerance = 5e-2)
-    expect_equal(output.inverse3$low, c(1.20, 0.90, 0.20), tolerance = 5e-2)
+    expect_equal(output.inverse$predictions$predicted.value, c(0.50, 0.77, 4.79), tolerance = 5e-2)
+    expect_equal(output.inverse2$predictions$up, c(3.01, 1.66, 0.22), tolerance = 5e-2)
+    expect_equal(output.inverse3$predictions$low, c(1.20, 0.90, 0.20), tolerance = 5e-2)
     vdiffr::expect_doppelganger("mct inverse output", autoplot(output.inverse))
 })
 
@@ -102,9 +359,9 @@ test_that("mct transformation: power", {
     output.power3 <- multiple_comparisons(dat.aov.power, classify = "Species", trans = "power", offset = 1, power = 3, int.type = "2se")
 
     expect_identical(attr(output.power, "ylab"), "Petal.Width")
-    expect_equal(output.power$predicted.value, c(1.98, 12.85, 28.38), tolerance = 5e-2)
-    expect_equal(output.power2$low, c(0.09, 1.30, 2.03), tolerance = 5e-2)
-    expect_equal(output.power3$up, c(0.49, 1.42, 2.10), tolerance = 5e-2)
+    expect_equal(output.power$predictions$predicted.value, c(1.98, 12.85, 28.38), tolerance = 5e-2)
+    expect_equal(output.power2$predictions$low, c(0.09, 1.30, 2.03), tolerance = 5e-2)
+    expect_equal(output.power3$predictions$up, c(0.49, 1.42, 2.10), tolerance = 5e-2)
     vdiffr::expect_doppelganger("mct power output", autoplot(output.power))
 })
 
@@ -118,11 +375,11 @@ test_that("mct transformation: arcsin", {
                    "There are unevaluated constants in the response formula")
 
     expect_identical(attr(output.arcsin, "ylab"), "PW")
-    expect_true("PredictedValue" %in% names(output.arcsin))
-    expect_true(all(output.arcsin$PredictedValue >= 0 & output.arcsin$PredictedValue <= 1))
+    expect_true("PredictedValue" %in% names(output.arcsin$predictions))
+    expect_true(all(output.arcsin$predictions$PredictedValue >= 0 & output.arcsin$predictions$PredictedValue <= 1))
     expected_pw_means <- tapply(iris_arc$PW, iris_arc$Species, mean)
-    expect_equal(output.arcsin$PredictedValue,
-                 as.numeric(expected_pw_means[as.character(output.arcsin$Species)]),
+    expect_equal(output.arcsin$predictions$PredictedValue,
+                 as.numeric(expected_pw_means[as.character(output.arcsin$predictions$Species)]),
                  tolerance = 5e-2)
 })
 
@@ -299,8 +556,8 @@ test_that("apply_transformation errors on invalid trans", {
 test_that("ordering output works", {
     output1 <- multiple_comparisons(dat.aov, classify = "Species", descending = FALSE)
     output2 <- multiple_comparisons(dat.aov, classify = "Species", descending = TRUE)
-    expect_equal(output1$predicted.value, c(0.25, 1.33, 2.03), tolerance = 5e-2)
-    expect_equal(output2$predicted.value, c(2.03, 1.33, 0.25), tolerance = 5e-2)
+    expect_equal(output1$predictions$predicted.value, c(0.25, 1.33, 2.03), tolerance = 5e-2)
+    expect_equal(output2$predictions$predicted.value, c(2.03, 1.33, 0.25), tolerance = 5e-2)
 
     vdiffr::expect_doppelganger("mct ascending order", autoplot(output1))
     vdiffr::expect_doppelganger("mct descending output", autoplot(output2))
@@ -309,10 +566,10 @@ test_that("ordering output works", {
 test_that("different interval types work", {
     output1 <- multiple_comparisons(dat.aov, classify = "Species", int.type = "1se")
     output2 <- multiple_comparisons(dat.aov, classify = "Species", int.type = "2se")
-    expect_equal(output1$low, c(0.22, 1.30, 2.00), tolerance = 5e-2)
-    expect_equal(output1$up, c(0.28, 1.36, 2.06), tolerance = 5e-2)
-    expect_equal(output2$low, c(0.19, 1.27, 1.97), tolerance = 5e-2)
-    expect_equal(output2$up, c(0.31, 1.39, 2.09), tolerance = 5e-2)
+    expect_equal(output1$predictions$low, c(0.22, 1.30, 2.00), tolerance = 5e-2)
+    expect_equal(output1$predictions$up, c(0.28, 1.36, 2.06), tolerance = 5e-2)
+    expect_equal(output2$predictions$low, c(0.19, 1.27, 1.97), tolerance = 5e-2)
+    expect_equal(output2$predictions$up, c(0.31, 1.39, 2.09), tolerance = 5e-2)
 
     vdiffr::expect_doppelganger("mct output 1se", autoplot(output1))
     vdiffr::expect_doppelganger("mct output 2se", autoplot(output2))
@@ -326,7 +583,7 @@ test_that("Testing asreml predictions", {
                                                   pred.obj = pred.asr,
                                                   dendf = dendf),
                    "Argument `pred\\.obj` has been deprecated and will be removed in a future version\\. Predictions are now performed internally in the function\\.")
-    expect_equal(output$predicted.value,
+    expect_equal(output$predictions$predicted.value,
                  c(77.76, 100.15, 114.41, 123.23),
                  tolerance = 5e-2)
     expect_snapshot_output(output)
@@ -338,7 +595,7 @@ test_that("save produces output", {
     output <- multiple_comparisons(dat.aov, classify = "Species", save = TRUE, savename = "pred_vals")
     expect_snapshot_output(output)
 
-    expect_csv_matches_df(output, "pred_vals.csv")
+    expect_csv_matches_df(output$predictions, "pred_vals.csv")
 })
 
 test_that("Interaction terms work", {
@@ -346,7 +603,7 @@ test_that("Interaction terms work", {
     skip_if_not_installed("asreml")
     quiet(library(asreml))
     output <- multiple_comparisons(model.asr, classify = "Nitrogen:Variety", pvals = T)
-    expect_equal(output$predicted.value,
+    expect_equal(output$predictions$predicted.value,
                  c(70.85, 76.58, 85.86, 92.22, 99.91, 108.32, 113.1, 113.5, 116.63, 118.4, 123.75, 127.53),
                  tolerance = 5e-2)
 
@@ -367,7 +624,7 @@ test_that("dashes are handled", {
     output2 <- suppressWarnings(multiple_comparisons(dat.aov2, classify = "Species"))
     expect_warning(multiple_comparisons(dat.aov2, classify = "Species"),
                    "The treatment level se-sa contained '-', which has been replaced in the final output with '_'")
-    expect_equal(output2$predicted.value, c(0.25, 1.33, 2.03), tolerance = 5e-2)
+    expect_equal(output2$predictions$predicted.value, c(0.25, 1.33, 2.03), tolerance = 5e-2)
 
     # Replace 'gin' in virginica with '-' as well
     iris2$Species <- as.factor(gsub("gin", "-", iris2$Species))
@@ -375,7 +632,7 @@ test_that("dashes are handled", {
 
     expect_warning(multiple_comparisons(dat.aov2, classify = "Species"),
                    "The treatment levels se-sa, vir-ica contained '-', which has been replaced in the final output with '_'")
-    expect_equal(output2$predicted.value, c(0.25, 1.33, 2.03), tolerance = 5e-2)
+    expect_equal(output2$predictions$predicted.value, c(0.25, 1.33, 2.03), tolerance = 5e-2)
 
     # skip_if(interactive())
     vdiffr::expect_doppelganger("mct dashes output", autoplot(output2))
@@ -387,7 +644,7 @@ test_that("mct removes aliased treatments in aov", {
     model <- aov(uptake~Type+Treatment+Type:Treatment, data = CO_2)
     expect_warning(output1 <- multiple_comparisons(model, classify = "Type:Treatment"),
                    "A level of Type\\:Treatment is aliased\\. It has been removed from predicted output\\.\n  Aliased level is\\: Quebec:nonchilled\\.\n  This level is saved as an attribute of the output object\\.")
-    expect_snapshot_output(output1$predicted.value)
+    expect_snapshot_output(output1$predictions$predicted.value)
     # skip_if(interactive())
     vdiffr::expect_doppelganger("aov aliased output", autoplot(output1))
 })
@@ -468,10 +725,10 @@ test_that("lme4 model works", {
     quiet(library(lme4))
     dat.lmer <- lmer(yield ~ Nitrogen*Variety + (1|Blocks), data = dat)
     output <- multiple_comparisons(dat.lmer, classify = "Nitrogen")
-    expect_equal(output$std.error, rep(7.39, 4), tolerance = 5e-2)
-    expect_equal(min(output$predicted.value), 79.39, tolerance = 5e-2)
-    expect_equal(max(output$predicted.value), 123.39, tolerance = 5e-2)
-    expect_equal(output$predicted.value, c(79.39, 98.89, 114.22, 123.39), tolerance = 5e-2)
+    expect_equal(output$predictions$std.error, rep(7.39, 4), tolerance = 5e-2)
+    expect_equal(min(output$predictions$predicted.value), 79.39, tolerance = 5e-2)
+    expect_equal(max(output$predictions$predicted.value), 123.39, tolerance = 5e-2)
+    expect_equal(output$predictions$predicted.value, c(79.39, 98.89, 114.22, 123.39), tolerance = 5e-2)
     vdiffr::expect_doppelganger("lme4 output", autoplot(output))
 })
 
@@ -484,8 +741,8 @@ test_that("3 way interaction works", {
     des$design$C <- factor(des$design$C)
     dat.aov <- aov(response~A*B*C, data = des$design)
     output <- multiple_comparisons(dat.aov, classify = "A:B:C")
-    expect_snapshot_output(output$predicted.value)
-    expect_equal(output$std.error,
+    expect_snapshot_output(output$predictions$predicted.value)
+    expect_equal(output$predictions$std.error,
                  rep(0.63, 27))
     # skip_if(interactive())
     vdiffr::expect_doppelganger("3 way interaction", autoplot(output), variant = ggplot2_variant())
@@ -511,8 +768,8 @@ test_that("plots are produced when requested", {
         while (grDevices::dev.cur() > 1) grDevices::dev.off()
 
         expect_s3_class(output, "mct")
-        expect_equal(nrow(output), 27)
-        expect_equal(output$std.error, rep(0.63, 27))
+        expect_equal(nrow(output$predictions), 27)
+        expect_equal(output$predictions$std.error, rep(0.63, 27))
 
         skip_if(interactive())
         vdiffr::expect_doppelganger(
@@ -541,14 +798,14 @@ test_that("multiple_comparisons output has a class of 'mct'", {
 
 test_that("Setting groups to FALSE disables letter groups", {
     output <- multiple_comparisons(dat.aov, classify = "Species")
-    expect_true("groups" %in% colnames(output))
-    expect_equal(output$groups, c("a", "b", "c"))
+    expect_true("groups" %in% colnames(output$predictions))
+    expect_equal(output$predictions$groups, c("a", "b", "c"))
 
     output <- multiple_comparisons(dat.aov, classify = "Species", groups = FALSE)
-    expect_false("groups" %in% colnames(output))
+    expect_false("groups" %in% colnames(output$predictions))
 
     output <- multiple_comparisons(dat.aov, classify = "Species", letters = FALSE)
-    expect_false("groups" %in% colnames(output))
+    expect_false("groups" %in% colnames(output$predictions))
 
     vdiffr::expect_doppelganger("No letter groups",
                                 autoplot(output))
@@ -558,7 +815,7 @@ test_that("Check for letters as an alias of groups", {
     expect_warning(output <- multiple_comparisons(dat.aov, classify = "Species",
                                                   groups = FALSE, letters = TRUE),
                    "Both 'groups' and 'letters' provided\\. Using 'groups'\\.")
-    expect_false("groups" %in% colnames(output))
+    expect_false("groups" %in% colnames(output$predictions))
 })
 
 test_that("autoplot can rotate axis and labels independently", {
@@ -616,24 +873,29 @@ Please specify the 'trans' argument if you want back-transformed predictions\\."
 test_that("print.mct with no aliased attribute", {
     dat.aov <- aov(Petal.Width ~ Species, data = iris)
     output <- multiple_comparisons(dat.aov, classify = "Species", plot = FALSE)
+
+    # Manually set aliased for testing (in new structure)
+    output$aliased <- "ABC"
     attr(output, "aliased") <- "ABC"
 
-    expect_true("aliased" %in% names(attributes(output)))
-    expect_length(attr(output, "aliased"), 1)
+    expect_true("aliased" %in% names(output))
+    expect_length(output$aliased, 1)
     expect_output(print(output),
                   "Aliased level is: ABC")
 
+    output$aliased <- c("ABC", "DEF")
     attr(output, "aliased") <- c("ABC", "DEF")
 
-    expect_length(attr(output, "aliased"), 2)
-    expect_true("aliased" %in% names(attributes(output)))
+    expect_length(output$aliased, 2)
+    expect_true("aliased" %in% names(output))
     expect_output(print(output),
                   "Aliased levels are: ABC and DEF")
 
+    output$aliased <- c("ABC", "DEF", "GHI")
     attr(output, "aliased") <- c("ABC", "DEF", "GHI")
 
-    expect_length(attr(output, "aliased"), 3)
-    expect_true("aliased" %in% names(attributes(output)))
+    expect_length(output$aliased, 3)
+    expect_true("aliased" %in% names(output))
     expect_output(print(output),
                   "Aliased levels are: ABC, DEF and GHI")
 
@@ -660,11 +922,11 @@ test_that("Standard error rounding preserves error bars", {
     )
 
     # Check that standard errors are preserved (not rounded to 0)
-    expect_true(all(output$std.error > 0))
-    expect_false(any(output$std.error == 0))
+    expect_true(all(output$predictions$std.error > 0))
+    expect_false(any(output$predictions$std.error == 0))
 
     # Check that other columns are still rounded to 2 decimal places
-    expect_true(all(nchar(sub(".*\\.", "", as.character(output$predicted.value))) <= 2))
+    expect_true(all(nchar(sub(".*\\.", "", as.character(output$predictions$predicted.value))) <= 2))
 })
 
 test_that("Standard error rounding works with transformed data", {
@@ -689,10 +951,10 @@ test_that("Standard error rounding works with transformed data", {
     )
 
     # Check that both standard error columns are preserved
-    expect_true(all(output$std.error > 0))
-    expect_true(all(output$ApproxSE > 0))
-    expect_false(any(output$std.error == 0))
-    expect_false(any(output$ApproxSE == 0))
+    expect_true(all(output$predictions$std.error > 0))
+    expect_true(all(output$predictions$ApproxSE > 0))
+    expect_false(any(output$predictions$std.error == 0))
+    expect_false(any(output$predictions$ApproxSE == 0))
 })
 
 test_that("Normal rounding works when standard errors are not too small", {
@@ -705,8 +967,8 @@ test_that("Normal rounding works when standard errors are not too small", {
     )
 
     # Check that all numeric columns are properly rounded
-    expect_true(all(nchar(sub(".*\\.", "", as.character(output$predicted.value))) <= 2))
-    expect_true(all(nchar(sub(".*\\.", "", as.character(output$std.error))) <= 2))
+    expect_true(all(nchar(sub(".*\\.", "", as.character(output$predictions$predicted.value))) <= 2))
+    expect_true(all(nchar(sub(".*\\.", "", as.character(output$predictions$std.error))) <= 2))
 })
 
 test_that("Standard error rounding works with different decimal settings", {
@@ -731,8 +993,8 @@ test_that("Standard error rounding works with different decimal settings", {
     )
 
     # Ensure standard errors are never exactly 0
-    expect_true(all(output1$std.error > 0))
-    expect_true(all(output4$std.error > 0))
+    expect_true(all(output1$predictions$std.error > 0))
+    expect_true(all(output4$predictions$std.error > 0))
 })
 
 
@@ -757,9 +1019,8 @@ test_that("ApproxSE column is also preserved during rounding", {
     )
 
     # Both standard error columns should be preserved
-    expect_true(all(output$std.error > 0))
-    expect_true(all(output$ApproxSE > 0))
-    expect_false(any(output$std.error == 0))
-    expect_false(any(output$ApproxSE == 0))
+    expect_true(all(output$predictions$std.error > 0))
+    expect_true(all(output$predictions$ApproxSE > 0))
+    expect_false(any(output$predictions$std.error == 0))
+    expect_false(any(output$predictions$ApproxSE == 0))
 })
-

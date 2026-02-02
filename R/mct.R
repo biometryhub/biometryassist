@@ -24,7 +24,7 @@
 #'
 #' @importFrom multcompView multcompLetters
 #' @importFrom emmeans emmeans
-#' @importFrom stats model.frame predict qtukey qt terms var
+#' @importFrom stats model.frame predict qtukey qt terms var ptukey
 #' @importFrom utils packageVersion
 #'
 #' @details
@@ -79,12 +79,18 @@
 #' the use of Tukey intervals for clearer interpretation.
 #' For multiple comparison contexts, Tukey comparison intervals are recommended as they provide visual consistency with the statistical test being performed and avoid the common confusion where traditional confidence intervals don't overlap but groups share the same significance letter.
 #'
-#' @returns A list containing a data frame with predicted means, standard errors,
-#'  confidence interval upper and lower bounds, and significant group
-#'  allocations (named `predicted_values`), as well as a plot visually
-#'  displaying the predicted values (named `predicted_plot`). If some of the
-#'  predicted values are aliased, a warning is printed, and the aliased
-#'  treatment levels are returned in the output (named `aliased`).
+#' @returns An object of class `mct` (a list with class attributes) containing:
+#'  \item{predictions}{A data frame with predicted means, standard errors,
+#'    confidence interval upper and lower bounds, and significant group
+#'    allocations}
+#'  \item{pairwise_pvalues}{A symmetric matrix of p-values for all pairwise
+#'    comparisons using Tukey's HSD test}
+#'  \item{hsd}{The Honest Significant Difference value(s) used in the comparisons.
+#'    Either a single numeric value (if constant across comparisons) or a matrix
+#'    (if varies by comparison)}
+#'  \item{aliased}{Character vector of aliased treatment levels (only present if
+#'    some predictions are aliased)}
+#'  \item{sig_level}{The significance level used (default 0.05)}
 #'
 #' @references Jørgensen, E. & Pedersen, A. R. (1997). How to Obtain Those Nasty
 #'  Standard Errors From Transformed Data - and Why They Should Not Be Used. <https://pure.au.dk/portal/en/publications/how-to-obtain-those-nasty-standard-errors-from-transformed-data-a>
@@ -101,6 +107,12 @@
 #'
 #' # Display the predicted values table
 #' pred.out
+#'
+#' # Access the p-value matrix
+#' pred.out$pairwise_pvalues
+#'
+#' # Access the HSD value
+#' pred.out$hsd
 #'
 #' # Show the predicted values plot
 #' autoplot(pred.out, label_height = 0.5)
@@ -173,24 +185,20 @@
 #'
 #' resplot(model.asr)
 #'
-#' # Perform Box-Cox transformation and get maximum value
-#' out <- MASS::boxcox(ex_data$resp~ex_data$trt)
-#' out$x[which.max(out$y)] # 0.3838
-#'
-#' # Fit cube root to the data
+#' # lambda = 1/3 from MASS::boxcox()
 #' model.asr <- asreml(resp^(1/3) ~ trt,
 #'                     random = ~ block,
 #'                     residual = ~ units,
 #'                     data = ex_data)
-#' resplot(model.asr) # residual plots look much better
 #'
-#' #Determine ranking and groups according to Tukey's Test
+#' resplot(model.asr) # Look much better
+#'
 #' pred.out <- multiple_comparisons(model.obj = model.asr,
 #'                                  classify = "trt",
 #'                                  trans = "power", power = (1/3))
 #'
 #' pred.out
-#' autoplot(pred.out)
+#' autoplot(pred.out, label_height = 0.5)
 #' }
 #'
 #' @export
@@ -254,6 +262,9 @@ multiple_comparisons <- function(model.obj,
     crit_val <- result$crit_val
     diffs <- result$diffs
 
+    # Calculate p-value matrix for all pairwise comparisons
+    pval_matrix <- calculate_pvalue_matrix(pp, sed, ndf)
+
     # Add letter groups if requested
     if (groups) {
         pp <- add_letter_groups(pp, diffs, descending)
@@ -283,22 +294,52 @@ multiple_comparisons <- function(model.obj,
         check_ci_consistency(pp)
     }
 
-    # Add attributes
-    pp <- add_attributes(pp, ylab, crit_val, aliased, trans)
+    # Prepare HSD value(s) for output
+    if (stats::var(as.vector(crit_val), na.rm = TRUE) < 1e-10) {
+        hsd_output <- crit_val[1, 2]
+    } else {
+        hsd_output <- crit_val
+    }
+
+    # Create output list
+    output <- list(
+        predictions = pp,
+        pairwise_pvalues = pval_matrix,
+        hsd = hsd_output,
+        sig_level = sig
+    )
+
+    # Add aliased treatments if present
+    if (!is.null(aliased)) {
+        output$aliased <- as.character(aliased)
+    }
+
+    # Strip transformation from ylab if trans is provided
+    ylab <- strip_transformation_from_label(ylab, trans)
+
+    # Add attributes for backward compatibility
+    attr(output, "ylab") <- ylab
+    attr(output, "HSD") <- hsd_output  # Keep for backward compatibility
+    if (!is.null(aliased)) {
+        attr(output, "aliased") <- as.character(aliased)
+    }
+
+    # Add class
+    class(output) <- c("mct", "list")
 
     # Plot if requested
     if (plot) {
-        print(autoplot(pp))
+        print(autoplot(output))
     }
 
-    return(pp)
+    return(output)
 }
 
 
 #' Print output of multiple_comparisons
 #'
 #' @param x An mct object to print to the console.
-#' @param ... Other arguments
+#' @param ... Other arguments passed to print.data.frame
 #'
 #' @returns The original object invisibly.
 #' @seealso [multiple_comparisons()]
@@ -310,10 +351,15 @@ multiple_comparisons <- function(model.obj,
 #' print(output)
 print.mct <- function(x, ...) {
     stopifnot(inherits(x, "mct"))
-    print.data.frame(x, ...)
 
-    if(!is.null(attr(x, "aliased"))) {
-        aliased <- attr(x, "aliased")
+    cat("Multiple Comparisons of Means: Tukey's HSD Test\n")
+    cat("Significance level:", x$sig_level, "\n")
+    cat("HSD value:", if(length(x$hsd) == 1) x$hsd else "varies by comparison (see $hsd)\n", "\n")
+    cat("\nPredicted values:\n")
+    print.data.frame(x$predictions, ...)
+
+    if(!is.null(x$aliased)) {
+        aliased <- x$aliased
         if(length(aliased) > 1) {
             cat("\nAliased levels are:", paste(aliased[1:(length(aliased)-1)], collapse = ", "), "and", aliased[length(aliased)], "\n")
         }
@@ -321,8 +367,204 @@ print.mct <- function(x, ...) {
             cat("\nAliased level is:", aliased, "\n")
         }
     }
+
     invisible(x)
 }
+
+
+#' Calculate matrix of p-values for all pairwise comparisons
+#'
+#' @param pp Data frame with predicted values and Names column
+#' @param sed Standard error of differences (matrix or scalar)
+#' @param ndf Degrees of freedom
+#'
+#' @return Symmetric matrix of p-values with treatment names as row/column names
+#' @noRd
+calculate_pvalue_matrix <- function(pp, sed, ndf) {
+    n <- nrow(pp)
+    treatment_names <- pp$Names
+
+    # Initialize p-value matrix
+    pval_matrix <- matrix(1, nrow = n, ncol = n,
+                         dimnames = list(treatment_names, treatment_names))
+
+    if (n <= 1) {
+        return(pval_matrix)
+    }
+
+    # Vectorized pairwise differences for the upper triangle
+    pair_idx <- which(upper.tri(pval_matrix), arr.ind = TRUE)
+    i <- pair_idx[, 1]
+    j <- pair_idx[, 2]
+
+    diff <- abs(pp$predicted.value[i] - pp$predicted.value[j])
+
+    # Get the appropriate SED for each comparison.
+    # `sed` may be a scalar, a base matrix, or a Matrix::* matrix.
+    sed_ij <- if (!is.null(dim(sed))) {
+        as.numeric(sed[cbind(i, j)])
+    } else {
+        rep_len(sed, length(diff))
+    }
+
+    # Calculate the studentized range statistic and p-values in one call
+    q_stat <- as.numeric(diff / sed_ij) * sqrt(2)
+    pvals <- stats::ptukey(q_stat, nmeans = n, df = ndf, lower.tail = FALSE)
+
+    pval_matrix[cbind(i, j)] <- pvals
+    pval_matrix[cbind(j, i)] <- pvals
+
+    return(pval_matrix)
+}
+
+
+#' @noRd
+add_letter_groups <- function(pp, diffs, descending) {
+    ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp, reversed = !descending)
+
+    rr <- data.frame(groups = ll$Letters)
+    rr$Names <- row.names(rr)
+
+    pp <- merge(pp, rr)
+    return(pp)
+}
+
+
+#' @noRd
+format_output <- function(pp, descending, vars, decimals) {
+    # Order by predicted value
+    pp <- pp[base::order(pp$predicted.value, decreasing = descending), ]
+
+    # Remove Names column
+    pp$Names <- NULL
+
+    # Extract treatment variable names
+    trtindex <- max(unlist(lapply(paste0("^", vars, "$"), grep, x = names(pp))))
+    trtnam <- names(pp)[1:trtindex]
+
+    # Exclude reserved column names
+    reserved_cols <- c("predicted.value", "std.error", "Df", "groups",
+                       "PredictedValue", "ApproxSE", "ci", "low", "up")
+    trtnam <- trtnam[trtnam %!in% reserved_cols]
+
+    # Convert treatment columns to factors with ordered levels
+    for (i in seq_along(trtnam)) {
+        pp[[trtnam[i]]] <- factor(pp[[trtnam[i]]], levels = unique(pp[[trtnam[i]]]))
+    }
+
+    # Helper function to calculate decimal places needed to avoid rounding to zero
+    calc_se_decimals <- function(values, default_decimals) {
+        min_val <- min(values, na.rm = TRUE)
+        if (min_val > 0 && round(min_val, default_decimals) == 0) {
+            max(default_decimals, -floor(log10(min_val)) + 1)
+        } else {
+            default_decimals
+        }
+    }
+
+    # Identify SE columns and calculate needed decimal places
+    se_cols <- intersect(c("std.error", "ApproxSE"), names(pp))
+    se_decimals <- sapply(se_cols, function(col) calc_se_decimals(pp[[col]], decimals))
+
+    # Warn if any SE columns need more decimal places
+    if (any(se_decimals > decimals)) {
+        warning("Some standard errors are very small and would round to zero with ",
+                decimals, " decimal places. Using ", max(se_decimals),
+                " decimal places for standard error columns to preserve error bar display.",
+                call. = FALSE)
+    }
+
+    # Round all numeric columns
+    numeric_cols <- names(pp)[sapply(pp, is.numeric)]
+    for (col in numeric_cols) {
+        pp[[col]] <- round(pp[[col]],
+                           if (col %in% names(se_decimals)) se_decimals[[col]] else decimals)
+    }
+
+    # Remove row names
+    rownames(pp) <- NULL
+    return(pp)
+}
+
+
+#' @noRd
+strip_transformation_from_label <- function(ylab, trans) {
+    if (is.null(trans)) {
+        return(ylab)
+    }
+
+    # Convert to character
+    ylab_char <- if (is.language(ylab)) deparse(ylab) else as.character(ylab)
+
+    # Simple pattern matching for common transformations
+    stripped <- switch(trans,
+                       "log" = sub("^log(10)?\\((.+)\\)$", "\\2", ylab_char),
+                       "sqrt" = sub("^sqrt\\((.+)\\)$", "\\1", ylab_char),
+                       "logit" = sub("^logit\\((.+)\\)$", "\\1", ylab_char),
+                       "arcsin" = sub("^a?r?c?sin\\(sqrt\\((.+)\\)\\)$", "\\1", ylab_char),
+                       "inverse" = sub("^\\(?1/([^)]+)\\)?$", "\\1", ylab_char),
+                       "power" = sub("^\\(?(.+?)\\)?\\^.+$", "\\1", ylab_char),
+                       ylab_char  # default: return as-is
+    )
+
+    return(stripped)
+}
+
+
+#' @noRd
+check_ci_consistency <- function(pp) {
+
+    result <- FALSE
+    # Pre-extract and validate data once
+    n <- nrow(pp)
+    low <- pp$predicted.value - pp$ci
+    up <- pp$predicted.value + pp$ci
+    groups <- as.character(pp$groups)
+
+    # Pre-process group letters efficiently
+    group_letters <- vector("list", length(groups))
+    for (i in seq_along(groups)) {
+        group_letters[[i]] <- unique(strsplit(groups[i], "")[[1]])
+    }
+
+    # Vectorized overlap detection using outer operations
+    # Two intervals [a,b] and [c,d] overlap if max(a,c) <= min(b,d)
+    low_matrix <- matrix(low, nrow = n, ncol = n, byrow = TRUE)
+    up_matrix <- matrix(up, nrow = n, ncol = n, byrow = FALSE)
+
+    # Only compute upper triangle to avoid redundant comparisons
+    upper_tri <- upper.tri(matrix(TRUE, n, n))
+
+    # Vectorized overlap check
+    max_lows <- pmax(low_matrix, t(low_matrix))
+    min_ups <- pmin(up_matrix, t(up_matrix))
+    overlaps <- max_lows <= min_ups
+
+    # Find non-overlapping pairs in upper triangle only
+    non_overlapping <- upper_tri & !overlaps
+
+    if (!any(non_overlapping)) return(FALSE)
+
+    # Get indices efficiently
+    indices <- which(non_overlapping, arr.ind = TRUE)
+
+    # Check for shared letters only among non-overlapping pairs
+    for (k in seq_len(nrow(indices))) {
+        i <- indices[k, 1]
+        j <- indices[k, 2]
+
+        if (groups[i] == groups[j] | length(intersect(group_letters[[i]], group_letters[[j]])) > 0) {
+            message("Note: Some treatments sharing the same letter group have non-overlapping confidence intervals.\n",
+                    "This is expected behavior as regular confidence intervals estimate individual mean precision,\n",
+                    "while Tukey's HSD controls family-wise error rates. For visual consistency with letter groups,\n",
+                    "consider using 'int.type = \"tukey\"' to display Tukey comparison intervals.")
+            return(TRUE)
+        }
+    }
+
+    invisible(result)
+}
+
 
 #' @importFrom stats formula
 #' @keywords internal
@@ -371,6 +613,7 @@ validate_inputs <- function(sig, classify, model.obj, trans) {
     return(vars)
 }
 
+
 #' @noRd
 process_treatment_names <- function(pp, classify, vars) {
     # Create Names column
@@ -397,6 +640,7 @@ process_treatment_names <- function(pp, classify, vars) {
     return(pp)
 }
 
+
 #' @noRd
 get_diffs <- function(pp, sed, ndf, sig) {
     # Calculate the critical value
@@ -416,6 +660,7 @@ get_diffs <- function(pp, sed, ndf, sig) {
     return(list(crit_val = crit_val, diffs = diffs))
 }
 
+
 #' @noRd
 add_confidence_intervals <- function(pp, int.type, sig, ndf) {
     # Calculate confidence interval width
@@ -431,6 +676,7 @@ add_confidence_intervals <- function(pp, int.type, sig, ndf) {
 
     return(pp)
 }
+
 
 #' @noRd
 apply_transformation <- function(pp, trans, offset, power) {
@@ -576,95 +822,6 @@ apply_transformation <- function(pp, trans, offset, power) {
     return(pp)
 }
 
-#' @noRd
-add_letter_groups <- function(pp, diffs, descending) {
-    ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp, reversed = !descending)
-
-    rr <- data.frame(groups = ll$Letters)
-    rr$Names <- row.names(rr)
-
-    pp <- merge(pp, rr)
-    return(pp)
-}
-
-#' @noRd
-format_output <- function(pp, descending, vars, decimals) {
-    # Order by predicted value
-    pp <- pp[base::order(pp$predicted.value, decreasing = descending), ]
-
-    # Remove Names column
-    pp$Names <- NULL
-
-    # Extract treatment variable names
-    trtindex <- max(unlist(lapply(paste0("^", vars, "$"), grep, x = names(pp))))
-    trtnam <- names(pp)[1:trtindex]
-
-    # Exclude reserved column names
-    reserved_cols <- c("predicted.value", "std.error", "Df", "groups",
-                       "PredictedValue", "ApproxSE", "ci", "low", "up")
-    trtnam <- trtnam[trtnam %!in% reserved_cols]
-
-    # Convert treatment columns to factors with ordered levels
-    for (i in seq_along(trtnam)) {
-        pp[[trtnam[i]]] <- factor(pp[[trtnam[i]]], levels = unique(pp[[trtnam[i]]]))
-    }
-
-    # Helper function to calculate decimal places needed to avoid rounding to zero
-    calc_se_decimals <- function(values, default_decimals) {
-        min_val <- min(values, na.rm = TRUE)
-        if (min_val > 0 && round(min_val, default_decimals) == 0) {
-            max(default_decimals, -floor(log10(min_val)) + 1)
-        } else {
-            default_decimals
-        }
-    }
-
-    # Identify SE columns and calculate needed decimal places
-    se_cols <- intersect(c("std.error", "ApproxSE"), names(pp))
-    se_decimals <- sapply(se_cols, function(col) calc_se_decimals(pp[[col]], decimals))
-
-    # Warn if any SE columns need more decimal places
-    if (any(se_decimals > decimals)) {
-        warning("Some standard errors are very small and would round to zero with ",
-                decimals, " decimal places. Using ", max(se_decimals),
-                " decimal places for standard error columns to preserve error bar display.",
-                call. = FALSE)
-    }
-
-    # Round all numeric columns
-    numeric_cols <- names(pp)[sapply(pp, is.numeric)]
-    for (col in numeric_cols) {
-        pp[[col]] <- round(pp[[col]],
-                           if (col %in% names(se_decimals)) se_decimals[[col]] else decimals)
-    }
-
-    # Remove row names
-    rownames(pp) <- NULL
-    return(pp)
-}
-
-#' @noRd
-strip_transformation_from_label <- function(ylab, trans) {
-    if (is.null(trans)) {
-        return(ylab)
-    }
-
-    # Convert to character
-    ylab_char <- if (is.language(ylab)) deparse(ylab) else as.character(ylab)
-
-    # Simple pattern matching for common transformations
-    stripped <- switch(trans,
-                       "log" = sub("^log(10)?\\((.+)\\)$", "\\2", ylab_char),
-                       "sqrt" = sub("^sqrt\\((.+)\\)$", "\\1", ylab_char),
-                       "logit" = sub("^logit\\((.+)\\)$", "\\1", ylab_char),
-                       "arcsin" = sub("^a?r?c?sin\\(sqrt\\((.+)\\)\\)$", "\\1", ylab_char),
-                       "inverse" = sub("^\\(?1/([^)]+)\\)?$", "\\1", ylab_char),
-                       "power" = sub("^\\(?(.+?)\\)?\\^.+$", "\\1", ylab_char),
-                       ylab_char  # default: return as-is
-    )
-
-    return(stripped)
-}
 
 #' @noRd
 add_attributes <- function(pp, ylab, crit_val, aliased_names, trans = NULL) {
@@ -690,59 +847,3 @@ add_attributes <- function(pp, ylab, crit_val, aliased_names, trans = NULL) {
 
     return(pp)
 }
-
-#' @noRd
-check_ci_consistency <- function(pp) {
-
-    result <- FALSE
-    # Pre-extract and validate data once
-    n <- nrow(pp)
-    low <- pp$predicted.value - pp$ci
-    up <- pp$predicted.value + pp$ci
-    groups <- as.character(pp$groups)
-
-    # Pre-process group letters efficiently
-    group_letters <- vector("list", length(groups))
-    for (i in seq_along(groups)) {
-        group_letters[[i]] <- unique(strsplit(groups[i], "")[[1]])
-    }
-
-    # Vectorized overlap detection using outer operations
-    # Two intervals [a,b] and [c,d] overlap if max(a,c) <= min(b,d)
-    low_matrix <- matrix(low, nrow = n, ncol = n, byrow = TRUE)
-    up_matrix <- matrix(up, nrow = n, ncol = n, byrow = FALSE)
-
-    # Only compute upper triangle to avoid redundant comparisons
-    upper_tri <- upper.tri(matrix(TRUE, n, n))
-
-    # Vectorized overlap check
-    max_lows <- pmax(low_matrix, t(low_matrix))
-    min_ups <- pmin(up_matrix, t(up_matrix))
-    overlaps <- max_lows <= min_ups
-
-    # Find non-overlapping pairs in upper triangle only
-    non_overlapping <- upper_tri & !overlaps
-
-    if (!any(non_overlapping)) return(FALSE)
-
-    # Get indices efficiently
-    indices <- which(non_overlapping, arr.ind = TRUE)
-
-    # Check for shared letters only among non-overlapping pairs
-    for (k in seq_len(nrow(indices))) {
-        i <- indices[k, 1]
-        j <- indices[k, 2]
-
-        if (groups[i] == groups[j] | length(intersect(group_letters[[i]], group_letters[[j]])) > 0) {
-            message("Note: Some treatments sharing the same letter group have non-overlapping confidence intervals.\n",
-                    "This is expected behavior as regular confidence intervals estimate individual mean precision,\n",
-                    "while Tukey's HSD controls family-wise error rates. For visual consistency with letter groups,\n",
-                    "consider using 'int.type = \"tukey\"' to display Tukey comparison intervals.")
-            return(TRUE)
-        }
-    }
-
-    invisible(result)
-}
-
-

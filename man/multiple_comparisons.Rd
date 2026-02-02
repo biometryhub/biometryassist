@@ -66,12 +66,18 @@ multiple_comparisons(
 \item{...}{Other arguments passed through to \code{\link[=get_predictions]{get_predictions()}}.}
 }
 \value{
-A list containing a data frame with predicted means, standard errors,
+An object of class \code{mct} (a list with class attributes) containing:
+\item{predictions}{A data frame with predicted means, standard errors,
 confidence interval upper and lower bounds, and significant group
-allocations (named \code{predicted_values}), as well as a plot visually
-displaying the predicted values (named \code{predicted_plot}). If some of the
-predicted values are aliased, a warning is printed, and the aliased
-treatment levels are returned in the output (named \code{aliased}).
+allocations}
+\item{pairwise_pvalues}{A symmetric matrix of p-values for all pairwise
+comparisons using Tukey's HSD test}
+\item{hsd}{The Honest Significant Difference value(s) used in the comparisons.
+Either a single numeric value (if constant across comparisons) or a matrix
+(if varies by comparison)}
+\item{aliased}{Character vector of aliased treatment levels (only present if
+some predictions are aliased)}
+\item{sig_level}{The significance level used (default 0.05)}
 }
 \description{
 A function for comparing and ranking predicted means with Tukey's Honest Significant Difference (HSD) Test.
@@ -145,6 +151,12 @@ pred.out <- multiple_comparisons(model, classify = "Species")
 # Display the predicted values table
 pred.out
 
+# Access the p-value matrix
+pred.out$pairwise_pvalues
+
+# Access the HSD value
+pred.out$hsd
+
 # Show the predicted values plot
 autoplot(pred.out, label_height = 0.5)
 
@@ -216,24 +228,20 @@ model.asr <- asreml(resp ~ trt,
 
 resplot(model.asr)
 
-# Perform Box-Cox transformation and get maximum value
-out <- MASS::boxcox(ex_data$resp~ex_data$trt)
-out$x[which.max(out$y)] # 0.3838
-
-# Fit cube root to the data
+# lambda = 1/3 from MASS::boxcox()
 model.asr <- asreml(resp^(1/3) ~ trt,
                     random = ~ block,
                     residual = ~ units,
                     data = ex_data)
-resplot(model.asr) # residual plots look much better
 
-#Determine ranking and groups according to Tukey's Test
+resplot(model.asr) # Look much better
+
 pred.out <- multiple_comparisons(model.obj = model.asr,
                                  classify = "trt",
                                  trans = "power", power = (1/3))
 
 pred.out
-autoplot(pred.out)
+autoplot(pred.out, label_height = 0.5)
 }
 
 }

@@ -44,20 +44,31 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1,
     stopifnot(inherits(object, "mct"))
 
     rlang::check_dots_used()
-    # classify is just the first n columns (before predicted.value)
-    classify <- colnames(object)[1]
-    classify <- rlang::ensym(classify)
-    if(colnames(object)[2] != "predicted.value") {
-        classify2 <- colnames(object)[2]
-    }
-    if(colnames(object)[2] != "predicted.value" & colnames(object)[3] != "predicted.value") {
-        classify3 <- colnames(object)[3]
+
+    # Extract the predictions data frame from the mct object
+    # For new structure: object is a list with $predictions
+    # For backward compatibility: also handle old structure where object is a data frame
+    if (is.list(object) && "predictions" %in% names(object)) {
+        pred_df <- object$predictions
+    } else {
+        # Backward compatibility: object is already the data frame
+        pred_df <- as.data.frame(object)
     }
 
-    # Get ylab as attribute
+    # classify is just the first n columns (before predicted.value)
+    classify <- colnames(pred_df)[1]
+    classify <- rlang::ensym(classify)
+    if(colnames(pred_df)[2] != "predicted.value") {
+        classify2 <- colnames(pred_df)[2]
+    }
+    if(colnames(pred_df)[2] != "predicted.value" & colnames(pred_df)[3] != "predicted.value") {
+        classify3 <- colnames(pred_df)[3]
+    }
+
+    # Get ylab as attribute (works for both old and new structure)
     ylab <- attributes(object)$ylab
 
-    yval <- ifelse("PredictedValue" %in% colnames(object), "PredictedValue", "predicted.value")
+    yval <- ifelse("PredictedValue" %in% colnames(pred_df), "PredictedValue", "predicted.value")
     yval <- rlang::ensym(yval)
 
     # Calculate hjust based on axis rotation
@@ -69,27 +80,30 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1,
         0.5
     }
 
-    plot <- ggplot2::ggplot(data = object, ggplot2::aes(x = {{ classify }})) +
+    plot <- ggplot2::ggplot(data = pred_df, ggplot2::aes(x = {{ classify }})) +
         ggplot2::theme_bw() +
         ggplot2::theme(axis.text.x = ggplot2::element_text(angle = axis_rotation, vjust = 0.5, hjust = hjust_value, ...)) +
         ggplot2::labs(x = "", y = paste0("Predicted ", ylab))
 
     if(tolower(type) == "point") {
         plot <- plot + ggplot2::geom_point(ggplot2::aes(y = {{ yval }}), colour = "black", shape = 16, size = 2) +
-            ggplot2::geom_errorbar(aes(ymin = low, ymax = up), width = 0.2)
+            ggplot2::geom_errorbar(aes(ymin = .data[["low"]], ymax = .data[["up"]]), width = 0.2)
     }
     else if(tolower(type) %in% c("col", "column")) {
         plot <- plot + ggplot2::geom_col(ggplot2::aes(y = {{ yval }}), colour = "black", fill = "cornflowerblue", alpha = 0.75) +
-            ggplot2::geom_errorbar(aes(ymin = low, ymax = up), width = 0.2)
+            ggplot2::geom_errorbar(aes(ymin = .data[["low"]], ymax = .data[["up"]]), width = 0.2)
     }
 
-    if("groups" %in% colnames(object)) {
+    if("groups" %in% colnames(pred_df)) {
+        # Calculate outside of aes()
+        y_pos <- ifelse(pred_df$up > pred_df$low, pred_df$up, pred_df$low)
+        nudge_val <- ifelse(abs(label_height) <= 1,
+                            abs(pred_df$up - pred_df$low) * label_height,
+                            label_height)
+
         plot <- plot +
-            ggplot2::geom_text(ggplot2::aes(x = {{ classify }}, y = ifelse(object$up > object$low, object$up, object$low),
-                                            label = object$groups),
-                               nudge_y = ifelse(abs(label_height) <= 1,
-                                                abs(object$up-object$low)*label_height, # invert for cases with inverse transform
-                                                label_height),
+            ggplot2::geom_text(ggplot2::aes(y = y_pos, label = .data[["groups"]]),
+                               nudge_y = nudge_val,
                                size = size, angle = label_rotation, ...)
     }
 

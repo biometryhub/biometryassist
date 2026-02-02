@@ -200,8 +200,6 @@
     19   Achieve     Low            1.68      0.21     ab 0.43 1.25 2.11
     20   Tristar    High            1.90      0.21     ab 0.42 1.48 2.33
     21    Hussar     Low            2.01      0.21      b 0.42 1.59 2.43
-    
-    Aliased levels are: Achieve:Control, Atlantis:Control, Atlantis:Medium, Control:High, Control:Low, Control:Medium, Hoegrass:Control, Hussar:Control, Hussar:Medium, MatavenL:Control, MatavenL:Medium, Topik:Control, Tristar:Control, Tristar:Medium and Wildcat:Control 
 
 # exercise 1 works
 
@@ -244,7 +242,8 @@
 ---
 
     Code
-      data.frame(lapply(pred2e.out, function(y) if (is.numeric(y)) round(y, 1) else y))
+      data.frame(lapply(pred2e.out$predictions, function(y) if (is.numeric(y)) round(
+        y, 1) else y))
     Output
         Treatment predicted.value std.error df groups  ci low  up
       1        KC             2.1       0.2 18      a 0.4 1.7 2.5
