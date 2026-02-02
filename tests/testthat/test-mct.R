@@ -127,6 +127,48 @@ test_that("calculate_pvalue_matrix supports scalar SED inputs", {
     expect_true(all(pvals[upper.tri(pvals)] >= 0 & pvals[upper.tri(pvals)] <= 1, na.rm = TRUE))
 })
 
+test_that("calculate_pvalue_matrix supports base-matrix SED inputs", {
+    pp <- data.frame(
+        predicted.value = c(10, 11, 15),
+        Names = c("A", "B", "C")
+    )
+
+    # A plain base matrix should take the `!is.null(dim(sed))` branch.
+    sed_mat <- matrix(0.5, nrow = 3, ncol = 3,
+                      dimnames = list(pp$Names, pp$Names))
+    diag(sed_mat) <- NA_real_
+
+    pvals <- biometryassist:::calculate_pvalue_matrix(pp, sed = sed_mat, ndf = 10)
+
+    expect_true(is.matrix(pvals))
+    expect_type(pvals, "double")
+    expect_true(isSymmetric(pvals))
+    expect_equal(rownames(pvals), pp$Names)
+    expect_equal(colnames(pvals), pp$Names)
+    expect_equal(diag(pvals), rep(1, 3), ignore_attr = TRUE)
+
+    # Spot-check one expected p-value to ensure indexing is correct.
+    diff_ab <- abs(pp$predicted.value[1] - pp$predicted.value[2])
+    q_ab <- as.numeric(diff_ab / 0.5) * sqrt(2)
+    expected_ab <- stats::ptukey(q_ab, nmeans = 3, df = 10, lower.tail = FALSE)
+    expect_equal(pvals["A", "B"], expected_ab, tolerance = 1e-12)
+})
+
+test_that("calculate_pvalue_matrix returns a 1x1 matrix when n <= 1", {
+    pp <- data.frame(
+        predicted.value = 10,
+        Names = "A"
+    )
+
+    pvals <- biometryassist:::calculate_pvalue_matrix(pp, sed = 0.5, ndf = 10)
+
+    expect_true(is.matrix(pvals))
+    expect_equal(dim(pvals), c(1L, 1L))
+    expect_equal(rownames(pvals), "A")
+    expect_equal(colnames(pvals), "A")
+    expect_equal(pvals[1, 1], 1)
+})
+
 test_that("HSD value is accessible and correct", {
     output <- multiple_comparisons(dat.aov, classify = "Species")
 
