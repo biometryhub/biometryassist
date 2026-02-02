@@ -448,6 +448,18 @@ test_that("split plot requires sub_treatments", {
                  "sub_treatments are required for a split plot design")
 })
 
+test_that("strip plot requires sub_treatments", {
+    expect_error(design(type = "strip", treatments = c("A", "B", "C"), quiet = TRUE,
+               sub_treatments = NULL, reps = 4, nrows = 12,
+               ncols = 4, brows = 3, bcols = 4, seed = 42),
+           "sub_treatments are required for a strip plot design")
+
+    expect_error(design(type = "strip", treatments = c("A", "B", "C"), quiet = TRUE,
+               sub_treatments = c(1, NA), reps = 4, nrows = 12,
+               ncols = 4, brows = 3, bcols = 4, seed = 42),
+           "sub_treatments are required for a strip plot design")
+})
+
 test_that("split plot requires brows and bcols", {
     expect_error(design(type = "split", treatments = c("A", "B"), quiet = TRUE,
                         sub_treatments = 1:4, reps = 4, nrows = 8,
@@ -1181,6 +1193,23 @@ test_that("normalise_agricolae_book() renames split trt1/trt2 columns", {
     expect_false("trt2" %in% names(out))
 })
 
+test_that("normalise_agricolae_book() renames strip trt1/trt2 columns", {
+    design_info <- list(is_factorial = FALSE, type = "strip", base = "strip")
+
+    design_book <- data.frame(
+        plots = 1:2,
+        trt1 = c("A", "B"),
+        trt2 = c("Low", "High")
+    )
+
+    out <- biometryassist:::normalise_agricolae_book(design_book, design_info)
+
+    expect_true("treatments" %in% names(out))
+    expect_true("sub_treatments" %in% names(out))
+    expect_false("trt1" %in% names(out))
+    expect_false("trt2" %in% names(out))
+})
+
 test_that("normalise_agricolae_book() infers split sub_treatments from candidates", {
     design_info <- list(is_factorial = FALSE, type = "split", base = "split")
 
@@ -1197,6 +1226,42 @@ test_that("normalise_agricolae_book() infers split sub_treatments from candidate
     expect_true("treatments" %in% names(out))
     expect_true("sub_treatments" %in% names(out))
     expect_false("subplot_col" %in% names(out))
+})
+
+test_that("normalise_agricolae_book() infers split treatments from single candidate", {
+    design_info <- list(is_factorial = FALSE, type = "split", base = "split")
+
+    # Simulate a split/strip-style book that has no treatments column yet and
+    # only one non-structural candidate column.
+    design_book <- data.frame(
+        plots = 1:2,
+        main_col = c("A", "B")
+    )
+
+    out <- biometryassist:::normalise_agricolae_book(design_book, design_info)
+
+    expect_true("treatments" %in% names(out))
+    expect_false("main_col" %in% names(out))
+    expect_false("sub_treatments" %in% names(out))
+})
+
+test_that("normalise_agricolae_book() infers split treatments and sub_treatments from two candidates", {
+    design_info <- list(is_factorial = FALSE, type = "split", base = "split")
+
+    # No explicit trt1/trt2 and no pre-existing treatments/sub_treatments,
+    # so both should be inferred from the last two non-structural columns.
+    design_book <- data.frame(
+        plots = 1:2,
+        some_main = c("A", "B"),
+        some_sub = c("Low", "High")
+    )
+
+    out <- biometryassist:::normalise_agricolae_book(design_book, design_info)
+
+    expect_true("treatments" %in% names(out))
+    expect_true("sub_treatments" %in% names(out))
+    expect_false("some_main" %in% names(out))
+    expect_false("some_sub" %in% names(out))
 })
 
 test_that("des_info() adds buffers and passes blocks = FALSE for non-block designs", {

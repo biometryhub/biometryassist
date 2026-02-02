@@ -742,7 +742,7 @@ test_that("calculate_block_layout returns correct dimensions for all paths", {
 test_that("calculate_block_layout always returns data frame with row and col columns", {
   # Test that all return paths produce consistent output with row and col columns
   # This ensures the reorder_row_col helper function works correctly
-  
+
   # Test various configurations
   test_cases <- list(
     list(nrows = 5, ncols = 4, brows = 5, bcols = 1, ntrt = 5),
@@ -751,20 +751,20 @@ test_that("calculate_block_layout always returns data frame with row and col col
     list(nrows = 6, ncols = 6, brows = 3, bcols = 3, ntrt = 9, block_vec = rep(1:4, each = 9)),
     list(nrows = 4, ncols = 4, brows = 4, bcols = 4, ntrt = 8)
   )
-  
+
   for (tc in test_cases) {
     result <- do.call(biometryassist:::calculate_block_layout, tc)
-    
+
     # Verify output is a data frame
     expect_s3_class(result, "data.frame")
-    
+
     # Verify it has row and col columns
     expect_true("row" %in% names(result))
     expect_true("col" %in% names(result))
-    
+
     # Verify row and col are the first two columns (reorder_row_col output)
     expect_equal(names(result)[1:2], c("row", "col"))
-    
+
     # Verify all values are within valid ranges
     expect_true(all(result$row >= 1 & result$row <= tc$nrows))
     expect_true(all(result$col >= 1 & result$col <= tc$ncols))
@@ -887,13 +887,205 @@ test_that("get_design_info structure is consistent across design types", {
 
 # Tests for validate_design_inputs() ----
 
+# Tests for validate_block_params() ----
+
+test_that("validate_block_params errors when brows/bcols are missing for blocked designs", {
+  # Any blocked design should require brows/bcols to be supplied.
+  expect_error(
+    biometryassist:::validate_block_params(
+      design_info = list(base = "rcbd"),
+      brows = NA,
+      bcols = 2
+    ),
+    "Design has blocks so brows and bcols must be supplied\\.",
+    fixed = FALSE
+  )
+
+  expect_error(
+    biometryassist:::validate_block_params(
+      design_info = list(base = "strip"),
+      brows = 2,
+      bcols = NA
+    ),
+    "Design has blocks so brows and bcols must be supplied\\.",
+    fixed = FALSE
+  )
+})
+
+test_that("validate_block_params enforces strip plot brows/bcols > 1", {
+  expect_error(
+    biometryassist:::validate_block_params(
+      design_info = list(base = "strip"),
+      brows = 1,
+      bcols = 2
+    ),
+    "Strip plot designs require blocks with more than one row and more than one column\\. Please supply brows > 1 and bcols > 1\\.",
+    fixed = FALSE
+  )
+
+  expect_error(
+    biometryassist:::validate_block_params(
+      design_info = list(base = "strip"),
+      brows = 2,
+      bcols = 1
+    ),
+    "Strip plot designs require blocks with more than one row and more than one column\\. Please supply brows > 1 and bcols > 1\\.",
+    fixed = FALSE
+  )
+
+  expect_silent(
+    biometryassist:::validate_block_params(
+      design_info = list(base = "strip"),
+      brows = 2,
+      bcols = 2
+    )
+  )
+})
+
+test_that("validate_strip_inputs errors on invalid strip inputs", {
+  # A minimal valid starting point: 2x2 layout, brows=2, bcols=2.
+  base_book <- data.frame(
+    treatments = factor(c("A", "A", "B", "B")),
+    sub_treatments = factor(c("x", "y", "x", "y"))
+  )
+
+  # Missing brows/bcols
+  expect_error(
+    biometryassist:::validate_strip_inputs(base_book, nrows = 2, ncols = 2, brows = NA, bcols = 2),
+    "Strip plot designs require brows and bcols\\.",
+    fixed = FALSE
+  )
+  expect_error(
+    biometryassist:::validate_strip_inputs(base_book, nrows = 2, ncols = 2, brows = 2, bcols = NA),
+    "Strip plot designs require brows and bcols\\.",
+    fixed = FALSE
+  )
+
+  # brows/bcols must be > 1
+  expect_error(
+    biometryassist:::validate_strip_inputs(base_book, nrows = 2, ncols = 2, brows = 1, bcols = 2),
+    "Strip plot designs require blocks with more than one row and more than one column \\(brows > 1 and bcols > 1\\)\\.",
+    fixed = FALSE
+  )
+  expect_error(
+    biometryassist:::validate_strip_inputs(base_book, nrows = 2, ncols = 2, brows = 2, bcols = 1),
+    "Strip plot designs require blocks with more than one row and more than one column \\(brows > 1 and bcols > 1\\)\\.",
+    fixed = FALSE
+  )
+
+  # nrows/ncols must be multiples of brows/bcols
+  expect_error(
+    biometryassist:::validate_strip_inputs(base_book, nrows = 3, ncols = 2, brows = 2, bcols = 2),
+    "For strip plot designs, nrows must be a multiple of brows and ncols must be a multiple of bcols so blocks tile the layout\\.",
+    fixed = FALSE
+  )
+
+  # Must contain required columns
+  missing_cols <- data.frame(
+    treatments = factor(c("A", "A", "B", "B"))
+  )
+  expect_error(
+    biometryassist:::validate_strip_inputs(missing_cols, nrows = 2, ncols = 2, brows = 2, bcols = 2),
+    "Expected strip plot design book to contain 'treatments' and 'sub_treatments' columns\\.",
+    fixed = FALSE
+  )
+
+  # Area mismatch
+  expect_error(
+    biometryassist:::validate_strip_inputs(base_book, nrows = 2, ncols = 3, brows = 2, bcols = 3),
+    "Strip plot layout area \\(nrows \\* ncols\\) must match the number of plots implied by reps, treatments, and sub_treatments\\.",
+    fixed = FALSE
+  )
+
+  # Within-block row/column strip level counts must match brows/bcols
+  bad_row_levels <- data.frame(
+    treatments = factor(c("A", "A", "A", "A")),
+    sub_treatments = factor(c("x", "y", "x", "y"))
+  )
+  expect_error(
+    biometryassist:::validate_strip_inputs(bad_row_levels, nrows = 2, ncols = 2, brows = 2, bcols = 2),
+    "Strip plot designs apply one treatment to each row within a block, so length\\(treatments\\) must equal brows\\.",
+    fixed = FALSE
+  )
+
+  bad_col_levels <- data.frame(
+    treatments = factor(c("A", "A", "B", "B")),
+    sub_treatments = factor(c("x", "x", "x", "x"))
+  )
+  expect_error(
+    biometryassist:::validate_strip_inputs(bad_col_levels, nrows = 2, ncols = 2, brows = 2, bcols = 2),
+    "Strip plot designs apply one treatment to each column within a block, so length\\(sub_treatments\\) must equal bcols\\.",
+    fixed = FALSE
+  )
+
+  # Block count mismatch when block column exists
+  # Use an area-correct book (nrow == nrows*ncols) so the block-count check is
+  # actually reached.
+  with_blocks <- data.frame(
+    treatments = factor(rep(c("A", "B"), each = 4)),
+    sub_treatments = factor(rep(c("x", "y"), times = 4)),
+    block = factor(rep(1, 8))
+  )
+  expect_error(
+    biometryassist:::validate_strip_inputs(with_blocks, nrows = 4, ncols = 2, brows = 2, bcols = 2),
+    "Strip plot designs require one block per replicate; the number of blocks implied by brows/bcols does not match the design book\\.",
+    fixed = FALSE
+  )
+})
+
+test_that("validate_strip_inputs is silent when block count matches", {
+  # Same 4x2 layout (area = 8) with 2 blocks implied by rr*cc.
+  with_blocks_ok <- data.frame(
+    treatments = factor(rep(c("A", "B"), each = 4)),
+    sub_treatments = factor(rep(c("x", "y"), times = 4)),
+    block = factor(rep(1:2, each = 4))
+  )
+
+  expect_silent(
+    result <- biometryassist:::validate_strip_inputs(
+      with_blocks_ok,
+      nrows = 4,
+      ncols = 2,
+      brows = 2,
+      bcols = 2
+    )
+  )
+
+  expect_equal(result$row_levels, c("A", "B"))
+  expect_equal(result$col_levels, c("x", "y"))
+  expect_equal(result$rr, 2L)
+  expect_equal(result$cc, 1L)
+})
+
+test_that("validate_strip_inputs uses unique() for non-factor treatments", {
+  # Use character columns (not factors) to trigger the else branches for
+  # row_levels/col_levels.
+  char_book <- data.frame(
+    treatments = c("A", "A", "B", "B"),
+    sub_treatments = c("x", "y", "x", "y")
+  )
+
+  result <- biometryassist:::validate_strip_inputs(
+    char_book,
+    nrows = 2,
+    ncols = 2,
+    brows = 2,
+    bcols = 2
+  )
+
+  expect_equal(result$row_levels, c("A", "B"))
+  expect_equal(result$col_levels, c("x", "y"))
+  expect_equal(result$rr, 1L)
+  expect_equal(result$cc, 1L)
+})
+
 test_that("validate_design_inputs passes valid inputs", {
   expect_silent(
     biometryassist:::validate_design_inputs(
       nrows = 10, ncols = 5, brows = NA, bcols = NA, size = 4, seed = TRUE
     )
   )
-  
+
   expect_silent(
     biometryassist:::validate_design_inputs(
       nrows = 10, ncols = 5, brows = 5, bcols = 2, size = 6, seed = 42
@@ -935,7 +1127,7 @@ test_that("validate_design_inputs errors for invalid seed values", {
     ),
     "seed must be numeric or TRUE/FALSE"
   )
-  
+
   expect_error(
     biometryassist:::validate_design_inputs(
       nrows = 10, ncols = 5, brows = NA, bcols = NA, size = 4, seed = "random"
@@ -951,15 +1143,15 @@ test_that("parse_design_type handles non-factorial designs", {
   expect_equal(result$base, "crd")
   expect_false(result$is_factorial)
   expect_equal(result$full_type, "crd")
-  
+
   result <- biometryassist:::parse_design_type("RCBD")
   expect_equal(result$base, "rcbd")
   expect_false(result$is_factorial)
-  
+
   result <- biometryassist:::parse_design_type("  lsd  ")
   expect_equal(result$base, "lsd")
   expect_false(result$is_factorial)
-  
+
   result <- biometryassist:::parse_design_type("split")
   expect_equal(result$base, "split")
   expect_false(result$is_factorial)
@@ -970,12 +1162,12 @@ test_that("parse_design_type handles factorial designs", {
   expect_equal(result$base, "crd")
   expect_true(result$is_factorial)
   expect_equal(result$full_type, "factorial_crd")
-  
+
   result <- biometryassist:::parse_design_type("CROSSED:RCBD")
   expect_equal(result$base, "rcbd")
   expect_true(result$is_factorial)
   expect_equal(result$full_type, "factorial_rcbd")
-  
+
   result <- biometryassist:::parse_design_type("crossed: lsd")
   expect_equal(result$base, "lsd")
   expect_true(result$is_factorial)
@@ -986,17 +1178,17 @@ test_that("parse_design_type errors for invalid types", {
     biometryassist:::parse_design_type("invalid"),
     "Designs of type 'invalid' are not supported"
   )
-  
+
   expect_error(
     biometryassist:::parse_design_type(c("crd", "rcbd")),
     "type must be a single non-missing string"
   )
-  
+
   expect_error(
     biometryassist:::parse_design_type(NA),
     "type must be a single non-missing string"
   )
-  
+
   expect_error(
     biometryassist:::parse_design_type(""),
     "type must be a non-empty string"
@@ -1008,12 +1200,12 @@ test_that("parse_design_type errors for invalid factorial types", {
     biometryassist:::parse_design_type("crossed:"),
     "Crossed factorial designs must be specified as 'crossed:<type>'"
   )
-  
+
   expect_error(
     biometryassist:::parse_design_type("crossed:split"),
     "Crossed designs of type 'split' are not supported"
   )
-  
+
   expect_error(
     biometryassist:::parse_design_type("crossed:invalid"),
     "Crossed designs of type 'invalid' are not supported"
@@ -1027,7 +1219,7 @@ test_that("create_agricolae_design creates CRD designs", {
   result <- biometryassist:::create_agricolae_design(
     parsed_type, treatments = 1:4, reps = 5, sub_treatments = NULL, seed = 42
   )
-  
+
   expect_equal(result$parameters$design, "crd")
   expect_equal(result$parameters$seed, 42)
   expect_equal(nrow(result$book), 20)
@@ -1038,7 +1230,7 @@ test_that("create_agricolae_design creates RCBD designs", {
   result <- biometryassist:::create_agricolae_design(
     parsed_type, treatments = letters[1:6], reps = 4, sub_treatments = NULL, seed = 123
   )
-  
+
   expect_equal(result$parameters$design, "rcbd")
   expect_equal(result$parameters$seed, 123)
   expect_equal(nrow(result$book), 24)
@@ -1046,14 +1238,14 @@ test_that("create_agricolae_design creates RCBD designs", {
 
 test_that("create_agricolae_design creates LSD designs", {
   parsed_type <- list(base = "lsd", is_factorial = FALSE, full_type = "lsd")
-  
+
   expect_message(
     result <- biometryassist:::create_agricolae_design(
       parsed_type, treatments = 1:5, reps = 3, sub_treatments = NULL, seed = 42
     ),
     "Number of replicates is not required for Latin Square designs"
   )
-  
+
   expect_equal(result$parameters$design, "lsd")
   expect_equal(nrow(result$book), 25)
 })
@@ -1063,14 +1255,14 @@ test_that("create_agricolae_design creates split plot designs", {
   result <- biometryassist:::create_agricolae_design(
     parsed_type, treatments = c("A", "B"), reps = 4, sub_treatments = 1:4, seed = 42
   )
-  
+
   expect_equal(result$parameters$design, "split")
   expect_equal(nrow(result$book), 32)
 })
 
 test_that("create_agricolae_design errors when split plot missing sub_treatments", {
   parsed_type <- list(base = "split", is_factorial = FALSE, full_type = "split")
-  
+
   expect_error(
     biometryassist:::create_agricolae_design(
       parsed_type, treatments = c("A", "B"), reps = 4, sub_treatments = NULL, seed = 42
@@ -1084,7 +1276,7 @@ test_that("create_agricolae_design creates factorial designs", {
   result <- biometryassist:::create_agricolae_design(
     parsed_type, treatments = c(3, 2), reps = 3, sub_treatments = NULL, seed = 42
   )
-  
+
   expect_equal(result$parameters$design, "factorial")
   expect_equal(result$parameters$applied, "crd")
   expect_equal(nrow(result$book), 18)
@@ -1092,7 +1284,7 @@ test_that("create_agricolae_design creates factorial designs", {
 
 test_that("create_agricolae_design errors for >3 factor factorial", {
   parsed_type <- list(base = "crd", is_factorial = TRUE, full_type = "factorial_crd")
-  
+
   expect_error(
     biometryassist:::create_agricolae_design(
       parsed_type, treatments = c(2, 2, 2, 2), reps = 3, sub_treatments = NULL, seed = 42
@@ -1103,15 +1295,15 @@ test_that("create_agricolae_design errors for >3 factor factorial", {
 
 test_that("create_agricolae_design uses seed value correctly", {
   parsed_type <- list(base = "crd", is_factorial = FALSE, full_type = "crd")
-  
+
   result1 <- biometryassist:::create_agricolae_design(
     parsed_type, treatments = 1:4, reps = 5, sub_treatments = NULL, seed = 42
   )
-  
+
   result2 <- biometryassist:::create_agricolae_design(
     parsed_type, treatments = 1:4, reps = 5, sub_treatments = NULL, seed = 42
   )
-  
+
   expect_identical(result1$book, result2$book)
 })
 
@@ -1233,14 +1425,14 @@ test_that("handle_save does nothing when save = 'none'", {
 test_that("handle_save creates CSV when save = 'workbook'", {
   withr::local_file("test_save_wb.csv")
   info <- list(design = data.frame(x = 1:5, y = letters[1:5]))
-  
+
   biometryassist:::handle_save(
     save = "workbook", savename = "test_save_wb", plottype = "pdf", info = info
   )
-  
+
   expect_true(file.exists("test_save_wb.csv"))
   expect_false(file.exists("test_save_wb.pdf"))
-  
+
   # Verify CSV content
   saved <- read.csv("test_save_wb.csv")
   expect_equal(nrow(saved), 5)
@@ -1249,7 +1441,7 @@ test_that("handle_save creates CSV when save = 'workbook'", {
 
 test_that("handle_save errors for invalid save option", {
   info <- list(design = data.frame(x = 1:5))
-  
+
   expect_error(
     biometryassist:::handle_save(
       save = "invalid", savename = "test", plottype = "pdf", info = info

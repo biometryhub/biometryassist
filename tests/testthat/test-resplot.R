@@ -36,6 +36,29 @@ test_that("Old mod.obj argument produces a warning", {
     vdiffr::expect_doppelganger(title = "Resplot after warning", p, variant = ggplot2_variant())
 })
 
+test_that("resplot sets stdres to NA when denominator is non-finite", {
+    testthat::local_mocked_bindings(
+        extract_model_info = function(model.obj, call = FALSE) {
+            list(
+                resids = c(1, NA_real_, NA_real_),
+                fits = c(1, 2, 3),
+                facet = 1,
+                k = 3,
+                facet_name = NULL,
+                model_call = NULL
+            )
+        },
+        .package = "biometryassist"
+    )
+
+    # With only one non-missing residual, sd() is NA and denom is non-finite,
+    # so stdres is set via: rep(NA_real_, nrow(group_residuals))
+    expect_warning(p <- resplot(dat.aov, shapiro = FALSE),
+                   "no non-missing arguments to max; returning -Inf")
+    expect_true(inherits(p, c("patchwork", "ggplot")))
+    expect_silent(print(p))
+})
+
 test_that("Residual plots work for asreml", {
     skip_on_cran()
 

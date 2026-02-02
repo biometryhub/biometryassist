@@ -605,13 +605,6 @@ build_strip <- function(design_book, nrows, ncols, brows, bcols, byrow) {
 
     des$treatments <- factor(paste(des$wp_treatments, des$sub_treatments, sep = "_"))
 
-    # Order by column within blocks if requested (keeps treatments fixed,
-    # but swaps the coordinates to provide the alternative arrangement).
-    if (!byrow) {
-        des[, c("row", "col", "block")] <- des[order(des$block, des$col, des$row),
-                                                 c("row", "col", "block")]
-    }
-
     des
 }
 

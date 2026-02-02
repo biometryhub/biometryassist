@@ -217,3 +217,26 @@ test_that("variogram data is consistent across palette changes", {
     expect_silent(print(v2))
     expect_silent(print(v3))
 })
+
+test_that("vario_df sets gamma to 0 when there are no valid residual pairs", {
+    # Construct a minimal object that exercises the `n_total == 0` branch inside
+    # the lag loop, covering: `gammas[index] <- 0`
+    fake_model <- list(
+        R.param = structure(list(1), names = "Row:Column"),
+        mf = data.frame(
+            Row = c(1, 1, 2, 2),
+            Column = c(1, 2, 1, 2),
+            units = 1:4
+        ),
+        residuals = rep(NA_real_, 4)
+    )
+
+    vg <- vario_df(fake_model)
+
+    # With all residuals missing, there are no valid pairs for any lag
+    expect_true(all(vg$np == 0))
+    # gamma should be set to 0 for the (0,0) case and for all lags
+    expect_true(all(vg$gamma == 0))
+    # Specifically ensure we exercised a non-(0,0) lag
+    expect_equal(vg$gamma[2], 0)
+})
