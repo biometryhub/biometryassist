@@ -1,9 +1,16 @@
 dat.aov <- aov(Petal.Width ~ Species, data = iris)
 
 test_that("mct produces output", {
-    output <- multiple_comparisons(dat.aov, classify = "Species", plot = TRUE)
-    expect_equal(output$predicted.value, c(0.25, 1.33, 2.03), tolerance = 5e-2)
-    vdiffr::expect_doppelganger("mct output", autoplot(output))
+    tmp <- withr::local_tempdir()
+    withr::with_dir(tmp, {
+        withr::local_file("Rplots.pdf")
+
+        output <- multiple_comparisons(dat.aov, classify = "Species", plot = TRUE)
+        while (grDevices::dev.cur() > 1) grDevices::dev.off()
+
+        expect_equal(output$predicted.value, c(0.25, 1.33, 2.03), tolerance = 5e-2)
+        vdiffr::expect_doppelganger("mct output", autoplot(output))
+    })
 })
 
 test_that("mct ylab handles call/language labels", {
@@ -485,6 +492,7 @@ test_that("3 way interaction works", {
 })
 
 test_that("plots are produced when requested", {
+    withr::local_seed(123)
     des <- design(type = "crossed:crd", treatments = c(3, 3, 3),
                   reps = 3, nrows = 9, ncols = 9, seed = 42, quiet = TRUE)
     des$design$response <- rnorm(81, 100)
@@ -493,14 +501,29 @@ test_that("plots are produced when requested", {
     des$design$C <- factor(des$design$C)
     dat.aov <- aov(response~A*B*C, data = des$design)
 
-    expect_snapshot_output(output <- multiple_comparisons(dat.aov, classify = "A:B:C", plot = TRUE))
-    # expect_snapshot_output(output$predicted.value)
-    expect_equal(output$std.error,
-                 rep(0.63, 27))
-    skip_if(interactive())
-    vdiffr::expect_doppelganger("3 way interaction internal",
-                                output <- multiple_comparisons(dat.aov, classify = "A:B:C", plot = TRUE),
-                                variant = ggplot2_variant())
+    tmp <- withr::local_tempdir()
+    withr::with_dir(tmp, {
+        withr::local_file("Rplots.pdf")
+
+        expect_snapshot_output(
+            output <- multiple_comparisons(dat.aov, classify = "A:B:C", plot = TRUE)
+        )
+        while (grDevices::dev.cur() > 1) grDevices::dev.off()
+
+        expect_s3_class(output, "mct")
+        expect_equal(nrow(output), 27)
+        expect_equal(output$std.error, rep(0.63, 27))
+
+        skip_if(interactive())
+        vdiffr::expect_doppelganger(
+            "3 way interaction internal",
+            function() {
+                invisible(multiple_comparisons(dat.aov, classify = "A:B:C", plot = TRUE))
+            },
+            variant = ggplot2_variant()
+        )
+        while (grDevices::dev.cur() > 1) grDevices::dev.off()
+    })
 })
 
 test_that("nlme model produces an error", {
