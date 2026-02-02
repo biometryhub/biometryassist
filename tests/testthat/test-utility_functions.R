@@ -10,15 +10,31 @@ test_that("Package message prints on load", {
 
 test_that("Output prints if crayon is not installed", {
     rlang::local_interactive(value = TRUE)
-    
-    # Mock to simulate crayon not being installed
-    mockery::stub(biometryassist:::.onAttach, "rlang::is_installed", function(pkg) {
-        if (pkg == "crayon") return(FALSE)
-        TRUE
-    })
-    
-    # Mock compare_version to avoid network calls and avoid triggering update warning
-    mockery::stub(biometryassist:::.onAttach, "compare_version", function(...) 0L)
+
+    # Force rlang::is_installed("crayon") to be FALSE.
+    # We must override the function in the rlang namespace because .onAttach()
+    # calls it via rlang::is_installed(), which mockery::stub() cannot intercept.
+    old_is_installed <- get("is_installed", envir = asNamespace("rlang"))
+    on.exit(
+        assignInNamespace("is_installed", old_is_installed, ns = "rlang"),
+        add = TRUE
+    )
+    assignInNamespace(
+        "is_installed",
+        function(pkg) {
+            if (identical(pkg, "crayon")) {
+                return(FALSE)
+            }
+            old_is_installed(pkg)
+        },
+        ns = "rlang"
+    )
+
+    # Mock compare_version to avoid available.packages() and update warnings
+    testthat::local_mocked_bindings(
+        compare_version = function(...) 0L,
+        .package = "biometryassist"
+    )
 
     # Use expect_message since .onAttach uses packageStartupMessage()
     # This should hit the else branch (line 45-47) which calls packageStartupMessage without crayon
@@ -31,7 +47,7 @@ test_that("Output prints if crayon is not installed", {
 test_that("Output prints with crayon when it is installed", {
     skip_if_not_installed("crayon")
     rlang::local_interactive(value = TRUE)
-    
+
     # Simply call .onAttach when crayon IS installed (default behavior)
     # This will naturally test the if(rlang::is_installed("crayon")) branch
     # Mock compare_version to avoid network calls
@@ -39,7 +55,7 @@ test_that("Output prints with crayon when it is installed", {
         compare_version = function(...) 0L,
         .package = "biometryassist"
     )
-    
+
     # Should use crayon::green (lines 42-43) since crayon is installed
     expect_message(
         biometryassist:::.onAttach(pkg = "biometryassist"),

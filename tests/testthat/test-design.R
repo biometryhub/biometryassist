@@ -1264,6 +1264,12 @@ test_that("normalise_agricolae_book() infers split treatments and sub_treatments
     expect_false("some_sub" %in% names(out))
 })
 
+test_that("normalise_agricolae_book() returns input unchanged for NULL book", {
+    design_info <- list(is_factorial = FALSE, type = "crd", base = "crd")
+    out <- biometryassist:::normalise_agricolae_book(NULL, design_info)
+    expect_null(out)
+})
+
 test_that("des_info() adds buffers and passes blocks = FALSE for non-block designs", {
     crd_obj <- agricolae::design.crd(trt = c(1, 5, 10, 20), r = 2, seed = 42)
 
