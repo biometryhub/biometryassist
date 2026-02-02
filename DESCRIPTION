@@ -55,6 +55,7 @@ Suggests:
     crayon,
     ggspatial,
     knitr,
+    Matrix,
     mockery,
     openxlsx2,
     rmarkdown,
