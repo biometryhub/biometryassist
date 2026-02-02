@@ -207,7 +207,7 @@ get_predictions.lmerMod <- function(model.obj, classify, ...) {
 #' @rdname predictions
 #' @keywords internal
 get_predictions.lmerModLmerTest <- function(model.obj, classify, ...) {
-    get_predictions.lm(model.obj, classify, ...)
+    get_predictions.lmerMod(model.obj, classify, ...)
 }
 
 #' @rdname predictions
