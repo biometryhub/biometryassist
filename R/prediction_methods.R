@@ -1,7 +1,7 @@
 #' Check if classify term exists in model terms
 #'
 #' Checks if the classify term exists in the model terms, handling interaction
-#' terms specified in any order (e.g., B:A when model has A:B, or A:C:B when 
+#' terms specified in any order (e.g., B:A when model has A:B, or A:C:B when
 #' model has A:B:C).
 #'
 #' @param classify Name of predictor variable as a string
@@ -15,17 +15,17 @@ check_classify_in_terms <- function(classify, model_terms) {
     if(classify %in% model_terms) {
         return(classify)
     }
-    
+
     # If classify contains ":", it might be an interaction in a different order
     if(grepl(":", classify)) {
         # Split the classify term into parts
         classify_parts <- unlist(strsplit(classify, ":"))
-        
+
         # For each model term, check if it's the same interaction in a different order
         for(term in model_terms) {
             if(grepl(":", term)) {
                 term_parts <- unlist(strsplit(term, ":"))
-                
+
                 # Check if they have the same components (regardless of order)
                 # and the same number of components
                 if(length(classify_parts) == length(term_parts)) {
@@ -38,7 +38,7 @@ check_classify_in_terms <- function(classify, model_terms) {
             }
         }
     }
-    
+
     # If we get here, classify is not in the model in any order
     stop(classify, " is not a term in the model. Please check model specification.", call. = FALSE)
 }
@@ -66,7 +66,7 @@ get_predictions <- function(model.obj, classify, pred.obj = NULL, ...) {
 #' @keywords internal
 get_predictions.default <- function(model.obj, ...) {
     supported_types <- c("aov", "lm", "lmerMod", "lmerModLmerTest",
-                         "asreml")
+                         "lme", "asreml")
     stop("model.obj must be a linear (mixed) model object. Currently supported model types are: ",
          paste(supported_types, collapse = ", "), call. = FALSE)
 }
@@ -164,7 +164,9 @@ get_predictions.lm <- function(model.obj, classify, ...) {
     names(pp)[names(pp) == "SE"] <- "std.error"
 
     # Set diagonals to NA
-    diag(sed) <- NA
+    if(all(dim(sed) > 1)) {
+        diag(sed) <- NA
+    }
 
     # Process aliased treatments
     aliased_result <- process_aliased(pp, sed, classify)
@@ -205,7 +207,13 @@ get_predictions.lmerMod <- function(model.obj, classify, ...) {
 #' @rdname predictions
 #' @keywords internal
 get_predictions.lmerModLmerTest <- function(model.obj, classify, ...) {
-    get_predictions.lmerMod(model.obj, classify, ...)
+    get_predictions.lm(model.obj, classify, ...)
+}
+
+#' @rdname predictions
+#' @keywords internal
+get_predictions.lme <- function(model.obj, classify, ...) {
+    get_predictions.lm(model.obj, classify, ...)
 }
 
 #' Process aliased treatments in predictions

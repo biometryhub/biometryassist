@@ -108,6 +108,25 @@ test_that("calculate_pvalue_matrix supports Matrix SED inputs", {
     expect_true(all(pvals[upper.tri(pvals)] >= 0 & pvals[upper.tri(pvals)] <= 1, na.rm = TRUE))
 })
 
+test_that("calculate_pvalue_matrix supports scalar SED inputs", {
+    pp <- data.frame(
+        predicted.value = c(10, 12, 13, 15),
+        Names = c("A", "B", "C", "D")
+    )
+
+    # Scalar SED implies the same standard error for every comparison.
+    # This covers the `rep_len(sed, length(diff))` branch.
+    pvals <- biometryassist:::calculate_pvalue_matrix(pp, sed = 0.5, ndf = 10)
+
+    expect_true(is.matrix(pvals))
+    expect_type(pvals, "double")
+    expect_true(isSymmetric(pvals))
+    expect_equal(rownames(pvals), pp$Names)
+    expect_equal(colnames(pvals), pp$Names)
+    expect_equal(diag(pvals), rep(1, nrow(pp)), ignore_attr = TRUE)
+    expect_true(all(pvals[upper.tri(pvals)] >= 0 & pvals[upper.tri(pvals)] <= 1, na.rm = TRUE))
+})
+
 test_that("HSD value is accessible and correct", {
     output <- multiple_comparisons(dat.aov, classify = "Species")
 
@@ -287,6 +306,34 @@ test_that("mct ylab handles call/language labels", {
                                            aliased_names = NULL)
 
     expect_identical(attr(out, "ylab"), quote(sqrt(response)))
+})
+
+test_that("add_attributes stores aliased and matrix HSD attributes", {
+    pp <- data.frame(
+        trt = factor(c("A", "B")),
+        predicted.value = c(1, 2),
+        std.error = c(0.1, 0.1),
+        df = c(10, 10),
+        ci = c(0.2, 0.2),
+        low = c(0.8, 1.8),
+        up = c(1.2, 2.2),
+        groups = c("a", "b")
+    )
+
+    # Non-constant matrix ensures the var() check takes the matrix branch.
+    crit_val <- matrix(c(0, 1, 2, 3), nrow = 2, ncol = 2)
+
+    out <- biometryassist:::add_attributes(
+        pp,
+        ylab = quote(log(Petal.Width)),
+        crit_val = crit_val,
+        aliased_names = "B",
+        trans = "log"
+    )
+
+    expect_identical(attr(out, "ylab"), "Petal.Width")
+    expect_identical(attr(out, "aliased"), "B")
+    expect_identical(attr(out, "HSD"), crit_val)
 })
 
 test_that("mct transformation: log", {
@@ -654,14 +701,14 @@ test_that("mct handles aliased results in asreml with a warning", {
     skip_if_not_installed("asreml")
     quiet(library(asreml))
     load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
-    load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
+    load(test_path("data", "oats_data_missing.Rdata"), envir = .GlobalEnv)
     expect_warning(
         output <- multiple_comparisons(model.asr, classify = "Nitrogen:Variety"),
         "Aliased level is: 0\\.2_cwt:Golden_rain\\."
     )
     expect_snapshot_output(output)
 
-    load(test_path("data", "oats_data2.Rdata"), envir = .GlobalEnv)
+    load(test_path("data", "oats_data_missing2.Rdata"), envir = .GlobalEnv)
 
     expect_warning(
         output <- multiple_comparisons(model2.asr, classify = "Nitrogen:Variety"),
@@ -715,7 +762,7 @@ test_that("Including pred.obj object causes warning", {
 
 test_that("Providing a random term in classify produces an error.", {
     skip_if_not_installed("asreml")
-    load(test_path("data", "oats_data2.Rdata"), envir = .GlobalEnv)
+    load(test_path("data", "oats_data_missing2.Rdata"), envir = .GlobalEnv)
     expect_error(multiple_comparisons(model2.asr, classify = "Blocks"),
                  "All predicted values are aliased\\. Perhaps you need the `present` argument\\?")
 })
@@ -786,9 +833,27 @@ test_that("plots are produced when requested", {
 test_that("nlme model produces an error", {
     skip_if_not_installed("nlme")
     suppressPackageStartupMessages(library(nlme))
-    fm1 <- lme(distance ~ age, data = Orthodont)
-    expect_error(multiple_comparisons(fm1, classify = "age"),
-                 "model\\.obj must be a linear \\(mixed\\) model object\\. Currently supported model types are: aov, lm, lmerMod, lmerModLmerTest, asreml")
+    load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
+    dat.lme <- lme(yield ~ Nitrogen*Variety, random = ~1|Blocks, data = dat)
+    output <- multiple_comparisons(dat.lme, classify = "Nitrogen")
+    expect_equal(output$predictions$std.error, rep(7.39, 4), tolerance = 5e-2)
+    expect_equal(min(output$predictions$predicted.value), 79.39, tolerance = 5e-2)
+    expect_equal(max(output$predictions$predicted.value), 123.39, tolerance = 5e-2)
+    expect_equal(output$predictions$predicted.value, c(79.39, 98.89, 114.22, 123.39), tolerance = 5e-2)
+    vdiffr::expect_doppelganger("nlme output", autoplot(output))
+})
+
+test_that("invalid model types give a clear error", {
+    # Use an unsupported model type that still has a `formula()` method so that
+    # the error comes from `get_predictions.default()` (not from validate_inputs()).
+    dat <- data.frame(x = 1:10, y = 1:10)
+    m <- stats::nls(density ~ SSlogis(log(conc), Asym, xmid, scal), data = subset(DNase, Run == 1))
+
+    expect_error(
+        multiple_comparisons(m, classify = "x"),
+        "model\\.obj must be a linear \\(mixed\\) model object\\.",
+        fixed = FALSE
+    )
 })
 
 test_that("multiple_comparisons output has a class of 'mct'", {
@@ -816,6 +881,25 @@ test_that("Check for letters as an alias of groups", {
                                                   groups = FALSE, letters = TRUE),
                    "Both 'groups' and 'letters' provided\\. Using 'groups'\\.")
     expect_false("groups" %in% colnames(output$predictions))
+})
+
+test_that("autoplot supports legacy mct data.frame objects", {
+    # Old versions of biometryassist used an `mct` object that was itself a data.frame.
+    # This test covers the backward-compatibility branch in autoplot.mct().
+    legacy <- data.frame(
+        Species = factor(c("setosa", "versicolor", "virginica")),
+        predicted.value = c(0.25, 1.33, 2.03),
+        std.error = c(0.02, 0.02, 0.02),
+        ci = c(0.05, 0.05, 0.05),
+        low = c(0.20, 1.28, 1.98),
+        up = c(0.30, 1.38, 2.08),
+        groups = c("a", "b", "c")
+    )
+    class(legacy) <- c("mct", class(legacy))
+    attr(legacy, "ylab") <- "Petal.Width"
+
+    p <- autoplot(legacy)
+    expect_s3_class(p, "ggplot")
 })
 
 test_that("autoplot can rotate axis and labels independently", {
