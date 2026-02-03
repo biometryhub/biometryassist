@@ -15,8 +15,9 @@
 #' @importFrom pracma interp2
 #' @importFrom grDevices rainbow
 #' @importFrom lattice wireframe
-#' @importFrom cowplot plot_grid
 #' @importFrom ggplot2 ggplot geom_tile coord_equal geom_contour scale_fill_gradientn theme_bw scale_x_continuous scale_y_continuous theme labs
+#' @importFrom patchwork wrap_elements wrap_plots plot_layout
+#' @importFrom grid grid.grabExpr
 #'
 #' @references S. P. Kaluzny, S. C. Vega, T. P. Cardoso, A. A. Shelly, "S+SpatialStats: User’s Manual for Windows® and UNIX®" _Springer New York_, 2013, p. 68, https://books.google.com.au/books?id=iADkBwvario_pointsQBAJ.
 #' @references A. R. Gilmour, B. R. Cullis, A. P. Verbyla, "Accounting for Natural and Extraneous Variation in the Analysis of Field Experiments." _Journal of Agricultural, Biological, and Environmental Statistics 2, no. 3_, 1997, pp. 269–93, https://doi.org/10.2307/1400446.
@@ -35,7 +36,7 @@
 #' @export
 
 variogram <- function(model.obj, row = NA, column = NA, horizontal = TRUE,
-palette = "default", onepage = FALSE) {
+palette = "rainbow", onepage = FALSE) {
 
     if(!(inherits(model.obj, "asreml"))) {
         stop("model.obj must be an asreml model object", call. = FALSE)
@@ -95,62 +96,68 @@ palette = "default", onepage = FALSE) {
             ggplot2::theme(legend.position = "none", aspect.ratio = 0.3) +
             ggplot2::labs(y = paste(row, "Lag", sep = " "), x = paste(column, "Lag", sep = " "))
 
-        if(tolower(palette) == "rainbow" | tolower(palette) == "default") {
-            a <- a + ggplot2::scale_fill_gradientn(colours = grDevices::rainbow(100))
+        # First adjust the lattice spacing
+        oldpar <- lattice::trellis.par.get()
+        on.exit(lattice::trellis.par.set(oldpar), add = TRUE)
 
-            b <- lattice::wireframe(z ~ y * x, data = gdat, aspect = c(61/87, 0.4),
-                                    scales = list(cex = 0.5, arrows = FALSE),
-                                    drape = TRUE, colorkey = FALSE,
-                                    par.settings = list(axis.line = list(col = 'transparent')),
-                                    xlab = list(label = paste(column, "Lag", sep = " "), cex = .8, rot = 20),
-                                    ylab = list(label = paste(row, "Lag", sep = " "), cex = .8, rot = -18),
-                                    zlab = list(label = NULL, cex.axis = 0.5),
-                                    col.regions = grDevices::rainbow(100))
-        }
-        else if(any(grepl("(colou?r([[:punct:]]|[[:space:]]?)blind)|cb|viridis", palette, ignore.case = T))) {
-            a <- a + ggplot2::scale_fill_gradientn(colours = scales::viridis_pal(option = "viridis")(50))
+        lattice::trellis.par.set(
+            layout.heights = list(
+                top.padding = 0,
+                main.key.padding = 0,
+                key.axis.padding = 0,
+                axis.xlab.padding = 0,
+                xlab.key.padding = 0,
+                key.sub.padding = 0,
+                bottom.padding = 0
+            ),
+            layout.widths = list(
+                left.padding = 0,
+                right.padding = 0,
+                axis.key.padding = 0,
+                key.right = 0,
+                key.left = 0
+            )
+        )
 
-            # Create the lattice plot
-            b <- lattice::wireframe(z ~ y * x, data = gdat, aspect = c(61/87, 0.4),
-                                    scales = list(cex = 0.5, arrows = FALSE),
-                                    drape = TRUE, colorkey = FALSE,
-                                    par.settings = list(axis.line = list(col = 'transparent')),
-                                    xlab = list(label = paste(column, "Lag", sep = " "), cex = .8, rot = 20),
-                                    ylab = list(label = paste(row, "Lag", sep = " "), cex = .8, rot = -18),
-                                    zlab = list(label = NULL, cex.axis = 0.5),
-                                    col.regions = scales::viridis_pal(option = "viridis")(100))
-        }
-        else if(tolower(trimws(palette)) %in% c("magma", "inferno", "cividis", "plasma", "rocket", "mako", "turbo")) {
-            a <- a + ggplot2::scale_fill_gradientn(colours = scales::viridis_pal(option = palette)(50))
+        col_regions <- setup_colour_palette(palette, n = 100)
 
-            # Create the lattice plot
-            b <- lattice::wireframe(z ~ y * x, data = gdat, aspect = c(61/87, 0.4),
-                                    scales = list(cex = 0.5, arrows = FALSE),
-                                    drape = TRUE, colorkey = FALSE,
-                                    par.settings = list(axis.line = list(col = 'transparent')),
-                                    xlab = list(label = paste(column, "Lag", sep = " "), cex = .8, rot = 20),
-                                    ylab = list(label = paste(row, "Lag", sep = " "), cex = .8, rot = -18),
-                                    zlab = list(label = NULL, cex.axis = 0.5),
-                                    col.regions = scales::viridis_pal(option = palette)(100))
-        }
+        # Create the lattice plot
+        b <- lattice::wireframe(
+            z ~ y * x,
+            data = gdat,
+            aspect = c(61/87, 0.45),
+            scales = list(cex = 0.5, arrows = FALSE),
+            drape = TRUE,
+            colorkey = FALSE,
+            zlim = range(gdat$z, finite = TRUE),
+            par.settings = list(axis.line = list(col = "transparent")),
+            xlab = list(label = paste(column, "Lag"), cex = .8, rot = 20),
+            ylab = list(label = paste(row, "Lag"), cex = .8, rot = -30),
+            zlab = list(label = NULL, cex.axis = 0.5), 
+            col.regions = col_regions
+        )
 
-        else if(tolower(trimws(palette)) %in% c("spectral")) {
-            a <- a + ggplot2::scale_fill_gradientn(colours = scales::brewer_pal(palette = palette)(11))
 
-            # Create the lattice plot
-            b <- lattice::wireframe(z ~ y * x, data = gdat, aspect = c(61/87, 0.4),
-                                    scales = list(cex = 0.5, arrows = FALSE),
-                                    drape = TRUE, colorkey = FALSE,
-                                    par.settings = list(axis.line = list(col = 'transparent')),
-                                    xlab = list(label = paste(column, "Lag", sep = " "), cex = .8, rot = 20),
-                                    ylab = list(label = paste(row, "Lag", sep = " "), cex = .8, rot = -18),
-                                    zlab = list(label = NULL, cex.axis = 0.5),
-                                    col.regions = scales::brewer_pal(palette = palette)(11))
-        }
-        else {
-            stop("Invalid value for palette.", call. = FALSE)
-        }
-        output[[i]] <- cowplot::plot_grid(b, a, nrow = 2, scale = c(2, 1))
+        # b <- lattice:::update.trellis(
+        #     base_wireframe,
+            
+        # )
+
+        a <- a + ggplot2::scale_fill_gradientn(colours = col_regions)
+
+        lattice_grob <- grid::grid.grabExpr(
+            print(b, newpage = FALSE)
+        )
+
+        lg <- patchwork::wrap_elements(full = lattice_grob)
+
+        pw <- (lg / a) +
+            patchwork::plot_layout(heights = c(2, 1)) &
+            ggplot2::theme(plot.margin = grid::unit(c(0, 0, 0, 0), "pt"))
+
+        output[[i]] <- pw
+        class(output[[i]]) <- c("variogram_plot", class(output[[i]]))
+
         if(!orig_row) {
             row <- NA
         }
@@ -160,23 +167,22 @@ palette = "default", onepage = FALSE) {
     }
 
     if(n_groups > 1) {
-        names(output) <- groups
 
         # Add titles to all plots
         titled_plots <- list()
         for(j in seq_along(output)) {
-            title <- cowplot::ggdraw() +
-                cowplot::draw_label(groups[j],
-                                  fontface = 'bold',
-                                  x = 0.1,
-                                  hjust = 0)
-            titled_plots[[j]] <- cowplot::plot_grid(
-                title,
-                output[[j]],
-                nrow = 2,
-                rel_heights = c(0.1, 1)
-            )
+            title_grob <- grid::textGrob(groups[j], gp = grid::gpar(fontface = 'bold'),
+                                         hjust = 0, x = 0.1)
+                title <- patchwork::wrap_elements(full = title_grob)
+                titled_plots[[j]] <- patchwork::wrap_plots(
+                    title,
+                    output[[j]],
+                    ncol = 1,
+                    heights = c(1, 20)
+                )
+            class(titled_plots[[j]]) <- c("variogram_plot", class(titled_plots[[j]]))
         }
+        names(titled_plots) <- groups
 
         if(onepage) {
             # Calculate number of pages needed
@@ -194,11 +200,12 @@ palette = "default", onepage = FALSE) {
                 n_rows <- ceiling(n_plots_on_page/3)
 
                 # Create combined plot for current page
-                pages[[page]] <- cowplot::plot_grid(
-                    plotlist = titled_plots[start_idx:end_idx],
-                    ncol = n_cols,
-                    nrow = n_rows
-                )
+                    pages[[page]] <- patchwork::wrap_plots(
+                        titled_plots[start_idx:end_idx],
+                        ncol = n_cols,
+                        nrow = n_rows
+                    )
+                class(pages[[page]]) <- c("variogram_plot", class(pages[[page]]))
             }
 
             return(pages)
@@ -232,18 +239,13 @@ palette = "default", onepage = FALSE) {
 #' }
 #'
 vario_df <- function(model.obj, Row = NA, Column = NA) {
-    # The 'z' value for the variogram is the residuals
-    # Need to be able to pull out the x/y from the model object
 
     if(length(names(model.obj$R.param)) > 1) {
-        # More than one residual component (e.g. from dsum())
-        # Do we need to check the names match in all the levels? Probably...
         if(!is.null(attr(model.obj$formulae$residual,"specials")$dsum)) {
             dsum_col <- as.character(model.obj$formulae$residual[[2]][[2]][[2]][[3]])
         }
         levs <- names(model.obj$R.param)
         dims <- setdiff(names(model.obj$R.param[[1]]), "variance")
-
     }
     else {
         dims <- unlist(strsplit(names(model.obj$R.param[1]), ":"))
@@ -271,54 +273,99 @@ vario_df <- function(model.obj, Row = NA, Column = NA) {
 
         Resid <- residuals(model.obj)[model_frame$units]
 
-        vario <- expand.grid(Row = 0:(nrows-1), Column = 0:(ncols-1))
-
-        # Ignore the 0, 0 case (gamma=0, counted row*cols times)
-        gammas <- rep(0, nrows*ncols)
-        nps <- rep(nrows*ncols, nrows*ncols)
-
-        for (index in 2:nrow(vario)) {
-            i <- vario[index, 'Row']
-            j <- vario[index, 'Column']
-
-            gamma <- 0
-            np <- 0
-            for (val_index in 1:nrow(vario)) {
-
-                # Deliberate double-counting so that offset handling is easy
-                # (so e.g. we compute distance from (1,1)->(2,3), and then again
-                # later from (2,3)->(1,1)).
-                for (offset in unique(list(c(i, j), c(-i, j), c(i, -j), c(-i, -j)))) {
-                    row <- Row[val_index] + offset[1]
-                    col <- Column[val_index] + offset[2]
-
-                    if(0 < row && row <= nrows && 0 < col && col <= ncols && !is.na(Resid[val_index])) {
-                        other <- Resid[Row == row & Column == col]
-
-                        if(!is.na(other)) {
-                            gamma <- gamma + (Resid[val_index] - other)^2
-                            np <- np + 1
-                        }
-                    }
-                }
+        # Create a matrix of residuals indexed by Row and Column
+        resid_matrix <- matrix(NA, nrow = nrows, ncol = ncols)
+        for(k in seq_along(Row)) {
+            if(!is.na(Resid[k])) {
+                resid_matrix[Row[k], Column[k]] <- Resid[k]
             }
-            # Since we double-counted precisely, halve to get the correct answer.
-            np <- np / 2
-            gamma <- gamma / 2
-
-            if(np > 0) {
-                gamma <- gamma / (2*np)
-            }
-
-            gammas[index] <- gamma
-            nps[index] <- np
         }
-        nps[1] <- nps[1]-sum(is.na(Resid))
+
+        # Generate all lag combinations
+        vario <- expand.grid(Row = 0:(nrows-1), Column = 0:(ncols-1))
+        n_lags <- nrow(vario)
+
+        # Pre-allocate results
+        gammas <- numeric(n_lags)
+        nps <- numeric(n_lags)
+
+        # Vectorized computation for all lags
+        for(index in 2:n_lags) {
+            row_lag <- vario[index, 'Row']
+            col_lag <- vario[index, 'Column']
+
+            # Calculate for all four symmetric offsets and combine
+            gamma_total <- 0
+            n_total <- 0
+
+            # Offset combinations
+            offset_list <- list(
+                c(row_lag, col_lag),
+                c(-row_lag, col_lag),
+                c(row_lag, -col_lag),
+                c(-row_lag, -col_lag)
+            )
+
+            # Remove duplicates (e.g., when row_lag or col_lag is 0)
+            offset_list <- unique(offset_list)
+
+            for(offset in offset_list) {
+                dr <- offset[1]
+                dc <- offset[2]
+
+                # Determine valid row and column ranges
+                if(dr >= 0) {
+                    row_from <- 1:(nrows - dr)
+                    row_to <- (1 + dr):nrows
+                } else {
+                    row_from <- (1 - dr):nrows
+                    row_to <- 1:(nrows + dr)
+                }
+
+                if(dc >= 0) {
+                    col_from <- 1:(ncols - dc)
+                    col_to <- (1 + dc):ncols
+                } else {
+                    col_from <- (1 - dc):ncols
+                    col_to <- 1:(ncols + dc)
+                }
+
+                # Extract sub-matrices
+                mat_from <- resid_matrix[row_from, col_from, drop = FALSE]
+                mat_to <- resid_matrix[row_to, col_to, drop = FALSE]
+
+                # Compute squared differences where both values exist
+                valid_pairs <- !is.na(mat_from) & !is.na(mat_to)
+                sq_diff <- (mat_from - mat_to)^2
+
+                # Sum the valid squared differences
+                gamma_total <- gamma_total + sum(sq_diff[valid_pairs], na.rm = TRUE)
+                n_total <- n_total + sum(valid_pairs)
+            }
+
+            # Account for double counting
+            n_total <- n_total / 2
+            gamma_total <- gamma_total / 2
+
+            # Store results
+            if(n_total > 0) {
+                gammas[index] <- gamma_total / (2 * n_total)
+            } else {
+                gammas[index] <- 0
+            }
+            nps[index] <- n_total
+        }
+
+        # Handle the (0,0) case
+        nps[1] <- nrows * ncols - sum(is.na(Resid))
+        gammas[1] <- 0
+
         vario <- cbind(vario, data.frame(gamma = gammas, np = nps, groups = levs[level]))
         output <- rbind(output, vario)
         Row <- NULL
         Column <- NULL
     }
+
     colnames(output) <- c(dims, "gamma", "np", "groups")
     class(output) <- c("variogram", "data.frame")
 
@@ -328,3 +375,15 @@ vario_df <- function(model.obj, Row = NA, Column = NA) {
 
     return(output)
 }
+
+
+#' #' @export
+#' print.variogram_plot <- function(x, ...) {
+#'     if (inherits(x, "patchwork")) {
+#'         print(x)
+#'     } else {
+#'         grid::grid.newpage()
+#'         grid::grid.draw(x)
+#'     }
+#'     invisible(x)
+#' }

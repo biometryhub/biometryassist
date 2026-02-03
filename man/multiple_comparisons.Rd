@@ -33,9 +33,9 @@ multiple_comparisons(
 
 \item{sig}{The significance level, numeric between 0 and 1. Default is 0.05.}
 
-\item{int.type}{The type of confidence interval to calculate. One of \code{ci}, \code{tukey}, \verb{1se} or \verb{2se}. Default is \code{ci}.}
+\item{int.type}{The type of confidence interval to calculate. One of \code{ci}, \code{tukey}, \verb{1se}, \verb{2se}, or \code{none}. Default is \code{ci}.}
 
-\item{trans}{Transformation that was applied to the response variable. One of \code{log}, \code{sqrt}, \code{logit}, \code{power} or \code{inverse}. Default is \code{NULL}.}
+\item{trans}{Transformation that was applied to the response variable. One of \code{log}, \code{sqrt}, \code{logit}, \code{power}, \code{inverse}, or \code{arcsin}. Default is \code{NULL}.}
 
 \item{offset}{Numeric offset applied to response variable prior to transformation. Default is \code{NULL}. Use 0 if no offset was applied to the transformed data. See Details for more information.}
 
@@ -66,12 +66,18 @@ multiple_comparisons(
 \item{...}{Other arguments passed through to \code{\link[=get_predictions]{get_predictions()}}.}
 }
 \value{
-A list containing a data frame with predicted means, standard errors,
+An object of class \code{mct} (a list with class attributes) containing:
+\item{predictions}{A data frame with predicted means, standard errors,
 confidence interval upper and lower bounds, and significant group
-allocations (named \code{predicted_values}), as well as a plot visually
-displaying the predicted values (named \code{predicted_plot}). If some of the
-predicted values are aliased, a warning is printed, and the aliased
-treatment levels are returned in the output (named \code{aliased}).
+allocations}
+\item{pairwise_pvalues}{A symmetric matrix of p-values for all pairwise
+comparisons using Tukey's HSD test}
+\item{hsd}{The Honest Significant Difference value(s) used in the comparisons.
+Either a single numeric value (if constant across comparisons) or a matrix
+(if varies by comparison)}
+\item{aliased}{Character vector of aliased treatment levels (only present if
+some predictions are aliased)}
+\item{sig_level}{The significance level used (default 0.05)}
 }
 \description{
 A function for comparing and ranking predicted means with Tukey's Honest Significant Difference (HSD) Test.
@@ -95,14 +101,16 @@ transformation, add 0.1 in the \code{offset} argument.
 The power argument allows the specification of arbitrary powers to be
 back transformed, if they have been used to attempt to improve normality of
 residuals.
+}
 
-#' ## Confidence Intervals & Comparison Intervals
+\subsection{Confidence Intervals & Comparison Intervals}{
 
 The function provides several options for confidence intervals via the \code{int.type} argument:
 \itemize{
-\item \strong{\code{tukey} (default)}: Tukey comparison intervals that are consistent with the multiple comparison test. These intervals are wider than regular confidence intervals and are designed so that non-overlapping intervals correspond to statistically significant differences in the Tukey HSD test. This ensures visual consistency between the intervals and letter groupings.
-\item \strong{\code{ci}}: Traditional confidence intervals for individual means. These estimate the precision of each individual mean but may not align with the multiple comparison results. Non-overlapping traditional confidence intervals do not necessarily indicate significant differences in multiple comparison tests.
+\item \strong{\code{ci} (default)}: Traditional confidence intervals for individual means. These estimate the precision of each individual mean but may not align with the multiple comparison results. Non-overlapping traditional confidence intervals do not necessarily indicate significant differences in multiple comparison tests.
+\item \strong{\code{tukey}}: Tukey comparison intervals that are consistent with the multiple comparison test. These intervals are wider than regular confidence intervals and are designed so that non-overlapping intervals correspond to statistically significant differences in the Tukey HSD test. This ensures visual consistency between the intervals and letter groupings.
 \item \strong{\verb{1se}} and \strong{\verb{2se}}: Intervals of ±1 or ±2 standard errors around each mean.
+\item \strong{\code{none}}: No confidence intervals will be calculated or displayed in plots.
 }
 
 By default, the function displays regular confidence intervals (\code{int.type = "ci"}),
@@ -144,12 +152,22 @@ pred.out <- multiple_comparisons(model, classify = "Species")
 # Display the predicted values table
 pred.out
 
+# Access the p-value matrix
+pred.out$pairwise_pvalues
+
+# Access the HSD value
+pred.out$hsd
+
 # Show the predicted values plot
 autoplot(pred.out, label_height = 0.5)
 
 # Use traditional confidence intervals instead of Tukey comparison intervals
 pred.out.ci <- multiple_comparisons(model, classify = "Species", int.type = "ci")
 pred.out.ci
+
+# Plot without confidence intervals
+pred.out.none <- multiple_comparisons(model, classify = "Species", int.type = "none")
+autoplot(pred.out.none)
 
 # AOV model example with transformation
 my_iris <- iris
@@ -211,24 +229,20 @@ model.asr <- asreml(resp ~ trt,
 
 resplot(model.asr)
 
-# Perform Box-Cox transformation and get maximum value
-out <- MASS::boxcox(ex_data$resp~ex_data$trt)
-out$x[which.max(out$y)] # 0.3838
-
-# Fit cube root to the data
+# lambda = 1/3 from MASS::boxcox()
 model.asr <- asreml(resp^(1/3) ~ trt,
                     random = ~ block,
                     residual = ~ units,
                     data = ex_data)
-resplot(model.asr) # residual plots look much better
 
-#Determine ranking and groups according to Tukey's Test
+resplot(model.asr) # Look much better
+
 pred.out <- multiple_comparisons(model.obj = model.asr,
                                  classify = "trt",
                                  trans = "power", power = (1/3))
 
 pred.out
-autoplot(pred.out)
+autoplot(pred.out, label_height = 0.5)
 }
 
 }

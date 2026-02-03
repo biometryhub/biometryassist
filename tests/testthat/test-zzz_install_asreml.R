@@ -5,14 +5,229 @@ test_that("get_r_os returns correct structure and values", {
 
     # Check OS detection
     sys_info <- Sys.info()
-    expected_os <- switch(sys_info[['sysname']],
+    expected_os <- switch(sys_info[["sysname"]],
                           Windows = "win",
-                          Linux = "linux",
-                          Darwin = "mac")
+                          Darwin = "mac",
+                          Linux = detect_linux()$os)
     expect_equal(result$os, expected_os)
     expect_match(result$ver, "\\d{2}")  # Should be something like "43" for R 4.3
-    expect_match(result$os_ver, "^(win-|mac-|linux-)(arm-)?[0-9]{2}$")
-    expect_equal(result$arm, sys_info[["machine"]] == "arm64")
+    if (sys_info[["sysname"]] == "Windows") {
+        expect_match(result$os_ver, "^win-[0-9]{2}$")
+    } else if (sys_info[["sysname"]] == "Darwin") {
+        expect_match(result$os_ver, "^mac-[0-9]+-[0-9]{2}(-arm)?$")
+    } else if (sys_info[["sysname"]] == "Linux") {
+        expect_match(result$os_ver, "^[-a-z0-9]+-[0-9]+-[0-9]{2}(-arm)?$")
+    }
+    expect_equal(result$arm, sys_info[["machine"]] %in% c("arm64", "aarch64"))
+})
+
+test_that("detect_linux parses ubuntu base OS and major version", {
+    mock_file_exists <- function(paths) {
+        paths %in% "/etc/os-release"
+    }
+    mock_read_lines <- function(path, warn = FALSE) {
+        c(
+            "ID=pop",
+            "ID_LIKE=\"ubuntu debian\"",
+            "VERSION_ID=\"22.04\""
+        )
+    }
+
+    mockery::stub(detect_linux, "file.exists", mock_file_exists)
+    mockery::stub(detect_linux, "readLines", mock_read_lines)
+
+    out <- detect_linux()
+    expect_type(out, "list")
+    expect_named(out, c("os", "major"))
+    expect_equal(out$os, "ubuntu")
+    expect_equal(out$major, "22")
+})
+
+test_that("detect_linux parses rhel base OS from ID_LIKE", {
+    mock_file_exists <- function(paths) {
+        paths %in% "/usr/lib/os-release"
+    }
+    mock_read_lines <- function(path, warn = FALSE) {
+        c(
+            "ID=centos",
+            "ID_LIKE=\"fedora rhel\"",
+            "VERSION_ID=\"8.6\""
+        )
+    }
+
+    mockery::stub(detect_linux, "file.exists", mock_file_exists)
+    mockery::stub(detect_linux, "readLines", mock_read_lines)
+
+    out <- detect_linux()
+    expect_equal(out$os, "rhel")
+    expect_equal(out$major, "8")
+})
+
+test_that("detect_linux falls back to ID when ID_LIKE is missing or not ubuntu/rhel", {
+    mock_file_exists <- function(paths) {
+        paths %in% "/etc/os-release"
+    }
+    mock_read_lines <- function(path, warn = FALSE) {
+        c(
+            "ID=alpine",
+            "VERSION_ID=\"3.19.1\""
+        )
+    }
+
+    mockery::stub(detect_linux, "file.exists", mock_file_exists)
+    mockery::stub(detect_linux, "readLines", mock_read_lines)
+
+    out <- detect_linux()
+    expect_equal(out$os, "alpine")
+    expect_equal(out$major, "3")
+})
+
+test_that("detect_linux errors when os-release cannot be found", {
+    mock_file_exists <- function(paths) {
+        rep(FALSE, length(paths))
+    }
+
+    mockery::stub(detect_linux, "file.exists", mock_file_exists)
+    expect_error(detect_linux(), "Cannot detect Linux OS")
+})
+
+test_that("get_r_os constructs windows key including R version", {
+    mock_sys_info <- function() {
+        c(sysname = "Windows", machine = "x86_64")
+    }
+
+    mockery::stub(get_r_os, "Sys.info", mock_sys_info)
+    mockery::stub(get_r_os, "get_r_version_compact", function() "44")
+    mockery::stub(get_r_os, "is_arm", function() FALSE)
+
+    out <- get_r_os()
+    expect_equal(out$os, "win")
+    expect_equal(out$ver, "44")
+    expect_false(out$arm)
+    expect_equal(out$os_ver, "win-44")
+})
+
+test_that("get_r_os constructs linux key including distro, major, R version, and optional -arm", {
+    mock_sys_info <- function() {
+        c(sysname = "Linux", machine = "x86_64")
+    }
+    mock_detect_linux <- function() {
+        list(os = "ubuntu", major = "22")
+    }
+
+    mockery::stub(get_r_os, "Sys.info", mock_sys_info)
+    mockery::stub(get_r_os, "detect_linux", mock_detect_linux)
+    mockery::stub(get_r_os, "get_r_version_compact", function() "44")
+    mockery::stub(get_r_os, "is_arm", function() FALSE)
+
+    out <- get_r_os()
+    expect_equal(out$os, "ubuntu")
+    expect_equal(out$ver, "44")
+    expect_false(out$arm)
+    expect_equal(out$os_ver, "ubuntu-22-44")
+
+    mockery::stub(get_r_os, "is_arm", function() TRUE)
+    out_arm <- get_r_os()
+    expect_true(out_arm$arm)
+    expect_equal(out_arm$os_ver, "ubuntu-22-44-arm")
+})
+
+test_that("get_r_os constructs mac key including mac major version and optional -arm", {
+    called <- new.env(parent = emptyenv())
+    called$sw_vers <- FALSE
+
+    mock_sys_info <- function() {
+        c(sysname = "Darwin", machine = "x86_64")
+    }
+    mock_system <- function(command, intern = FALSE, ...) {
+        if (identical(command, "sw_vers -productVersion") && isTRUE(intern)) {
+            called$sw_vers <- TRUE
+            return("14.3.1")
+        }
+        stop("Unexpected system() call in test")
+    }
+
+    mockery::stub(get_r_os, "Sys.info", mock_sys_info)
+    mockery::stub(get_r_os, "system", mock_system)
+    mockery::stub(get_r_os, "get_r_version_compact", function() "44")
+    mockery::stub(get_r_os, "is_arm", function() FALSE)
+
+    out <- get_r_os()
+    expect_true(called$sw_vers)
+    expect_equal(out$os, "mac")
+    expect_equal(out$ver, "44")
+    expect_false(out$arm)
+    expect_equal(out$os_ver, "mac-14-44")
+
+    mockery::stub(get_r_os, "is_arm", function() TRUE)
+    out_arm <- get_r_os()
+    expect_true(out_arm$arm)
+    expect_equal(out_arm$os_ver, "mac-14-44-arm")
+})
+
+test_that("get_r_os errors for unsupported operating systems", {
+    mock_sys_info <- function() {
+        c(sysname = "Solaris", machine = "x86_64")
+    }
+
+    mockery::stub(get_r_os, "Sys.info", mock_sys_info)
+    mockery::stub(get_r_os, "get_r_version_compact", function() "44")
+    mockery::stub(get_r_os, "is_arm", function() FALSE)
+
+    expect_error(get_r_os(), "Unsupported operating system")
+})
+
+test_that("get_version_table cleans table rows then calls parse_version_table", {
+    # This test avoids network access by mocking xml2 + stringi and checking
+    # that NA/empty rows are removed before calling parse_version_table().
+    called <- new.env(parent = emptyenv())
+    called$tables <- NULL
+    called$headers <- NULL
+
+    mock_read_html <- function(url) {
+        structure(list(url = url), class = "mock_html")
+    }
+    mock_xml_find_all <- function(res, xpath) {
+        # Return distinguishable placeholders for headers vs tables.
+        if (identical(xpath, "//h3")) return(structure(list(kind = "h3"), class = "mock_nodes"))
+        if (identical(xpath, "//table")) return(structure(list(kind = "table"), class = "mock_nodes"))
+        stop("Unexpected xpath in test: ", xpath)
+    }
+    mock_xml_text <- function(nodes) {
+        if (inherits(nodes, "mock_nodes") && identical(nodes$kind, "h3")) {
+            return(c("ASReml-R 4.4 (All platforms) - R version 4.4"))
+        }
+        if (inherits(nodes, "mock_nodes") && identical(nodes$kind, "table")) {
+            # Only tables containing "macOS" are kept.
+            return(c("macOS\nrow1\nrow2", "Windows\nrow1\nrow2"))
+        }
+        stop("Unexpected nodes in xml_text mock")
+    }
+    mock_split_fixed <- function(x, sep) {
+        # Simulate table splitting producing NA and empty strings.
+        list(c("headerA", NA_character_, "", "headerB", "rowA"))
+    }
+    mock_parse_version_table <- function(tables, headers) {
+        called$tables <- tables
+        called$headers <- headers
+        data.frame(os = "mac", arm = FALSE, r_ver = "44", asr_ver = "4.4.0", stringsAsFactors = FALSE)
+    }
+
+    mockery::stub(get_version_table, "xml2::read_html", mock_read_html)
+    mockery::stub(get_version_table, "xml2::xml_find_all", mock_xml_find_all)
+    mockery::stub(get_version_table, "xml2::xml_text", mock_xml_text)
+    mockery::stub(get_version_table, "stringi::stri_split_fixed", mock_split_fixed)
+    mockery::stub(get_version_table, "parse_version_table", mock_parse_version_table)
+
+    out <- get_version_table(url = "http://example.com/mock")
+    expect_s3_class(out, "data.frame")
+    expect_true(all(c("os", "arm", "r_ver", "asr_ver") %in% names(out)))
+
+    expect_true(is.list(called$tables))
+    expect_length(called$tables, 1)
+    expect_equal(called$headers, "ASReml-R 4.4 (All platforms) - R version 4.4")
+    expect_false(anyNA(called$tables[[1]]))
+    expect_false(any(called$tables[[1]] == ""))
 })
 
 test_that("find_existing_package works correctly", {
@@ -120,6 +335,60 @@ test_that("parse_version_table handles edge cases", {
     # Test with malformed table data
     bad_tables <- list(c("header1", "header2"))  # Too few columns
     expect_error(parse_version_table(bad_tables, "ASReml-R 4.2 (All platforms)"))
+})
+
+test_that("parse_version_table parses dates and derives os/arm/r_ver/asr_ver", {
+    tbl <- c(
+        "Download", "File name", "Date published", "Other",
+        "Windows x64", "asreml_4.2.0.0.zip", "15 March 2023", "x",
+        "macOS arm", "asreml-4.3.0.0.tgz", "15/03/2023", "y",
+        "Ubuntu 22", "asreml_4.4.0.0.tgz", "15 Mar 2023", "z",
+        "Something else", "asreml_4.1.0.0.tgz", "15-03-2023", "w"
+    )
+
+    out <- parse_version_table(
+        tables = list(tbl),
+        headers = "ASReml-R 4.4 (All platforms) - R version 4.4"
+    )
+
+    expect_s3_class(out, "data.frame")
+    expect_true(all(c("os", "arm", "r_ver", "asr_ver") %in% names(out)))
+
+    # Date parsing with multiple formats
+    expect_s3_class(out[["Date published"]], "Date")
+    expect_equal(out[["Date published"]], rep(as.Date("2023-03-15"), 4))
+
+    # OS mapping from Download
+    expect_equal(out$os, c("win", "mac", "linux", "centos"))
+
+    # ARM detection from Download
+    expect_equal(out$arm, c(FALSE, TRUE, FALSE, FALSE))
+
+    # R version derived from header
+    expect_equal(unique(out$r_ver), "44")
+
+    # asreml version derived from file name
+    expect_equal(out$asr_ver, c("4.2.0.0", "4.3.0.0", "4.4.0.0", "4.1.0.0"))
+})
+
+test_that("parse_version_table returns NA Date for missing/blank values", {
+    tbl <- c(
+        "Download", "File name", "Date published", "Other",
+        "Windows x64", "asreml_4.2.0.0.zip", NA_character_, "x",
+        "macOS", "asreml-4.2.0.0.tgz", "", "y",
+        # Non-empty but unparseable date (not in the supported formats)
+        "Ubuntu 22", "asreml_4.2.0.0.tgz", "2023-03-15", "z",
+        "CentOS", "asreml_4.2.0.0.tgz", "   ", "q",
+        "Something else", "asreml_4.2.0.0.tgz", "15 March 2023", "w"
+    )
+
+    out <- parse_version_table(
+        tables = list(tbl),
+        headers = "ASReml-R 4.4 (All platforms) - R version 4.4"
+    )
+
+    expect_s3_class(out[["Date published"]], "Date")
+    expect_equal(out[["Date published"]], as.Date(c(NA, NA, NA, NA, "2023-03-15")))
 })
 
 # Tests that require internet connection (skip on CRAN)
@@ -407,6 +676,179 @@ test_that("create_mac_folder handles different scenarios", {
     }
 })
 
+test_that("create_mac_folder returns TRUE on non-macOS systems", {
+    skip_on_cran()
+
+    # Mock Sys.info to return Linux
+    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Linux", release = "5.10"))
+    result <- create_mac_folder()
+    expect_true(result)
+
+    # Mock Sys.info to return Windows
+    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Windows", release = "10.0"))
+    result <- create_mac_folder()
+    expect_true(result)
+})
+
+test_that("create_mac_folder returns TRUE when major release is less than 21", {
+    skip_on_cran()
+
+    # macOS Catalina (Darwin 19)
+    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "19.6.0"))
+    result <- create_mac_folder()
+    expect_true(result)
+
+    # macOS Mojave (Darwin 18)
+    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "18.7.0"))
+    result <- create_mac_folder()
+    expect_true(result)
+})
+
+test_that("create_mac_folder returns TRUE when Reprise folder already exists", {
+    skip_on_cran()
+
+    # macOS Big Sur or later with existing folder
+    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
+    mockery::stub(create_mac_folder, "dir.exists", function(path) TRUE)
+
+    result <- create_mac_folder()
+    expect_true(result)
+})
+
+test_that("create_mac_folder creates directory successfully on macOS Big Sur+", {
+    skip_on_cran()
+
+    dir_created <- FALSE
+
+    # Mock macOS Big Sur (Darwin 21)
+    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
+    mockery::stub(create_mac_folder, "dir.exists", function(path) dir_created)
+    mockery::stub(create_mac_folder, "dir.create", function(path, recursive) {
+        dir_created <<- TRUE
+        TRUE
+    })
+
+    result <- create_mac_folder()
+    expect_true(result)
+    expect_true(dir_created)
+})
+
+test_that("create_mac_folder prompts user when dir.create fails and user says Yes", {
+    skip_on_cran()
+
+    system_called <- FALSE
+
+    # Mock macOS Big Sur with failing dir.create
+    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
+    mockery::stub(create_mac_folder, "dir.exists", function(path) FALSE)
+    mockery::stub(create_mac_folder, "dir.create", function(path, recursive) stop("Permission denied"))
+    mockery::stub(create_mac_folder, "readline", function(prompt) "Yes")
+    mockery::stub(create_mac_folder, "Sys.sleep", function(time) NULL)
+    mockery::stub(create_mac_folder, "system", function(command, input) {
+        system_called <<- TRUE
+        0
+    })
+    mockery::stub(create_mac_folder, "askpass::askpass", function(prompt) "password123")
+
+    expect_message(
+        result <- create_mac_folder(),
+        "The ASReml-R package uses Reprise license management"
+    )
+    expect_true(system_called)
+})
+
+test_that("create_mac_folder prompts user with 'Y' response", {
+    skip_on_cran()
+
+    system_called <- FALSE
+
+    # Mock with user responding 'Y' instead of 'Yes'
+    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
+    mockery::stub(create_mac_folder, "dir.exists", function(path) FALSE)
+    mockery::stub(create_mac_folder, "dir.create", function(path, recursive) stop("Permission denied"))
+    mockery::stub(create_mac_folder, "readline", function(prompt) "Y")
+    mockery::stub(create_mac_folder, "Sys.sleep", function(time) NULL)
+    mockery::stub(create_mac_folder, "system", function(command, input) {
+        system_called <<- TRUE
+        0
+    })
+    mockery::stub(create_mac_folder, "askpass::askpass", function(prompt) "password123")
+
+    result <- create_mac_folder()
+    expect_true(system_called)
+})
+
+test_that("create_mac_folder prompts user with lowercase 'yes' response", {
+    skip_on_cran()
+
+    system_called <- FALSE
+
+    # Mock with user responding 'yes' (lowercase)
+    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
+    mockery::stub(create_mac_folder, "dir.exists", function(path) FALSE)
+    mockery::stub(create_mac_folder, "dir.create", function(path, recursive) stop("Permission denied"))
+    mockery::stub(create_mac_folder, "readline", function(prompt) "yes")
+    mockery::stub(create_mac_folder, "Sys.sleep", function(time) NULL)
+    mockery::stub(create_mac_folder, "system", function(command, input) {
+        system_called <<- TRUE
+        0
+    })
+    mockery::stub(create_mac_folder, "askpass::askpass", function(prompt) "password123")
+
+    result <- create_mac_folder()
+    expect_true(system_called)
+})
+
+test_that("create_mac_folder stops when user declines to create folder", {
+    skip_on_cran()
+
+    # Mock with user saying No
+    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
+    mockery::stub(create_mac_folder, "dir.exists", function(path) FALSE)
+    mockery::stub(create_mac_folder, "dir.create", function(path, recursive) stop("Permission denied"))
+    mockery::stub(create_mac_folder, "readline", function(prompt) "No")
+
+    expect_error(
+        create_mac_folder(),
+        "ASReml-R cannot be installed until the folder '/Library/Application Support/Reprise' is created"
+    )
+})
+
+test_that("create_mac_folder stops when user gives invalid response", {
+    skip_on_cran()
+
+    # Mock with user giving invalid response
+    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
+    mockery::stub(create_mac_folder, "dir.exists", function(path) FALSE)
+    mockery::stub(create_mac_folder, "dir.create", function(path, recursive) stop("Permission denied"))
+    mockery::stub(create_mac_folder, "readline", function(prompt) "Maybe")
+
+    expect_error(
+        create_mac_folder(),
+        "ASReml-R cannot be installed until the folder '/Library/Application Support/Reprise' is created"
+    )
+})
+
+test_that("create_mac_folder handles NA release version gracefully", {
+    skip_on_cran()
+
+    # Mock Sys.info with NA release
+    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = NA))
+
+    result <- create_mac_folder()
+    expect_true(result)
+})
+
+test_that("create_mac_folder handles NULL release version gracefully", {
+    skip_on_cran()
+
+    # Mock Sys.info with NULL release
+    mockery::stub(create_mac_folder, "Sys.info", function() list(sysname = "Darwin", release = NULL))
+
+    result <- create_mac_folder()
+    expect_true(result)
+})
+
 test_that("download_asreml_package handles download failures", {
     skip_on_cran()
     mockery::stub(download_asreml_package, "curl::curl_fetch_disk", function(...) stop("Network error"))
@@ -446,21 +888,12 @@ test_that("install_asreml verbose parameter validation and messaging", {
     mockery::stub(install_asreml, "newer_version", function() FALSE)
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
 
-    # Capture messages when quiet = "verbose"
-    expect_message(
-        install_asreml(quiet = "verbose", force = FALSE),
-        "\\[DEBUG\\] Starting ASReml-R installation process"
-    )
+    # Capture all messages from a single run (prevents noisy [DEBUG] output)
+    msgs <- capture_messages_text(install_asreml(quiet = "verbose", force = FALSE))
 
-    expect_message(
-        install_asreml(quiet = "verbose", force = FALSE),
-        "\\[DEBUG\\] Library path:"
-    )
-
-    expect_message(
-        install_asreml(quiet = "verbose", force = FALSE),
-        "\\[DEBUG\\] Force install: FALSE"
-    )
+    expect_match(msgs, "\\[DEBUG\\] Starting ASReml-R installation process")
+    expect_match(msgs, "\\[DEBUG\\] Library path:")
+    expect_match(msgs, "\\[DEBUG\\] Force install: FALSE")
 })
 
 test_that("verbose messaging works correctly with different quiet settings", {
@@ -474,13 +907,9 @@ test_that("verbose messaging works correctly with different quiet settings", {
     expect_silent(install_asreml(quiet = TRUE, force = FALSE))
 
     # Test quiet = FALSE (normal messages but no debug)
-    expect_message(
-        install_asreml(quiet = FALSE, force = FALSE),
-        "already installed"
-    )
-
-    # Should NOT see debug messages with quiet = FALSE
-    expect_no_message(install_asreml(quiet = FALSE, force = FALSE), message = "\\[DEBUG\\]")
+    msgs <- capture_messages_text(install_asreml(quiet = FALSE, force = FALSE))
+    expect_match(msgs, "already installed")
+    expect_false(grepl("\\[DEBUG\\]", msgs))
 })
 
 test_that("download_asreml_package verbose parameter works", {
@@ -495,20 +924,13 @@ test_that("download_asreml_package verbose parameter works", {
     mockery::stub(download_asreml_package, "normalizePath", function(x) x)
 
     # Test verbose = TRUE produces debug messages
-    expect_message(
-        download_asreml_package("http://test.url", verbose = TRUE),
-        "\\[DEBUG\\] Creating temporary file for download"
-    )
-
-    expect_message(
-        download_asreml_package("http://test.url", verbose = TRUE),
-        "\\[DEBUG\\] Initiating download from:"
-    )
+    msgs <- capture_messages_text(download_asreml_package("http://test.url", verbose = TRUE))
+    expect_match(msgs, "\\[DEBUG\\] Creating temporary file for download")
+    expect_match(msgs, "\\[DEBUG\\] Initiating download from:")
 
     # Test verbose = FALSE produces no debug messages
-    expect_no_message(download_asreml_package("http://test.url", verbose = FALSE),
-                      message = "\\[DEBUG\\]"
-    )
+    msgs <- capture_messages_text(download_asreml_package("http://test.url", verbose = FALSE))
+    expect_false(grepl("\\[DEBUG\\]", msgs))
 })
 
 test_that("remove_existing_asreml verbose parameter works", {
@@ -521,20 +943,13 @@ test_that("remove_existing_asreml verbose parameter works", {
     mockery::stub(remove_existing_asreml, "remove.packages", function(pkg) {})
 
     # Test verbose = TRUE produces debug messages
-    expect_message(
-        remove_existing_asreml(verbose = TRUE),
-        "\\[DEBUG\\] Checking if asreml namespace is loaded"
-    )
-
-    expect_message(
-        remove_existing_asreml(verbose = TRUE),
-        "\\[DEBUG\\] Unloading asreml namespace"
-    )
+    msgs <- capture_messages_text(remove_existing_asreml(verbose = TRUE))
+    expect_match(msgs, "\\[DEBUG\\] Checking if asreml namespace is loaded")
+    expect_match(msgs, "\\[DEBUG\\] Unloading asreml namespace")
 
     # Test verbose = FALSE produces no debug messages
-    expect_no_message(
-        remove_existing_asreml(verbose = FALSE), message = "\\[DEBUG\\]"
-    )
+    msgs <- capture_messages_text(remove_existing_asreml(verbose = FALSE))
+    expect_false(grepl("\\[DEBUG\\]", msgs))
 })
 
 test_that("install_dependencies verbose parameter works", {
@@ -548,31 +963,21 @@ test_that("install_dependencies verbose parameter works", {
     mockery::stub(install_dependencies, "install.packages", function(...) {})
 
     # Test verbose = TRUE produces debug messages for missing dependencies
-    expect_message(
-        install_dependencies(quiet = FALSE, library = tempdir(), verbose = TRUE),
-        "\\[DEBUG\\] Checking required dependencies"
-    )
-
-    expect_message(
-        install_dependencies(quiet = FALSE, library = tempdir(), verbose = TRUE),
-        "\\[DEBUG\\] Required dependencies:"
-    )
+    msgs <- capture_messages_text(install_dependencies(quiet = FALSE, library = tempdir(), verbose = TRUE))
+    expect_match(msgs, "\\[DEBUG\\] Checking required dependencies")
+    expect_match(msgs, "\\[DEBUG\\] Required dependencies:")
 
     # Test verbose = FALSE produces no debug messages
-    expect_no_message(
-        install_dependencies(quiet = FALSE, library = tempdir(), verbose = FALSE),
-        message = "\\[DEBUG\\]"
-    )
+    msgs <- capture_messages_text(install_dependencies(quiet = FALSE, library = tempdir(), verbose = FALSE))
+    expect_false(grepl("\\[DEBUG\\]", msgs))
 
     # ---- NEW: Test all dependencies present triggers "All dependencies already satisfied" ----
     mockery::stub(install_dependencies, "installed.packages", function(...) {
         matrix(c("data.table", "ggplot2", "jsonlite"), ncol = 1, dimnames = list(c("data.table", "ggplot2", "jsonlite"), "Package"))
     })
     mockery::stub(install_dependencies, "rlang::is_installed", function(...) TRUE)
-    expect_message(
-        install_dependencies(quiet = FALSE, library = tempdir(), verbose = TRUE),
-        "\\[DEBUG\\] All dependencies already satisfied"
-    )
+    msgs <- capture_messages_text(install_dependencies(quiet = FALSE, library = tempdir(), verbose = TRUE))
+    expect_match(msgs, "\\[DEBUG\\] All dependencies already satisfied")
 })
 
 test_that("install_asreml_package verbose parameter works", {
@@ -586,31 +991,23 @@ test_that("install_asreml_package verbose parameter works", {
     mockery::stub(install_asreml_package, "rlang::is_installed", function(...) TRUE)
 
     # Test verbose = TRUE produces debug messages
-    expect_message(
-        install_asreml_package(temp_file, tempdir(), FALSE, "linux", verbose = TRUE),
-        "\\[DEBUG\\] Starting ASReml package installation"
-    )
-
-    expect_message(
-        install_asreml_package(temp_file, tempdir(), FALSE, "linux", verbose = TRUE),
-        "\\[DEBUG\\] Package file:"
-    )
+    msgs <- capture_messages_text(install_asreml_package(temp_file, tempdir(), FALSE, "linux", verbose = TRUE))
+    expect_match(msgs, "\\[DEBUG\\] Starting ASReml package installation")
+    expect_match(msgs, "\\[DEBUG\\] Package file:")
 
     # Test verbose = FALSE produces no debug messages
-    expect_no_message(
-        install_asreml_package(temp_file, tempdir(), FALSE, "linux", verbose = FALSE),
-        message = "\\[DEBUG\\]"
-    )
+    msgs <- capture_messages_text(install_asreml_package(temp_file, tempdir(), FALSE, "linux", verbose = FALSE))
+    expect_false(grepl("\\[DEBUG\\]", msgs))
 
     # ---- NEW: Test error handling with verbose ----
     mockery::stub(install_asreml_package, "install.packages", function(...) stop("Installation failed"))
-    expect_warning(
-        expect_message(
+    msgs <- capture_messages_text(
+        expect_warning(
             result <- install_asreml_package(temp_file, tempdir(), FALSE, "linux", verbose = TRUE),
-            "\\[DEBUG\\] Installation error: Installation failed"
-        ),
-        "Installation failed"
+            "Installation failed"
+        )
     )
+    expect_match(msgs, "\\[DEBUG\\] Installation error: Installation failed")
     expect_false(result)
 })
 
@@ -623,14 +1020,9 @@ test_that("manage_file verbose parameter works", {
         writeLines("test content", test_file)
 
         # Test verbose = TRUE with keep_file = FALSE
-        expect_message(
-            manage_file(test_file, FALSE, "test.zip", verbose = TRUE),
-            "\\[DEBUG\\] Managing downloaded file:"
-        )
-        expect_message(
-            manage_file(test_file, FALSE, "test.zip", verbose = TRUE),
-            "\\[DEBUG\\] Removing downloaded file"
-        )
+        msgs <- capture_messages_text(manage_file(test_file, FALSE, "test.zip", verbose = TRUE))
+        expect_match(msgs, "\\[DEBUG\\] Managing downloaded file:")
+        expect_match(msgs, "\\[DEBUG\\] Removing downloaded file")
     })
 
     withr::with_tempdir({
@@ -639,10 +1031,8 @@ test_that("manage_file verbose parameter works", {
         writeLines("test content", test_file)
 
         # Test keep_file = TRUE (current directory)
-        expect_message(
-            manage_file(test_file, TRUE, "test.zip", verbose = TRUE),
-            "\\[DEBUG\\] Saving file to current directory: test.zip"
-        )
+        msgs <- capture_messages_text(manage_file(test_file, TRUE, "test.zip", verbose = TRUE))
+        expect_match(msgs, "\\[DEBUG\\] Saving file to current directory: test.zip")
     })
 
     withr::with_tempdir({
@@ -653,10 +1043,8 @@ test_that("manage_file verbose parameter works", {
         dir.create(subdir)
 
         # Test keep_file = path (specified directory)
-        expect_message(
-            manage_file(test_file, subdir, "test.zip", verbose = TRUE),
-            "\\[DEBUG\\] Saving file to specified directory: subdir[/\\\\]test.zip"
-        )
+        msgs <- capture_messages_text(manage_file(test_file, subdir, "test.zip", verbose = TRUE))
+        expect_match(msgs, "\\[DEBUG\\] Saving file to specified directory: subdir[/\\\\]test.zip")
     })
 
     withr::with_tempdir({
@@ -665,13 +1053,13 @@ test_that("manage_file verbose parameter works", {
         writeLines("test content", test_file)
 
         # Test keep_file = invalid path
-        expect_message(
+        msgs <- capture_messages_text(
             expect_warning(
                 manage_file(test_file, "/nonexistent/path", "test.zip", verbose = TRUE),
                 "Invalid keep_file argument"
-            ),
-            "\\[DEBUG\\] Invalid keep_file argument, removing file"
+            )
         )
+        expect_match(msgs, "\\[DEBUG\\] Invalid keep_file argument, removing file")
     })
 
     withr::with_tempdir({
@@ -681,13 +1069,13 @@ test_that("manage_file verbose parameter works", {
 
         # Mock file.rename to fail to trigger error branch
         mockery::stub(manage_file, "file.rename", function(...) stop("move failed"))
-        expect_message(
+        msgs <- capture_messages_text(
             expect_warning(
                 manage_file(test_file, TRUE, "test.zip", verbose = TRUE),
                 "Could not save ASReml file to specified location"
-            ),
-            "\\[DEBUG\\] Failed to move file: move failed"
+            )
         )
+        expect_match(msgs, "\\[DEBUG\\] Failed to move file: move failed")
     })
 })
 
@@ -703,26 +1091,15 @@ test_that("verbose debugging shows OS detection details", {
     mockery::stub(install_asreml, "manage_file", function(...) TRUE)
 
     # Test that OS detection details are shown in verbose mode
-    expect_warning(
-        expect_message(
+    msgs <- capture_messages_text(
+        expect_warning(
             install_asreml(quiet = "verbose"),
-            "\\[DEBUG\\] Detecting operating system and R version"),
-        "There was a problem with installation and ASReml-R was not successfully installed\\."
+            "There was a problem with installation and ASReml-R was not successfully installed\\."
+        )
     )
-
-    expect_warning(
-        expect_message(
-            install_asreml(quiet = "verbose"),
-            "\\[DEBUG\\] Detected OS:"),
-        "There was a problem with installation and ASReml-R was not successfully installed\\."
-    )
-
-    expect_warning(
-        expect_message(
-            install_asreml(quiet = "verbose"),
-            "\\[DEBUG\\] Detected R version:"),
-        "There was a problem with installation and ASReml-R was not successfully installed\\."
-    )
+    expect_match(msgs, "\\[DEBUG\\] Detecting operating system and R version")
+    expect_match(msgs, "\\[DEBUG\\] Detected OS:")
+    expect_match(msgs, "\\[DEBUG\\] Detected R version:")
 })
 
 test_that("verbose debugging handles error cases appropriately", {
@@ -731,24 +1108,24 @@ test_that("verbose debugging handles error cases appropriately", {
     # Test download failure with verbose messaging
     mockery::stub(download_asreml_package, "curl::curl_fetch_disk", function(...) stop("Network error"))
 
-    expect_message(
+    msgs <- capture_messages_text(
         expect_error(
             download_asreml_package("http://fake.url", verbose = TRUE),
             "Failed to download ASReml-R package"
-        ),
-        "\\[DEBUG\\] Download failed with error:"
+        )
     )
+    expect_match(msgs, "\\[DEBUG\\] Download failed with error:")
 
     # Test removal error with verbose messaging
     mockery::stub(remove_existing_asreml, "remove.packages", function(...) stop("Remove failed"))
 
-    expect_message(
+    msgs <- capture_messages_text(
         expect_warning(
             remove_existing_asreml(verbose = TRUE),
             "Could not remove existing asreml package"
-        ),
-        "\\[DEBUG\\] Error removing existing package:"
+        )
     )
+    expect_match(msgs, "\\[DEBUG\\] Error removing existing package:")
 })
 
 test_that("install_asreml verbose mode shows version check details", {
@@ -763,19 +1140,14 @@ test_that("install_asreml verbose mode shows version check details", {
     mockery::stub(install_asreml, "install_asreml_package", function(...) TRUE)
     mockery::stub(install_asreml, "manage_file", function(...) TRUE)
 
-    expect_warning(
-        expect_message(
+    msgs <- capture_messages_text(
+        expect_warning(
             install_asreml(quiet = "verbose", check_version = TRUE),
-            "\\[DEBUG\\] Checking for newer version availability"),
-        "There was a problem with installation and ASReml-R was not successfully installed\\."
+            "There was a problem with installation and ASReml-R was not successfully installed\\."
+        )
     )
-
-    expect_warning(
-        expect_message(
-            install_asreml(quiet = "verbose", check_version = TRUE),
-            "\\[DEBUG\\] Newer version available: TRUE"),
-        "There was a problem with installation and ASReml-R was not successfully installed\\."
-    )
+    expect_match(msgs, "\\[DEBUG\\] Checking for newer version availability")
+    expect_match(msgs, "\\[DEBUG\\] Newer version available: TRUE")
 })
 
 test_that("install_asreml calls create_mac_folder on macOS", {
@@ -844,13 +1216,13 @@ test_that("install_asreml verbose messaging shows mac folder creation", {
     mockery::stub(install_asreml, "manage_file", function(...) TRUE)
 
     # Test that verbose mode shows the mac folder creation message
-    expect_warning(
-        expect_message(
+    msgs <- capture_messages_text(
+        expect_warning(
             install_asreml(quiet = "verbose"),
-            "\\[DEBUG\\] macOS detected - checking/creating Mac folder"
-        ),
-        "There was a problem with installation and ASReml-R was not successfully installed\\."
+            "There was a problem with installation and ASReml-R was not successfully installed\\."
+        )
     )
+    expect_match(msgs, "\\[DEBUG\\] macOS detected - checking/creating Mac folder")
 })
 
 test_that("install_asreml removes existing package when force=TRUE on non-Linux systems", {
@@ -970,10 +1342,8 @@ test_that("install_asreml verbose messaging shows package removal", {
     })
 
     # Test that verbose mode shows the removal message
-    expect_message(
-        install_asreml(force = TRUE, quiet = "verbose"),
-        "\\[DEBUG\\] Force=TRUE and existing package found - removing existing installation"
-    )
+    msgs <- capture_messages_text(install_asreml(force = TRUE, quiet = "verbose"))
+    expect_match(msgs, "\\[DEBUG\\] Force=TRUE and existing package found - removing existing installation")
 })
 
 test_that("get_version_table handles missing version headers", {
