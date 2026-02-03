@@ -101,8 +101,9 @@ transformation, add 0.1 in the \code{offset} argument.
 The power argument allows the specification of arbitrary powers to be
 back transformed, if they have been used to attempt to improve normality of
 residuals.
+}
 
-#' ## Confidence Intervals & Comparison Intervals
+\subsection{Confidence Intervals & Comparison Intervals}{
 
 The function provides several options for confidence intervals via the \code{int.type} argument:
 \itemize{

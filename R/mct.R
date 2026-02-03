@@ -44,7 +44,7 @@
 #' back transformed, if they have been used to attempt to improve normality of
 #' residuals.
 #'
-#' #' ## Confidence Intervals & Comparison Intervals
+#' ## Confidence Intervals & Comparison Intervals
 #'
 #' The function provides several options for confidence intervals via the `int.type` argument:
 #'
