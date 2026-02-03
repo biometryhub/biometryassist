@@ -248,5 +248,5 @@ autoplot(pred.out, label_height = 0.5)
 }
 \references{
 Jørgensen, E. & Pedersen, A. R. (1997). How to Obtain Those Nasty
-Standard Errors From Transformed Data - and Why They Should Not Be Used. \url{https://pure.au.dk/portal/en/publications/how-to-obtain-those-nasty-standard-errors-from-transformed-data-a}
+Standard Errors From Transformed Data - and Why They Should Not Be Used.
 }
