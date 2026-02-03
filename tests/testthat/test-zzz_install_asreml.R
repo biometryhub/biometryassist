@@ -5,14 +5,115 @@ test_that("get_r_os returns correct structure and values", {
 
     # Check OS detection
     sys_info <- Sys.info()
-    expected_os <- switch(sys_info[['sysname']],
+    expected_os <- switch(sys_info[["sysname"]],
                           Windows = "win",
-                          Linux = "linux",
-                          Darwin = "mac")
+                          Darwin = "mac",
+                          Linux = detect_linux()$os)
     expect_equal(result$os, expected_os)
     expect_match(result$ver, "\\d{2}")  # Should be something like "43" for R 4.3
-    expect_match(result$os_ver, "^(win-|mac-|linux-)(arm-)?[0-9]{2}$")
-    expect_equal(result$arm, sys_info[["machine"]] == "arm64")
+    if (sys_info[["sysname"]] == "Windows") {
+        expect_match(result$os_ver, "^win-[0-9]{2}$")
+    } else if (sys_info[["sysname"]] == "Darwin") {
+        expect_match(result$os_ver, "^mac-[0-9]+-[0-9]{2}(-arm)?$")
+    } else if (sys_info[["sysname"]] == "Linux") {
+        expect_match(result$os_ver, "^[-a-z0-9]+-[0-9]+-[0-9]{2}(-arm)?$")
+    }
+    expect_equal(result$arm, sys_info[["machine"]] %in% c("arm64", "aarch64"))
+})
+
+test_that("detect_linux parses ubuntu base OS and major version", {
+    mock_file_exists <- function(paths) {
+        paths %in% "/etc/os-release"
+    }
+    mock_read_lines <- function(path, warn = FALSE) {
+        c(
+            "ID=pop",
+            "ID_LIKE=\"ubuntu debian\"",
+            "VERSION_ID=\"22.04\""
+        )
+    }
+
+    mockery::stub(detect_linux, "file.exists", mock_file_exists)
+    mockery::stub(detect_linux, "readLines", mock_read_lines)
+
+    out <- detect_linux()
+    expect_type(out, "list")
+    expect_named(out, c("os", "major"))
+    expect_equal(out$os, "ubuntu")
+    expect_equal(out$major, "22")
+})
+
+test_that("detect_linux parses rhel base OS from ID_LIKE", {
+    mock_file_exists <- function(paths) {
+        paths %in% "/usr/lib/os-release"
+    }
+    mock_read_lines <- function(path, warn = FALSE) {
+        c(
+            "ID=centos",
+            "ID_LIKE=\"fedora rhel\"",
+            "VERSION_ID=\"8.6\""
+        )
+    }
+
+    mockery::stub(detect_linux, "file.exists", mock_file_exists)
+    mockery::stub(detect_linux, "readLines", mock_read_lines)
+
+    out <- detect_linux()
+    expect_equal(out$os, "rhel")
+    expect_equal(out$major, "8")
+})
+
+test_that("detect_linux falls back to ID when ID_LIKE is missing or not ubuntu/rhel", {
+    mock_file_exists <- function(paths) {
+        paths %in% "/etc/os-release"
+    }
+    mock_read_lines <- function(path, warn = FALSE) {
+        c(
+            "ID=alpine",
+            "VERSION_ID=\"3.19.1\""
+        )
+    }
+
+    mockery::stub(detect_linux, "file.exists", mock_file_exists)
+    mockery::stub(detect_linux, "readLines", mock_read_lines)
+
+    out <- detect_linux()
+    expect_equal(out$os, "alpine")
+    expect_equal(out$major, "3")
+})
+
+test_that("detect_linux errors when os-release cannot be found", {
+    mock_file_exists <- function(paths) {
+        rep(FALSE, length(paths))
+    }
+
+    mockery::stub(detect_linux, "file.exists", mock_file_exists)
+    expect_error(detect_linux(), "Cannot detect Linux OS")
+})
+
+test_that("get_r_os constructs linux key including distro, major, R version, and optional -arm", {
+    mock_sys_info <- function() {
+        c(sysname = "Linux", machine = "x86_64")
+    }
+    mock_detect_linux <- function() {
+        list(os = "ubuntu", major = "22")
+    }
+
+    mockery::stub(get_r_os, "Sys.info", mock_sys_info)
+    mockery::stub(get_r_os, "detect_linux", mock_detect_linux)
+    mockery::stub(get_r_os, "get_r_version_compact", function() "44")
+    mockery::stub(get_r_os, "is_arm", function() FALSE)
+
+    out <- get_r_os()
+    expect_equal(out$os, "ubuntu")
+    expect_equal(out$ver, "44")
+    expect_false(out$arm)
+    expect_equal(out$os_ver, "ubuntu-22-44")
+
+    mockery::stub(get_r_os, "is_arm", function() TRUE)
+    out_arm <- get_r_os()
+    expect_true(out_arm$arm)
+    expect_equal(out_arm$os_ver, "ubuntu-22-44-arm")
 })
 
 test_that("find_existing_package works correctly", {
@@ -409,12 +510,12 @@ test_that("create_mac_folder handles different scenarios", {
 
 test_that("create_mac_folder returns TRUE on non-macOS systems", {
     skip_on_cran()
-    
+
     # Mock Sys.info to return Linux
     mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Linux", release = "5.10"))
     result <- create_mac_folder()
     expect_true(result)
-    
+
     # Mock Sys.info to return Windows
     mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Windows", release = "10.0"))
     result <- create_mac_folder()
@@ -423,12 +524,12 @@ test_that("create_mac_folder returns TRUE on non-macOS systems", {
 
 test_that("create_mac_folder returns TRUE when major release is less than 21", {
     skip_on_cran()
-    
+
     # macOS Catalina (Darwin 19)
     mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "19.6.0"))
     result <- create_mac_folder()
     expect_true(result)
-    
+
     # macOS Mojave (Darwin 18)
     mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "18.7.0"))
     result <- create_mac_folder()
@@ -437,20 +538,20 @@ test_that("create_mac_folder returns TRUE when major release is less than 21", {
 
 test_that("create_mac_folder returns TRUE when Reprise folder already exists", {
     skip_on_cran()
-    
+
     # macOS Big Sur or later with existing folder
     mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
     mockery::stub(create_mac_folder, "dir.exists", function(path) TRUE)
-    
+
     result <- create_mac_folder()
     expect_true(result)
 })
 
 test_that("create_mac_folder creates directory successfully on macOS Big Sur+", {
     skip_on_cran()
-    
+
     dir_created <- FALSE
-    
+
     # Mock macOS Big Sur (Darwin 21)
     mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
     mockery::stub(create_mac_folder, "dir.exists", function(path) dir_created)
@@ -458,7 +559,7 @@ test_that("create_mac_folder creates directory successfully on macOS Big Sur+", 
         dir_created <<- TRUE
         TRUE
     })
-    
+
     result <- create_mac_folder()
     expect_true(result)
     expect_true(dir_created)
@@ -466,9 +567,9 @@ test_that("create_mac_folder creates directory successfully on macOS Big Sur+", 
 
 test_that("create_mac_folder prompts user when dir.create fails and user says Yes", {
     skip_on_cran()
-    
+
     system_called <- FALSE
-    
+
     # Mock macOS Big Sur with failing dir.create
     mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
     mockery::stub(create_mac_folder, "dir.exists", function(path) FALSE)
@@ -480,7 +581,7 @@ test_that("create_mac_folder prompts user when dir.create fails and user says Ye
         0
     })
     mockery::stub(create_mac_folder, "askpass::askpass", function(prompt) "password123")
-    
+
     expect_message(
         result <- create_mac_folder(),
         "The ASReml-R package uses Reprise license management"
@@ -490,9 +591,9 @@ test_that("create_mac_folder prompts user when dir.create fails and user says Ye
 
 test_that("create_mac_folder prompts user with 'Y' response", {
     skip_on_cran()
-    
+
     system_called <- FALSE
-    
+
     # Mock with user responding 'Y' instead of 'Yes'
     mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
     mockery::stub(create_mac_folder, "dir.exists", function(path) FALSE)
@@ -504,16 +605,16 @@ test_that("create_mac_folder prompts user with 'Y' response", {
         0
     })
     mockery::stub(create_mac_folder, "askpass::askpass", function(prompt) "password123")
-    
+
     result <- create_mac_folder()
     expect_true(system_called)
 })
 
 test_that("create_mac_folder prompts user with lowercase 'yes' response", {
     skip_on_cran()
-    
+
     system_called <- FALSE
-    
+
     # Mock with user responding 'yes' (lowercase)
     mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
     mockery::stub(create_mac_folder, "dir.exists", function(path) FALSE)
@@ -525,20 +626,20 @@ test_that("create_mac_folder prompts user with lowercase 'yes' response", {
         0
     })
     mockery::stub(create_mac_folder, "askpass::askpass", function(prompt) "password123")
-    
+
     result <- create_mac_folder()
     expect_true(system_called)
 })
 
 test_that("create_mac_folder stops when user declines to create folder", {
     skip_on_cran()
-    
+
     # Mock with user saying No
     mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
     mockery::stub(create_mac_folder, "dir.exists", function(path) FALSE)
     mockery::stub(create_mac_folder, "dir.create", function(path, recursive) stop("Permission denied"))
     mockery::stub(create_mac_folder, "readline", function(prompt) "No")
-    
+
     expect_error(
         create_mac_folder(),
         "ASReml-R cannot be installed until the folder '/Library/Application Support/Reprise' is created"
@@ -547,13 +648,13 @@ test_that("create_mac_folder stops when user declines to create folder", {
 
 test_that("create_mac_folder stops when user gives invalid response", {
     skip_on_cran()
-    
+
     # Mock with user giving invalid response
     mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
     mockery::stub(create_mac_folder, "dir.exists", function(path) FALSE)
     mockery::stub(create_mac_folder, "dir.create", function(path, recursive) stop("Permission denied"))
     mockery::stub(create_mac_folder, "readline", function(prompt) "Maybe")
-    
+
     expect_error(
         create_mac_folder(),
         "ASReml-R cannot be installed until the folder '/Library/Application Support/Reprise' is created"
@@ -562,20 +663,20 @@ test_that("create_mac_folder stops when user gives invalid response", {
 
 test_that("create_mac_folder handles NA release version gracefully", {
     skip_on_cran()
-    
+
     # Mock Sys.info with NA release
     mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = NA))
-    
+
     result <- create_mac_folder()
     expect_true(result)
 })
 
 test_that("create_mac_folder handles NULL release version gracefully", {
     skip_on_cran()
-    
+
     # Mock Sys.info with NULL release
     mockery::stub(create_mac_folder, "Sys.info", function() list(sysname = "Darwin", release = NULL))
-    
+
     result <- create_mac_folder()
     expect_true(result)
 })
