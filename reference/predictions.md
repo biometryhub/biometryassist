@@ -21,6 +21,9 @@ get_predictions(model.obj, classify, ...)
 
 # S3 method for class 'lmerModLmerTest'
 get_predictions(model.obj, classify, ...)
+
+# S3 method for class 'lme'
+get_predictions(model.obj, classify, ...)
 ```
 
 ## Arguments

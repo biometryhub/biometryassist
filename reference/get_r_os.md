@@ -1,6 +1,7 @@
-# Get the version of R and OS
+# Detect operating system and construct OS/version key
 
-Get the version of R and OS
+Determines OS, OS version (if applicable), architecture, and combines
+this with the R version for downstream download logic.
 
 ## Usage
 
@@ -10,4 +11,4 @@ get_r_os()
 
 ## Value
 
-A list with the version of R and the OS in a standard format
+A list with os_ver, os, ver, and arm

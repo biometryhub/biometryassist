@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">biometryassist</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -25,6 +25,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/installing-asreml-r.html">Installing ASReml-R</a></li>
+    <li><a class="dropdown-item" href="../articles/plot_annotation.html">Adding Orientation Arrows and Annotations to Field Layout Plots</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -74,6 +75,7 @@
 <span>  column <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  block <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  treatments <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  legend <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -137,6 +139,10 @@
 <dt id="arg-treatments">treatments<a class="anchor" aria-label="anchor" href="#arg-treatments"></a></dt>
 <dd><p>A variable to plot a column from <code>object</code> as treatments.</p></dd>
 
+
+<dt id="arg-legend">legend<a class="anchor" aria-label="anchor" href="#arg-legend"></a></dt>
+<dd><p>Logical (default <code>TRUE</code>). If <code>TRUE</code>, displays the legend for treatment colours.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -156,11 +162,11 @@
 <span class="r-in"><span><span class="va">des.out</span> <span class="op">&lt;-</span> <span class="fu"><a href="design.html">design</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"crd"</span>, treatments <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">5</span>, <span class="fl">10</span>, <span class="fl">20</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                  reps <span class="op">=</span> <span class="fl">5</span>, nrows <span class="op">=</span> <span class="fl">4</span>, ncols <span class="op">=</span> <span class="fl">5</span>, seed <span class="op">=</span> <span class="fl">42</span>, plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Source of Variation                     df</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  =============================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  treatments                              3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Residual                                16</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  =============================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Total                                   19</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> =============================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> treatments                              3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Residual                                16</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> =============================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Total                                   19</span>
 <span class="r-in"><span><span class="fu">autoplot</span><span class="op">(</span><span class="va">des.out</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="autoplot-2.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
@@ -180,19 +186,19 @@
 <span class="r-in"><span><span class="va">des.out</span> <span class="op">&lt;-</span> <span class="fu"><a href="design.html">design</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"split"</span>, treatments <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span><span class="op">)</span>, sub_treatments <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">4</span>,</span></span>
 <span class="r-in"><span>reps <span class="op">=</span> <span class="fl">4</span>, nrows <span class="op">=</span> <span class="fl">8</span>, ncols <span class="op">=</span> <span class="fl">4</span>, brows <span class="op">=</span> <span class="fl">4</span>, bcols <span class="op">=</span> <span class="fl">2</span>, seed <span class="op">=</span> <span class="fl">42</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Source of Variation                          df</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  ==================================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Block stratum                                3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  --------------------------------------------------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Whole plot stratum</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           treatments                          1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Whole plot Residual                          3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  ==================================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Subplot stratum</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           sub_treatments                      3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           treatments:sub_treatments           3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           Subplot Residual                   18</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  ==================================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Total                                       31</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ==================================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Block stratum                                3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> --------------------------------------------------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Whole plot stratum</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          treatments                          1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Whole plot Residual                          3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ==================================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Subplot stratum</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          sub_treatments                      3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          treatments:sub_treatments           3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          Subplot Residual                   18</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ==================================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Total                                       31</span>
 <span class="r-plt img"><img src="autoplot-6.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Show the wholeplot components</span></span></span>

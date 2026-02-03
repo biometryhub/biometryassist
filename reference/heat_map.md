@@ -89,10 +89,13 @@ heat_map(dat, "value", "x", "y", "groups")
 heat_map(dat, value, x, y, palette = "Spectral")
 
 
+# \donttest{
 # Arguments in ... are passed through to facet_wrap
 heat_map(dat, value, x, y, groups, labeller = ggplot2:::label_both)
 
 heat_map(dat, value, x, y, groups, scales = "free_y")
 
 heat_map(dat, value, x, y, groups, nrow = 1)
+
+# }
 ```

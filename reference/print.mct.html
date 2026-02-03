@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">biometryassist</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -25,6 +25,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/installing-asreml-r.html">Installing ASReml-R</a></li>
+    <li><a class="dropdown-item" href="../articles/plot_annotation.html">Adding Orientation Arrows and Annotations to Field Layout Plots</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -62,7 +63,7 @@
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Other arguments</p></dd>
+<dd><p>Other arguments passed to print.data.frame</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -79,6 +80,11 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">dat.aov</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/aov.html" class="external-link">aov</a></span><span class="op">(</span><span class="va">Petal.Width</span> <span class="op">~</span> <span class="va">Species</span>, data <span class="op">=</span> <span class="va">iris</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">output</span> <span class="op">&lt;-</span> <span class="fu"><a href="multiple_comparisons.html">multiple_comparisons</a></span><span class="op">(</span><span class="va">dat.aov</span>, classify <span class="op">=</span> <span class="st">"Species"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">output</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Multiple Comparisons of Means: Tukey's HSD Test</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Significance level: 0.05 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> HSD value: 0.0969097 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Predicted values:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      Species predicted.value std.error  df groups   ci  low   up</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1     setosa            0.25      0.03 147      a 0.06 0.19 0.30</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2 versicolor            1.33      0.03 147      b 0.06 1.27 1.38</span>

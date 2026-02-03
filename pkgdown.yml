@@ -3,7 +3,8 @@ pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
   installing-asreml-r: installing-asreml-r.html
-last_built: 2026-01-19T09:37Z
+  plot_annotation: plot_annotation.html
+last_built: 2026-02-03T08:17Z
 urls:
   reference: https://biometryhub.github.io/biometryassist/reference
   article: https://biometryhub.github.io/biometryassist/articles

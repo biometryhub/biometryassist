@@ -36,13 +36,16 @@ design(
 
 - type:
 
-  The type of design. Supported design types are `crd`, `rcbd`, `lsd`,
-  `crossed:<type>` where `<type>` is one of the previous types, and
-  `split`. See Details for more information.
+  The design type. One of `crd`, `rcbd`, `lsd`, `split`, `strip`, or a
+  crossed factorial specified as `crossed:<base>` where `<base>` is one
+  of `crd`, `rcbd`, or `lsd`.
 
 - treatments:
 
-  A vector containing the treatment names or labels.
+  A vector containing the treatment names or labels. For split-plot
+  designs, these treatments are applied to whole-plots. For strip-plot
+  designs, these treatments are applied to row-strips (entire rows
+  within each block receive the same treatment).
 
 - reps:
 
@@ -58,30 +61,33 @@ design(
 
 - brows:
 
-  For RCBD and Split Plot designs. The number of rows in a block.
+  For RCBD, split-plot and strip-plot designs. The number of rows in a
+  block.
 
 - bcols:
 
-  For RCBD and Split Plot designs. The number of columns in a block.
+  For RCBD, split-plot and strip-plot designs. The number of columns in
+  a block.
 
 - byrow:
 
-  For split-plot only. Logical (default `TRUE`). Provides a way to
-  arrange plots within whole-plots when there are multiple possible
-  arrangements.
+  For split-plot and strip-plot designs. Logical (default `TRUE`).
+  Controls the within-block arrangement when there are multiple valid
+  layouts.
 
 - sub_treatments:
 
-  A vector of treatments for sub-plots in a split plot design.
+  A vector of treatments for the sub-plot factor (required for `split`
+  and `strip`). For strip-plot designs, these treatments are applied to
+  column-strips (entire columns within each block receive the same
+  treatment). To apply treatments to columns instead of rows, swap the
+  `treatments` and `sub_treatments` arguments.
 
 - fac.names:
 
-  Allows renaming of the `A` level of factorial designs (i.e. those
-  using
-  [`agricolae::design.ab()`](https://rdrr.io/pkg/agricolae/man/design.ab.html))
-  by passing (optionally named) vectors of new labels to be applied to
-  the factors within a list. See examples and details for more
-  information.
+  Allows renaming of the `A` level of factorial designs by passing
+  (optionally named) vectors of new labels to be applied to the factors
+  within a list. See examples and details for more information.
 
 - fac.sep:
 
@@ -164,12 +170,10 @@ repeat output of the `satab` table via `cat(output$satab)`.
 
 ## Details
 
-The designs currently supported by `type` are Completely Randomised
-designs (`crd`), Randomised Complete Block designs (`rcbd`), Latin
-Square Designs (`lsd`), Factorial with crossed structure (use
-`crossed:<type>` where `<type>` is one of the previous types e.g.
-`crossed:crd`) and Split Plot designs (`split`). Nested factorial
-designs are supported through manual setup, see Examples.
+Supported designs are Completely Randomised (`crd`), Randomised Complete
+Block (`rcbd`), Latin Square (`lsd`), split-plot (`split`), strip-plot
+(`strip`), and crossed factorial designs via `crossed:<base>` where
+`<base>` is `crd`, `rcbd`, or `lsd` (e.g. `crossed:crd`).
 
 If `save = TRUE` (or `"both"`), both the plot and the workbook will be
 saved to the current working directory, with filename given by
@@ -199,24 +203,24 @@ the plot. The details of possible arguments can be found in
 des.out <- design(type = "crd", treatments = c(1, 5, 10, 20),
                   reps = 5, nrows = 4, ncols = 5, seed = 42)
 #> Source of Variation                     df
-#>  =============================================
-#>  treatments                              3
-#>  Residual                                16
-#>  =============================================
-#>  Total                                   19
+#> =============================================
+#> treatments                              3
+#> Residual                                16
+#> =============================================
+#> Total                                   19
 
 
 # Randomised Complete Block Design
 des.out <- design("rcbd", treatments = LETTERS[1:11], reps = 4,
                   nrows = 11, ncols = 4, brows = 11, bcols = 1, seed = 42)
 #> Source of Variation                     df
-#>  =============================================
-#>  Block stratum                           3
-#>  ---------------------------------------------
-#>  treatments                              10
-#>  Residual                                30
-#>  =============================================
-#>  Total                                   43
+#> =============================================
+#> Block stratum                           3
+#> ---------------------------------------------
+#> treatments                              10
+#> Residual                                30
+#> =============================================
+#> Total                                   43
 
 
 # Latin Square Design
@@ -224,26 +228,26 @@ des.out <- design("rcbd", treatments = LETTERS[1:11], reps = 4,
 des.out <- design(type = "lsd", c("S1", "S2", "S3", "S4"),
                   nrows = 4, ncols = 4, seed = 42)
 #> Source of Variation                     df
-#>  =============================================
-#>  Row                                     3
-#>  Column                                  3
-#>  treatments                              3
-#>  Residual                                6
-#>  =============================================
-#>  Total                                   15
+#> =============================================
+#> Row                                     3
+#> Column                                  3
+#> treatments                              3
+#> Residual                                6
+#> =============================================
+#> Total                                   15
 
 
 # Factorial Design (Crossed, Completely Randomised)
 des.out <- design(type = "crossed:crd", treatments = c(3, 2),
                   reps = 3, nrows = 6, ncols = 3, seed = 42)
 #> Source of Variation                     df
-#>  =============================================
-#>  A                                       2
-#>  B                                       1
-#>  A:B                                     2
-#>  Residual                                12
-#>  =============================================
-#>  Total                                   17
+#> =============================================
+#> A                                       2
+#> B                                       1
+#> A:B                                     2
+#> Residual                                12
+#> =============================================
+#> Total                                   17
 
 
 # Factorial Design (Crossed, Completely Randomised), renaming factors
@@ -252,13 +256,13 @@ des.out <- design(type = "crossed:crd", treatments = c(3, 2),
                   fac.names = list(N = c(50, 100, 150),
                                    Water = c("Irrigated", "Rain-fed")))
 #> Source of Variation                     df
-#>  =============================================
-#>  N                                       2
-#>  Water                                   1
-#>  N:Water                                 2
-#>  Residual                                12
-#>  =============================================
-#>  Total                                   17
+#> =============================================
+#> N                                       2
+#> Water                                   1
+#> N:Water                                 2
+#> Residual                                12
+#> =============================================
+#> Total                                   17
 
 
 # Factorial Design (Crossed, Randomised Complete Block Design),
@@ -268,15 +272,15 @@ des.out <- design(type = "crossed:rcbd", treatments = c(3, 2),
                   brows = 6, bcols = 1,
                   seed = 42, fac.sep = c(":", "_"))
 #> Source of Variation                     df
-#>  =============================================
-#>  Block stratum                           2
-#>  ---------------------------------------------
-#>  A                                       2
-#>  B                                       1
-#>  A:B                                     2
-#>  Residual                                10
-#>  =============================================
-#>  Total                                   17
+#> =============================================
+#> Block stratum                           2
+#> ---------------------------------------------
+#> A                                       2
+#> B                                       1
+#> A:B                                     2
+#> Residual                                10
+#> =============================================
+#> Total                                   17
 
 
 # Factorial Design (Nested, Latin Square)
@@ -284,32 +288,32 @@ trt <- c("A1", "A2", "A3", "A4", "B1", "B2", "B3")
 des.out <- design(type = "lsd", treatments = trt,
                   nrows = 7, ncols = 7, seed = 42)
 #> Source of Variation                     df
-#>  =============================================
-#>  Row                                     6
-#>  Column                                  6
-#>  treatments                              6
-#>  Residual                                30
-#>  =============================================
-#>  Total                                   48
+#> =============================================
+#> Row                                     6
+#> Column                                  6
+#> treatments                              6
+#> Residual                                30
+#> =============================================
+#> Total                                   48
 
 
 # Split plot design
 des.out <- design(type = "split", treatments = c("A", "B"), sub_treatments = 1:4,
                   reps = 4, nrows = 8, ncols = 4, brows = 4, bcols = 2, seed = 42)
 #> Source of Variation                          df
-#>  ==================================================
-#>  Block stratum                                3
-#>  --------------------------------------------------
-#>  Whole plot stratum
-#>           treatments                          1
-#>  Whole plot Residual                          3
-#>  ==================================================
-#>  Subplot stratum
-#>           sub_treatments                      3
-#>           treatments:sub_treatments           3
-#>           Subplot Residual                   18
-#>  ==================================================
-#>  Total                                       31
+#> ==================================================
+#> Block stratum                                3
+#> --------------------------------------------------
+#> Whole plot stratum
+#>          treatments                          1
+#> Whole plot Residual                          3
+#> ==================================================
+#> Subplot stratum
+#>          sub_treatments                      3
+#>          treatments:sub_treatments           3
+#>          Subplot Residual                   18
+#> ==================================================
+#> Total                                       31
 
 
 # Alternative arrangement of the same design as above
@@ -317,18 +321,35 @@ des.out <- design(type = "split", treatments = c("A", "B"), sub_treatments = 1:4
                   reps = 4, nrows = 8, ncols = 4, brows = 4, bcols = 2,
                   byrow = FALSE, seed = 42)
 #> Source of Variation                          df
-#>  ==================================================
-#>  Block stratum                                3
-#>  --------------------------------------------------
-#>  Whole plot stratum
-#>           treatments                          1
-#>  Whole plot Residual                          3
-#>  ==================================================
-#>  Subplot stratum
-#>           sub_treatments                      3
-#>           treatments:sub_treatments           3
-#>           Subplot Residual                   18
-#>  ==================================================
-#>  Total                                       31
+#> ==================================================
+#> Block stratum                                3
+#> --------------------------------------------------
+#> Whole plot stratum
+#>          treatments                          1
+#> Whole plot Residual                          3
+#> ==================================================
+#> Subplot stratum
+#>          sub_treatments                      3
+#>          treatments:sub_treatments           3
+#>          Subplot Residual                   18
+#> ==================================================
+#> Total                                       31
+
+
+# Strip plot design
+des.out <- design(type = "strip", treatments = c("A", "B", "C"), sub_treatments = 1:4,
+                  reps = 4, nrows = 12, ncols = 4, brows = 3, bcols = 4, seed = 42)
+#> Source of Variation                     df
+#> =============================================
+#> Block stratum                           3
+#> ---------------------------------------------
+#> treatments                              2
+#> treatments Residual                     6
+#> sub_treatments                          3
+#> sub_treatments Residual                 9
+#> treatments:sub_treatments               6
+#> Interaction Residual                    18
+#> =============================================
+#> Total                                   47
 
 ```

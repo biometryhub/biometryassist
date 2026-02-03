@@ -10,7 +10,7 @@ variogram(
   row = NA,
   column = NA,
   horizontal = TRUE,
-  palette = "default",
+  palette = "rainbow",
   onepage = FALSE
 )
 ```

@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">biometryassist</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -25,6 +25,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/installing-asreml-r.html">Installing ASReml-R</a></li>
+    <li><a class="dropdown-item" href="../articles/plot_annotation.html">Adding Orientation Arrows and Annotations to Field Layout Plots</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -80,11 +81,11 @@
 
 
 <dl><dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
-<dd><p>The type of design. Supported design types are <code>crd</code>, <code>rcbd</code>, <code>lsd</code>, <code>crossed:&lt;type&gt;</code> where <code>&lt;type&gt;</code> is one of the previous types, and <code>split</code>. See Details for more information.</p></dd>
+<dd><p>The design type. One of <code>crd</code>, <code>rcbd</code>, <code>lsd</code>, <code>split</code>, <code>strip</code>, or a crossed factorial specified as <code>crossed:&lt;base&gt;</code> where <code>&lt;base&gt;</code> is one of <code>crd</code>, <code>rcbd</code>, or <code>lsd</code>.</p></dd>
 
 
 <dt id="arg-treatments">treatments<a class="anchor" aria-label="anchor" href="#arg-treatments"></a></dt>
-<dd><p>A vector containing the treatment names or labels.</p></dd>
+<dd><p>A vector containing the treatment names or labels. For split-plot designs, these treatments are applied to whole-plots. For strip-plot designs, these treatments are applied to row-strips (entire rows within each block receive the same treatment).</p></dd>
 
 
 <dt id="arg-reps">reps<a class="anchor" aria-label="anchor" href="#arg-reps"></a></dt>
@@ -100,23 +101,23 @@
 
 
 <dt id="arg-brows">brows<a class="anchor" aria-label="anchor" href="#arg-brows"></a></dt>
-<dd><p>For RCBD and Split Plot designs. The number of rows in a block.</p></dd>
+<dd><p>For RCBD, split-plot and strip-plot designs. The number of rows in a block.</p></dd>
 
 
 <dt id="arg-bcols">bcols<a class="anchor" aria-label="anchor" href="#arg-bcols"></a></dt>
-<dd><p>For RCBD and Split Plot designs. The number of columns in a block.</p></dd>
+<dd><p>For RCBD, split-plot and strip-plot designs. The number of columns in a block.</p></dd>
 
 
 <dt id="arg-byrow">byrow<a class="anchor" aria-label="anchor" href="#arg-byrow"></a></dt>
-<dd><p>For split-plot only. Logical (default <code>TRUE</code>). Provides a way to arrange plots within whole-plots when there are multiple possible arrangements.</p></dd>
+<dd><p>For split-plot and strip-plot designs. Logical (default <code>TRUE</code>). Controls the within-block arrangement when there are multiple valid layouts.</p></dd>
 
 
 <dt id="arg-sub-treatments">sub_treatments<a class="anchor" aria-label="anchor" href="#arg-sub-treatments"></a></dt>
-<dd><p>A vector of treatments for sub-plots in a split plot design.</p></dd>
+<dd><p>A vector of treatments for the sub-plot factor (required for <code>split</code> and <code>strip</code>). For strip-plot designs, these treatments are applied to column-strips (entire columns within each block receive the same treatment). To apply treatments to columns instead of rows, swap the <code>treatments</code> and <code>sub_treatments</code> arguments.</p></dd>
 
 
 <dt id="arg-fac-names">fac.names<a class="anchor" aria-label="anchor" href="#arg-fac-names"></a></dt>
-<dd><p>Allows renaming of the <code>A</code> level of factorial designs (i.e. those using <code><a href="https://rdrr.io/pkg/agricolae/man/design.ab.html" class="external-link">agricolae::design.ab()</a></code>) by passing (optionally named) vectors of new labels to be applied to the factors within a list. See examples and details for more information.</p></dd>
+<dd><p>Allows renaming of the <code>A</code> level of factorial designs by passing (optionally named) vectors of new labels to be applied to the factors within a list. See examples and details for more information.</p></dd>
 
 
 <dt id="arg-fac-sep">fac.sep<a class="anchor" aria-label="anchor" href="#arg-fac-sep"></a></dt>
@@ -173,7 +174,7 @@
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>The designs currently supported by <code>type</code> are Completely Randomised designs (<code>crd</code>), Randomised Complete Block designs (<code>rcbd</code>), Latin Square Designs (<code>lsd</code>), Factorial with crossed structure (use <code>crossed:&lt;type&gt;</code> where <code>&lt;type&gt;</code> is one of the previous types e.g. <code>crossed:crd</code>) and Split Plot designs (<code>split</code>). Nested factorial designs are supported through manual setup, see Examples.</p>
+    <p>Supported designs are Completely Randomised (<code>crd</code>), Randomised Complete Block (<code>rcbd</code>), Latin Square (<code>lsd</code>), split-plot (<code>split</code>), strip-plot (<code>strip</code>), and crossed factorial designs via <code>crossed:&lt;base&gt;</code> where <code>&lt;base&gt;</code> is <code>crd</code>, <code>rcbd</code>, or <code>lsd</code> (e.g. <code>crossed:crd</code>).</p>
 <p>If <code>save = TRUE</code> (or <code>"both"</code>), both the plot and the workbook will be saved to the current working directory, with filename given by <code>savename</code>. If one of either <code>"plot"</code> or <code>"workbook"</code> is specified, only that output is saved. If <code>save = FALSE</code> (the default, or equivalently <code>"none"</code>), nothing will be output.</p>
 <p><code>fac.names</code> can be supplied to provide more intuitive names for factors and their levels in factorial and split plot designs. They can be specified in a list format, for example <code>fac.names = list(A_names = c("a", "b", "c"), B_names = c("x", "y", "z"))</code>. This will result a design output with a column named <code>A_names</code> with levels <code>a, b, c</code> and another named <code>B_names</code> with levels <code>x, y, z</code>. Labels can also be supplied as a character vector (e.g. <code>c("A", "B")</code>) which will result in only the treatment column names being renamed. Only the first two elements of the list will be used, except in the case of a 3-way factorial design.</p>
 <p><code>...</code> allows extra arguments to be passed to <code>ggsave()</code> for output of the plot. The details of possible arguments can be found in  <code><a href="https://ggplot2.tidyverse.org/reference/ggsave.html" class="external-link">ggplot2::ggsave()</a></code>.</p>
@@ -185,24 +186,24 @@
 <span class="r-in"><span><span class="va">des.out</span> <span class="op">&lt;-</span> <span class="fu">design</span><span class="op">(</span>type <span class="op">=</span> <span class="st">"crd"</span>, treatments <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">5</span>, <span class="fl">10</span>, <span class="fl">20</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                  reps <span class="op">=</span> <span class="fl">5</span>, nrows <span class="op">=</span> <span class="fl">4</span>, ncols <span class="op">=</span> <span class="fl">5</span>, seed <span class="op">=</span> <span class="fl">42</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Source of Variation                     df</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  =============================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  treatments                              3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Residual                                16</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  =============================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Total                                   19</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> =============================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> treatments                              3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Residual                                16</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> =============================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Total                                   19</span>
 <span class="r-plt img"><img src="design-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Randomised Complete Block Design</span></span></span>
 <span class="r-in"><span><span class="va">des.out</span> <span class="op">&lt;-</span> <span class="fu">design</span><span class="op">(</span><span class="st">"rcbd"</span>, treatments <span class="op">=</span> <span class="va">LETTERS</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">11</span><span class="op">]</span>, reps <span class="op">=</span> <span class="fl">4</span>,</span></span>
 <span class="r-in"><span>                  nrows <span class="op">=</span> <span class="fl">11</span>, ncols <span class="op">=</span> <span class="fl">4</span>, brows <span class="op">=</span> <span class="fl">11</span>, bcols <span class="op">=</span> <span class="fl">1</span>, seed <span class="op">=</span> <span class="fl">42</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Source of Variation                     df</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  =============================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Block stratum                           3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  ---------------------------------------------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  treatments                              10</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Residual                                30</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  =============================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Total                                   43</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> =============================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Block stratum                           3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ---------------------------------------------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> treatments                              10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Residual                                30</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> =============================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Total                                   43</span>
 <span class="r-plt img"><img src="design-2.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Latin Square Design</span></span></span>
@@ -210,26 +211,26 @@
 <span class="r-in"><span><span class="va">des.out</span> <span class="op">&lt;-</span> <span class="fu">design</span><span class="op">(</span>type <span class="op">=</span> <span class="st">"lsd"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"S1"</span>, <span class="st">"S2"</span>, <span class="st">"S3"</span>, <span class="st">"S4"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                  nrows <span class="op">=</span> <span class="fl">4</span>, ncols <span class="op">=</span> <span class="fl">4</span>, seed <span class="op">=</span> <span class="fl">42</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Source of Variation                     df</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  =============================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Row                                     3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Column                                  3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  treatments                              3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Residual                                6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  =============================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Total                                   15</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> =============================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Row                                     3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Column                                  3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> treatments                              3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Residual                                6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> =============================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Total                                   15</span>
 <span class="r-plt img"><img src="design-3.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Factorial Design (Crossed, Completely Randomised)</span></span></span>
 <span class="r-in"><span><span class="va">des.out</span> <span class="op">&lt;-</span> <span class="fu">design</span><span class="op">(</span>type <span class="op">=</span> <span class="st">"crossed:crd"</span>, treatments <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">2</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                  reps <span class="op">=</span> <span class="fl">3</span>, nrows <span class="op">=</span> <span class="fl">6</span>, ncols <span class="op">=</span> <span class="fl">3</span>, seed <span class="op">=</span> <span class="fl">42</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Source of Variation                     df</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  =============================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  A                                       2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  B                                       1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  A:B                                     2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Residual                                12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  =============================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Total                                   17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> =============================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> A                                       2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> B                                       1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> A:B                                     2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Residual                                12</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> =============================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Total                                   17</span>
 <span class="r-plt img"><img src="design-4.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Factorial Design (Crossed, Completely Randomised), renaming factors</span></span></span>
@@ -238,13 +239,13 @@
 <span class="r-in"><span>                  fac.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">50</span>, <span class="fl">100</span>, <span class="fl">150</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                                   Water <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Irrigated"</span>, <span class="st">"Rain-fed"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Source of Variation                     df</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  =============================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  N                                       2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Water                                   1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  N:Water                                 2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Residual                                12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  =============================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Total                                   17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> =============================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> N                                       2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Water                                   1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> N:Water                                 2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Residual                                12</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> =============================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Total                                   17</span>
 <span class="r-plt img"><img src="design-5.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Factorial Design (Crossed, Randomised Complete Block Design),</span></span></span>
@@ -254,15 +255,15 @@
 <span class="r-in"><span>                  brows <span class="op">=</span> <span class="fl">6</span>, bcols <span class="op">=</span> <span class="fl">1</span>,</span></span>
 <span class="r-in"><span>                  seed <span class="op">=</span> <span class="fl">42</span>, fac.sep <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">":"</span>, <span class="st">"_"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Source of Variation                     df</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  =============================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Block stratum                           2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  ---------------------------------------------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  A                                       2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  B                                       1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  A:B                                     2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Residual                                10</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  =============================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Total                                   17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> =============================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Block stratum                           2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ---------------------------------------------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> A                                       2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> B                                       1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> A:B                                     2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Residual                                10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> =============================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Total                                   17</span>
 <span class="r-plt img"><img src="design-6.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Factorial Design (Nested, Latin Square)</span></span></span>
@@ -270,32 +271,32 @@
 <span class="r-in"><span><span class="va">des.out</span> <span class="op">&lt;-</span> <span class="fu">design</span><span class="op">(</span>type <span class="op">=</span> <span class="st">"lsd"</span>, treatments <span class="op">=</span> <span class="va">trt</span>,</span></span>
 <span class="r-in"><span>                  nrows <span class="op">=</span> <span class="fl">7</span>, ncols <span class="op">=</span> <span class="fl">7</span>, seed <span class="op">=</span> <span class="fl">42</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Source of Variation                     df</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  =============================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Row                                     6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Column                                  6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  treatments                              6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Residual                                30</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  =============================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Total                                   48</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> =============================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Row                                     6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Column                                  6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> treatments                              6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Residual                                30</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> =============================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Total                                   48</span>
 <span class="r-plt img"><img src="design-7.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Split plot design</span></span></span>
 <span class="r-in"><span><span class="va">des.out</span> <span class="op">&lt;-</span> <span class="fu">design</span><span class="op">(</span>type <span class="op">=</span> <span class="st">"split"</span>, treatments <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span><span class="op">)</span>, sub_treatments <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">4</span>,</span></span>
 <span class="r-in"><span>                  reps <span class="op">=</span> <span class="fl">4</span>, nrows <span class="op">=</span> <span class="fl">8</span>, ncols <span class="op">=</span> <span class="fl">4</span>, brows <span class="op">=</span> <span class="fl">4</span>, bcols <span class="op">=</span> <span class="fl">2</span>, seed <span class="op">=</span> <span class="fl">42</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Source of Variation                          df</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  ==================================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Block stratum                                3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  --------------------------------------------------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Whole plot stratum</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           treatments                          1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Whole plot Residual                          3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  ==================================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Subplot stratum</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           sub_treatments                      3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           treatments:sub_treatments           3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           Subplot Residual                   18</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  ==================================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Total                                       31</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ==================================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Block stratum                                3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> --------------------------------------------------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Whole plot stratum</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          treatments                          1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Whole plot Residual                          3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ==================================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Subplot stratum</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          sub_treatments                      3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          treatments:sub_treatments           3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          Subplot Residual                   18</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ==================================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Total                                       31</span>
 <span class="r-plt img"><img src="design-8.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Alternative arrangement of the same design as above</span></span></span>
@@ -303,20 +304,37 @@
 <span class="r-in"><span>                  reps <span class="op">=</span> <span class="fl">4</span>, nrows <span class="op">=</span> <span class="fl">8</span>, ncols <span class="op">=</span> <span class="fl">4</span>, brows <span class="op">=</span> <span class="fl">4</span>, bcols <span class="op">=</span> <span class="fl">2</span>,</span></span>
 <span class="r-in"><span>                  byrow <span class="op">=</span> <span class="cn">FALSE</span>, seed <span class="op">=</span> <span class="fl">42</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Source of Variation                          df</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  ==================================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Block stratum                                3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  --------------------------------------------------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Whole plot stratum</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           treatments                          1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Whole plot Residual                          3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  ==================================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Subplot stratum</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           sub_treatments                      3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           treatments:sub_treatments           3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           Subplot Residual                   18</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  ==================================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Total                                       31</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ==================================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Block stratum                                3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> --------------------------------------------------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Whole plot stratum</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          treatments                          1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Whole plot Residual                          3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ==================================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Subplot stratum</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          sub_treatments                      3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          treatments:sub_treatments           3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          Subplot Residual                   18</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ==================================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Total                                       31</span>
 <span class="r-plt img"><img src="design-9.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Strip plot design</span></span></span>
+<span class="r-in"><span><span class="va">des.out</span> <span class="op">&lt;-</span> <span class="fu">design</span><span class="op">(</span>type <span class="op">=</span> <span class="st">"strip"</span>, treatments <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span>, <span class="st">"C"</span><span class="op">)</span>, sub_treatments <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">4</span>,</span></span>
+<span class="r-in"><span>                  reps <span class="op">=</span> <span class="fl">4</span>, nrows <span class="op">=</span> <span class="fl">12</span>, ncols <span class="op">=</span> <span class="fl">4</span>, brows <span class="op">=</span> <span class="fl">3</span>, bcols <span class="op">=</span> <span class="fl">4</span>, seed <span class="op">=</span> <span class="fl">42</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Source of Variation                     df</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> =============================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Block stratum                           3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ---------------------------------------------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> treatments                              2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> treatments Residual                     6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> sub_treatments                          3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> sub_treatments Residual                 9</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> treatments:sub_treatments               6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Interaction Residual                    18</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> =============================================</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Total                                   47</span>
+<span class="r-plt img"><img src="design-10.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

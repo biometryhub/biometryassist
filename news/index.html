@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">biometryassist</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -25,6 +25,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/installing-asreml-r.html">Installing ASReml-R</a></li>
+    <li><a class="dropdown-item" href="../articles/plot_annotation.html">Adding Orientation Arrows and Annotations to Field Layout Plots</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -42,6 +43,33 @@
       <small>Source: <a href="https://github.com/biometryhub/biometryassist/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.4.0" id="biometryassist-140">biometryassist 1.4.0<a class="anchor" aria-label="anchor" href="#biometryassist-140"></a></h2>
+<div class="section level3">
+<h3 id="major-changes-1-4-0">Major changes<a class="anchor" aria-label="anchor" href="#major-changes-1-4-0"></a></h3>
+<ul><li>Deprecated <code><a href="../reference/des_info.html">des_info()</a></code>. This function has been superseded by <code><a href="../reference/design.html">design()</a></code>, and will be removed in a future version.</li>
+<li>Implement <code>arcsin</code> transformation handling in <code><a href="../reference/multiple_comparisons.html">multiple_comparisons()</a></code> (<a href="https://github.com/biometryhub/biometryassist/issues/60" class="external-link">#60</a>).</li>
+<li>Demonstrated how to add orientation information to design plots via a vignette (<a href="https://github.com/biometryhub/biometryassist/issues/126" class="external-link">#126</a>).</li>
+<li>Major refactoring of <code><a href="../reference/design.html">design()</a></code> in preparation for moving to a new backend later (<a href="https://github.com/biometryhub/biometryassist/issues/102" class="external-link">#102</a>). No user-facing changes.</li>
+<li>Added strip-plot designs (<a href="https://github.com/biometryhub/biometryassist/issues/134" class="external-link">#134</a>).</li>
+<li>Enabled output of p-value matrix from <code><a href="../reference/multiple_comparisons.html">multiple_comparisons()</a></code>. This required changing the <code><a href="../reference/multiple_comparisons.html">multiple_comparisons()</a></code> output object to a list, but printing to console and autoplot(<multiple_comparisons>) still work as before (<a href="https://github.com/biometryhub/biometryassist/issues/22" class="external-link">#22</a>).</multiple_comparisons></li>
+</ul></div>
+<div class="section level3">
+<h3 id="minor-changes-1-4-0">Minor changes<a class="anchor" aria-label="anchor" href="#minor-changes-1-4-0"></a></h3>
+<ul><li>Add interval type ‘none’ for <code><a href="../reference/multiple_comparisons.html">multiple_comparisons()</a></code> (<a href="https://github.com/biometryhub/biometryassist/issues/125" class="external-link">#125</a>).</li>
+<li>Added a print method for <code><a href="../reference/satab.html">satab()</a></code> to reliably get the same output (<a href="https://github.com/biometryhub/biometryassist/issues/133" class="external-link">#133</a>).</li>
+<li>Switched from cowplot to patchwork to speed up resplot (and variogram) (<a href="https://github.com/biometryhub/biometryassist/issues/29" class="external-link">#29</a>).</li>
+<li>Added and refactored numerous tests throughout to achieve 100% test coverage and speed up tests (<a href="https://github.com/biometryhub/biometryassist/issues/104" class="external-link">#104</a>, <a href="https://github.com/biometryhub/biometryassist/issues/143" class="external-link">#143</a>, <a href="https://github.com/biometryhub/biometryassist/issues/144" class="external-link">#144</a>, <a href="https://github.com/biometryhub/biometryassist/issues/135" class="external-link">#135</a>, <a href="https://github.com/biometryhub/biometryassist/issues/148" class="external-link">#148</a>)</li>
+<li>Added asreml downloads for more operating systems and versions (<a href="https://github.com/biometryhub/biometryassist/issues/158" class="external-link">#158</a>).</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-1-4-0">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-4-0"></a></h3>
+<ul><li>Fixed a bug where hex colours don’t work with <code><a href="../reference/export_design_to_excel.html">export_design_to_excel()</a></code> (<a href="https://github.com/biometryhub/biometryassist/issues/124" class="external-link">#124</a>).</li>
+<li>Fixed a bug where buffers weren’t added to the plot if they are added after initial design creation (<a href="https://github.com/biometryhub/biometryassist/issues/123" class="external-link">#123</a>).</li>
+<li>Fixed a bug in <code><a href="../reference/install_asreml.html">install_asreml()</a></code> where it threw an error with more than one new version (<a href="https://github.com/biometryhub/biometryassist/issues/122" class="external-link">#122</a>).</li>
+<li>Fixed a bug where calculate_differences clashed with package “MuMIn” (<a href="https://github.com/biometryhub/biometryassist/issues/131" class="external-link">#131</a>).</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.3.3" id="biometryassist-133">biometryassist 1.3.3<a class="anchor" aria-label="anchor" href="#biometryassist-133"></a></h2><p class="text-muted">CRAN release: 2025-09-15</p>
 <div class="section level3">

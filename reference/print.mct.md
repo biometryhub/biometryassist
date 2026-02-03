@@ -17,7 +17,7 @@ print(x, ...)
 
 - ...:
 
-  Other arguments
+  Other arguments passed to print.data.frame
 
 ## Value
 
@@ -33,6 +33,11 @@ The original object invisibly.
 dat.aov <- aov(Petal.Width ~ Species, data = iris)
 output <- multiple_comparisons(dat.aov, classify = "Species")
 print(output)
+#> Multiple Comparisons of Means: Tukey's HSD Test
+#> Significance level: 0.05 
+#> HSD value: 0.0969097 
+#> 
+#> Predicted values:
 #>      Species predicted.value std.error  df groups   ci  low   up
 #> 1     setosa            0.25      0.03 147      a 0.06 0.19 0.30
 #> 2 versicolor            1.33      0.03 147      b 0.06 1.27 1.38

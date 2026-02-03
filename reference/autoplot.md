@@ -30,6 +30,7 @@ autoplot(
   column = NULL,
   block = NULL,
   treatments = NULL,
+  legend = TRUE,
   ...
 )
 ```
@@ -116,6 +117,11 @@ autoplot(
 
   A variable to plot a column from `object` as treatments.
 
+- legend:
+
+  Logical (default `TRUE`). If `TRUE`, displays the legend for treatment
+  colours.
+
 ## Value
 
 A `ggplot2` object.
@@ -136,11 +142,11 @@ autoplot(output, label_height = 0.5)
 des.out <- design(type = "crd", treatments = c(1, 5, 10, 20),
                   reps = 5, nrows = 4, ncols = 5, seed = 42, plot = FALSE)
 #> Source of Variation                     df
-#>  =============================================
-#>  treatments                              3
-#>  Residual                                16
-#>  =============================================
-#>  Total                                   19
+#> =============================================
+#> treatments                              3
+#> Residual                                16
+#> =============================================
+#> Total                                   19
 autoplot(des.out)
 
 
@@ -160,19 +166,19 @@ autoplot(des.out, palette = c("#ef746a", "#3fbfc5", "#81ae00", "#c37cff"))
 des.out <- design(type = "split", treatments = c("A", "B"), sub_treatments = 1:4,
 reps = 4, nrows = 8, ncols = 4, brows = 4, bcols = 2, seed = 42)
 #> Source of Variation                          df
-#>  ==================================================
-#>  Block stratum                                3
-#>  --------------------------------------------------
-#>  Whole plot stratum
-#>           treatments                          1
-#>  Whole plot Residual                          3
-#>  ==================================================
-#>  Subplot stratum
-#>           sub_treatments                      3
-#>           treatments:sub_treatments           3
-#>           Subplot Residual                   18
-#>  ==================================================
-#>  Total                                       31
+#> ==================================================
+#> Block stratum                                3
+#> --------------------------------------------------
+#> Whole plot stratum
+#>          treatments                          1
+#> Whole plot Residual                          3
+#> ==================================================
+#> Subplot stratum
+#>          sub_treatments                      3
+#>          treatments:sub_treatments           3
+#>          Subplot Residual                   18
+#> ==================================================
+#> Total                                       31
 
 
 # Show the wholeplot components

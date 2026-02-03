@@ -49,12 +49,13 @@ multiple_comparisons(
 - int.type:
 
   The type of confidence interval to calculate. One of `ci`, `tukey`,
-  `1se` or `2se`. Default is `ci`.
+  `1se`, `2se`, or `none`. Default is `ci`.
 
 - trans:
 
   Transformation that was applied to the response variable. One of
-  `log`, `sqrt`, `logit`, `power` or `inverse`. Default is `NULL`.
+  `log`, `sqrt`, `logit`, `power`, `inverse`, or `arcsin`. Default is
+  `NULL`.
 
 - offset:
 
@@ -133,12 +134,32 @@ multiple_comparisons(
 
 ## Value
 
-A list containing a data frame with predicted means, standard errors,
-confidence interval upper and lower bounds, and significant group
-allocations (named `predicted_values`), as well as a plot visually
-displaying the predicted values (named `predicted_plot`). If some of the
-predicted values are aliased, a warning is printed, and the aliased
-treatment levels are returned in the output (named `aliased`).
+An object of class `mct` (a list with class attributes) containing:
+
+- predictions:
+
+  A data frame with predicted means, standard errors, confidence
+  interval upper and lower bounds, and significant group allocations
+
+- pairwise_pvalues:
+
+  A symmetric matrix of p-values for all pairwise comparisons using
+  Tukey's HSD test
+
+- hsd:
+
+  The Honest Significant Difference value(s) used in the comparisons.
+  Either a single numeric value (if constant across comparisons) or a
+  matrix (if varies by comparison)
+
+- aliased:
+
+  Character vector of aliased treatment levels (only present if some
+  predictions are aliased)
+
+- sig_level:
+
+  The significance level used (default 0.05)
 
 ## Details
 
@@ -160,26 +181,29 @@ The power argument allows the specification of arbitrary powers to be
 back transformed, if they have been used to attempt to improve normality
 of residuals.
 
-\#' \## Confidence Intervals & Comparison Intervals
+### Confidence Intervals & Comparison Intervals
 
 The function provides several options for confidence intervals via the
 `int.type` argument:
 
-- **`tukey` (default)**: Tukey comparison intervals that are consistent
-  with the multiple comparison test. These intervals are wider than
-  regular confidence intervals and are designed so that non-overlapping
+- **`ci` (default)**: Traditional confidence intervals for individual
+  means. These estimate the precision of each individual mean but may
+  not align with the multiple comparison results. Non-overlapping
+  traditional confidence intervals do not necessarily indicate
+  significant differences in multiple comparison tests.
+
+- **`tukey`**: Tukey comparison intervals that are consistent with the
+  multiple comparison test. These intervals are wider than regular
+  confidence intervals and are designed so that non-overlapping
   intervals correspond to statistically significant differences in the
   Tukey HSD test. This ensures visual consistency between the intervals
   and letter groupings.
 
-- **`ci`**: Traditional confidence intervals for individual means. These
-  estimate the precision of each individual mean but may not align with
-  the multiple comparison results. Non-overlapping traditional
-  confidence intervals do not necessarily indicate significant
-  differences in multiple comparison tests.
-
 - **`1se`** and **`2se`**: Intervals of ±1 or ±2 standard errors around
   each mean.
+
+- **`none`**: No confidence intervals will be calculated or displayed in
+  plots.
 
 By default, the function displays regular confidence intervals
 (`int.type = "ci"`), which estimate the precision of individual
@@ -241,10 +265,26 @@ pred.out <- multiple_comparisons(model, classify = "Species")
 
 # Display the predicted values table
 pred.out
+#> Multiple Comparisons of Means: Tukey's HSD Test
+#> Significance level: 0.05 
+#> HSD value: 0.20378 
+#> 
+#> Predicted values:
 #>      Species predicted.value std.error  df groups   ci  low   up
 #> 1     setosa            1.46      0.06 147      a 0.12 1.34 1.58
 #> 2 versicolor            4.26      0.06 147      b 0.12 4.14 4.38
 #> 3  virginica            5.55      0.06 147      c 0.12 5.43 5.67
+
+# Access the p-value matrix
+pred.out$pairwise_pvalues
+#>                  setosa   versicolor    virginica
+#> setosa     1.000000e+00 2.997602e-15 2.997602e-15
+#> versicolor 2.997602e-15 1.000000e+00 2.997602e-15
+#> virginica  2.997602e-15 2.997602e-15 1.000000e+00
+
+# Access the HSD value
+pred.out$hsd
+#> [1] 0.20378
 
 # Show the predicted values plot
 autoplot(pred.out, label_height = 0.5)
@@ -253,10 +293,20 @@ autoplot(pred.out, label_height = 0.5)
 # Use traditional confidence intervals instead of Tukey comparison intervals
 pred.out.ci <- multiple_comparisons(model, classify = "Species", int.type = "ci")
 pred.out.ci
+#> Multiple Comparisons of Means: Tukey's HSD Test
+#> Significance level: 0.05 
+#> HSD value: 0.20378 
+#> 
+#> Predicted values:
 #>      Species predicted.value std.error  df groups   ci  low   up
 #> 1     setosa            1.46      0.06 147      a 0.12 1.34 1.58
 #> 2 versicolor            4.26      0.06 147      b 0.12 4.14 4.38
 #> 3  virginica            5.55      0.06 147      c 0.12 5.43 5.67
+
+# Plot without confidence intervals
+pred.out.none <- multiple_comparisons(model, classify = "Species", int.type = "none")
+autoplot(pred.out.none)
+
 
 # AOV model example with transformation
 my_iris <- iris
@@ -290,6 +340,11 @@ pred.out <- multiple_comparisons(log_model, classify = "Species",
 
 # Display the predicted values table
 pred.out
+#> Multiple Comparisons of Means: Tukey's HSD Test
+#> Significance level: 0.05 
+#> HSD value: 0.20378 
+#> 
+#> Predicted values:
 #>      Species predicted.value std.error  df groups   ci PredictedValue ApproxSE
 #> 1     setosa            1.46      0.06 147      a 0.12           4.31     0.26
 #> 2 versicolor            4.26      0.06 147      b 0.12          70.81     4.31
@@ -338,23 +393,19 @@ model.asr <- asreml(resp ~ trt,
 
 resplot(model.asr)
 
-# Perform Box-Cox transformation and get maximum value
-out <- MASS::boxcox(ex_data$resp~ex_data$trt)
-out$x[which.max(out$y)] # 0.3838
-
-# Fit cube root to the data
+# lambda = 1/3 from MASS::boxcox()
 model.asr <- asreml(resp^(1/3) ~ trt,
                     random = ~ block,
                     residual = ~ units,
                     data = ex_data)
-resplot(model.asr) # residual plots look much better
 
-#Determine ranking and groups according to Tukey's Test
+resplot(model.asr) # Look much better
+
 pred.out <- multiple_comparisons(model.obj = model.asr,
                                  classify = "trt",
                                  trans = "power", power = (1/3))
 
 pred.out
-autoplot(pred.out)
+autoplot(pred.out, label_height = 0.5)
 } # }
 ```

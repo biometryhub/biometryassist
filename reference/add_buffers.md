@@ -29,11 +29,11 @@ The modified design object with buffers added
 # Create a simple CRD design
 des <- design(type = "crd", treatments = c("A", "B"), reps = 3, nrows = 2, ncols = 3, seed = 42)
 #> Source of Variation                     df
-#>  =============================================
-#>  treatments                              1
-#>  Residual                                4
-#>  =============================================
-#>  Total                                   5
+#> =============================================
+#> treatments                              1
+#> Residual                                4
+#> =============================================
+#> Total                                   5
 
 
 # Plot the original design

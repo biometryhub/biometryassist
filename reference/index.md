@@ -4,9 +4,6 @@
 
 Functions to help with the design of experiments.
 
-- [`des_info()`](https://biometryhub.github.io/biometryassist/reference/des_info.md)
-  : Produce a graph of design layout, skeletal ANOVA table and data
-  frame with complete design
 - [`design()`](https://biometryhub.github.io/biometryassist/reference/design.md)
   : Create a complete experimental design with graph of design layout
   and skeletal ANOVA table

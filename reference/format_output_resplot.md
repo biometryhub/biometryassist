@@ -5,7 +5,14 @@ Format final output based on facet structure
 ## Usage
 
 ``` r
-format_output_resplot(output, facet, facet_name, onepage, onepage_cols)
+format_output_resplot(
+  output,
+  facet,
+  facet_name,
+  onepage,
+  onepage_cols,
+  label.size
+)
 ```
 
 ## Arguments

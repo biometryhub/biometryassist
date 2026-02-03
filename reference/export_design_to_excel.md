@@ -63,7 +63,7 @@ Valid palette options include:
 
 - Custom vector of colours (must match number of unique treatments)
 
-Requires the 'openxlsx' package to be installed.
+Requires the 'openxlsx2' package to be installed.
 
 ## Examples
 
