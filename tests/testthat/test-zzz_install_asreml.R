@@ -376,7 +376,9 @@ test_that("parse_version_table returns NA Date for missing/blank values", {
         "Download", "File name", "Date published", "Other",
         "Windows x64", "asreml_4.2.0.0.zip", NA_character_, "x",
         "macOS", "asreml-4.2.0.0.tgz", "", "y",
-        "Ubuntu 22", "asreml_4.2.0.0.tgz", "   ", "z",
+        # Non-empty but unparseable date (not in the supported formats)
+        "Ubuntu 22", "asreml_4.2.0.0.tgz", "2023-03-15", "z",
+        "CentOS", "asreml_4.2.0.0.tgz", "   ", "q",
         "Something else", "asreml_4.2.0.0.tgz", "15 March 2023", "w"
     )
 
@@ -386,7 +388,7 @@ test_that("parse_version_table returns NA Date for missing/blank values", {
     )
 
     expect_s3_class(out[["Date published"]], "Date")
-    expect_equal(out[["Date published"]], as.Date(c(NA, NA, NA, "2023-03-15")))
+    expect_equal(out[["Date published"]], as.Date(c(NA, NA, NA, NA, "2023-03-15")))
 })
 
 # Tests that require internet connection (skip on CRAN)
