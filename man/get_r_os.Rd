@@ -14,3 +14,4 @@ Determines OS, OS version (if applicable), architecture,
 and combines this with the R version for downstream
 download logic.
 }
+\keyword{internal}

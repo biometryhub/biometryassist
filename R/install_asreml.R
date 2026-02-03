@@ -289,30 +289,37 @@ install_asreml_package <- function(save_file, library, quiet, os, verbose = FALS
 #' @keywords internal
 detect_linux <- function() {
 
-  path <- c("/etc/os-release", "/usr/lib/os-release")
-  path <- path[file.exists(path)][1]
-  if (is.na(path)) stop("Cannot detect Linux OS")
+    path <- c("/etc/os-release", "/usr/lib/os-release")
+    path <- path[file.exists(path)][1]
+    if (is.na(path)) stop("Cannot detect Linux OS")
 
-  x <- readLines(path, warn = FALSE)
+    x <- readLines(path, warn = FALSE)
 
-  get <- function(k) {
-    v <- x[startsWith(x, paste0(k, "="))]
-    if (!length(v)) return(NA_character_)
-    gsub('^"|"$', "", sub("^[^=]+=", "", v))
-  }
+    get <- function(k) {
+        v <- x[startsWith(x, paste0(k, "="))]
+        if (!length(v)) return(NA_character_)
+        gsub('^"|"$', "", sub("^[^=]+=", "", v))
+    }
 
-  id      <- get("ID")
-  id_like <- strsplit(get("ID_LIKE"), " ")[[1]]
-  version <- get("VERSION_ID")
+    id      <- get("ID")
+    id_like <- strsplit(get("ID_LIKE"), " ")[[1]]
+    version <- get("VERSION_ID")
 
-  base <- if ("ubuntu" %in% id_like) "ubuntu"
-          else if ("rhel" %in% id_like) "rhel"
-          else id
+    base <- if ("ubuntu" %in% id_like) "ubuntu"
+    else if ("rhel" %in% id_like) "rhel"
+    else id
 
-  list(
-    os    = base,
-    major = sub("\\..*$", "", version)
-  )
+    version <- trimws(version)
+    major <- if (is.na(version) || !nzchar(version) || !grepl("^[0-9]+", version)) {
+        NA_character_
+    } else {
+        sub("\\..*$", "", version)
+    }
+
+    list(
+        os    = base,
+        major = major
+    )
 }
 
 
@@ -323,7 +330,7 @@ detect_linux <- function() {
 #' @return Logical indicating ARM architecture
 #' @keywords internal
 is_arm <- function() {
-  Sys.info()[["machine"]] %in% c("arm64", "aarch64")
+    Sys.info()[["machine"]] %in% c("arm64", "aarch64")
 }
 
 
@@ -334,10 +341,10 @@ is_arm <- function() {
 #' @return Character scalar R version
 #' @keywords internal
 get_r_version_compact <- function() {
-  paste0(
-    R.version$major,
-    substr(R.version$minor, 1, 1)
-  )
+    paste0(
+        R.version$major,
+        substr(R.version$minor, 1, 1)
+    )
 }
 
 
@@ -348,51 +355,57 @@ get_r_version_compact <- function() {
 #' download logic.
 #'
 #' @return A list with os_ver, os, ver, and arm
-#' @export
+#' @keywords internal
 get_r_os <- function() {
 
-  sys <- Sys.info()
-  arm <- is_arm()
-  rver <- get_r_version_compact()
+    sys <- Sys.info()
+    arm <- is_arm()
+    rver <- get_r_version_compact()
 
-  if (sys[["sysname"]] == "Windows") {
+    if (sys[["sysname"]] == "Windows") {
 
-    os <- "win"
-    os_ver <- paste0(os, "-", rver)
+        os <- "win"
+        os_ver <- paste0(os, "-", rver)
 
-  } else if (sys[["sysname"]] == "Darwin") {
+    } else if (sys[["sysname"]] == "Darwin") {
 
-    os <- "mac"
+        os <- "mac"
 
-    mac_major <- as.integer(
-      strsplit(system("sw_vers -productVersion", TRUE), "\\.")[[1]][1]
+        mac_major <- as.integer(
+            strsplit(system("sw_vers -productVersion", TRUE), "\\.")[[1]][1]
+        )
+
+        os_ver <- paste0(
+            os, "-", mac_major, "-", rver,
+            if (arm) "-arm" else ""
+        )
+
+    } else if (sys[["sysname"]] == "Linux") {
+
+        lin <- detect_linux()
+        os  <- lin$os
+
+        os_ver <- if (is.na(lin$major)) {
+            paste0(
+                os, "-", rver,
+                if (arm) "-arm" else ""
+            )
+        } else {
+            paste0(
+                os, "-", lin$major, "-", rver,
+                if (arm) "-arm" else ""
+            )
+        }
+    } else {
+        stop("Unsupported operating system")
+    }
+
+    list(
+        os_ver = os_ver,
+        os     = os,
+        ver    = rver,
+        arm    = arm
     )
-
-    os_ver <- paste0(
-      os, "-", mac_major, "-", rver,
-      if (arm) "-arm" else ""
-    )
-
-  } else if (sys[["sysname"]] == "Linux") {
-
-    lin <- detect_linux()
-    os  <- lin$os
-
-    os_ver <- paste0(
-      os, "-", lin$major, "-", rver,
-      if (arm) "-arm" else ""
-    )
-
-  } else {
-    stop("Unsupported operating system")
-  }
-
-  list(
-    os_ver = os_ver,
-    os     = os,
-    ver    = rver,
-    arm    = arm
-  )
 }
 
 
@@ -496,7 +509,7 @@ newer_version <- function() {
 
     nv <- max(numeric_version(as.character(newest$asr_ver)))
     newest <- newest[which(newest$asr_ver == as.character(nv)), ]
-    
+
     # If multiple rows with same version, take the most recent
     if(nrow(newest) > 1) {
         newest <- newest[which.max(newest$`Date published`), , drop = FALSE]
@@ -515,11 +528,11 @@ newer_version <- function() {
     # Check if newer version is available (ensure single values for &&)
     date_check <- as.logical(newest$`Date published`[1] > asr_date + 7)
     version_check <- as.logical(numeric_version(as.character(newest$asr_ver[1])) > numeric_version(as.character(asr_ver)))
-    
+
     # Handle any NA values
     date_check <- isTRUE(date_check)
     version_check <- isTRUE(version_check)
-    
+
     result <- date_check && version_check
 
     return(result)

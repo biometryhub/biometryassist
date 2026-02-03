@@ -16,7 +16,7 @@ test_that("get_r_os returns correct structure and values", {
     } else if (sys_info[["sysname"]] == "Darwin") {
         expect_match(result$os_ver, "^mac-[0-9]+-[0-9]{2}(-arm)?$")
     } else if (sys_info[["sysname"]] == "Linux") {
-        expect_match(result$os_ver, "^[-a-z0-9]+-[0-9]+-[0-9]{2}(-arm)?$")
+        expect_match(result$os_ver, "^[-a-z0-9]+(-[0-9]+)?-[0-9]{2}(-arm)?$")
     }
     expect_equal(result$arm, sys_info[["machine"]] %in% c("arm64", "aarch64"))
 })
@@ -82,6 +82,25 @@ test_that("detect_linux falls back to ID when ID_LIKE is missing or not ubuntu/r
     expect_equal(out$major, "3")
 })
 
+test_that("detect_linux returns NA major when VERSION_ID is non-numeric", {
+    mock_file_exists <- function(paths) {
+        paths %in% "/etc/os-release"
+    }
+    mock_read_lines <- function(path, warn = FALSE) {
+        c(
+            "ID=debian",
+            "VERSION_ID=NA"
+        )
+    }
+
+    mockery::stub(detect_linux, "file.exists", mock_file_exists)
+    mockery::stub(detect_linux, "readLines", mock_read_lines)
+
+    out <- detect_linux()
+    expect_equal(out$os, "debian")
+    expect_true(is.na(out$major))
+})
+
 test_that("detect_linux errors when os-release cannot be found", {
     mock_file_exists <- function(paths) {
         rep(FALSE, length(paths))
@@ -130,6 +149,30 @@ test_that("get_r_os constructs linux key including distro, major, R version, and
     out_arm <- get_r_os()
     expect_true(out_arm$arm)
     expect_equal(out_arm$os_ver, "ubuntu-22-44-arm")
+})
+
+test_that("get_r_os constructs debian key without distro major when missing (R-devel Debian)", {
+    mock_sys_info <- function() {
+        c(sysname = "Linux", machine = "x86_64")
+    }
+    mock_detect_linux <- function() {
+        list(os = "debian", major = NA_character_)
+    }
+
+    mockery::stub(get_r_os, "Sys.info", mock_sys_info)
+    mockery::stub(get_r_os, "detect_linux", mock_detect_linux)
+    mockery::stub(get_r_os, "get_r_version_compact", function() "46")
+    mockery::stub(get_r_os, "is_arm", function() FALSE)
+
+    out <- get_r_os()
+    expect_equal(out$os, "debian")
+    expect_equal(out$ver, "46")
+    expect_equal(out$os_ver, "debian-46")
+
+    mockery::stub(get_r_os, "is_arm", function() TRUE)
+    out_arm <- get_r_os()
+    expect_true(out_arm$arm)
+    expect_equal(out_arm$os_ver, "debian-46-arm")
 })
 
 test_that("get_r_os constructs mac key including mac major version and optional -arm", {
