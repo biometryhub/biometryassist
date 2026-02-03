@@ -441,8 +441,17 @@ parse_version_table <- function(tables, headers) {
         # Parse dates
         date_col <- grep("Date", colnames(x))
         if(length(date_col) > 0) {
-            x[, date_col] <- as.Date(x[, date_col],
-                                     tryFormats = c("%d %B %Y", "%d/%m/%Y", "%d %b %Y", "%d-%m-%Y"))
+            fmts <- c("%d %B %Y", "%d/%m/%Y", "%d %b %Y", "%d-%m-%Y")
+            parse_mixed_date <- function(value) {
+                if (is.na(value) || !nzchar(trimws(value))) return(as.Date(NA))
+                value <- trimws(value)
+                for (fmt in fmts) {
+                    parsed <- as.Date(value, format = fmt)
+                    if (!is.na(parsed)) return(parsed)
+                }
+                as.Date(NA)
+            }
+            x[, date_col] <- as.Date(vapply(x[, date_col], parse_mixed_date, as.Date(NA)), origin = "1970-01-01")
         }
         x
     }
