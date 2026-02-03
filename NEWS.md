@@ -15,6 +15,7 @@
 - Added a print method for `satab()` to reliably get the same output (#133).
 - Switched from cowplot to patchwork to speed up resplot (and variogram) (#29).
 - Added and refactored numerous tests throughout to achieve 100% test coverage and speed up tests (#104, #143, #144, #135, #148)
+- Added asreml downloads for more operating systems and versions (#158).
 
 ## Bug Fixes
 

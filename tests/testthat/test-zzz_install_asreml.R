@@ -91,6 +91,22 @@ test_that("detect_linux errors when os-release cannot be found", {
     expect_error(detect_linux(), "Cannot detect Linux OS")
 })
 
+test_that("get_r_os constructs windows key including R version", {
+    mock_sys_info <- function() {
+        c(sysname = "Windows", machine = "x86_64")
+    }
+
+    mockery::stub(get_r_os, "Sys.info", mock_sys_info)
+    mockery::stub(get_r_os, "get_r_version_compact", function() "44")
+    mockery::stub(get_r_os, "is_arm", function() FALSE)
+
+    out <- get_r_os()
+    expect_equal(out$os, "win")
+    expect_equal(out$ver, "44")
+    expect_false(out$arm)
+    expect_equal(out$os_ver, "win-44")
+})
+
 test_that("get_r_os constructs linux key including distro, major, R version, and optional -arm", {
     mock_sys_info <- function() {
         c(sysname = "Linux", machine = "x86_64")
@@ -353,6 +369,24 @@ test_that("parse_version_table parses dates and derives os/arm/r_ver/asr_ver", {
 
     # asreml version derived from file name
     expect_equal(out$asr_ver, c("4.2.0.0", "4.3.0.0", "4.4.0.0", "4.1.0.0"))
+})
+
+test_that("parse_version_table returns NA Date for missing/blank values", {
+    tbl <- c(
+        "Download", "File name", "Date published", "Other",
+        "Windows x64", "asreml_4.2.0.0.zip", NA_character_, "x",
+        "macOS", "asreml-4.2.0.0.tgz", "", "y",
+        "Ubuntu 22", "asreml_4.2.0.0.tgz", "   ", "z",
+        "Something else", "asreml_4.2.0.0.tgz", "15 March 2023", "w"
+    )
+
+    out <- parse_version_table(
+        tables = list(tbl),
+        headers = "ASReml-R 4.4 (All platforms) - R version 4.4"
+    )
+
+    expect_s3_class(out[["Date published"]], "Date")
+    expect_equal(out[["Date published"]], as.Date(c(NA, NA, NA, "2023-03-15")))
 })
 
 # Tests that require internet connection (skip on CRAN)
