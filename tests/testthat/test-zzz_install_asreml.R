@@ -116,6 +116,104 @@ test_that("get_r_os constructs linux key including distro, major, R version, and
     expect_equal(out_arm$os_ver, "ubuntu-22-44-arm")
 })
 
+test_that("get_r_os constructs mac key including mac major version and optional -arm", {
+    called <- new.env(parent = emptyenv())
+    called$sw_vers <- FALSE
+
+    mock_sys_info <- function() {
+        c(sysname = "Darwin", machine = "x86_64")
+    }
+    mock_system <- function(command, intern = FALSE, ...) {
+        if (identical(command, "sw_vers -productVersion") && isTRUE(intern)) {
+            called$sw_vers <- TRUE
+            return("14.3.1")
+        }
+        stop("Unexpected system() call in test")
+    }
+
+    mockery::stub(get_r_os, "Sys.info", mock_sys_info)
+    mockery::stub(get_r_os, "system", mock_system)
+    mockery::stub(get_r_os, "get_r_version_compact", function() "44")
+    mockery::stub(get_r_os, "is_arm", function() FALSE)
+
+    out <- get_r_os()
+    expect_true(called$sw_vers)
+    expect_equal(out$os, "mac")
+    expect_equal(out$ver, "44")
+    expect_false(out$arm)
+    expect_equal(out$os_ver, "mac-14-44")
+
+    mockery::stub(get_r_os, "is_arm", function() TRUE)
+    out_arm <- get_r_os()
+    expect_true(out_arm$arm)
+    expect_equal(out_arm$os_ver, "mac-14-44-arm")
+})
+
+test_that("get_r_os errors for unsupported operating systems", {
+    mock_sys_info <- function() {
+        c(sysname = "Solaris", machine = "x86_64")
+    }
+
+    mockery::stub(get_r_os, "Sys.info", mock_sys_info)
+    mockery::stub(get_r_os, "get_r_version_compact", function() "44")
+    mockery::stub(get_r_os, "is_arm", function() FALSE)
+
+    expect_error(get_r_os(), "Unsupported operating system")
+})
+
+test_that("get_version_table cleans table rows then calls parse_version_table", {
+    # This test avoids network access by mocking xml2 + stringi and checking
+    # that NA/empty rows are removed before calling parse_version_table().
+    called <- new.env(parent = emptyenv())
+    called$tables <- NULL
+    called$headers <- NULL
+
+    mock_read_html <- function(url) {
+        structure(list(url = url), class = "mock_html")
+    }
+    mock_xml_find_all <- function(res, xpath) {
+        # Return distinguishable placeholders for headers vs tables.
+        if (identical(xpath, "//h3")) return(structure(list(kind = "h3"), class = "mock_nodes"))
+        if (identical(xpath, "//table")) return(structure(list(kind = "table"), class = "mock_nodes"))
+        stop("Unexpected xpath in test: ", xpath)
+    }
+    mock_xml_text <- function(nodes) {
+        if (inherits(nodes, "mock_nodes") && identical(nodes$kind, "h3")) {
+            return(c("ASReml-R 4.4 (All platforms) - R version 4.4"))
+        }
+        if (inherits(nodes, "mock_nodes") && identical(nodes$kind, "table")) {
+            # Only tables containing "macOS" are kept.
+            return(c("macOS\nrow1\nrow2", "Windows\nrow1\nrow2"))
+        }
+        stop("Unexpected nodes in xml_text mock")
+    }
+    mock_split_fixed <- function(x, sep) {
+        # Simulate table splitting producing NA and empty strings.
+        list(c("headerA", NA_character_, "", "headerB", "rowA"))
+    }
+    mock_parse_version_table <- function(tables, headers) {
+        called$tables <- tables
+        called$headers <- headers
+        data.frame(os = "mac", arm = FALSE, r_ver = "44", asr_ver = "4.4.0", stringsAsFactors = FALSE)
+    }
+
+    mockery::stub(get_version_table, "xml2::read_html", mock_read_html)
+    mockery::stub(get_version_table, "xml2::xml_find_all", mock_xml_find_all)
+    mockery::stub(get_version_table, "xml2::xml_text", mock_xml_text)
+    mockery::stub(get_version_table, "stringi::stri_split_fixed", mock_split_fixed)
+    mockery::stub(get_version_table, "parse_version_table", mock_parse_version_table)
+
+    out <- get_version_table(url = "http://example.com/mock")
+    expect_s3_class(out, "data.frame")
+    expect_true(all(c("os", "arm", "r_ver", "asr_ver") %in% names(out)))
+
+    expect_true(is.list(called$tables))
+    expect_length(called$tables, 1)
+    expect_equal(called$headers, "ASReml-R 4.4 (All platforms) - R version 4.4")
+    expect_false(anyNA(called$tables[[1]]))
+    expect_false(any(called$tables[[1]] == ""))
+})
+
 test_that("find_existing_package works correctly", {
     skip_on_cran()
 
@@ -221,6 +319,40 @@ test_that("parse_version_table handles edge cases", {
     # Test with malformed table data
     bad_tables <- list(c("header1", "header2"))  # Too few columns
     expect_error(parse_version_table(bad_tables, "ASReml-R 4.2 (All platforms)"))
+})
+
+test_that("parse_version_table parses dates and derives os/arm/r_ver/asr_ver", {
+    tbl <- c(
+        "Download", "File name", "Date published", "Other",
+        "Windows x64", "asreml_4.2.0.0.zip", "15 March 2023", "x",
+        "macOS arm", "asreml-4.3.0.0.tgz", "15/03/2023", "y",
+        "Ubuntu 22", "asreml_4.4.0.0.tgz", "15 Mar 2023", "z",
+        "Something else", "asreml_4.1.0.0.tgz", "15-03-2023", "w"
+    )
+
+    out <- parse_version_table(
+        tables = list(tbl),
+        headers = "ASReml-R 4.4 (All platforms) - R version 4.4"
+    )
+
+    expect_s3_class(out, "data.frame")
+    expect_true(all(c("os", "arm", "r_ver", "asr_ver") %in% names(out)))
+
+    # Date parsing with multiple formats
+    expect_s3_class(out[["Date published"]], "Date")
+    expect_equal(out[["Date published"]], rep(as.Date("2023-03-15"), 4))
+
+    # OS mapping from Download
+    expect_equal(out$os, c("win", "mac", "linux", "centos"))
+
+    # ARM detection from Download
+    expect_equal(out$arm, c(FALSE, TRUE, FALSE, FALSE))
+
+    # R version derived from header
+    expect_equal(unique(out$r_ver), "44")
+
+    # asreml version derived from file name
+    expect_equal(out$asr_ver, c("4.2.0.0", "4.3.0.0", "4.4.0.0", "4.1.0.0"))
 })
 
 # Tests that require internet connection (skip on CRAN)
