@@ -117,11 +117,6 @@ experimental design:</p>
 <span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a><span class="sc">==</span><span class="er">===========================================</span></span>
 <span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a>Total                                   <span class="dv">19</span></span></code></pre></div>
 <p><img src="plot_annotation_files/figure-html/setup-1.png" class="r-plt" alt="" width="672"></p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
-<span><span class="co"># View the basic plot</span></span>
-<span><span class="va">des.out</span><span class="op">$</span><span class="va">plot.des</span></span></code></pre></div>
-<p><img src="plot_annotation_files/figure-html/setup-2.png" class="r-plt" alt="" width="672"></p>
 <p>The <code><a href="../reference/design.html">design()</a></code> function creates a field layout and stores
 it in <code>des.out$plot.des</code> as a <code>ggplot2</code> object. We
 can now enhance this plot with additional annotations.</p>
@@ -141,11 +136,11 @@ conditions like sun exposure or prevailing winds.</p>
 designed for adding directional arrows to plots. While it’s primarily
 intended for spatial data with coordinate reference systems, it works
 well for field layout plots too.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">des.out</span><span class="op">$</span><span class="va">plot.des</span> <span class="op">+</span> </span>
 <span>  <span class="fu">annotation_north_arrow</span><span class="op">(</span></span>
 <span>    location <span class="op">=</span> <span class="st">"tr"</span>,</span>
-<span>    rotation <span class="op">=</span> <span class="fl">45</span>,</span>
+<span>    rotation <span class="op">=</span> <span class="fl">53</span>,</span>
 <span>    pad_x <span class="op">=</span> <span class="fu">unit</span><span class="op">(</span><span class="op">-</span><span class="fl">1.5</span>, <span class="st">"cm"</span><span class="op">)</span>,</span>
 <span>    pad_y <span class="op">=</span> <span class="fu">unit</span><span class="op">(</span><span class="fl">0.5</span>, <span class="st">"cm"</span><span class="op">)</span>,</span>
 <span>    style <span class="op">=</span> <span class="fu">north_arrow_fancy_orienteering</span><span class="op">(</span></span>
@@ -164,17 +159,17 @@ corner. Other options include <code>"tl"</code> (top-left),
 <code>"bl"</code> (bottom-left), <code>"br"</code> (bottom-right), or
 you can specify exact coordinates as a numeric vector
 <code>c(x, y)</code>.</p></li>
-<li><p><code>rotation = 45</code>: Rotates the arrow 45 degrees
-clockwise from north. This allows you to indicate the true field
+<li><p><code>rotation = 53</code>: Rotates the arrow 53 degrees
+anti-clockwise from north. This allows you to indicate the true field
 orientation. For example, if north in your field is 45 degrees clockwise
 from the top of your plot, use <code>rotation = 45</code>. Use
 <code>rotation = 0</code> if north aligns with the top of the
 plot.</p></li>
 <li><p><code>pad_x = unit(-1.5, "cm")</code>: Moves the arrow
-horizontally. Negative values move it left, positive values move it
-right. This allows fine-tuning of the arrow position.</p></li>
+horizontally. Negative values move it right, positive values move it
+left. This allows fine-tuning of the arrow position.</p></li>
 <li><p><code>pad_y = unit(0.5, "cm")</code>: Moves the arrow vertically.
-Positive values move it up, negative values move it down.</p></li>
+Positive values move it down, negative values move it up.</p></li>
 <li>
 <p><code>style = north_arrow_fancy_orienteering()</code>: Specifies
 the visual style of the arrow. Other available styles include:</p>
@@ -216,7 +211,7 @@ arrow.</p></li>
 <h3 id="customizing-arrow-appearance">Customizing Arrow Appearance<a class="anchor" aria-label="anchor" href="#customizing-arrow-appearance"></a>
 </h3>
 <p>You can customize the arrow style parameters to match your needs:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">des.out</span><span class="op">$</span><span class="va">plot.des</span> <span class="op">+</span> </span>
 <span>  <span class="fu">annotation_north_arrow</span><span class="op">(</span></span>
 <span>    location <span class="op">=</span> <span class="st">"tr"</span>,</span>
@@ -245,7 +240,7 @@ field operations and help with trial management.</p>
 <p>The <code>annotate()</code> function allows us to add text (and other
 geometric objects) to specific locations on the plot. Unlike the north
 arrow, these annotations use the plot’s coordinate system.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">des.out</span><span class="op">$</span><span class="va">plot.des</span> <span class="op">+</span> </span>
 <span>  <span class="fu">annotate</span><span class="op">(</span></span>
 <span>    <span class="st">"text"</span>,</span>
@@ -267,7 +262,8 @@ arrow, these annotations use the plot’s coordinate system.</p>
 <span>    size <span class="op">=</span> <span class="fl">6</span></span>
 <span>  <span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">coord_cartesian</span><span class="op">(</span>xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">5.5</span><span class="op">)</span>, ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">4.5</span><span class="op">)</span>, clip <span class="op">=</span> <span class="st">"off"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">theme</span><span class="op">(</span>plot.margin <span class="op">=</span> <span class="fu">margin</span><span class="op">(</span>t <span class="op">=</span> <span class="fl">10</span>, r <span class="op">=</span> <span class="fl">70</span>, b <span class="op">=</span> <span class="fl">20</span>, l <span class="op">=</span> <span class="fl">10</span>, unit <span class="op">=</span> <span class="st">"pt"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu">theme</span><span class="op">(</span>plot.margin <span class="op">=</span> <span class="fu">margin</span><span class="op">(</span>t <span class="op">=</span> <span class="fl">10</span>, r <span class="op">=</span> <span class="fl">70</span>, b <span class="op">=</span> <span class="fl">20</span>, l <span class="op">=</span> <span class="fl">10</span>, unit <span class="op">=</span> <span class="st">"pt"</span><span class="op">)</span>,</span>
+<span>        legend.position<span class="op">=</span><span class="st">"none"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="plot_annotation_files/figure-html/field_annotations-1.png" class="r-plt" alt="" width="672"></p>
 <p>Let’s examine each annotation in detail:</p>
 <p><strong>First annotation - “Boundary Road” (vertical text on
@@ -285,7 +281,7 @@ text is centered regardless of the number of rows.</p></li>
 <li><p><code>label = "Boundary Road"</code>: The text to
 display.</p></li>
 <li><p><code>angle = 270</code>: Rotates the text 270 degrees (or -90
-degrees), making it read from bottom to top. This is conventional for
+degrees), making it read from top to bottom. This is conventional for
 labels on the right side of plots.</p></li>
 <li><p><code>hjust = 0.5</code>: Horizontal justification. 0.5 centers
 the text horizontally relative to the x-coordinate.</p></li>
@@ -351,7 +347,7 @@ row is 1)</p>
 </h3>
 <p>You can add as many annotations as needed by chaining multiple
 <code>annotate()</code> calls:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">des.out</span><span class="op">$</span><span class="va">plot.des</span> <span class="op">+</span> </span>
 <span>  <span class="fu">annotate</span><span class="op">(</span><span class="st">"text"</span>, x <span class="op">=</span> <span class="fl">5.8</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">des.out</span><span class="op">$</span><span class="va">design</span><span class="op">$</span><span class="va">row</span><span class="op">)</span>, </span>
 <span>           label <span class="op">=</span> <span class="st">"Boundary Road"</span>, angle <span class="op">=</span> <span class="fl">270</span>, hjust <span class="op">=</span> <span class="fl">0.5</span>, vjust <span class="op">=</span> <span class="op">-</span><span class="fl">0.5</span>, size <span class="op">=</span> <span class="fl">6</span><span class="op">)</span> <span class="op">+</span></span>
@@ -362,7 +358,8 @@ row is 1)</p>
 <span>  <span class="fu">annotate</span><span class="op">(</span><span class="st">"text"</span>, x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">des.out</span><span class="op">$</span><span class="va">design</span><span class="op">$</span><span class="va">col</span><span class="op">)</span>, y <span class="op">=</span> <span class="fl">0.2</span>, </span>
 <span>           label <span class="op">=</span> <span class="st">"Drainage Ditch"</span>, hjust <span class="op">=</span> <span class="fl">0.5</span>, vjust <span class="op">=</span> <span class="fl">1</span>, size <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">coord_cartesian</span><span class="op">(</span>xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">5.5</span><span class="op">)</span>, ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">4.5</span><span class="op">)</span>, clip <span class="op">=</span> <span class="st">"off"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">theme</span><span class="op">(</span>plot.margin <span class="op">=</span> <span class="fu">margin</span><span class="op">(</span>t <span class="op">=</span> <span class="fl">20</span>, r <span class="op">=</span> <span class="fl">70</span>, b <span class="op">=</span> <span class="fl">30</span>, l <span class="op">=</span> <span class="fl">50</span>, unit <span class="op">=</span> <span class="st">"pt"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu">theme</span><span class="op">(</span>plot.margin <span class="op">=</span> <span class="fu">margin</span><span class="op">(</span>t <span class="op">=</span> <span class="fl">20</span>, r <span class="op">=</span> <span class="fl">70</span>, b <span class="op">=</span> <span class="fl">30</span>, l <span class="op">=</span> <span class="fl">50</span>, unit <span class="op">=</span> <span class="st">"pt"</span><span class="op">)</span>,</span>
+<span>        legend.position<span class="op">=</span><span class="st">"none"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="plot_annotation_files/figure-html/multiple_annotations-1.png" class="r-plt" alt="" width="672"></p>
 </div>
 </div>
@@ -371,7 +368,7 @@ row is 1)</p>
 </h2>
 <p>You can combine both techniques to create a fully annotated field
 layout:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">des.out</span><span class="op">$</span><span class="va">plot.des</span> <span class="op">+</span> </span>
 <span>  <span class="co"># Add north arrow</span></span>
 <span>  <span class="fu">annotation_north_arrow</span><span class="op">(</span></span>
@@ -388,7 +385,8 @@ layout:</p>
 <span>           label <span class="op">=</span> <span class="st">"Gate"</span>, hjust <span class="op">=</span> <span class="fl">0.5</span>, vjust <span class="op">=</span> <span class="op">-</span><span class="fl">0.5</span>, size <span class="op">=</span> <span class="fl">6</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="co"># Apply coordinate system and theme adjustments</span></span>
 <span>  <span class="fu">coord_cartesian</span><span class="op">(</span>xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">5.5</span><span class="op">)</span>, ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">4.5</span><span class="op">)</span>, clip <span class="op">=</span> <span class="st">"off"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">theme</span><span class="op">(</span>plot.margin <span class="op">=</span> <span class="fu">margin</span><span class="op">(</span>t <span class="op">=</span> <span class="fl">20</span>, r <span class="op">=</span> <span class="fl">70</span>, b <span class="op">=</span> <span class="fl">20</span>, l <span class="op">=</span> <span class="fl">10</span>, unit <span class="op">=</span> <span class="st">"pt"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu">theme</span><span class="op">(</span>plot.margin <span class="op">=</span> <span class="fu">margin</span><span class="op">(</span>t <span class="op">=</span> <span class="fl">20</span>, r <span class="op">=</span> <span class="fl">70</span>, b <span class="op">=</span> <span class="fl">20</span>, l <span class="op">=</span> <span class="fl">10</span>, unit <span class="op">=</span> <span class="st">"pt"</span><span class="op">)</span>,</span>
+<span>        legend.position<span class="op">=</span><span class="st">"none"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="plot_annotation_files/figure-html/combined_example-1.png" class="r-plt" alt="" width="672"></p>
 </div>
 <div class="section level2">
@@ -471,27 +469,27 @@ edge.</p>
 <p>These techniques work with any design type generated by
 <code>biometryassist</code>. Here’s an example with a randomized
 complete block design (RCBD):</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># Generate an RCBD</span></span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>des.rcbd <span class="ot">&lt;-</span> <span class="fu">design</span>(</span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">"rcbd"</span>,</span>
-<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  <span class="at">treatments =</span> LETTERS[<span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>],</span>
-<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>  <span class="at">reps =</span> <span class="dv">4</span>,</span>
-<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>  <span class="at">nrows =</span> <span class="dv">6</span>,</span>
-<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>  <span class="at">ncols =</span> <span class="dv">4</span>,</span>
-<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>  <span class="at">brows =</span> <span class="dv">6</span>,</span>
-<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>  <span class="at">bcols =</span> <span class="dv">1</span>,</span>
-<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>  <span class="at">seed =</span> <span class="dv">123</span></span>
-<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a>)</span>
-<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>Source of Variation                     df</span>
-<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="sc">==</span><span class="er">===========================================</span></span>
-<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a>Block stratum                           <span class="dv">3</span></span>
-<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a><span class="sc">---------------------------------------------</span></span>
-<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a>treatments                              <span class="dv">5</span></span>
-<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a>Residual                                <span class="dv">15</span></span>
-<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a><span class="sc">==</span><span class="er">===========================================</span></span>
-<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a>Total                                   <span class="dv">23</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Generate an RCBD</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>des.rcbd <span class="ot">&lt;-</span> <span class="fu">design</span>(</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">"rcbd"</span>,</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="at">treatments =</span> LETTERS[<span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>],</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>  <span class="at">reps =</span> <span class="dv">4</span>,</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>  <span class="at">nrows =</span> <span class="dv">6</span>,</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>  <span class="at">ncols =</span> <span class="dv">4</span>,</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>  <span class="at">brows =</span> <span class="dv">6</span>,</span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>  <span class="at">bcols =</span> <span class="dv">1</span>,</span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>  <span class="at">seed =</span> <span class="dv">123</span></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>)</span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>Source of Variation                     df</span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="sc">==</span><span class="er">===========================================</span></span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>Block stratum                           <span class="dv">3</span></span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a><span class="sc">---------------------------------------------</span></span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a>treatments                              <span class="dv">5</span></span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a>Residual                                <span class="dv">15</span></span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a><span class="sc">==</span><span class="er">===========================================</span></span>
+<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a>Total                                   <span class="dv">23</span></span></code></pre></div>
 <p><img src="plot_annotation_files/figure-html/rcbd_example-1.png" class="r-plt" alt="" width="672"></p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># Add annotations</span></span>
 <span><span class="va">des.rcbd</span><span class="op">$</span><span class="va">plot.des</span> <span class="op">+</span></span>

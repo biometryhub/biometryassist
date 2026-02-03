@@ -241,7 +241,6 @@ significance letter.
 
 Jørgensen, E. & Pedersen, A. R. (1997). How to Obtain Those Nasty
 Standard Errors From Transformed Data - and Why They Should Not Be Used.
-<https://pure.au.dk/portal/en/publications/how-to-obtain-those-nasty-standard-errors-from-transformed-data-a>
 
 ## Examples
 

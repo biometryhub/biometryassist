@@ -46,14 +46,6 @@ Total                                   19
 
 ![](plot_annotation_files/figure-html/setup-1.png)
 
-``` r
-
-# View the basic plot
-des.out$plot.des
-```
-
-![](plot_annotation_files/figure-html/setup-2.png)
-
 The
 [`design()`](https://biometryhub.github.io/biometryassist/reference/design.md)
 function creates a field layout and stores it in `des.out$plot.des` as a
@@ -78,7 +70,7 @@ reference systems, it works well for field layout plots too.
 des.out$plot.des + 
   annotation_north_arrow(
     location = "tr",
-    rotation = 45,
+    rotation = 53,
     pad_x = unit(-1.5, "cm"),
     pad_y = unit(0.5, "cm"),
     style = north_arrow_fancy_orienteering(
@@ -101,18 +93,18 @@ Let’s break down each component of this code:
   (bottom-right), or you can specify exact coordinates as a numeric
   vector `c(x, y)`.
 
-- `rotation = 45`: Rotates the arrow 45 degrees clockwise from north.
-  This allows you to indicate the true field orientation. For example,
-  if north in your field is 45 degrees clockwise from the top of your
-  plot, use `rotation = 45`. Use `rotation = 0` if north aligns with the
-  top of the plot.
+- `rotation = 53`: Rotates the arrow 53 degrees anti-clockwise from
+  north. This allows you to indicate the true field orientation. For
+  example, if north in your field is 45 degrees clockwise from the top
+  of your plot, use `rotation = 45`. Use `rotation = 0` if north aligns
+  with the top of the plot.
 
 - `pad_x = unit(-1.5, "cm")`: Moves the arrow horizontally. Negative
-  values move it left, positive values move it right. This allows
+  values move it right, positive values move it left. This allows
   fine-tuning of the arrow position.
 
 - `pad_y = unit(0.5, "cm")`: Moves the arrow vertically. Positive values
-  move it up, negative values move it down.
+  move it down, negative values move it up.
 
 - `style = north_arrow_fancy_orienteering()`: Specifies the visual style
   of the arrow. Other available styles include:
@@ -195,7 +187,8 @@ des.out$plot.des +
     size = 6
   ) +
   coord_cartesian(xlim = c(0.5, 5.5), ylim = c(0.5, 4.5), clip = "off") +
-  theme(plot.margin = margin(t = 10, r = 70, b = 20, l = 10, unit = "pt"))
+  theme(plot.margin = margin(t = 10, r = 70, b = 20, l = 10, unit = "pt"),
+        legend.position="none")
 ```
 
 ![](plot_annotation_files/figure-html/field_annotations-1.png)
@@ -218,7 +211,7 @@ Let’s examine each annotation in detail:
 - `label = "Boundary Road"`: The text to display.
 
 - `angle = 270`: Rotates the text 270 degrees (or -90 degrees), making
-  it read from bottom to top. This is conventional for labels on the
+  it read from top to bottom. This is conventional for labels on the
   right side of plots.
 
 - `hjust = 0.5`: Horizontal justification. 0.5 centers the text
@@ -288,7 +281,8 @@ des.out$plot.des +
   annotate("text", x = mean(des.out$design$col), y = 0.2, 
            label = "Drainage Ditch", hjust = 0.5, vjust = 1, size = 5) +
   coord_cartesian(xlim = c(0.5, 5.5), ylim = c(0.5, 4.5), clip = "off") +
-  theme(plot.margin = margin(t = 20, r = 70, b = 30, l = 50, unit = "pt"))
+  theme(plot.margin = margin(t = 20, r = 70, b = 30, l = 50, unit = "pt"),
+        legend.position="none")
 ```
 
 ![](plot_annotation_files/figure-html/multiple_annotations-1.png)
@@ -315,7 +309,8 @@ des.out$plot.des +
            label = "Gate", hjust = 0.5, vjust = -0.5, size = 6) +
   # Apply coordinate system and theme adjustments
   coord_cartesian(xlim = c(0.5, 5.5), ylim = c(0.5, 4.5), clip = "off") +
-  theme(plot.margin = margin(t = 20, r = 70, b = 20, l = 10, unit = "pt"))
+  theme(plot.margin = margin(t = 20, r = 70, b = 20, l = 10, unit = "pt"),
+        legend.position="none")
 ```
 
 ![](plot_annotation_files/figure-html/combined_example-1.png)
