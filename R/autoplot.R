@@ -85,11 +85,14 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1,
         ggplot2::theme(axis.text.x = ggplot2::element_text(angle = axis_rotation, vjust = 0.5, hjust = hjust_value, ...)) +
         ggplot2::labs(x = "", y = paste0("Predicted ", ylab))
 
-    if(tolower(type) == "point") {
+    if(tolower(type) %in% c("point","line")) {
         plot <- plot + ggplot2::geom_point(ggplot2::aes(y = {{ yval }}), colour = "black", shape = 16, size = 2) +
             ggplot2::geom_errorbar(aes(ymin = .data[["low"]], ymax = .data[["up"]]), width = 0.2)
+        if(tolower(type) == "line"){
+          plot <- plot + ggplot2::geom_line(ggplot2::aes(y = {{ yval }}), colour="black", linewidth=1)
+        }
     }
-    else if(tolower(type) %in% c("col", "column")) {
+    else if(tolower(type) %in% c(,"bar", "col", "column")) {
         plot <- plot + ggplot2::geom_col(ggplot2::aes(y = {{ yval }}), colour = "black", fill = "cornflowerblue", alpha = 0.75) +
             ggplot2::geom_errorbar(aes(ymin = .data[["low"]], ymax = .data[["up"]]), width = 0.2)
     }
