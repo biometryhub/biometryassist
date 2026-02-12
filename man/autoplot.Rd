@@ -16,6 +16,7 @@ autoplot(object, ...)
   axis_rotation = rotation,
   label_rotation = rotation,
   type = "point",
+  errorbar_type = "ci",
   include_errorbar = TRUE,
   include_lettering = TRUE,
   ...
@@ -51,6 +52,8 @@ autoplot(object, ...)
 \item{label_rotation}{Enables rotation of the treatment group labels independently of the x axis labels within the plot.}
 
 \item{type}{A string specifying the type of plot to display. The default of 'point' will display a point estimate with error bars. The alternative, 'column' (or 'col'), will display a column graph with error bars.}
+
+\item{errorbar_type}{A character (default is "ci") that indicates what the errorbars in the plot represent. Current options are 95\% confidence interval ("ci") or Tukeys (average) HSD value ("hsd")}
 
 \item{include_errorbar}{A logical indicating whether to include errorbars when plotting the predicted values from a multiple comparisons test}
 

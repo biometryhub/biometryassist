@@ -9,6 +9,7 @@
 #' @param type A string specifying the type of plot to display. The default of 'point' will display a point estimate with error bars. The alternative, 'column' (or 'col'), will display a column graph with error bars.
 #' @param include_errorbar A logical indicating whether to include errorbars when plotting the predicted values from a multiple comparisons test
 #' @param include_lettering A logical indicating whether to include group lettering when plotting the predicted values from a multiple comparisons test
+#' @param errorbar_type A character (default is "ci") that indicates what the errorbars in the plot represent. Current options are 95% confidence interval ("ci") or Tukeys (average) HSD value ("hsd")
 #' @param margin Logical (default `FALSE`). A value of `FALSE` will expand the plot to the edges of the plotting area i.e. remove white space between plot and axes.
 #' @param palette A string specifying the colour scheme to use for plotting or a vector of custom colours to use as the palette. Default is equivalent to "Spectral". Colour blind friendly palettes can also be provided via options `"colour blind"` (or `"colour blind"`, both equivalent to `"viridis"`), `"magma"`, `"inferno"`, `"plasma"`, `"cividis"`, `"rocket"`, `"mako"` or `"turbo"`. Other palettes from [scales::brewer_pal()] are also possible.
 #' @param row A variable to plot a column from `object` as rows.
@@ -43,6 +44,7 @@ ggplot2::autoplot
 autoplot.mct <- function(object, size = 4, label_height = 0.1,
                          rotation = 0, axis_rotation = rotation,
                          label_rotation = rotation, type = "point",
+                         errorbar_type="ci",
                          include_errorbar=TRUE, include_lettering=TRUE, ...) {
     stopifnot(inherits(object, "mct"))
 
@@ -89,20 +91,29 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1,
         ggplot2::labs(x = "", y = paste0("Predicted ", ylab))
 
     if(tolower(type) %in% c("point","line")) {
-        plot <- plot + ggplot2::geom_point(ggplot2::aes(y = {{ yval }}), colour = "black", shape = 16, size = 2) #+
-            #ggplot2::geom_errorbar(aes(ymin = .data[["low"]], ymax = .data[["up"]]), width = 0.2)
+        plot <- plot + ggplot2::geom_point(ggplot2::aes(y = {{ yval }}), colour = "black", shape = 16, size = 2)
         if(tolower(type) == "line"){
           plot <- plot + ggplot2::geom_line(ggplot2::aes(y = {{ yval }}, group=1), colour="black", linewidth=0.4)
         }
     }
-    else if(tolower(type) %in% c(,"bar", "col", "column")) {
+    else if(tolower(type) %in% c("bar", "col", "column")) {
         plot <- plot + ggplot2::geom_col(ggplot2::aes(y = {{ yval }}), colour = "black", fill = "cornflowerblue", alpha = 0.75)
     }
     
-    if( ("low" %in% colnames(pred_df)) && (include_errorbar==TRUE) ){
+    if( (tolower(errorbar_type)=="ci") && (include_errorbar==TRUE) ){
       plot <- plot + ggplot2::geom_errorbar(aes(ymin = .data[["low"]], ymax = .data[["up"]]), width = 0.2)
     }
-
+    else if( (tolower(errorbar_type)=="hsd") && (include_errorbar==TRUE) ){
+      subset_df <- pred_df[1,]
+      plot <- plot + ggplot2::geom_errorbar(data=subset_df, 
+                        aes(x = {{ classify }},
+                            ymin = .data[["predicted.value"]] - 0.5 * object$hsd , 
+                            ymax = .data[["predicted.value"]] + 0.5 * object$hsd ), 
+                        width = 0.2#, 
+                        #position = ggplot2::position_dodge(width = 0.5) # does not work for some reason
+                        )
+    }
+    
     if( ("groups" %in% colnames(pred_df)) && (include_lettering==TRUE) ) {
         # Calculate outside of aes()
         y_pos <- ifelse(pred_df$up > pred_df$low, pred_df$up, pred_df$low)
