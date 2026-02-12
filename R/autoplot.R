@@ -7,9 +7,10 @@
 #' @param axis_rotation Enables rotation of the x axis independently of the group labels within the plot.
 #' @param label_rotation Enables rotation of the treatment group labels independently of the x axis labels within the plot.
 #' @param type A string specifying the type of plot to display. The default of 'point' will display a point estimate with error bars. The alternative, 'column' (or 'col'), will display a column graph with error bars.
-#' @param include_errorbar A logical indicating whether to include errorbars when plotting the predicted values from a multiple comparisons test
-#' @param include_lettering A logical indicating whether to include group lettering when plotting the predicted values from a multiple comparisons test
+#' @param include_errorbar Logical (default 'TRUE') indicating whether to include errorbars when plotting the predicted values from a multiple comparisons test
+#' @param include_lettering Logical (default 'TRUE') indicating whether to include group lettering when plotting the predicted values from a multiple comparisons test
 #' @param errorbar_type A character (default is "ci") that indicates what the errorbars in the plot represent. Current options are 95% confidence interval ("ci") or Tukeys (average) HSD value ("hsd")
+#' @param trans_scale Logical (default 'FALSE') that indicates whether the predicted values should be displayed on the transformed scale.
 #' @param margin Logical (default `FALSE`). A value of `FALSE` will expand the plot to the edges of the plotting area i.e. remove white space between plot and axes.
 #' @param palette A string specifying the colour scheme to use for plotting or a vector of custom colours to use as the palette. Default is equivalent to "Spectral". Colour blind friendly palettes can also be provided via options `"colour blind"` (or `"colour blind"`, both equivalent to `"viridis"`), `"magma"`, `"inferno"`, `"plasma"`, `"cividis"`, `"rocket"`, `"mako"` or `"turbo"`. Other palettes from [scales::brewer_pal()] are also possible.
 #' @param row A variable to plot a column from `object` as rows.
@@ -45,10 +46,19 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1,
                          rotation = 0, axis_rotation = rotation,
                          label_rotation = rotation, type = "point",
                          errorbar_type="ci",
-                         include_errorbar=TRUE, include_lettering=TRUE, ...) {
+                         include_errorbar=TRUE, include_lettering=TRUE,
+                         trans_scale=FALSE, ...) {
     stopifnot(inherits(object, "mct"))
 
     rlang::check_dots_used()
+    
+    # Force trans_scale = TRUE if errorbar_type is "hsd"
+    if (tolower(errorbar_type) == "hsd" && include_errorbar == TRUE) {
+      if (!trans_scale) {
+        trans_scale <- TRUE  # Force trans_scale to TRUE
+        warning("The error bar is an average HSD value and not a confidence interval.")
+      }
+    }
 
     # Extract the predictions data frame from the mct object
     # For new structure: object is a list with $predictions
@@ -73,7 +83,7 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1,
     # Get ylab as attribute (works for both old and new structure)
     ylab <- attributes(object)$ylab
 
-    yval <- ifelse("PredictedValue" %in% colnames(pred_df), "PredictedValue", "predicted.value")
+    yval <- ifelse( ("PredictedValue" %in% colnames(pred_df)) && (trans_scale==FALSE) , "PredictedValue", "predicted.value")
     yval <- rlang::ensym(yval)
 
     # Calculate hjust based on axis rotation
@@ -101,7 +111,13 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1,
     }
     
     if( (tolower(errorbar_type)=="ci") && (include_errorbar==TRUE) ){
-      plot <- plot + ggplot2::geom_errorbar(aes(ymin = .data[["low"]], ymax = .data[["up"]]), width = 0.2)
+      if(trans_scale==TRUE){
+        plot <- plot + ggplot2::geom_errorbar(aes(ymin = .data[["predicted.value"]] -2*.data[["std.error"]], 
+                                                  ymax = .data[["predicted.value"]] +2*.data[["std.error"]]), 
+                                              width = 0.2)
+      } else {
+        plot <- plot + ggplot2::geom_errorbar(aes(ymin = .data[["low"]], ymax = .data[["up"]]), width = 0.2)
+      }
     }
     else if( (tolower(errorbar_type)=="hsd") && (include_errorbar==TRUE) ){
       subset_df <- pred_df[1,]
@@ -133,7 +149,32 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1,
     else if(exists("classify2")) {
         plot <- plot + ggplot2::facet_wrap(stats::as.formula(paste("~", classify2)))
     }
-    return(plot)
+    
+    # Add secondary y-axis using the PredictedValue column
+    if (trans_scale) {
+      # Ensure the PredictedValue column exists in the data
+      if (!"PredictedValue" %in% colnames(pred_df)) {
+        stop("The column 'PredictedValue' does not exist in the data.")
+      }
+      
+      # Calculate the range of the secondary axis
+      primary_range <- range(pred_df[["predicted.value"]], na.rm = TRUE)
+      secondary_range <- range(pred_df[["PredictedValue"]], na.rm = TRUE)
+      
+      # Define a linear transformation between the primary and secondary axes
+      scale_factor <- diff(secondary_range) / diff(primary_range)
+      offset <- secondary_range[1] - primary_range[1] * scale_factor
+      
+      # Add the secondary y-axis
+      plot <- plot + ggplot2::scale_y_continuous(
+        sec.axis = ggplot2::sec_axis(
+          trans = ~ . * scale_factor + offset,  # Linear transformation
+          name = "Back-transformed Scale"  # Label for the secondary y-axis
+        )
+      )
+    }
+    
+  return(plot)
 }
 
 

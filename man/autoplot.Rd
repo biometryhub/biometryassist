@@ -19,6 +19,7 @@ autoplot(object, ...)
   errorbar_type = "ci",
   include_errorbar = TRUE,
   include_lettering = TRUE,
+  trans_scale = FALSE,
   ...
 )
 
@@ -55,9 +56,11 @@ autoplot(object, ...)
 
 \item{errorbar_type}{A character (default is "ci") that indicates what the errorbars in the plot represent. Current options are 95\% confidence interval ("ci") or Tukeys (average) HSD value ("hsd")}
 
-\item{include_errorbar}{A logical indicating whether to include errorbars when plotting the predicted values from a multiple comparisons test}
+\item{include_errorbar}{Logical (default 'TRUE') indicating whether to include errorbars when plotting the predicted values from a multiple comparisons test}
 
-\item{include_lettering}{A logical indicating whether to include group lettering when plotting the predicted values from a multiple comparisons test}
+\item{include_lettering}{Logical (default 'TRUE') indicating whether to include group lettering when plotting the predicted values from a multiple comparisons test}
+
+\item{trans_scale}{Logical (default 'FALSE') that indicates whether the predicted values should be displayed on the transformed scale.}
 
 \item{margin}{Logical (default \code{FALSE}). A value of \code{FALSE} will expand the plot to the edges of the plotting area i.e. remove white space between plot and axes.}
 
