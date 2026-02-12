@@ -16,6 +16,8 @@ autoplot(object, ...)
   axis_rotation = rotation,
   label_rotation = rotation,
   type = "point",
+  include_errorbar = TRUE,
+  include_lettering = TRUE,
   ...
 )
 
@@ -49,6 +51,10 @@ autoplot(object, ...)
 \item{label_rotation}{Enables rotation of the treatment group labels independently of the x axis labels within the plot.}
 
 \item{type}{A string specifying the type of plot to display. The default of 'point' will display a point estimate with error bars. The alternative, 'column' (or 'col'), will display a column graph with error bars.}
+
+\item{include_errorbar}{A logical indicating whether to include errorbars when plotting the predicted values from a multiple comparisons test}
+
+\item{include_lettering}{A logical indicating whether to include group lettering when plotting the predicted values from a multiple comparisons test}
 
 \item{margin}{Logical (default \code{FALSE}). A value of \code{FALSE} will expand the plot to the edges of the plotting area i.e. remove white space between plot and axes.}
 

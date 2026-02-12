@@ -7,6 +7,8 @@
 #' @param axis_rotation Enables rotation of the x axis independently of the group labels within the plot.
 #' @param label_rotation Enables rotation of the treatment group labels independently of the x axis labels within the plot.
 #' @param type A string specifying the type of plot to display. The default of 'point' will display a point estimate with error bars. The alternative, 'column' (or 'col'), will display a column graph with error bars.
+#' @param include_errorbar A logical indicating whether to include errorbars when plotting the predicted values from a multiple comparisons test
+#' @param include_lettering A logical indicating whether to include group lettering when plotting the predicted values from a multiple comparisons test
 #' @param margin Logical (default `FALSE`). A value of `FALSE` will expand the plot to the edges of the plotting area i.e. remove white space between plot and axes.
 #' @param palette A string specifying the colour scheme to use for plotting or a vector of custom colours to use as the palette. Default is equivalent to "Spectral". Colour blind friendly palettes can also be provided via options `"colour blind"` (or `"colour blind"`, both equivalent to `"viridis"`), `"magma"`, `"inferno"`, `"plasma"`, `"cividis"`, `"rocket"`, `"mako"` or `"turbo"`. Other palettes from [scales::brewer_pal()] are also possible.
 #' @param row A variable to plot a column from `object` as rows.
@@ -40,7 +42,8 @@ ggplot2::autoplot
 #' autoplot(output, label_height = 0.5)
 autoplot.mct <- function(object, size = 4, label_height = 0.1,
                          rotation = 0, axis_rotation = rotation,
-                         label_rotation = rotation, type = "point", ...) {
+                         label_rotation = rotation, type = "point",
+                         include_errorbar=TRUE, include_lettering=TRUE, ...) {
     stopifnot(inherits(object, "mct"))
 
     rlang::check_dots_used()
@@ -86,18 +89,21 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1,
         ggplot2::labs(x = "", y = paste0("Predicted ", ylab))
 
     if(tolower(type) %in% c("point","line")) {
-        plot <- plot + ggplot2::geom_point(ggplot2::aes(y = {{ yval }}), colour = "black", shape = 16, size = 2) +
-            ggplot2::geom_errorbar(aes(ymin = .data[["low"]], ymax = .data[["up"]]), width = 0.2)
+        plot <- plot + ggplot2::geom_point(ggplot2::aes(y = {{ yval }}), colour = "black", shape = 16, size = 2) #+
+            #ggplot2::geom_errorbar(aes(ymin = .data[["low"]], ymax = .data[["up"]]), width = 0.2)
         if(tolower(type) == "line"){
-          plot <- plot + ggplot2::geom_line(ggplot2::aes(y = {{ yval }}), colour="black", linewidth=1)
+          plot <- plot + ggplot2::geom_line(ggplot2::aes(y = {{ yval }}, group=1), colour="black", linewidth=0.4)
         }
     }
     else if(tolower(type) %in% c(,"bar", "col", "column")) {
-        plot <- plot + ggplot2::geom_col(ggplot2::aes(y = {{ yval }}), colour = "black", fill = "cornflowerblue", alpha = 0.75) +
-            ggplot2::geom_errorbar(aes(ymin = .data[["low"]], ymax = .data[["up"]]), width = 0.2)
+        plot <- plot + ggplot2::geom_col(ggplot2::aes(y = {{ yval }}), colour = "black", fill = "cornflowerblue", alpha = 0.75)
+    }
+    
+    if( ("low" %in% colnames(pred_df)) && (include_errorbar==TRUE) ){
+      plot <- plot + ggplot2::geom_errorbar(aes(ymin = .data[["low"]], ymax = .data[["up"]]), width = 0.2)
     }
 
-    if("groups" %in% colnames(pred_df)) {
+    if( ("groups" %in% colnames(pred_df)) && (include_lettering==TRUE) ) {
         # Calculate outside of aes()
         y_pos <- ifelse(pred_df$up > pred_df$low, pred_df$up, pred_df$low)
         nudge_val <- ifelse(abs(label_height) <= 1,
