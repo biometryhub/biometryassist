@@ -303,124 +303,37 @@ get_r_os <- function() {
     return(os_ver)
 }
 
-#' Get released versions of ASReml-R in lookup table
-#'
-#' @returns A list of data frames containing the version number and release date of released ASReml-R versions for comparison
-#' @keywords internal
-#' @importFrom xml2 read_html xml_text xml_find_all
-#' @importFrom stringi stri_split_fixed
-get_version_table <- function(url = "https://asreml.kb.vsni.co.uk/asreml-r-4-download-success/?site_reference=VS9AF20") {
-
-    tryCatch({
-        res <- xml2::read_html(url)
-
-        headers <- xml2::xml_text(xml2::xml_find_all(res, "//h3"))
-        headers <- headers[grepl("^ASReml-?R? 4.*\\(All platforms\\)", headers)]
-
-        if(length(headers) == 0) {
-            stop("URL doesn't seem to contain asreml version information.")
-        }
-
-        tables <- xml2::xml_text(xml2::xml_find_all(res, xpath = "//table"))
-        tables <- tables[grepl("macOS", tables)]
-        tables <- stringi::stri_split_fixed(tables, "\n")
-        tables <- lapply(tables, function(x) x[!is.na(x) & x != ""])
-
-        parse_version_table(tables, headers)
-
-    }, error = function(e) {
-        warning("Failed to retrieve version information: ", e$message)
-        data.frame()  # Return empty data frame on error
-    })
-}
-
-#' Parse version table from web scraping
-#' @param tables List of table data
-#' @param headers Header information
-#' @returns Combined data frame of version information
-#' @keywords internal
-parse_version_table <- function(tables, headers) {
-    fix_tables <- function(x) {
-        first_row <- x[1:4]
-        x <- as.data.frame(matrix(x[5:length(x)], ncol = 4, byrow = TRUE))
-        colnames(x) <- first_row
-
-        # Parse dates
-        date_col <- grep("Date", colnames(x))
-        if(length(date_col) > 0) {
-            x[, date_col] <- as.Date(x[, date_col],
-                                     tryFormats = c("%d %B %Y", "%d/%m/%Y", "%d %b %Y", "%d-%m-%Y"))
-        }
-        x
-    }
-
-    for(i in seq_along(tables)) {
-        tables[[i]] <- fix_tables(tables[[i]])
-        tables[[i]][["os"]] <- ifelse(grepl("Windows", tables[[i]][["Download"]], ignore.case = TRUE), "win",
-                                      ifelse(grepl("macOS", tables[[i]][["Download"]], ignore.case = TRUE), "mac",
-                                             ifelse(grepl("Ubuntu", tables[[i]][["Download"]], ignore.case = TRUE), "linux", "centos")))
-        tables[[i]][["arm"]] <- grepl("arm", tables[[i]][["Download"]], ignore.case = TRUE)
-        tables[[i]][["r_ver"]] <- paste0(stringi::stri_match_first_regex(headers[i], "R version (\\d?)\\.(\\d?)")[2:3], collapse = "")
-        tables[[i]][["asr_ver"]] <- stringi::stri_match_first_regex(tables[[i]][["File name"]], "asreml-?_?(\\d\\.\\d?\\.\\d?\\.\\d*)")[,2]
-    }
-
-    do.call("rbind", tables)
-}
-
 #' Compare installed version of ASReml-R with available versions
 #'
 #' @importFrom utils packageDescription
 #'
 #' @returns TRUE if a newer version is available online, FALSE otherwise
 #' @keywords internal
-newer_version <- function() {
-    online_versions <- get_version_table()
-
-    if(nrow(online_versions) == 0) {
-        return(FALSE)  # Can't check, assume no update needed
-    }
-
+newer_version <- function(manifest) {
     os_ver <- get_r_os()
 
-    # Find the newest version for this system
-    newest <- subset(online_versions,
-                     online_versions$os == os_ver$os &
-                         online_versions$arm == os_ver$arm &
-                         online_versions$r_ver == os_ver$ver)
+    # Find matching entries for this system
+    candidates <- Filter(function(x) {
+        x$os    == os_ver$os &&
+            x$r_ver == os_ver$ver &&
+            isTRUE(x$arm) == os_ver$arm
+    }, manifest$packages)
 
-    if(nrow(newest) == 0) {
-        return(FALSE)
-    }
+    if (length(candidates) == 0) return(FALSE)
 
-    nv <- max(numeric_version(as.character(newest$asr_ver)))
-    newest <- newest[which(newest$asr_ver == as.character(nv)), ]
-    
-    # If multiple rows with same version, take the most recent
-    if(nrow(newest) > 1) {
-        newest <- newest[which.max(newest$`Date published`), , drop = FALSE]
-    }
+    # Find newest available version
+    versions <- sapply(candidates, `[[`, "asr_ver")
+    newest   <- max(numeric_version(versions))
 
-    # Get current version info
-    if(rlang::is_installed("asreml")) {
-        asr_desc <- utils::packageDescription("asreml")
-        asr_date <- as.Date(substr(if(is.null(asr_desc$Packaged)) "1900-01-01" else asr_desc$Packaged, 1, 10))
-        asr_ver <- if(is.null(asr_desc$Version)) "0" else asr_desc$Version
+    # Compare with installed
+    if (rlang::is_installed("asreml")) {
+        desc    <- utils::packageDescription("asreml")
+        current <- numeric_version(if (is.null(desc$Version)) "0" else desc$Version)
     } else {
-        asr_date <- as.Date("1900-01-01")
-        asr_ver <- "0"
+        current <- numeric_version("0")
     }
 
-    # Check if newer version is available (ensure single values for &&)
-    date_check <- as.logical(newest$`Date published`[1] > asr_date + 7)
-    version_check <- as.logical(numeric_version(as.character(newest$asr_ver[1])) > numeric_version(as.character(asr_ver)))
-    
-    # Handle any NA values
-    date_check <- isTRUE(date_check)
-    version_check <- isTRUE(version_check)
-    
-    result <- date_check && version_check
-
-    return(result)
+    return(newest > current)
 }
 
 #' Create the folder MacOS needs for licensing
