@@ -1,5 +1,24 @@
 `%notin%` <- `%!in%` <- Negate(`%in%`)
 
+
+#' Count Unique Values
+#'
+#' Internal helper to count the number of distinct values in a vector.
+#' Works for numeric, character, and factor vectors.
+#'
+#' @param x A vector.
+#' @param na.rm Logical (default `FALSE`). If `TRUE`, missing values (`NA`) are
+#'   removed before counting.
+#'
+#' @return Integer. The number of unique values in `x` (including `NA` as one
+#'   distinct value when `na.rm = FALSE`).
+#'
+#' @keywords internal
+n_unique <- function(x, na.rm = FALSE) {
+  if (na.rm) x <- x[!is.na(x)]
+  sum(!duplicated(x))
+}
+
 # quiet
 #' Function to suppress output if desired, especially useful for ASReml output
 #'
@@ -57,7 +76,7 @@ quiet <- function(x) {
             }
         )
 
-        if(.compare_version(cran_version, as.character(local_version)) == 1) { # current version on CRAN newer than installed
+        if(compare_version(cran_version, as.character(local_version)) == 1) { # current version on CRAN newer than installed
             warning("    biometryassist version ", cran_version, " is now available.\n",
                     "    Please update biometryassist by running\n",
                     "    install.packages('biometryassist')", call. = FALSE)
@@ -72,7 +91,7 @@ quiet <- function(x) {
 #'
 #' @returns Numeric. `0` if the numbers are equal, `-1` if `b` is later and `1` if `a` is later
 #' @keywords internal
-.compare_version <- function(a, b) {
+compare_version <- function(a, b) {
     return(utils::compareVersion(as.character(a), as.character(b)))
 }
 
@@ -105,6 +124,81 @@ handle_deprecated_param <- function(old_param, new_param = NULL, custom_msg = NU
 }
 
 
+#' Setup Colour Palette for Plotting
+#'
+#' Internal helper function to generate or validate colour palettes for experimental
+#' design plots. Supports predefined palettes (ColorBrewer, Viridis) or custom colours.
+#'
+#' @param palette Either a single string naming a predefined palette or a vector of custom colours
+#' @param n Integer number of required palette length
+#'
+#' @return Character vector of hex colour codes of length `n`
+#'
+#' @keywords internal
+setup_colour_palette <- function(palette, n) {
+    # Handle custom colour palettes (vector of colours)
+    if(length(palette) > 1) {
+        if(length(palette) != n) {
+            stop("palette needs to be a single string to choose a predefined palette, or ",
+                 n, " custom colours.")
+        }
+        return(palette)
+    }
+
+    # Handle single string palette names
+    palette <- tolower(trimws(palette))
+
+    # Default Spectral palette
+    if(palette == "default") {
+        return(grDevices::colorRampPalette(scales::brewer_pal(palette = "Spectral")(11))(n))
+    }
+
+    if(palette == "rainbow") {
+        return(grDevices::rainbow(n))
+    }
+
+    # colourBrewer palettes
+    brewer_palettes <- c("brbg", "piyg", "prgn", "puor", "rdbu", "rdgy",
+                         "rdylbu", "rdylgn", "spectral", "set3", "paired")
+    if(palette %in% brewer_palettes) {
+        # Convert to proper case for scales::brewer_pal
+        palette_proper <- switch(palette,
+                                 "brbg" = "BrBG",
+                                 "piyg" = "PiYG",
+                                 "prgn" = "PRGn",
+                                 "puor" = "PuOr",
+                                 "rdbu" = "RdBu",
+                                 "rdgy" = "RdGy",
+                                 "rdylbu" = "RdYlBU",
+                                 "rdylgn" = "RdYlGn",
+                                 "spectral" = "Spectral",
+                                 "set3" = "Set3",
+                                 "paired" = "Paired"
+        )
+        return(grDevices::colorRampPalette(scales::brewer_pal(palette = palette_proper)(11))(n))
+    }
+
+    # colour blind friendly palettes (viridis family)
+    viridis_patterns <- c("colou?r([[:punct:]]|[[:space:]]?)blind", "cb", "viridis")
+    if(any(sapply(viridis_patterns, function(pattern) grepl(pattern, palette, ignore.case = TRUE)))) {
+        return(scales::viridis_pal(option = "viridis")(n))
+    }
+
+    # Other viridis options
+    viridis_options <- c("magma", "inferno", "cividis", "plasma", "rocket", "mako", "turbo")
+    if(palette %in% viridis_options) {
+        return(scales::viridis_pal(option = palette)(n))
+    }
+
+    # If we get here, the palette name is invalid
+    valid_options <- c("default", brewer_palettes, "colour blind", "colour blind",
+                       "cb", viridis_options, "rainbow")
+    stop("Invalid value for palette. Valid options are: ",
+         paste(valid_options, collapse = ", "),
+         ", or a vector of ", n, " custom colours.", call. = FALSE)
+}
+
+
 #' Determine if a Colour is Light
 #'
 #' Internal helper function to determine whether a colour is light or dark
@@ -119,7 +213,7 @@ handle_deprecated_param <- function(old_param, new_param = NULL, custom_msg = NU
 #'   different colours (green > red > blue).
 #'
 #' @keywords internal
-.is_light_colour <- function(colour) {
+is_light_colour <- function(colour) {
     # Convert vector of colours to RGB matrix (columns = colours)
     rgb_vals <- grDevices::col2rgb(colour)
     # Calculate luminance for each colour

@@ -280,28 +280,134 @@ install_asreml_package <- function(save_file, library, quiet, os, verbose = FALS
     })
 }
 
-#' Get the version of R and OS
+#' Detect Linux distro, base OS, and version
 #'
-#' @returns A list with the version of R and the OS in a standard format
+#' Reads /etc/os-release and extracts the minimal information needed
+#' to identify the base OS (e.g. ubuntu, rhel) and major version.
+#'
+#' @return A list with base OS name and major version
+#' @keywords internal
+detect_linux <- function() {
+
+    path <- c("/etc/os-release", "/usr/lib/os-release")
+    path <- path[file.exists(path)][1]
+    if (is.na(path)) stop("Cannot detect Linux OS")
+
+    x <- readLines(path, warn = FALSE)
+
+    get <- function(k) {
+        v <- x[startsWith(x, paste0(k, "="))]
+        if (!length(v)) return(NA_character_)
+        gsub('^"|"$', "", sub("^[^=]+=", "", v))
+    }
+
+    id      <- get("ID")
+    id_like <- strsplit(get("ID_LIKE"), " ")[[1]]
+    version <- get("VERSION_ID")
+
+    base <- if ("ubuntu" %in% id_like) "ubuntu"
+    else if ("rhel" %in% id_like) "rhel"
+    else id
+
+    version <- trimws(version)
+    major <- if (is.na(version) || !nzchar(version) || !grepl("^[0-9]+", version)) {
+        NA_character_
+    } else {
+        sub("\\..*$", "", version)
+    }
+
+    list(
+        os    = base,
+        major = major
+    )
+}
+
+
+#' Detect whether the system is ARM-based
+#'
+#' x86_64 is treated as the implicit default.
+#'
+#' @return Logical indicating ARM architecture
+#' @keywords internal
+is_arm <- function() {
+    Sys.info()[["machine"]] %in% c("arm64", "aarch64")
+}
+
+
+#' Get R major-minor version without dot
+#'
+#' Converts R version to a compact form (e.g. 4.4.x -> "44").
+#'
+#' @return Character scalar R version
+#' @keywords internal
+get_r_version_compact <- function() {
+    paste0(
+        R.version$major,
+        substr(R.version$minor, 1, 1)
+    )
+}
+
+
+#' Detect operating system and construct OS/version key
+#'
+#' Determines OS, OS version (if applicable), architecture,
+#' and combines this with the R version for downstream
+#' download logic.
+#'
+#' @return A list with os_ver, os, ver, and arm
 #' @keywords internal
 get_r_os <- function() {
 
-    sys_info <- Sys.info()
-    # arm Macs need a different package
-    arm <- sys_info[["sysname"]] == "Darwin" && sys_info[["machine"]] == "arm64"
+    sys <- Sys.info()
+    arm <- is_arm()
+    rver <- get_r_version_compact()
 
-    os <- switch(sys_info[['sysname']],
-                 Windows = "win",
-                 Linux   = "linux",
-                 Darwin  = "mac"
+    if (sys[["sysname"]] == "Windows") {
+
+        os <- "win"
+        os_ver <- paste0(os, "-", rver)
+
+    } else if (sys[["sysname"]] == "Darwin") {
+
+        os <- "mac"
+
+        mac_major <- as.integer(
+            strsplit(system("sw_vers -productVersion", TRUE), "\\.")[[1]][1]
+        )
+
+        os_ver <- paste0(
+            os, "-", mac_major, "-", rver,
+            if (arm) "-arm" else ""
+        )
+
+    } else if (sys[["sysname"]] == "Linux") {
+
+        lin <- detect_linux()
+        os  <- lin$os
+
+        os_ver <- if (is.na(lin$major)) {
+            paste0(
+                os, "-", rver,
+                if (arm) "-arm" else ""
+            )
+        } else {
+            paste0(
+                os, "-", lin$major, "-", rver,
+                if (arm) "-arm" else ""
+            )
+        }
+    } else {
+        stop("Unsupported operating system")
+    }
+
+    list(
+        os_ver = os_ver,
+        os     = os,
+        ver    = rver,
+        arm    = arm
     )
-
-    ver <- gsub("\\.", "", substr(getRversion(), 1, 3))
-
-    os_ver <- list(os_ver = paste0(os, "-", ifelse(arm, "arm-", ""), ver),
-                   os = os, ver = ver, arm = arm)
-    return(os_ver)
 }
+
 
 #' Get released versions of ASReml-R in lookup table
 #'
@@ -348,8 +454,17 @@ parse_version_table <- function(tables, headers) {
         # Parse dates
         date_col <- grep("Date", colnames(x))
         if(length(date_col) > 0) {
-            x[, date_col] <- as.Date(x[, date_col],
-                                     tryFormats = c("%d %B %Y", "%d/%m/%Y", "%d %b %Y", "%d-%m-%Y"))
+            fmts <- c("%d %B %Y", "%d/%m/%Y", "%d %b %Y", "%d-%m-%Y")
+            parse_mixed_date <- function(value) {
+                if (is.na(value) || !nzchar(trimws(value))) return(as.Date(NA))
+                value <- trimws(value)
+                for (fmt in fmts) {
+                    parsed <- as.Date(value, format = fmt)
+                    if (!is.na(parsed)) return(parsed)
+                }
+                as.Date(NA)
+            }
+            x[, date_col] <- as.Date(vapply(x[, date_col], parse_mixed_date, as.Date(NA)), origin = "1970-01-01")
         }
         x
     }
@@ -394,7 +509,7 @@ newer_version <- function() {
 
     nv <- max(numeric_version(as.character(newest$asr_ver)))
     newest <- newest[which(newest$asr_ver == as.character(nv)), ]
-    
+
     # If multiple rows with same version, take the most recent
     if(nrow(newest) > 1) {
         newest <- newest[which.max(newest$`Date published`), , drop = FALSE]
@@ -413,11 +528,11 @@ newer_version <- function() {
     # Check if newer version is available (ensure single values for &&)
     date_check <- as.logical(newest$`Date published`[1] > asr_date + 7)
     version_check <- as.logical(numeric_version(as.character(newest$asr_ver[1])) > numeric_version(as.character(asr_ver)))
-    
+
     # Handle any NA values
     date_check <- isTRUE(date_check)
     version_check <- isTRUE(version_check)
-    
+
     result <- date_check && version_check
 
     return(result)

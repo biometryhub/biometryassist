@@ -8,6 +8,7 @@
 \alias{get_predictions.lm}
 \alias{get_predictions.lmerMod}
 \alias{get_predictions.lmerModLmerTest}
+\alias{get_predictions.lme}
 \title{Get Predictions for Statistical Models}
 \usage{
 get_predictions(model.obj, classify, pred.obj = NULL, ...)
@@ -21,6 +22,8 @@ get_predictions(model.obj, classify, pred.obj = NULL, ...)
 \method{get_predictions}{lmerMod}(model.obj, classify, ...)
 
 \method{get_predictions}{lmerModLmerTest}(model.obj, classify, ...)
+
+\method{get_predictions}{lme}(model.obj, classify, ...)
 }
 \arguments{
 \item{model.obj}{A model object. Currently supported model objects are asreml, aov/lm, lmerMod/lmerModLmerTest.}

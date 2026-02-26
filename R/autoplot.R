@@ -13,6 +13,7 @@
 #' @param column A variable to plot a column from `object` as columns.
 #' @param block A variable to plot a column from `object` as blocks.
 #' @param treatments A variable to plot a column from `object` as treatments.
+#' @param legend Logical (default `TRUE`). If `TRUE`, displays the legend for treatment colours.
 #' @inheritParams rlang::args_dots_used
 #'
 #' @name autoplot
@@ -43,20 +44,31 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1,
     stopifnot(inherits(object, "mct"))
 
     rlang::check_dots_used()
-    # classify is just the first n columns (before predicted.value)
-    classify <- colnames(object)[1]
-    classify <- rlang::ensym(classify)
-    if(colnames(object)[2] != "predicted.value") {
-        classify2 <- colnames(object)[2]
-    }
-    if(colnames(object)[2] != "predicted.value" & colnames(object)[3] != "predicted.value") {
-        classify3 <- colnames(object)[3]
+
+    # Extract the predictions data frame from the mct object
+    # For new structure: object is a list with $predictions
+    # For backward compatibility: also handle old structure where object is a data frame
+    if (is.list(object) && "predictions" %in% names(object)) {
+        pred_df <- object$predictions
+    } else {
+        # Backward compatibility: object is already the data frame
+        pred_df <- as.data.frame(object)
     }
 
-    # Get ylab as attribute
+    # classify is just the first n columns (before predicted.value)
+    classify <- colnames(pred_df)[1]
+    classify <- rlang::ensym(classify)
+    if(colnames(pred_df)[2] != "predicted.value") {
+        classify2 <- colnames(pred_df)[2]
+    }
+    if(colnames(pred_df)[2] != "predicted.value" & colnames(pred_df)[3] != "predicted.value") {
+        classify3 <- colnames(pred_df)[3]
+    }
+
+    # Get ylab as attribute (works for both old and new structure)
     ylab <- attributes(object)$ylab
 
-    yval <- ifelse("PredictedValue" %in% colnames(object), "PredictedValue", "predicted.value")
+    yval <- ifelse("PredictedValue" %in% colnames(pred_df), "PredictedValue", "predicted.value")
     yval <- rlang::ensym(yval)
 
     # Calculate hjust based on axis rotation
@@ -68,27 +80,30 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1,
         0.5
     }
 
-    plot <- ggplot2::ggplot(data = object, ggplot2::aes(x = {{ classify }})) +
+    plot <- ggplot2::ggplot(data = pred_df, ggplot2::aes(x = {{ classify }})) +
         ggplot2::theme_bw() +
         ggplot2::theme(axis.text.x = ggplot2::element_text(angle = axis_rotation, vjust = 0.5, hjust = hjust_value, ...)) +
         ggplot2::labs(x = "", y = paste0("Predicted ", ylab))
 
     if(tolower(type) == "point") {
         plot <- plot + ggplot2::geom_point(ggplot2::aes(y = {{ yval }}), colour = "black", shape = 16, size = 2) +
-            ggplot2::geom_errorbar(aes(ymin = low, ymax = up), width = 0.2)
+            ggplot2::geom_errorbar(aes(ymin = .data[["low"]], ymax = .data[["up"]]), width = 0.2)
     }
     else if(tolower(type) %in% c("col", "column")) {
         plot <- plot + ggplot2::geom_col(ggplot2::aes(y = {{ yval }}), colour = "black", fill = "cornflowerblue", alpha = 0.75) +
-            ggplot2::geom_errorbar(aes(ymin = low, ymax = up), width = 0.2)
+            ggplot2::geom_errorbar(aes(ymin = .data[["low"]], ymax = .data[["up"]]), width = 0.2)
     }
 
-    if("groups" %in% colnames(object)) {
+    if("groups" %in% colnames(pred_df)) {
+        # Calculate outside of aes()
+        y_pos <- ifelse(pred_df$up > pred_df$low, pred_df$up, pred_df$low)
+        nudge_val <- ifelse(abs(label_height) <= 1,
+                            abs(pred_df$up - pred_df$low) * label_height,
+                            label_height)
+
         plot <- plot +
-            ggplot2::geom_text(ggplot2::aes(x = {{ classify }}, y = ifelse(object$up > object$low, object$up, object$low),
-                                            label = object$groups),
-                               nudge_y = ifelse(abs(label_height) <= 1,
-                                                abs(object$up-object$low)*label_height, # invert for cases with inverse transform
-                                                label_height),
+            ggplot2::geom_text(ggplot2::aes(y = y_pos, label = .data[["groups"]]),
+                               nudge_y = nudge_val,
                                size = size, angle = label_rotation, ...)
     }
 
@@ -133,10 +148,16 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1,
 #'
 #' # Display block level
 #' autoplot(des.out, treatments = block)
-autoplot.design <- function(object, rotation = 0, size = 4,
-                            margin = FALSE, palette = "default",
-                            row = NULL, column = NULL, block = NULL,
-                            treatments = NULL, ...) {
+autoplot.design <- function(object,
+                            rotation = 0,
+                            size = 4,
+                            margin = FALSE,
+                            palette = "default",
+                            row = NULL,
+                            column = NULL,
+                            block = NULL,
+                            treatments = NULL,
+                            legend = TRUE, ...) {
     stopifnot(inherits(object, "design"))
     rlang::check_dots_used()
 
@@ -190,7 +211,7 @@ autoplot.design <- function(object, rotation = 0, size = 4,
 
     # Text colour setup
     colours <- data.frame(treatments = levels(object[[trt_expr]]),
-                          text_col = ifelse(.is_light_colour(colour_palette), "black", "white"))
+                          text_col = ifelse(is_light_colour(colour_palette), "black", "white"))
     colnames(colours)[1] <- trt_expr
     object <- merge(object, colours)
 
@@ -205,69 +226,14 @@ autoplot.design <- function(object, rotation = 0, size = 4,
     # Apply styling
     plt <- plt + scale_fill_manual(values = colour_palette, name = tools::toTitleCase(trt_expr))
 
+    # Control legend visibility
+    if (!legend) {
+        plt <- plt + ggplot2::theme(legend.position = "none")
+    }
+
     plt <- apply_axis_styling(plt, margin, object, row_expr, column_expr)
 
     return(plt)
-}
-
-#' @keywords internal
-setup_colour_palette <- function(palette, ntrt) {
-    # Handle custom colour palettes (vector of colours)
-    if(length(palette) > 1) {
-        if(length(palette) != ntrt) {
-            stop("palette needs to be a single string to choose a predefined palette, or ",
-                 ntrt, " custom colours.")
-        }
-        return(palette)
-    }
-
-    # Handle single string palette names
-    palette <- tolower(trimws(palette))
-
-    # Default Spectral palette
-    if(palette == "default") {
-        return(grDevices::colorRampPalette(scales::brewer_pal(palette = "Spectral")(11))(ntrt))
-    }
-
-    # colourBrewer palettes
-    brewer_palettes <- c("brbg", "piyg", "prgn", "puor", "rdbu", "rdgy",
-                         "rdylbu", "rdylgn", "spectral", "set3", "paired")
-    if(palette %in% brewer_palettes) {
-        # Convert to proper case for scales::brewer_pal
-        palette_proper <- switch(palette,
-                                 "brbg" = "BrBG",
-                                 "piyg" = "PiYG",
-                                 "prgn" = "PRGn",
-                                 "puor" = "PuOr",
-                                 "rdbu" = "RdBu",
-                                 "rdgy" = "RdGy",
-                                 "rdylbu" = "RdYlBU",
-                                 "rdylgn" = "RdYlGn",
-                                 "spectral" = "Spectral",
-                                 "set3" = "Set3",
-                                 "paired" = "Paired"
-        )
-        return(grDevices::colorRampPalette(scales::brewer_pal(palette = palette_proper)(11))(ntrt))
-    }
-
-    # colour blind friendly palettes (viridis family)
-    viridis_patterns <- c("colou?r([[:punct:]]|[[:space:]]?)blind", "cb", "viridis")
-    if(any(sapply(viridis_patterns, function(pattern) grepl(pattern, palette, ignore.case = TRUE)))) {
-        return(scales::viridis_pal(option = "viridis")(ntrt))
-    }
-
-    # Other viridis options
-    viridis_options <- c("magma", "inferno", "cividis", "plasma", "rocket", "mako", "turbo")
-    if(palette %in% viridis_options) {
-        return(scales::viridis_pal(option = palette)(ntrt))
-    }
-
-    # If we get here, the palette name is invalid
-    valid_options <- c("default", brewer_palettes, "colour blind", "colour blind",
-                       "cb", viridis_options)
-    stop("Invalid value for palette. Valid options are: ",
-         paste(valid_options, collapse = ", "),
-         ", or a vector of ", ntrt, " custom colours.", call. = FALSE)
 }
 
 

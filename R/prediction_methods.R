@@ -1,3 +1,48 @@
+#' Check if classify term exists in model terms
+#'
+#' Checks if the classify term exists in the model terms, handling interaction
+#' terms specified in any order (e.g., B:A when model has A:B, or A:C:B when
+#' model has A:B:C).
+#'
+#' @param classify Name of predictor variable as a string
+#' @param model_terms Character vector of model term labels
+#'
+#' @return The classify term as it appears in the model (potentially reordered),
+#' or throws an error if not found
+#' @keywords internal
+check_classify_in_terms <- function(classify, model_terms) {
+    # First check if classify is directly in model terms
+    if(classify %in% model_terms) {
+        return(classify)
+    }
+
+    # If classify contains ":", it might be an interaction in a different order
+    if(grepl(":", classify)) {
+        # Split the classify term into parts
+        classify_parts <- unlist(strsplit(classify, ":"))
+
+        # For each model term, check if it's the same interaction in a different order
+        for(term in model_terms) {
+            if(grepl(":", term)) {
+                term_parts <- unlist(strsplit(term, ":"))
+
+                # Check if they have the same components (regardless of order)
+                # and the same number of components
+                if(length(classify_parts) == length(term_parts)) {
+                    # Sort both sets of parts and compare
+                    if(all(sort(classify_parts) == sort(term_parts))) {
+                        # Found a match! Return the model's version
+                        return(term)
+                    }
+                }
+            }
+        }
+    }
+
+    # If we get here, classify is not in the model in any order
+    stop(classify, " is not a term in the model. Please check model specification.", call. = FALSE)
+}
+
 #' Get Predictions for Statistical Models
 #'
 #' A generic function to get predictions for statistical models.
@@ -21,7 +66,7 @@ get_predictions <- function(model.obj, classify, pred.obj = NULL, ...) {
 #' @keywords internal
 get_predictions.default <- function(model.obj, ...) {
     supported_types <- c("aov", "lm", "lmerMod", "lmerModLmerTest",
-                         "asreml")
+                         "lme", "asreml")
     stop("model.obj must be a linear (mixed) model object. Currently supported model types are: ",
          paste(supported_types, collapse = ", "), call. = FALSE)
 }
@@ -33,11 +78,10 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 
     args <- list(...)
     # asr_args <- args[names(args) %in% names(formals(asreml::predict.asreml))]
-    # Check if classify is in model terms
-    if(classify %!in% c(attr(stats::terms(model.obj$formulae$fixed), 'term.labels'),
-                         attr(stats::terms(model.obj$formulae$random), 'term.labels'))) {
-        stop(classify, " is not a term in the model. Please check model specification.", call. = FALSE)
-    }
+    # Check if classify is in model terms (handles reversed interaction order)
+    model_terms <- c(attr(stats::terms(model.obj$formulae$fixed), 'term.labels'),
+                     attr(stats::terms(model.obj$formulae$random), 'term.labels'))
+    classify <- check_classify_in_terms(classify, model_terms)
 
     # Generate predictions if not provided
     if(missing(pred.obj) || is.null(pred.obj)) {
@@ -98,10 +142,9 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 #'
 #' @keywords internal
 get_predictions.lm <- function(model.obj, classify, ...) {
-    # Check if classify is in model terms
-    if(classify %!in% attr(stats::terms(model.obj), 'term.labels')) {
-        stop(classify, " is not a term in the model. Please check model specification.", call. = FALSE)
-    }
+    # Check if classify is in model terms (handles reversed interaction order)
+    model_terms <- attr(stats::terms(model.obj), 'term.labels')
+    classify <- check_classify_in_terms(classify, model_terms)
 
     # Set emmeans options
     on.exit(options(emmeans = emmeans::emm_defaults))
@@ -121,7 +164,9 @@ get_predictions.lm <- function(model.obj, classify, ...) {
     names(pp)[names(pp) == "SE"] <- "std.error"
 
     # Set diagonals to NA
-    diag(sed) <- NA
+    if(all(dim(sed) > 1)) {
+        diag(sed) <- NA
+    }
 
     # Process aliased treatments
     aliased_result <- process_aliased(pp, sed, classify)
@@ -165,6 +210,12 @@ get_predictions.lmerModLmerTest <- function(model.obj, classify, ...) {
     get_predictions.lmerMod(model.obj, classify, ...)
 }
 
+#' @rdname predictions
+#' @keywords internal
+get_predictions.lme <- function(model.obj, classify, ...) {
+    get_predictions.lm(model.obj, classify, ...)
+}
+
 #' Process aliased treatments in predictions
 #'
 #' @param pp Data frame of predictions
@@ -188,12 +239,12 @@ process_aliased <- function(pp, sed, classify, exclude_cols = c("predicted.value
         }
 
         # Create warning message
-        warn_string <- if(length(aliased_names) > 1) {
-            paste0("Some levels of ", classify, " are aliased. They have been removed from predicted output.\n",
+        if(length(aliased_names) > 1) {
+            warn_string <- paste0("Some levels of ", classify, " are aliased. They have been removed from predicted output.\n",
                   "  Aliased levels are: ", paste(aliased_names, collapse = ", "),
                   ".\n  These levels are saved in the output object.")
         } else {
-            paste0("A level of ", classify, " is aliased. It has been removed from predicted output.\n",
+            warn_string <- paste0("A level of ", classify, " is aliased. It has been removed from predicted output.\n",
                   "  Aliased level is: ", aliased_names,
                   ".\n  This level is saved as an attribute of the output object.")
         }

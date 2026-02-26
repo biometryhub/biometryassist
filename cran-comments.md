@@ -1,10 +1,10 @@
 ## Submission
 
-Fixing issues identified by CRAN
+Updating package with several new features and bug-fixes.
 
 ## Test environments
-* Local Windows 10 install, R 4.5.1
-* Ubuntu 24.04 (Virtual Machine), R 4.5.1
+* Local Windows 10 install, R 4.5.2
+* Ubuntu 24.04 (Virtual Machine), R 4.5.2
 * Github Actions:
     - macOS: r-release
     - windows: r-devel, r-release, r-oldrel

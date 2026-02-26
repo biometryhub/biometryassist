@@ -33,10 +33,12 @@
 #' # Different palettes are available
 #' heat_map(dat, value, x, y, palette = "Spectral")
 #'
+#' \donttest{
 #' # Arguments in ... are passed through to facet_wrap
 #' heat_map(dat, value, x, y, groups, labeller = ggplot2:::label_both)
 #' heat_map(dat, value, x, y, groups, scales = "free_y")
 #' heat_map(dat, value, x, y, groups, nrow = 1)
+#' }
 heat_map <- function(data, value, x_axis, y_axis, grouping = NULL, raster = TRUE, smooth = FALSE, palette = "default", ...) {
 
     # TODO:

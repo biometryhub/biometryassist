@@ -39,11 +39,6 @@ test_that("heat_map produces a grouped plot", {
                                 heat_map(dat, value, x, y, groups))
 })
 
-test_that("heat_map produces a grouped plot", {
-    vdiffr::expect_doppelganger(title = "Heatmap of grouped data",
-                                heat_map(dat, value, x, y, groups))
-})
-
 test_that("raster=FALSE uses geom_tile", {
     vdiffr::expect_doppelganger(title = "Heatmap using geom_tile",
                                 heat_map(dat, value, x, y, raster = FALSE), variant = ggplot2_variant())

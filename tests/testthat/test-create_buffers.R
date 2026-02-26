@@ -51,10 +51,8 @@ test_that("create_buffers errors for unsupported buffer type", {
 })
 
 test_that("add_buffers works for design objects", {
-  design_obj <- list(design = data.frame(row = rep(1:2, each = 2),
-                                         col = rep(1:2, 2),
-                                         treatments = c("A", "B", "C", "D")))
-  class(design_obj) <- "design"
+  design_obj <- design(type = "crd", treatments = c(1, 5, 10, 20),
+                       reps = 5, nrows = 4, ncols = 5, seed = 42, quiet = TRUE)
   out <- add_buffers(design_obj, type = "edge")
   expect_s3_class(out, "design")
   expect_true(any(out$design$treatments == "buffer"))
