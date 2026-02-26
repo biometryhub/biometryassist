@@ -411,8 +411,11 @@ calculate_pvalue_matrix <- function(pp, sed, ndf) {
     q_stat <- as.numeric(diff / sed_ij) * sqrt(2)
     pvals <- stats::ptukey(q_stat, nmeans = n, df = ndf, lower.tail = FALSE)
 
-    pval_matrix[cbind(i, j)] <- pvals
-    pval_matrix[cbind(j, i)] <- pvals
+    # if pvals is not a matrix, then convert it to a matrix
+    if(is.matrix(pvals)==FALSE){
+      pval_matrix[cbind(i, j)] <- pvals
+      pval_matrix[cbind(j, i)] <- pvals
+    }
 
     return(pval_matrix)
 }
