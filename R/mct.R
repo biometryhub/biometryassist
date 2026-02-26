@@ -593,7 +593,11 @@ validate_inputs <- function(sig, classify, model.obj, trans) {
     }
 
     # Check if the response variable is transformed in the model formula
-    model_formula <- stats::formula(model.obj)
+    if(class(model.obj)[1] == c("aovlist")){
+      model_formula <- stats::formula(model.obj[[1]])
+    } else {
+      model_formula <- stats::formula(model.obj)
+    }
     if(inherits(model.obj, "asreml")) {
         response_part <- model_formula[[1]][[2]]
     }
