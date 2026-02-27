@@ -31,3 +31,5 @@ pvals\.Rdata
 Update_links\.R
 ^r_code_03c_paper_model_asreml\.R$
 normalitycheck.R
+inst/build_manifest.R
+inst/manifest.json
