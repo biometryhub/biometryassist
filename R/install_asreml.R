@@ -88,7 +88,14 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
         create_mac_folder()
     }
 
-    url <- paste0("https://link.biometryhubwaite.com/", os_ver$os_ver)
+    manifest <- fetch_manifest()
+
+    pkg <- find_package(manifest, os_ver)
+
+    if (is.null(pkg))
+        stop("No ASReml build available for this system.", call. = FALSE)
+
+    url <- pkg$url
     verbose_msg(paste("Download URL:", url))
 
     # Look for existing package file, download if not found
@@ -280,18 +287,54 @@ install_asreml_package <- function(save_file, library, quiet, os, verbose = FALS
     })
 }
 
-#' Detect Linux distro, base OS, and version
+fetch_manifest <- function(manifest_url = "https://raw.githubusercontent.com/biometryhub/biometryassist/main/inst/manifest.json") {
+    tryCatch(
+        jsonlite::fromJSON(manifest_url, simplifyVector = FALSE),
+        error = function(e) stop("Could not fetch package manifest: ", e$message)
+    )
+}
+
+#' Find the manifest entry matching the current system
 #'
-#' Reads /etc/os-release and extracts the minimal information needed
-#' to identify the base OS (e.g. ubuntu, rhel) and major version.
+#' Looks up the manifest for a build exactly matching the slug built by
+#' [get_r_os()]. Returns \code{NULL} with a warning if no match is found,
+#' which indicates the user's system is not currently supported.
 #'
-#' @return A list with base OS name and major version
+#' @param manifest A manifest list as returned by [fetch_manifest()].
+#' @param os_ver A list as returned by [get_r_os()], with elements
+#'   \code{os}, \code{os_ver}, \code{ver}, \code{os_major}, and \code{arm}.
+#'
+#' @return A single package entry list from \code{manifest$packages}, or
+#'   \code{NULL} if no match was found.
+#' @keywords internal
+find_package <- function(manifest, os_ver) {
+    matched <- Filter(function(x) identical(x$slug, os_ver$os_ver),
+                      manifest$packages)
+    if (length(matched)) {
+        matched[[1]]
+    } else {
+        warning(
+            "No ASReml-R build found for your system (", os_ver$os_ver, "). ",
+            "Your operating system or R version may not be supported. ",
+            call. = FALSE
+        )
+        NULL
+    }
+}
+
+#' Detect Linux distribution and version
+#'
+#' Reads /etc/os-release and extracts distro ID and major version.
+#'
+#' @return list(id, like, major)
 #' @keywords internal
 detect_linux <- function() {
 
     path <- c("/etc/os-release", "/usr/lib/os-release")
     path <- path[file.exists(path)][1]
-    if (is.na(path)) stop("Cannot detect Linux OS")
+
+    if (is.na(path))
+        stop("Cannot detect Linux OS")
 
     x <- readLines(path, warn = FALSE)
 
@@ -301,25 +344,58 @@ detect_linux <- function() {
         gsub('^"|"$', "", sub("^[^=]+=", "", v))
     }
 
-    id      <- get("ID")
-    id_like <- strsplit(get("ID_LIKE"), " ")[[1]]
+    id <- tolower(get("ID"))
+
+    like <- tolower(get("ID_LIKE"))
+    like <- if (is.na(like)) character()
+    else strsplit(like, " ")[[1]]
+
     version <- get("VERSION_ID")
 
-    base <- if ("ubuntu" %in% id_like) "ubuntu"
-    else if ("rhel" %in% id_like) "rhel"
-    else id
-
-    version <- trimws(version)
-    major <- if (is.na(version) || !nzchar(version) || !grepl("^[0-9]+", version)) {
-        NA_character_
-    } else {
+    major <- if (!is.na(version) &&
+                 grepl("^[0-9]+", version))
         sub("\\..*$", "", version)
-    }
+    else
+        NA_character_
 
-    list(
-        os    = base,
+    return(list(
+        id = id,
+        like = like,
         major = major
-    )
+    ))
+}
+
+
+#' Map Linux distro to supported download target
+#' @keywords internal
+map_linux_target <- function(info) {
+
+    id  <- info$id
+    fam <- c(id, info$like)
+
+    if ("ubuntu" %in% fam)   return("ubuntu")
+    if (id == "rocky")        return("rocky")
+    if (id == "centos")       return("centos")
+
+    if (id %in% c("rhel", "redhat", "redhatenterpriseserver"))
+        return("redhat")
+
+    # RHEL-compatible clones without their own ASReml build
+    if (any(c("alma", "scientific", "oracle") %in% fam))
+        return("redhat")
+
+    return(id)  # best-effort fallback
+}
+
+
+#' Detect macOS version
+#' @keywords internal
+detect_macos <- function() {
+
+    v <- system("sw_vers -productVersion", intern = TRUE)
+    major <- sub("\\..*$", "", v)
+
+    list(os = "mac", major = major)
 }
 
 
@@ -358,129 +434,51 @@ get_r_version_compact <- function() {
 #' @keywords internal
 get_r_os <- function() {
 
-    sys <- Sys.info()
-    arm <- is_arm()
+    sys  <- Sys.info()
+    arm  <- is_arm()
     rver <- get_r_version_compact()
 
     if (sys[["sysname"]] == "Windows") {
 
-        os <- "win"
-        os_ver <- paste0(os, "-", rver)
+        os       <- "win"
+        os_major <- NULL
+        os_ver   <- paste0(os, "-", rver)
 
     } else if (sys[["sysname"]] == "Darwin") {
 
-        os <- "mac"
-
-        mac_major <- as.integer(
-            strsplit(system("sw_vers -productVersion", TRUE), "\\.")[[1]][1]
-        )
+        mac      <- detect_macos()
+        os       <- mac$os
+        os_major <- mac$major
 
         os_ver <- paste0(
-            os, "-", mac_major, "-", rver,
+            os, "-", os_major, "-", rver,
             if (arm) "-arm" else ""
         )
 
     } else if (sys[["sysname"]] == "Linux") {
 
-        lin <- detect_linux()
-        os  <- lin$os
+        lin      <- detect_linux()
+        os       <- map_linux_target(lin)
+        os_major <- if (is.na(lin$major)) "unknown" else lin$major
 
-        os_ver <- if (is.na(lin$major)) {
-            paste0(
-                os, "-", rver,
-                if (arm) "-arm" else ""
-            )
-        } else {
-            paste0(
-                os, "-", lin$major, "-", rver,
-                if (arm) "-arm" else ""
-            )
-        }
+        os_ver <- paste0(
+            os, "-", os_major, "-", rver,
+            if (arm) "-arm" else ""
+        )
+
     } else {
-        stop("Unsupported operating system")
+        stop("Unsupported OS")
     }
 
     list(
-        os_ver = os_ver,
-        os     = os,
-        ver    = rver,
-        arm    = arm
+        os_ver   = os_ver,
+        os       = os,
+        os_major = os_major,   # "15", "22", "9" etc. NULL for Windows
+        ver      = rver,
+        arm      = arm
     )
 }
 
-
-#' Get released versions of ASReml-R in lookup table
-#'
-#' @returns A list of data frames containing the version number and release date of released ASReml-R versions for comparison
-#' @keywords internal
-#' @importFrom xml2 read_html xml_text xml_find_all
-#' @importFrom stringi stri_split_fixed
-get_version_table <- function(url = "https://asreml.kb.vsni.co.uk/asreml-r-4-download-success/?site_reference=VS9AF20") {
-
-    tryCatch({
-        res <- xml2::read_html(url)
-
-        headers <- xml2::xml_text(xml2::xml_find_all(res, "//h3"))
-        headers <- headers[grepl("^ASReml-?R? 4.*\\(All platforms\\)", headers)]
-
-        if(length(headers) == 0) {
-            stop("URL doesn't seem to contain asreml version information.")
-        }
-
-        tables <- xml2::xml_text(xml2::xml_find_all(res, xpath = "//table"))
-        tables <- tables[grepl("macOS", tables)]
-        tables <- stringi::stri_split_fixed(tables, "\n")
-        tables <- lapply(tables, function(x) x[!is.na(x) & x != ""])
-
-        parse_version_table(tables, headers)
-
-    }, error = function(e) {
-        warning("Failed to retrieve version information: ", e$message)
-        data.frame()  # Return empty data frame on error
-    })
-}
-
-#' Parse version table from web scraping
-#' @param tables List of table data
-#' @param headers Header information
-#' @returns Combined data frame of version information
-#' @keywords internal
-parse_version_table <- function(tables, headers) {
-    fix_tables <- function(x) {
-        first_row <- x[1:4]
-        x <- as.data.frame(matrix(x[5:length(x)], ncol = 4, byrow = TRUE))
-        colnames(x) <- first_row
-
-        # Parse dates
-        date_col <- grep("Date", colnames(x))
-        if(length(date_col) > 0) {
-            fmts <- c("%d %B %Y", "%d/%m/%Y", "%d %b %Y", "%d-%m-%Y")
-            parse_mixed_date <- function(value) {
-                if (is.na(value) || !nzchar(trimws(value))) return(as.Date(NA))
-                value <- trimws(value)
-                for (fmt in fmts) {
-                    parsed <- as.Date(value, format = fmt)
-                    if (!is.na(parsed)) return(parsed)
-                }
-                as.Date(NA)
-            }
-            x[, date_col] <- as.Date(vapply(x[, date_col], parse_mixed_date, as.Date(NA)), origin = "1970-01-01")
-        }
-        x
-    }
-
-    for(i in seq_along(tables)) {
-        tables[[i]] <- fix_tables(tables[[i]])
-        tables[[i]][["os"]] <- ifelse(grepl("Windows", tables[[i]][["Download"]], ignore.case = TRUE), "win",
-                                      ifelse(grepl("macOS", tables[[i]][["Download"]], ignore.case = TRUE), "mac",
-                                             ifelse(grepl("Ubuntu", tables[[i]][["Download"]], ignore.case = TRUE), "linux", "centos")))
-        tables[[i]][["arm"]] <- grepl("arm", tables[[i]][["Download"]], ignore.case = TRUE)
-        tables[[i]][["r_ver"]] <- paste0(stringi::stri_match_first_regex(headers[i], "R version (\\d?)\\.(\\d?)")[2:3], collapse = "")
-        tables[[i]][["asr_ver"]] <- stringi::stri_match_first_regex(tables[[i]][["File name"]], "asreml-?_?(\\d\\.\\d?\\.\\d?\\.\\d*)")[,2]
-    }
-
-    do.call("rbind", tables)
-}
 
 #' Compare installed version of ASReml-R with available versions
 #'
@@ -488,54 +486,24 @@ parse_version_table <- function(tables, headers) {
 #'
 #' @returns TRUE if a newer version is available online, FALSE otherwise
 #' @keywords internal
-newer_version <- function() {
-    online_versions <- get_version_table()
+newer_version <- function(manifest = fetch_manifest()) {
 
-    if(nrow(online_versions) == 0) {
-        return(FALSE)  # Can't check, assume no update needed
-    }
-
-    os_ver <- get_r_os()
-
-    # Find the newest version for this system
-    newest <- subset(online_versions,
-                     online_versions$os == os_ver$os &
-                         online_versions$arm == os_ver$arm &
-                         online_versions$r_ver == os_ver$ver)
-
-    if(nrow(newest) == 0) {
+    if (is.null(manifest) || length(manifest$packages) == 0)
         return(FALSE)
-    }
 
-    nv <- max(numeric_version(as.character(newest$asr_ver)))
-    newest <- newest[which(newest$asr_ver == as.character(nv)), ]
+    os_ver  <- get_r_os()
+    matched <- find_package(manifest, os_ver)
 
-    # If multiple rows with same version, take the most recent
-    if(nrow(newest) > 1) {
-        newest <- newest[which.max(newest$`Date published`), , drop = FALSE]
-    }
+    if (is.null(matched)) return(FALSE)
 
-    # Get current version info
-    if(rlang::is_installed("asreml")) {
-        asr_desc <- utils::packageDescription("asreml")
-        asr_date <- as.Date(substr(if(is.null(asr_desc$Packaged)) "1900-01-01" else asr_desc$Packaged, 1, 10))
-        asr_ver <- if(is.null(asr_desc$Version)) "0" else asr_desc$Version
+    if (rlang::is_installed("asreml")) {
+        desc    <- utils::packageDescription("asreml")
+        current <- numeric_version(if (is.null(desc$Version)) "0" else desc$Version)
     } else {
-        asr_date <- as.Date("1900-01-01")
-        asr_ver <- "0"
+        current <- numeric_version("0")
     }
 
-    # Check if newer version is available (ensure single values for &&)
-    date_check <- as.logical(newest$`Date published`[1] > asr_date + 7)
-    version_check <- as.logical(numeric_version(as.character(newest$asr_ver[1])) > numeric_version(as.character(asr_ver)))
-
-    # Handle any NA values
-    date_check <- isTRUE(date_check)
-    version_check <- isTRUE(version_check)
-
-    result <- date_check && version_check
-
-    return(result)
+    numeric_version(matched$asr_ver) > current
 }
 
 #' Create the folder MacOS needs for licensing
@@ -552,7 +520,7 @@ create_mac_folder <- function() {
         as.numeric(sub("^([0-9]+).*", "\\1", rel))
     }
 
-    reprise_path <- "/Library/Application Support/Reprise/"
+    reprise_path <- "/Library/Application\ Support/Reprise/"
 
     is_mac <- identical(Sys.info()[["sysname"]], "Darwin")
     major_release <- suppressWarnings(get_major_release())
@@ -567,7 +535,8 @@ create_mac_folder <- function() {
     result <- tryCatch({
         dir.create(reprise_path, recursive = TRUE)
         TRUE
-    }, error = function(e) FALSE)
+    }, warning = function(w) FALSE,
+    error = function(e) FALSE)
 
     if (!result) {
         message("The ASReml-R package uses Reprise license management and requires administrator privileges to create the folder '/Library/Application Support/Reprise'.")
