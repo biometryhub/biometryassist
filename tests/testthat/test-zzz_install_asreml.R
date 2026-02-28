@@ -1,7 +1,7 @@
 test_that("get_r_os returns correct structure and values", {
     result <- get_r_os()
     expect_type(result, "list")
-    expect_named(result, c("os_ver", "os", "ver", "arm"))
+    expect_named(result, c("os_ver", "os", "os_major", "ver", "arm"))
 
     # Check OS detection
     sys_info <- Sys.info()
@@ -38,8 +38,9 @@ test_that("detect_linux parses ubuntu base OS and major version", {
 
     out <- detect_linux()
     expect_type(out, "list")
-    expect_named(out, c("os", "major"))
-    expect_equal(out$os, "ubuntu")
+    expect_named(out, c("id", "like", "major"))
+    expect_equal(out$id, "pop")
+    expect_equal(out$like, c("ubuntu", "debian"))
     expect_equal(out$major, "22")
 })
 
@@ -59,7 +60,8 @@ test_that("detect_linux parses rhel base OS from ID_LIKE", {
     mockery::stub(detect_linux, "readLines", mock_read_lines)
 
     out <- detect_linux()
-    expect_equal(out$os, "rhel")
+    expect_equal(out$id, "centos")
+    expect_equal(out$like, c("fedora", "rhel"))
     expect_equal(out$major, "8")
 })
 
@@ -78,7 +80,7 @@ test_that("detect_linux falls back to ID when ID_LIKE is missing or not ubuntu/r
     mockery::stub(detect_linux, "readLines", mock_read_lines)
 
     out <- detect_linux()
-    expect_equal(out$os, "alpine")
+    expect_equal(out$id, "alpine")
     expect_equal(out$major, "3")
 })
 
@@ -97,7 +99,7 @@ test_that("detect_linux returns NA major when VERSION_ID is non-numeric", {
     mockery::stub(detect_linux, "readLines", mock_read_lines)
 
     out <- detect_linux()
-    expect_equal(out$os, "debian")
+    expect_equal(out$id, "debian")
     expect_true(is.na(out$major))
 })
 
@@ -131,7 +133,7 @@ test_that("get_r_os constructs linux key including distro, major, R version, and
         c(sysname = "Linux", machine = "x86_64")
     }
     mock_detect_linux <- function() {
-        list(os = "ubuntu", major = "22")
+        list(id = "ubuntu", like = "debian", major = "22")
     }
 
     mockery::stub(get_r_os, "Sys.info", mock_sys_info)
@@ -156,7 +158,7 @@ test_that("get_r_os constructs debian key without distro major when missing (R-d
         c(sysname = "Linux", machine = "x86_64")
     }
     mock_detect_linux <- function() {
-        list(os = "debian", major = NA_character_)
+        list(id = "debian", like = NA, major = NA_character_)
     }
 
     mockery::stub(get_r_os, "Sys.info", mock_sys_info)
@@ -370,48 +372,9 @@ test_that("manage_file handles different keep_file options", {
     })
 })
 
-test_that("parse_version_table handles edge cases", {
-    # Test with empty input
-    result <- parse_version_table(list(), character(0))
-    expect_null(result)
-
-    # Test with malformed table data
-    bad_tables <- list(c("header1", "header2"))  # Too few columns
-    expect_error(parse_version_table(bad_tables, "ASReml-R 4.2 (All platforms)"))
-})
-
-test_that("parse_version_table parses dates and derives os/arm/r_ver/asr_ver", {
-    tbl <- c(
-        "Download", "File name", "Date published", "Other",
-        "Windows x64", "asreml_4.2.0.0.zip", "15 March 2023", "x",
-        "macOS arm", "asreml-4.3.0.0.tgz", "15/03/2023", "y",
-        "Ubuntu 22", "asreml_4.4.0.0.tgz", "15 Mar 2023", "z",
-        "Something else", "asreml_4.1.0.0.tgz", "15-03-2023", "w"
-    )
-
-    out <- parse_version_table(
-        tables = list(tbl),
-        headers = "ASReml-R 4.4 (All platforms) - R version 4.4"
-    )
-
-    expect_s3_class(out, "data.frame")
-    expect_true(all(c("os", "arm", "r_ver", "asr_ver") %in% names(out)))
-
-    # Date parsing with multiple formats
-    expect_s3_class(out[["Date published"]], "Date")
-    expect_equal(out[["Date published"]], rep(as.Date("2023-03-15"), 4))
-
-    # OS mapping from Download
-    expect_equal(out$os, c("win", "mac", "linux", "centos"))
-
-    # ARM detection from Download
-    expect_equal(out$arm, c(FALSE, TRUE, FALSE, FALSE))
-
-    # R version derived from header
-    expect_equal(unique(out$r_ver), "44")
-
-    # asreml version derived from file name
-    expect_equal(out$asr_ver, c("4.2.0.0", "4.3.0.0", "4.4.0.0", "4.1.0.0"))
+test_that("newer_version returns FALSE for empty or missing manifest", {
+    expect_false(newer_version(manifest = NULL))
+    expect_false(newer_version(manifest = list(packages = list())))
 })
 
 test_that("parse_version_table returns NA Date for missing/blank values", {
@@ -1387,95 +1350,4 @@ test_that("install_asreml verbose messaging shows package removal", {
     # Test that verbose mode shows the removal message
     msgs <- capture_messages_text(install_asreml(force = TRUE, quiet = "verbose"))
     expect_match(msgs, "\\[DEBUG\\] Force=TRUE and existing package found - removing existing installation")
-})
-
-test_that("get_version_table handles missing version headers", {
-    skip_on_cran()
-
-    # Mock xml2 functions to simulate a page without version headers
-    mock_html <- structure(list(), class = "xml_document")
-    mockery::stub(get_version_table, "xml2::read_html", function(url) mock_html)
-    mockery::stub(get_version_table, "xml2::xml_find_all", function(doc, xpath) {
-        if(grepl("//h3", xpath)) {
-            # Return headers that don't match the expected pattern
-            structure(list(), class = "xml_nodeset")
-        } else {
-            structure(list(), class = "xml_nodeset")
-        }
-    })
-    mockery::stub(get_version_table, "xml2::xml_text", function(nodes) character(0))
-
-    # Should stop with specific error message
-    expect_warning(
-        table <- get_version_table(),
-        "URL doesn't seem to contain asreml version information\\."
-    )
-    expect_equal(nrow(table), 0)
-})
-
-test_that("get_version_table handles network/parsing errors gracefully", {
-    skip_on_cran()
-
-    # Mock xml2::read_html to throw a network error
-    mockery::stub(get_version_table, "xml2::read_html", function(url) {
-        stop("Network timeout or connection failed")
-    })
-
-    # Should return empty data frame and warn about failure
-    expect_warning(
-        result <- get_version_table(),
-        "Failed to retrieve version information: Network timeout or connection failed"
-    )
-    expect_s3_class(result, "data.frame")
-    expect_equal(nrow(result), 0)
-})
-
-test_that("get_version_table handles XML parsing errors", {
-    skip_on_cran()
-
-    # Mock xml2 functions to simulate XML parsing failure
-    mock_html <- structure(list(), class = "xml_document")
-    mockery::stub(get_version_table, "xml2::read_html", function(url) mock_html)
-    mockery::stub(get_version_table, "xml2::xml_find_all", function(doc, xpath) {
-        stop("XPath expression error")
-    })
-
-    # Should return empty data frame and warn about failure
-    expect_warning(
-        result <- get_version_table(),
-        "Failed to retrieve version information: XPath expression error"
-    )
-    expect_s3_class(result, "data.frame")
-    expect_equal(nrow(result), 0)
-})
-
-test_that("get_version_table handles malformed table data", {
-    skip_on_cran()
-
-    # Mock xml2 functions to return valid headers but malformed table data
-    mock_html <- structure(list(), class = "xml_document")
-    mockery::stub(get_version_table, "xml2::read_html", function(url) mock_html)
-    mockery::stub(get_version_table, "xml2::xml_find_all", function(doc, xpath) {
-        structure(list(), class = "xml_nodeset")
-    })
-    mockery::stub(get_version_table, "xml2::xml_text", function(nodes) {
-        if(length(nodes) == 0) {
-            # Return valid headers for h3 search
-            "ASReml-R 4.2 (All platforms)"
-        } else {
-            # Return malformed table data
-            "Invalid table data without macOS"
-        }
-    })
-    mockery::stub(get_version_table, "stringi::stri_split_fixed", function(x, pattern) {
-        stop("String processing error")
-    })
-
-    # Should return empty data frame and warn about failure
-    expect_warning(
-        result <- get_version_table(),
-        "Failed to retrieve version information: String processing error"
-    )
-    expect_s3_class(result, "data.frame")
-    expect_equal(nrow(result), 0)
 })

@@ -459,10 +459,10 @@ get_r_os <- function() {
 
         lin      <- detect_linux()
         os       <- map_linux_target(lin)
-        os_major <- if (is.na(lin$major)) "unknown" else lin$major
+        os_major <- if (is.na(lin$major)) "" else lin$major
 
         os_ver <- paste0(
-            os, "-", os_major, "-", rver,
+            os, "-", ifelse(!is.na(os_major), paste0(os_major, "-"), ""), rver,
             if (arm) "-arm" else ""
         )
 
