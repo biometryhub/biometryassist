@@ -461,10 +461,12 @@ get_r_os <- function() {
         os       <- map_linux_target(lin)
         os_major <- if (is.na(lin$major)) "" else lin$major
 
-        os_ver <- paste0(
-            os, "-", ifelse(!is.na(os_major), paste0(os_major, "-"), ""), rver,
-            if (arm) "-arm" else ""
-        )
+        if (is.na(os_major) || os_major == "") {
+            os_ver <- paste0(os, "-", rver)
+        } else {
+            os_ver <- paste0(os, "-", os_major, "-", rver)
+        }
+        if (arm) os_ver <- paste0(os_ver, "-arm")
 
     } else {
         stop("Unsupported OS")
