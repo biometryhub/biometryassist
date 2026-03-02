@@ -1,0 +1,545 @@
+{
+  "updated": "2026-02-27",
+  "packages": [
+    {
+      "asr_ver": "4.2.0.393",
+      "r_ver": "45",
+      "os": "redhat",
+      "os_ver": "8",
+      "arm": false,
+      "published": "2025-08-29",
+      "slug": "redhat-8-45",
+      "url": "https://link.biometryhubwaite.com/redhat-8-45"
+    },
+    {
+      "asr_ver": "4.2.0.393",
+      "r_ver": "45",
+      "os": "rocky",
+      "os_ver": "9",
+      "arm": false,
+      "published": "2025-08-29",
+      "slug": "rocky-9-45",
+      "url": "https://link.biometryhubwaite.com/rocky-9-45"
+    },
+    {
+      "asr_ver": "4.2.0.393",
+      "r_ver": "45",
+      "os": "ubuntu",
+      "os_ver": "20",
+      "arm": false,
+      "published": "2025-08-29",
+      "slug": "ubuntu-20-45",
+      "url": "https://link.biometryhubwaite.com/ubuntu-20-45"
+    },
+    {
+      "asr_ver": "4.2.0.393",
+      "r_ver": "45",
+      "os": "ubuntu",
+      "os_ver": "22",
+      "arm": false,
+      "published": "2025-08-29",
+      "slug": "ubuntu-22-45",
+      "url": "https://link.biometryhubwaite.com/ubuntu-22-45"
+    },
+    {
+      "asr_ver": "4.2.0.393",
+      "r_ver": "45",
+      "os": "ubuntu",
+      "os_ver": "24",
+      "arm": false,
+      "published": "2025-08-29",
+      "slug": "ubuntu-24-45",
+      "url": "https://link.biometryhubwaite.com/ubuntu-24-45"
+    },
+    {
+      "asr_ver": "4.2.0.392",
+      "r_ver": "45",
+      "os": "mac",
+      "os_ver": "11",
+      "arm": false,
+      "published": "2025-08-27",
+      "slug": "mac-11-45",
+      "url": "https://link.biometryhubwaite.com/mac-11-45"
+    },
+    {
+      "asr_ver": "4.2.0.392",
+      "r_ver": "45",
+      "os": "mac",
+      "os_ver": "12",
+      "arm": true,
+      "published": "2025-08-27",
+      "slug": "mac-12-45-arm",
+      "url": "https://link.biometryhubwaite.com/mac-12-45-arm"
+    },
+    {
+      "asr_ver": "4.2.0.392",
+      "r_ver": "45",
+      "os": "mac",
+      "os_ver": "15",
+      "arm": true,
+      "published": "2025-08-27",
+      "slug": "mac-15-45-arm",
+      "url": "https://link.biometryhubwaite.com/mac-15-45-arm"
+    },
+    {
+      "asr_ver": "4.2.0.392",
+      "r_ver": "45",
+      "os": "win",
+      "os_ver": "win",
+      "arm": false,
+      "published": "2025-08-27",
+      "slug": "win-45",
+      "url": "https://link.biometryhubwaite.com/win-45"
+    },
+    {
+      "asr_ver": "4.2.0.393",
+      "r_ver": "44",
+      "os": "redhat",
+      "os_ver": "8",
+      "arm": false,
+      "published": "2025-08-29",
+      "slug": "redhat-8-44",
+      "url": "https://link.biometryhubwaite.com/redhat-8-44"
+    },
+    {
+      "asr_ver": "4.2.0.393",
+      "r_ver": "44",
+      "os": "rocky",
+      "os_ver": "9",
+      "arm": false,
+      "published": "2025-08-29",
+      "slug": "rocky-9-44",
+      "url": "https://link.biometryhubwaite.com/rocky-9-44"
+    },
+    {
+      "asr_ver": "4.2.0.393",
+      "r_ver": "44",
+      "os": "ubuntu",
+      "os_ver": "20",
+      "arm": false,
+      "published": "2025-08-29",
+      "slug": "ubuntu-20-44",
+      "url": "https://link.biometryhubwaite.com/ubuntu-20-44"
+    },
+    {
+      "asr_ver": "4.2.0.393",
+      "r_ver": "44",
+      "os": "ubuntu",
+      "os_ver": "22",
+      "arm": false,
+      "published": "2025-08-29",
+      "slug": "ubuntu-22-44",
+      "url": "https://link.biometryhubwaite.com/ubuntu-22-44"
+    },
+    {
+      "asr_ver": "4.2.0.393",
+      "r_ver": "44",
+      "os": "ubuntu",
+      "os_ver": "24",
+      "arm": false,
+      "published": "2025-08-29",
+      "slug": "ubuntu-24-44",
+      "url": "https://link.biometryhubwaite.com/ubuntu-24-44"
+    },
+    {
+      "asr_ver": "4.2.0.392",
+      "r_ver": "44",
+      "os": "mac",
+      "os_ver": "11",
+      "arm": false,
+      "published": "2025-08-27",
+      "slug": "mac-11-44",
+      "url": "https://link.biometryhubwaite.com/mac-11-44"
+    },
+    {
+      "asr_ver": "4.2.0.392",
+      "r_ver": "44",
+      "os": "mac",
+      "os_ver": "12",
+      "arm": true,
+      "published": "2025-08-27",
+      "slug": "mac-12-44-arm",
+      "url": "https://link.biometryhubwaite.com/mac-12-44-arm"
+    },
+    {
+      "asr_ver": "4.2.0.392",
+      "r_ver": "44",
+      "os": "mac",
+      "os_ver": "15",
+      "arm": true,
+      "published": "2025-08-27",
+      "slug": "mac-15-44-arm",
+      "url": "https://link.biometryhubwaite.com/mac-15-44-arm"
+    },
+    {
+      "asr_ver": "4.2.0.392",
+      "r_ver": "44",
+      "os": "win",
+      "os_ver": "win",
+      "arm": false,
+      "published": "2025-08-27",
+      "slug": "win-44",
+      "url": "https://link.biometryhubwaite.com/win-44"
+    },
+    {
+      "asr_ver": "4.2.0.393",
+      "r_ver": "43",
+      "os": "redhat",
+      "os_ver": "8",
+      "arm": false,
+      "published": "2025-08-29",
+      "slug": "redhat-8-43",
+      "url": "https://link.biometryhubwaite.com/redhat-8-43"
+    },
+    {
+      "asr_ver": "4.2.0.393",
+      "r_ver": "43",
+      "os": "rocky",
+      "os_ver": "9",
+      "arm": false,
+      "published": "2025-08-29",
+      "slug": "rocky-9-43",
+      "url": "https://link.biometryhubwaite.com/rocky-9-43"
+    },
+    {
+      "asr_ver": "4.2.0.393",
+      "r_ver": "43",
+      "os": "ubuntu",
+      "os_ver": "20",
+      "arm": false,
+      "published": "2025-08-29",
+      "slug": "ubuntu-20-43",
+      "url": "https://link.biometryhubwaite.com/ubuntu-20-43"
+    },
+    {
+      "asr_ver": "4.2.0.393",
+      "r_ver": "43",
+      "os": "ubuntu",
+      "os_ver": "22",
+      "arm": false,
+      "published": "2025-08-29",
+      "slug": "ubuntu-22-43",
+      "url": "https://link.biometryhubwaite.com/ubuntu-22-43"
+    },
+    {
+      "asr_ver": "4.2.0.393",
+      "r_ver": "43",
+      "os": "ubuntu",
+      "os_ver": "24",
+      "arm": false,
+      "published": "2025-08-29",
+      "slug": "ubuntu-24-43",
+      "url": "https://link.biometryhubwaite.com/ubuntu-24-43"
+    },
+    {
+      "asr_ver": "4.2.0.392",
+      "r_ver": "43",
+      "os": "mac",
+      "os_ver": "11",
+      "arm": false,
+      "published": "2025-08-27",
+      "slug": "mac-11-43",
+      "url": "https://link.biometryhubwaite.com/mac-11-43"
+    },
+    {
+      "asr_ver": "4.2.0.392",
+      "r_ver": "43",
+      "os": "mac",
+      "os_ver": "12",
+      "arm": true,
+      "published": "2025-08-27",
+      "slug": "mac-12-43-arm",
+      "url": "https://link.biometryhubwaite.com/mac-12-43-arm"
+    },
+    {
+      "asr_ver": "4.2.0.392",
+      "r_ver": "43",
+      "os": "win",
+      "os_ver": "win",
+      "arm": false,
+      "published": "2025-08-27",
+      "slug": "win-43",
+      "url": "https://link.biometryhubwaite.com/win-43"
+    },
+    {
+      "asr_ver": "4.2.0.355",
+      "r_ver": "42",
+      "os": "ubuntu",
+      "os_ver": "18",
+      "arm": false,
+      "published": "2025-01-20",
+      "slug": "ubuntu-18-42",
+      "url": "https://link.biometryhubwaite.com/ubuntu-18-42"
+    },
+    {
+      "asr_ver": "4.2.0.355",
+      "r_ver": "42",
+      "os": "redhat",
+      "os_ver": "8",
+      "arm": false,
+      "published": "2025-01-20",
+      "slug": "redhat-8-42",
+      "url": "https://link.biometryhubwaite.com/redhat-8-42"
+    },
+    {
+      "asr_ver": "4.2.0.355",
+      "r_ver": "42",
+      "os": "mac",
+      "os_ver": "mac",
+      "arm": false,
+      "published": "2025-01-20",
+      "slug": "mac-42",
+      "url": "https://link.biometryhubwaite.com/mac-42"
+    },
+    {
+      "asr_ver": "4.2.0.355",
+      "r_ver": "42",
+      "os": "mac",
+      "os_ver": "mac",
+      "arm": true,
+      "published": "2025-01-20",
+      "slug": "mac-42-arm",
+      "url": "https://link.biometryhubwaite.com/mac-42-arm"
+    },
+    {
+      "asr_ver": "4.2.0.355",
+      "r_ver": "42",
+      "os": "win",
+      "os_ver": "win",
+      "arm": false,
+      "published": "2025-01-20",
+      "slug": "win-42",
+      "url": "https://link.biometryhubwaite.com/win-42"
+    },
+    {
+      "asr_ver": "4.1.0.189",
+      "r_ver": "43",
+      "os": "centos",
+      "os_ver": "7",
+      "arm": false,
+      "published": "2023-05-10",
+      "slug": "centos-7-43",
+      "url": "https://link.biometryhubwaite.com/centos-7-43"
+    },
+    {
+      "asr_ver": "4.1.0.189",
+      "r_ver": "43",
+      "os": "ubuntu",
+      "os_ver": "18",
+      "arm": false,
+      "published": "2023-05-10",
+      "slug": "ubuntu-18-43",
+      "url": "https://link.biometryhubwaite.com/ubuntu-18-43"
+    },
+    {
+      "asr_ver": "4.1.0.189",
+      "r_ver": "43",
+      "os": "mac",
+      "os_ver": "mac",
+      "arm": false,
+      "published": "2023-05-10",
+      "slug": "mac-43",
+      "url": "https://link.biometryhubwaite.com/mac-43"
+    },
+    {
+      "asr_ver": "4.1.0.189",
+      "r_ver": "43",
+      "os": "mac",
+      "os_ver": "mac",
+      "arm": true,
+      "published": "2023-05-10",
+      "slug": "mac-43-arm",
+      "url": "https://link.biometryhubwaite.com/mac-43-arm"
+    },
+    {
+      "asr_ver": "4.1.0.189",
+      "r_ver": "43",
+      "os": "win",
+      "os_ver": "win",
+      "arm": false,
+      "published": "2023-05-10",
+      "slug": "win-43",
+      "url": "https://link.biometryhubwaite.com/win-43"
+    },
+    {
+      "asr_ver": "4.1.0.176",
+      "r_ver": "42",
+      "os": "centos",
+      "os_ver": "7",
+      "arm": false,
+      "published": "2022-05-11",
+      "slug": "centos-7-42",
+      "url": "https://link.biometryhubwaite.com/centos-7-42"
+    },
+    {
+      "asr_ver": "4.1.0.176",
+      "r_ver": "42",
+      "os": "ubuntu",
+      "os_ver": "18",
+      "arm": false,
+      "published": "2022-05-11",
+      "slug": "ubuntu-18-42",
+      "url": "https://link.biometryhubwaite.com/ubuntu-18-42"
+    },
+    {
+      "asr_ver": "4.1.0.176",
+      "r_ver": "42",
+      "os": "mac",
+      "os_ver": "mac",
+      "arm": false,
+      "published": "2022-05-11",
+      "slug": "mac-42",
+      "url": "https://link.biometryhubwaite.com/mac-42"
+    },
+    {
+      "asr_ver": "4.1.0.186",
+      "r_ver": "42",
+      "os": "mac",
+      "os_ver": "mac",
+      "arm": true,
+      "published": "2023-03-09",
+      "slug": "mac-42-arm",
+      "url": "https://link.biometryhubwaite.com/mac-42-arm"
+    },
+    {
+      "asr_ver": "4.1.0.176",
+      "r_ver": "42",
+      "os": "win",
+      "os_ver": "win",
+      "arm": false,
+      "published": "2022-05-11",
+      "slug": "win-42",
+      "url": "https://link.biometryhubwaite.com/win-42"
+    },
+    {
+      "asr_ver": "4.1.0.176",
+      "r_ver": "41",
+      "os": "centos",
+      "os_ver": "7",
+      "arm": false,
+      "published": "2022-05-11",
+      "slug": "centos-7-41",
+      "url": "https://link.biometryhubwaite.com/centos-7-41"
+    },
+    {
+      "asr_ver": "4.1.0.176",
+      "r_ver": "41",
+      "os": "ubuntu",
+      "os_ver": "18",
+      "arm": false,
+      "published": "2022-05-11",
+      "slug": "ubuntu-18-41",
+      "url": "https://link.biometryhubwaite.com/ubuntu-18-41"
+    },
+    {
+      "asr_ver": "4.1.0.176",
+      "r_ver": "41",
+      "os": "mac",
+      "os_ver": "mac",
+      "arm": false,
+      "published": "2022-05-11",
+      "slug": "mac-41",
+      "url": "https://link.biometryhubwaite.com/mac-41"
+    },
+    {
+      "asr_ver": "4.1.0.186",
+      "r_ver": "41",
+      "os": "mac",
+      "os_ver": "mac",
+      "arm": true,
+      "published": "2023-03-09",
+      "slug": "mac-41-arm",
+      "url": "https://link.biometryhubwaite.com/mac-41-arm"
+    },
+    {
+      "asr_ver": "4.1.0.176",
+      "r_ver": "41",
+      "os": "win",
+      "os_ver": "win",
+      "arm": false,
+      "published": "2022-05-11",
+      "slug": "win-41",
+      "url": "https://link.biometryhubwaite.com/win-41"
+    },
+    {
+      "asr_ver": "4.1.0.176",
+      "r_ver": "40",
+      "os": "centos",
+      "os_ver": "7",
+      "arm": false,
+      "published": "2022-05-11",
+      "slug": "centos-7-40",
+      "url": "https://link.biometryhubwaite.com/centos-7-40"
+    },
+    {
+      "asr_ver": "4.1.0.176",
+      "r_ver": "40",
+      "os": "ubuntu",
+      "os_ver": "18",
+      "arm": false,
+      "published": "2022-05-11",
+      "slug": "ubuntu-18-40",
+      "url": "https://link.biometryhubwaite.com/ubuntu-18-40"
+    },
+    {
+      "asr_ver": "4.1.0.176",
+      "r_ver": "40",
+      "os": "mac",
+      "os_ver": "mac",
+      "arm": false,
+      "published": "2022-05-11",
+      "slug": "mac-40",
+      "url": "https://link.biometryhubwaite.com/mac-40"
+    },
+    {
+      "asr_ver": "4.1.0.176",
+      "r_ver": "40",
+      "os": "win",
+      "os_ver": "win",
+      "arm": false,
+      "published": "2022-05-11",
+      "slug": "win-40",
+      "url": "https://link.biometryhubwaite.com/win-40"
+    },
+    {
+      "asr_ver": "4.1.0.176",
+      "r_ver": "36",
+      "os": "centos",
+      "os_ver": "7",
+      "arm": false,
+      "published": "2022-05-11",
+      "slug": "centos-7-36",
+      "url": "https://link.biometryhubwaite.com/centos-7-36"
+    },
+    {
+      "asr_ver": "4.1.0.176",
+      "r_ver": "36",
+      "os": "ubuntu",
+      "os_ver": "18",
+      "arm": false,
+      "published": "2022-05-11",
+      "slug": "ubuntu-18-36",
+      "url": "https://link.biometryhubwaite.com/ubuntu-18-36"
+    },
+    {
+      "asr_ver": "4.1.0.176",
+      "r_ver": "36",
+      "os": "mac",
+      "os_ver": "mac",
+      "arm": false,
+      "published": "2022-05-11",
+      "slug": "mac-36",
+      "url": "https://link.biometryhubwaite.com/mac-36"
+    },
+    {
+      "asr_ver": "4.1.0.176",
+      "r_ver": "36",
+      "os": "win",
+      "os_ver": "win",
+      "arm": false,
+      "published": "2022-05-11",
+      "slug": "win-36",
+      "url": "https://link.biometryhubwaite.com/win-36"
+    }
+  ]
+}

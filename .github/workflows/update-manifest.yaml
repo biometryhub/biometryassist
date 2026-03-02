@@ -1,0 +1,30 @@
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup r2u
+        uses: eddelbuettel/github-actions/r2u-setup@master
+
+      - name: Install dependencies
+        run: Rscript -e "install.packages(c('xml2', 'stringi', 'jsonlite'))"
+
+      - name: Update manifest
+        env:
+          VSNI_URL: ${{ secrets.VSNI_URL }}
+        run: Rscript inst/build_manifest.R
+
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git diff --quiet inst/manifest.json || \
+            (git add inst/manifest.json && \
+             git commit -m "chore: update manifest [skip ci]" && \
+             git push)
