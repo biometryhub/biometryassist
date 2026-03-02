@@ -42,14 +42,14 @@ Imports:
     curl,
     emmeans,
     ggplot2,
+    jsonlite,
     lattice,
     multcompView,
     pracma,
     patchwork,
     rlang (>= 1.0.0),
     scales, 
-    stringi,
-    xml2
+    stringi
 Suggests: 
     covr,
     crayon,

@@ -295,6 +295,8 @@ install_asreml_package <- function(save_file, library, quiet, os, verbose = FALS
 #' @param manifest_url Character scalar. URL to a JSON manifest in the same
 #'   structure as the package's `inst/manifest.json`.
 #'
+#' @importFrom jsonlite fromJSON
+#'
 #' @return A list as returned by [jsonlite::fromJSON()] with at least a
 #'   `packages` element (a list of package entries).
 #'
