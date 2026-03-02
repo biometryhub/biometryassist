@@ -2,6 +2,8 @@
 
 ## biometryassist 1.4.0
 
+CRAN release: 2026-02-03
+
 ### Major changes
 
 - Deprecated
