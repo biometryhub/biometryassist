@@ -287,6 +287,18 @@ install_asreml_package <- function(save_file, library, quiet, os, verbose = FALS
     })
 }
 
+#' Fetch the ASReml build manifest
+#'
+#' Downloads and parses the JSON manifest used to decide which ASReml build
+#' (URL + version) matches the current OS and R version.
+#'
+#' @param manifest_url Character scalar. URL to a JSON manifest in the same
+#'   structure as the package's `inst/manifest.json`.
+#'
+#' @return A list as returned by [jsonlite::fromJSON()] with at least a
+#'   `packages` element (a list of package entries).
+#'
+#' @keywords internal
 fetch_manifest <- function(manifest_url = "https://raw.githubusercontent.com/biometryhub/biometryassist/main/inst/manifest.json") {
     tryCatch(
         jsonlite::fromJSON(manifest_url, simplifyVector = FALSE),
@@ -498,8 +510,8 @@ newer_version <- function(manifest = fetch_manifest()) {
 
     if (is.null(matched)) return(FALSE)
 
-    if (rlang::is_installed("asreml")) {
-        desc    <- utils::packageDescription("asreml")
+    if (is_installed("asreml")) {
+        desc    <- packageDescription("asreml")
         current <- numeric_version(if (is.null(desc$Version)) "0" else desc$Version)
     } else {
         current <- numeric_version("0")

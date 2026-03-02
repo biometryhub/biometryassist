@@ -326,12 +326,24 @@ test_that("newer_version returns FALSE when no package matches this OS slug", {
     expect_false(result)
 })
 
+test_that("newer_version returns TRUE when asreml is not installed (manifest match)", {
+    manifest <- list(packages = list(list(slug = "win-44", asr_ver = "4.4.0.0", url = "x")))
+
+    mockery::stub(newer_version, "get_r_os", function() list(os_ver = "win-44"))
+    mockery::stub(newer_version, "is_installed", function(pkg, ...) FALSE)
+    mockery::stub(newer_version, "packageDescription", function(pkg, ...) {
+        stop("packageDescription() should not be called when asreml is not installed")
+    })
+
+    expect_true(newer_version(manifest = manifest))
+})
+
 test_that("newer_version returns TRUE when available version is newer than installed", {
     manifest <- list(packages = list(list(slug = "win-44", asr_ver = "4.4.0.0", url = "x")))
 
     mockery::stub(newer_version, "get_r_os", function() list(os_ver = "win-44"))
-    mockery::stub(newer_version, "rlang::is_installed", function(pkg) TRUE)
-    mockery::stub(newer_version, "utils::packageDescription", function(pkg) list(Version = "4.3.0"))
+    mockery::stub(newer_version, "is_installed", function(pkg, ...) TRUE)
+    mockery::stub(newer_version, "packageDescription", function(pkg, ...) list(Version = "4.3.0"))
 
     expect_true(newer_version(manifest = manifest))
 })
@@ -340,118 +352,41 @@ test_that("newer_version returns FALSE when installed is up-to-date", {
     manifest <- list(packages = list(list(slug = "win-44", asr_ver = "4.4.0.0", url = "x")))
 
     mockery::stub(newer_version, "get_r_os", function() list(os_ver = "win-44"))
-    mockery::stub(newer_version, "rlang::is_installed", function(pkg) TRUE)
-    mockery::stub(newer_version, "utils::packageDescription", function(pkg) list(Version = "4.4.0.0"))
+    mockery::stub(newer_version, "is_installed", function(pkg, ...) TRUE)
+    mockery::stub(newer_version, "packageDescription", function(pkg, ...) list(Version = "4.4.0.0"))
 
     expect_false(newer_version(manifest = manifest))
 })
 
-test_that("newer_version returns TRUE when asreml is not installed", {
+test_that("newer_version returns FALSE when installed is newer than manifest", {
     manifest <- list(packages = list(list(slug = "win-44", asr_ver = "4.4.0.0", url = "x")))
 
     mockery::stub(newer_version, "get_r_os", function() list(os_ver = "win-44"))
-    mockery::stub(newer_version, "rlang::is_installed", function(pkg) FALSE)
+    mockery::stub(newer_version, "is_installed", function(pkg, ...) TRUE)
+    mockery::stub(newer_version, "packageDescription", function(pkg, ...) list(Version = "4.5.0.0"))
 
-    expect_true(newer_version(manifest = manifest))
+    expect_false(newer_version(manifest = manifest))
 })
 
 test_that("newer_version treats missing installed Version as 0", {
     manifest <- list(packages = list(list(slug = "win-44", asr_ver = "4.4.0.0", url = "x")))
 
     mockery::stub(newer_version, "get_r_os", function() list(os_ver = "win-44"))
-    mockery::stub(newer_version, "rlang::is_installed", function(pkg) TRUE)
-    mockery::stub(newer_version, "utils::packageDescription", function(pkg) list(Version = NULL))
+    mockery::stub(newer_version, "is_installed", function(pkg, ...) TRUE)
+    mockery::stub(newer_version, "packageDescription", function(pkg, ...) list(Version = NULL))
 
     expect_true(newer_version(manifest = manifest))
 })
 
-test_that("newer_version handles missing Packaged or Version gracefully", {
-    fake_versions <- data.frame(
-        os = "linux", arm = FALSE, r_ver = "44", asr_ver = "4.3.0",
-        `Date published` = as.Date("2023-02-01")
-    )
-    colnames(fake_versions)[5] <- "Date published"
-    mockery::stub(newer_version, "get_version_table", function() fake_versions)
-    mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
-    mockery::stub(newer_version, "rlang::is_installed", function(pkg) TRUE)
-    mockery::stub(newer_version, "utils::packageDescription", function(pkg) list(
-        Packaged = NULL, Version = NULL
-    ))
-    expect_true(newer_version())
-})
+test_that("newer_version does not fetch manifest when manifest is supplied", {
+    manifest <- list(packages = list(list(slug = "win-44", asr_ver = "4.4.0.0", url = "x")))
 
-test_that("newer_version handles multiple newer versions correctly", {
-    # Create fake data with multiple versions, including older and newer ones
-    fake_versions <- data.frame(
-        os = c("linux", "linux", "linux", "linux"),
-        arm = c(FALSE, FALSE, FALSE, FALSE),
-        r_ver = c("44", "44", "44", "44"),
-        asr_ver = c("4.1.0", "4.3.0", "4.3.0", "4.2.5"),
-        `Date published` = as.Date(c("2023-01-01", "2023-03-15", "2023-03-01", "2023-02-15")),
-        stringsAsFactors = FALSE
-    )
-    colnames(fake_versions)[5] <- "Date published"
+    mockery::stub(newer_version, "fetch_manifest", function(...) stop("fetch_manifest called"))
+    mockery::stub(newer_version, "get_r_os", function() list(os_ver = "win-44"))
+    mockery::stub(newer_version, "is_installed", function(pkg, ...) FALSE)
 
-    mockery::stub(newer_version, "get_version_table", function() fake_versions)
-    mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
-    mockery::stub(newer_version, "rlang::is_installed", function(pkg) TRUE)
-    mockery::stub(newer_version, "utils::packageDescription", function(pkg) list(
-        Packaged = "2023-01-01", Version = "4.1.0"  # Installed version is older
-    ))
-
-    # Should return TRUE because there are newer versions (4.3.0 > 4.1.0)
-    # and the most recent 4.3.0 (2023-03-15) is > 7 days after installed date (2023-01-01)
-    expect_true(newer_version())
-})
-
-test_that("newer_version selects most recent when multiple versions have same number", {
-    # Test case where there are multiple entries with the same version number
-    # but different publication dates - should select the most recent one
-    fake_versions <- data.frame(
-        os = c("linux", "linux", "linux"),
-        arm = c(FALSE, FALSE, FALSE),
-        r_ver = c("44", "44", "44"),
-        asr_ver = c("4.3.0", "4.3.0", "4.3.0"),
-        `Date published` = as.Date(c("2023-01-01", "2023-01-15", "2023-01-10")),
-        stringsAsFactors = FALSE
-    )
-    colnames(fake_versions)[5] <- "Date published"
-
-    mockery::stub(newer_version, "get_version_table", function() fake_versions)
-    mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
-    mockery::stub(newer_version, "rlang::is_installed", function(pkg) TRUE)
-    mockery::stub(newer_version, "utils::packageDescription", function(pkg) list(
-        Packaged = "2023-01-05", Version = "4.2.0"  # Older version, earlier date
-    ))
-
-    # Should return TRUE because:
-    # 1. Version check: 4.3.0 > 4.2.0 = TRUE
-    # 2. Date check: most recent publication date (2023-01-15) > installed date + 7 days (2023-01-12) = TRUE
-    # 3. Result: TRUE && TRUE = TRUE
-    expect_true(newer_version())
-})
-
-test_that("newer_version returns FALSE when multiple versions exist but none are newer", {
-    # Test case with multiple versions but the installed version is already the newest
-    fake_versions <- data.frame(
-        os = c("linux", "linux", "linux"),
-        arm = c(FALSE, FALSE, FALSE),
-        r_ver = c("44", "44", "44"),
-        asr_ver = c("4.1.0", "4.2.0", "4.1.5"),
-        `Date published` = as.Date(c("2023-01-01", "2023-02-01", "2023-01-15")),
-        stringsAsFactors = FALSE
-    )
-    colnames(fake_versions)[5] <- "Date published"
-
-    mockery::stub(newer_version, "get_version_table", function() fake_versions)
-    mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
-    mockery::stub(newer_version, "rlang::is_installed", function(pkg) TRUE)
-    mockery::stub(newer_version, "utils::packageDescription", function(pkg) list(
-        Packaged = "2023-02-10", Version = "4.2.0"  # Already have the newest version
-    ))
-
-    # Should return FALSE because installed version (4.2.0) is >= newest available (4.2.0)
-    expect_false(newer_version())
+    expect_true(newer_version(manifest = manifest))
+    expect_error(newer_version(), "fetch_manifest called")
 })
 
 test_that("install_asreml handles no internet connection", {
@@ -1051,6 +986,8 @@ test_that("install_asreml calls create_mac_folder on macOS", {
     mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
     mockery::stub(install_asreml, "newer_version", function() FALSE)
     mockery::stub(install_asreml, "get_r_os", function() list(os = "mac", ver = "44", arm = FALSE, os_ver = "mac-44"))
+    mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
+    mockery::stub(install_asreml, "find_package", function(manifest, os_ver) list(url = "x"))
     mockery::stub(install_asreml, "create_mac_folder", function() {
         mac_folder_called <<- TRUE
         TRUE
@@ -1076,6 +1013,8 @@ test_that("install_asreml does not call create_mac_folder on non-macOS", {
     mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
     mockery::stub(install_asreml, "newer_version", function() FALSE)
     mockery::stub(install_asreml, "get_r_os", function() list(os = "linux", ver = "44", arm = FALSE, os_ver = "linux-44"))
+    mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
+    mockery::stub(install_asreml, "find_package", function(manifest, os_ver) list(url = "x"))
     mockery::stub(install_asreml, "create_mac_folder", function() {
         mac_folder_called <<- TRUE
         TRUE
@@ -1101,6 +1040,8 @@ test_that("install_asreml verbose messaging shows mac folder creation", {
     mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
     mockery::stub(install_asreml, "newer_version", function() FALSE)
     mockery::stub(install_asreml, "get_r_os", function() list(os = "mac", ver = "44", arm = FALSE, os_ver = "mac-44"))
+    mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
+    mockery::stub(install_asreml, "find_package", function(manifest, os_ver) list(url = "x"))
     mockery::stub(install_asreml, "create_mac_folder", function() TRUE)
     mockery::stub(install_asreml, "find_existing_package", function() "/tmp/asreml.zip")
     mockery::stub(install_asreml, "install_dependencies", function(...) {})
@@ -1160,6 +1101,8 @@ test_that("install_asreml does NOT remove existing package when force=TRUE on Li
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
     mockery::stub(install_asreml, "newer_version", function() FALSE)
     mockery::stub(install_asreml, "get_r_os", function() list(os = "linux", ver = "44", arm = FALSE, os_ver = "linux-44"))  # Linux OS
+    mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
+    mockery::stub(install_asreml, "find_package", function(manifest, os_ver) list(url = "x"))
     mockery::stub(install_asreml, "find_existing_package", function() "/tmp/asreml.tar.gz")
     mockery::stub(install_asreml, "install_dependencies", function(...) {})
     mockery::stub(install_asreml, "install_asreml_package", function(...) TRUE)
