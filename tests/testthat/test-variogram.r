@@ -9,21 +9,32 @@ test_that("vario_df produces a dataframe", {
     expect_type(vg, "list")
 })
 
+test_that("vario_df accepts row/column as column-name strings", {
+    vg_default <- vario_df(model.asr)
+    vg_named <- vario_df(model.asr, row = "Row", column = "Column")
+
+    expect_identical(names(vg_named), names(vg_default))
+    expect_equal(vg_named$gamma, vg_default$gamma)
+    expect_equal(vg_named$np, vg_default$np)
+    expect_equal(vg_named[[1]], vg_default[[1]])
+    expect_equal(vg_named[[2]], vg_default[[2]])
+})
+
 test_that("vario_df structure and properties are correct", {
     vg <- vario_df(model.asr)
 
     # Check column structure
-    expect_named(vg, c("Row", "Column", "gamma", "np"))
+    expect_named(vg, c("row_lag", "col_lag", "gamma", "np", "third_level"))
 
     # Check data types
-    expect_true(is.numeric(vg$Row))
-    expect_true(is.numeric(vg$Column))
+    expect_true(is.numeric(vg$row_lag))
+    expect_true(is.numeric(vg$col_lag))
     expect_true(is.numeric(vg$gamma))
     expect_true(is.numeric(vg$np))
 
     # Check value ranges
-    expect_true(all(vg$Row >= 0))
-    expect_true(all(vg$Column >= 0))
+    expect_true(all(vg$row_lag >= 0))
+    expect_true(all(vg$col_lag >= 0))
     expect_true(all(vg$gamma >= 0))
     expect_true(all(vg$np >= 0))
 
