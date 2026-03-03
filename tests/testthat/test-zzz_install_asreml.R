@@ -449,6 +449,29 @@ test_that("install_asreml early return when up-to-date", {
     expect_true(result)
 })
 
+test_that("install_asreml errors when no build is available for this system", {
+    skip_on_cran()
+
+    withr::with_tempdir({
+        temp_lib <- file.path(getwd(), "test_lib")
+        dir.create(temp_lib, showWarnings = FALSE, recursive = TRUE)
+
+        mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
+        mockery::stub(install_asreml, "rlang::is_installed", function(...) FALSE)
+        mockery::stub(install_asreml, "get_r_os", function() {
+            list(os_ver = "win-44", os = "win", os_major = NULL, ver = "44", arm = FALSE)
+        })
+        mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
+        mockery::stub(install_asreml, "find_package", function(...) NULL)
+
+        expect_error(
+            install_asreml(library = temp_lib, quiet = TRUE, check_version = FALSE),
+            "No ASReml build available for this system\\.",
+            fixed = FALSE
+        )
+    })
+})
+
 test_that("update_asreml calls install_asreml with force=TRUE", {
     skip_on_cran()
     force_used <- FALSE
