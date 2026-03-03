@@ -1,4 +1,4 @@
-# tools/build_manifest.R
+# inst/build_manifest.R
 # Scrapes VSNi download page and writes manifest.json
 # Requires VSNI_URL environment variable to be set
 

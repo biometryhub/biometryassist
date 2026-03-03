@@ -20,11 +20,14 @@ jobs:
           VSNI_URL: ${{ secrets.VSNI_URL }}
         run: Rscript inst/build_manifest.R
 
-      - name: Commit if changed
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git diff --quiet inst/manifest.json || \
-            (git add inst/manifest.json && \
-             git commit -m "chore: update manifest [skip ci]" && \
-             git push)
+      - name: Create PR if manifest changed
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: update manifest [skip ci]"
+          title: "chore: update manifest"
+          body: "Automated weekly manifest update."
+          branch: "automation/update-manifest"
+          delete-branch: true
+          add-paths: |
+            inst/manifest.json
