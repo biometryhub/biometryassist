@@ -522,55 +522,79 @@ newer_version <- function(manifest = fetch_manifest()) {
     numeric_version(matched$asr_ver) > current
 }
 
-#' Create the folder MacOS needs for licensing
+#' Create the folder macOS needs for licensing
 #'
-#' @returns logical; TRUE if folder successfully created, otherwise it will error
+#' ASReml-R uses Reprise licence management which requires the folder
+#' \code{/Library/Application Support/Reprise/} to exist on macOS Big Sur
+#' (11) and later. This function checks for the folder and attempts to
+#' create it if missing, first without elevated privileges, then via a
+#' native macOS authentication dialog using AppleScript.
+#'
+#' @param reprise_path Character scalar. Path to the Reprise folder.
+#'   Defaults to \code{/Library/Application Support/Reprise/}. Exposed
+#'   as an argument primarily to allow testing without elevated privileges.
+#'
+#' @returns Logical \code{TRUE} if the folder exists or was successfully
+#'   created. Stops with an informative error if the folder could not be
+#'   created and the user cancelled the authentication dialog.
+#'
 #' @keywords internal
-#' @importFrom askpass askpass
-create_mac_folder <- function() {
-
-    get_major_release <- function() {
-        rel <- Sys.info()[["release"]]
-        # Extract first number before dot, or fallback to full if no dot
-        if (is.null(rel) || is.na(rel)) return(NA_real_)
-        as.numeric(sub("^([0-9]+).*", "\\1", rel))
-    }
-
-    reprise_path <- "/Library/Application\ Support/Reprise/"
+create_mac_folder <- function(reprise_path = "/Library/Application Support/Reprise/") {
 
     is_mac <- identical(Sys.info()[["sysname"]], "Darwin")
-    major_release <- suppressWarnings(get_major_release())
-    reprise_exists <- dir.exists(reprise_path)
+    if (!is_mac) return(TRUE)
 
-    # Only create folder on macOS Big Sur (Darwin 20) or later
-    if (!is_mac || is.na(major_release) || major_release < 21 || reprise_exists) {
+    major_release <- suppressWarnings({
+        rel <- Sys.info()[["release"]]
+        if (is.null(rel) || is.na(rel)) NA_real_
+        else as.numeric(sub("^([0-9]+).*", "\\1", rel))
+    })
+
+    # Only needed on Big Sur (Darwin 21) or later
+    if (is.na(major_release) || major_release < 21) return(TRUE)
+
+    if (dir.exists(reprise_path)) return(TRUE)
+
+    # Try without elevated privileges first
+    created <- tryCatch({
+        dir.create(reprise_path, recursive = TRUE)
+        dir.exists(reprise_path)
+    }, warning = function(w) FALSE,
+    error   = function(e) FALSE)
+
+    if (created) return(TRUE)
+
+    # Needs elevated privileges — use osascript to trigger native macOS
+    # authentication dialog rather than asking for password via R
+    message(
+        "ASReml-R requires the folder '", reprise_path, "' for licence ",
+        "management. Administrator privileges are needed to create it.\n",
+        "You will be prompted for your password."
+    )
+
+    script <- paste0(
+        "do shell script ",
+        "\"mkdir -p '", reprise_path, "' && chmod 777 '", reprise_path, "'\" ",
+        "with administrator privileges"
+    )
+
+    exit_code <- system(paste0("osascript -e '", script, "'"),
+                        ignore.stdout = TRUE,
+                        ignore.stderr = TRUE)
+
+    if (exit_code == 0 && dir.exists(reprise_path)) {
         return(TRUE)
     }
 
-    # Try to create directory
-    result <- tryCatch({
-        dir.create(reprise_path, recursive = TRUE)
-        TRUE
-    }, warning = function(w) FALSE,
-    error = function(e) FALSE)
-
-    if (!result) {
-        message("The ASReml-R package uses Reprise license management and requires administrator privileges to create the folder '/Library/Application Support/Reprise'.")
-        input <- readline("Would you like to create this folder now (Yes/No)? ")
-
-        if (toupper(trimws(input)) %in% c("YES", "Y")) {
-            message("You should now be prompted for your account password.")
-            Sys.sleep(2)
-            system("sudo mkdir -p '/Library/Application Support/Reprise' && sudo chmod 777 '/Library/Application Support/Reprise'",
-                   input = askpass::askpass("Please enter your user account password: "))
-        } else {
-            stop("ASReml-R cannot be installed until the folder '/Library/Application Support/Reprise' is created with appropriate permissions.\n",
-                 "Please run: sudo mkdir -p '/Library/Application Support/Reprise' && sudo chmod 777 '/Library/Application Support/Reprise'",
-                 call. = FALSE)
-        }
-    }
-
-    dir.exists(reprise_path)
+    # User cancelled or osascript failed
+    stop(
+        "ASReml-R cannot be installed until the folder '", reprise_path,
+        "' is created with appropriate permissions.\n\n",
+        "Please run the following command in your Terminal and then try again:\n\n",
+        "  sudo mkdir -p '", reprise_path, "' && ",
+        "sudo chmod 777 '", reprise_path, "'\n",
+        call. = FALSE
+    )
 }
 
 #' Manage the downloaded file
