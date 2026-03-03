@@ -112,6 +112,23 @@ test_that("detect_linux errors when os-release cannot be found", {
     expect_error(detect_linux(), "Cannot detect Linux OS")
 })
 
+test_that("map_linux_target maps known distro IDs", {
+    expect_equal(map_linux_target(list(id = "rocky",  like = character())), "rocky")
+    expect_equal(map_linux_target(list(id = "centos", like = character())), "centos")
+})
+
+test_that("map_linux_target maps rhel/redhat variants to redhat", {
+    expect_equal(map_linux_target(list(id = "rhel", like = character())), "redhat")
+    expect_equal(map_linux_target(list(id = "redhat", like = character())), "redhat")
+    expect_equal(map_linux_target(list(id = "redhatenterpriseserver", like = character())), "redhat")
+})
+
+test_that("map_linux_target maps RHEL-compatible clones to redhat", {
+    expect_equal(map_linux_target(list(id = "alma", like = character())), "redhat")
+    expect_equal(map_linux_target(list(id = "scientific", like = character())), "redhat")
+    expect_equal(map_linux_target(list(id = "oracle", like = character())), "redhat")
+})
+
 test_that("get_r_os constructs windows key including R version", {
     mock_sys_info <- function() {
         c(sysname = "Windows", machine = "x86_64")
@@ -200,6 +217,28 @@ test_that("get_r_os constructs mac key including mac major version and optional 
     out_arm <- get_r_os()
     expect_true(out_arm$arm)
     expect_equal(out_arm$os_ver, "mac-14-44-arm")
+})
+
+test_that("detect_macos calls sw_vers and parses major version", {
+    called <- list(command = NULL, intern = NULL)
+
+    mock_system <- function(command, intern = FALSE, ...) {
+        called$command <<- command
+        called$intern <<- intern
+        "14.2.1"
+    }
+
+    mockery::stub(detect_macos, "system", mock_system)
+
+    out <- detect_macos()
+    expect_equal(called$command, "sw_vers -productVersion")
+    expect_true(called$intern)
+    expect_equal(out, list(os = "mac", major = "14"))
+})
+
+test_that("detect_macos handles two-digit majors (e.g. 10.15.7)", {
+    mockery::stub(detect_macos, "system", function(...) "10.15.7")
+    expect_equal(detect_macos(), list(os = "mac", major = "10"))
 })
 
 test_that("get_r_os errors for unsupported operating systems", {
@@ -856,6 +895,7 @@ test_that("verbose debugging shows OS detection details", {
     mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
     mockery::stub(install_asreml, "newer_version", function() FALSE)
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
+    mockery::stub(install_asreml, "create_mac_folder", function(...) TRUE)
     mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
     mockery::stub(install_asreml, "find_package", function(...) list(url = "https://example.com/asreml.zip"))
     mockery::stub(install_asreml, "find_existing_package", function() "/tmp/asreml.zip")
@@ -905,6 +945,7 @@ test_that("install_asreml verbose mode shows version check details", {
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
     mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
     mockery::stub(install_asreml, "newer_version", function() TRUE)
+    mockery::stub(install_asreml, "create_mac_folder", function(...) TRUE)
     mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
     mockery::stub(install_asreml, "find_package", function(...) list(url = "https://example.com/asreml.zip"))
     mockery::stub(install_asreml, "find_existing_package", function() NULL)
