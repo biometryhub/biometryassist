@@ -908,16 +908,16 @@ test_that("manage_file verbose parameter works", {
 
 test_that("verbose debugging shows OS detection details", {
     skip_on_cran()
-
     mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
     mockery::stub(install_asreml, "newer_version", function() FALSE)
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
+    mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
+    mockery::stub(install_asreml, "find_package", function(...) list(url = "https://example.com/asreml.zip"))
     mockery::stub(install_asreml, "find_existing_package", function() "/tmp/asreml.zip")
     mockery::stub(install_asreml, "install_dependencies", function(...) {})
     mockery::stub(install_asreml, "install_asreml_package", function(...) TRUE)
     mockery::stub(install_asreml, "manage_file", function(...) TRUE)
 
-    # Test that OS detection details are shown in verbose mode
     msgs <- capture_messages_text(
         expect_warning(
             install_asreml(quiet = "verbose"),
@@ -957,10 +957,11 @@ test_that("verbose debugging handles error cases appropriately", {
 
 test_that("install_asreml verbose mode shows version check details", {
     skip_on_cran()
-
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
     mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
     mockery::stub(install_asreml, "newer_version", function() TRUE)
+    mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
+    mockery::stub(install_asreml, "find_package", function(...) list(url = "https://example.com/asreml.zip"))
     mockery::stub(install_asreml, "find_existing_package", function() NULL)
     mockery::stub(install_asreml, "download_asreml_package", function(...) "/tmp/asreml.zip")
     mockery::stub(install_asreml, "install_dependencies", function(...) {})
@@ -1068,6 +1069,8 @@ test_that("install_asreml removes existing package when force=TRUE on non-Linux 
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
     mockery::stub(install_asreml, "newer_version", function() FALSE)
     mockery::stub(install_asreml, "get_r_os", function() list(os = "win", ver = "44", arm = FALSE, os_ver = "win-44"))
+    mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
+    mockery::stub(install_asreml, "find_package", function(...) list(url = "https://example.com/asreml.zip"))
     mockery::stub(install_asreml, "find_existing_package", function() "/tmp/asreml.zip")
     mockery::stub(install_asreml, "install_dependencies", function(...) {})
     mockery::stub(install_asreml, "install_asreml_package", function(...) TRUE)
@@ -1136,6 +1139,8 @@ test_that("install_asreml does NOT remove existing package when force=FALSE", {
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
     mockery::stub(install_asreml, "newer_version", function() FALSE)
     mockery::stub(install_asreml, "get_r_os", function() list(os = "win", ver = "44", arm = FALSE, os_ver = "win-44"))
+    mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
+    mockery::stub(install_asreml, "find_package", function(...) list(url = "https://example.com/asreml.zip"))
     mockery::stub(install_asreml, "find_existing_package", function() "/tmp/asreml.zip")
     mockery::stub(install_asreml, "install_dependencies", function(...) {})
     mockery::stub(install_asreml, "install_asreml_package", function(...) TRUE)
@@ -1166,6 +1171,8 @@ test_that("install_asreml verbose messaging shows package removal", {
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
     mockery::stub(install_asreml, "newer_version", function() FALSE)
     mockery::stub(install_asreml, "get_r_os", function() list(os = "win", ver = "44", arm = FALSE, os_ver = "win-44"))
+    mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
+    mockery::stub(install_asreml, "find_package", function(...) list(url = "https://example.com/asreml.zip"))
     mockery::stub(install_asreml, "find_existing_package", function() "/tmp/asreml.zip")
     mockery::stub(install_asreml, "install_dependencies", function(...) {})
     mockery::stub(install_asreml, "install_asreml_package", function(...) TRUE)
