@@ -1,3 +1,12 @@
+# biometryassist 1.4.1
+
+## Minor changes
+
+## Bug Fixes
+
+- Fixed an issue where asreml doesn't install properly on macOS because the link isn't constructed properly. (#163)
+
+
 # biometryassist 1.4.0
 
 ## Major changes
