@@ -164,6 +164,45 @@ get_version_table <- function(url) {
     }, error = function(e) stop("Scraping failed: ", e$message))
 }
 
+packages_to_df <- function(packages) {
+
+    keep <- c("asr_ver", "r_ver", "os", "os_ver", "arm", "published", "slug", "url")
+
+    if (is.null(packages)) {
+        df <- data.frame(stringsAsFactors = FALSE)
+    } else if (is.data.frame(packages)) {
+        df <- packages
+    } else if (is.list(packages)) {
+        if (length(packages) == 0) {
+            df <- data.frame(stringsAsFactors = FALSE)
+        } else {
+            df <- do.call(
+                rbind,
+                lapply(packages, function(x) as.data.frame(x, stringsAsFactors = FALSE))
+            )
+        }
+    } else {
+        stop("Unsupported packages type: ", paste(class(packages), collapse = ", "))
+    }
+
+    df <- as.data.frame(df, stringsAsFactors = FALSE)
+
+    # Ensure consistent columns + order
+    missing <- setdiff(keep, names(df))
+    for (m in missing)
+        df[[m]] <- NA
+    df <- df[, keep, drop = FALSE]
+
+    # Normalize types that might differ between read/write
+    df$arm <- as.logical(df$arm)
+
+    # Stable ordering for comparison
+    df <- df[order(df$slug), , drop = FALSE]
+    row.names(df) <- NULL
+
+    df
+}
+
 
 # ---- Functions for updating links ------------------------------------
 
@@ -446,6 +485,10 @@ entries <- lapply(seq_len(nrow(vt)), function(i) {
     )
 })
 
+entries <- entries[order(
+    vapply(entries, `[[`, "", "slug")
+)]
+
 manifest <- list(
     schema_version = 1,
     updated  = format(Sys.Date(), "%Y-%m-%d"),
@@ -453,5 +496,43 @@ manifest <- list(
 )
 
 out_path <- "inst/manifest.json"
-jsonlite::write_json(manifest, out_path, pretty = TRUE, auto_unbox = TRUE)
-message("Manifest written to ", out_path, " with ", length(entries), " entries")
+
+old_manifest <- NULL
+
+if (file.exists(out_path)) {
+    old_manifest <- jsonlite::read_json(out_path, simplifyVector = TRUE)
+}
+
+manifest_changed <- TRUE
+
+if (!is.null(old_manifest)) {
+
+    old_schema <- old_manifest$schema_version
+    new_schema <- manifest$schema_version
+
+    old_pkgs <- packages_to_df(old_manifest$packages)
+    new_pkgs <- packages_to_df(manifest$packages)
+
+    # ignore timestamp; compare schema + canonicalized packages
+    manifest_changed <- !(
+        identical(as.integer(old_schema), as.integer(new_schema)) &&
+            identical(old_pkgs, new_pkgs)
+    )
+}
+
+if (manifest_changed) {
+
+    message("Manifest content changed — writing file")
+
+    jsonlite::write_json(
+        manifest,
+        out_path,
+        pretty = TRUE,
+        auto_unbox = TRUE
+    )
+    message("Manifest written to ", out_path, " with ", length(entries), " entries")
+
+} else {
+
+    message("No manifest changes (ignoring updated date)")
+}
