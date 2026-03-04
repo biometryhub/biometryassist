@@ -1196,3 +1196,101 @@ test_that("install_asreml verbose messaging shows package removal", {
     msgs <- capture_messages_text(install_asreml(force = TRUE, quiet = "verbose"))
     expect_match(msgs, "\\[DEBUG\\] Force=TRUE and existing package found - removing existing installation")
 })
+
+
+test_that("find_package returns exact match when available", {
+    manifest <- list(packages = list(
+        list(slug = "ubuntu-22-44", os = "ubuntu", os_ver = "22",
+             r_ver = "44", arm = FALSE, asr_ver = "4.2.0", url = "x")
+    ))
+    os_ver <- list(os = "ubuntu", os_ver = "ubuntu-22-44",
+                   os_major = "22", ver = "44", arm = FALSE)
+    result <- find_package(manifest, os_ver)
+    expect_equal(result$slug, "ubuntu-22-44")
+})
+
+test_that("find_package falls back to highest compatible version on Ubuntu", {
+    manifest <- list(packages = list(
+        list(slug = "ubuntu-20-44", os = "ubuntu", os_ver = "20",
+             r_ver = "44", arm = FALSE, asr_ver = "4.2.0", url = "x"),
+        list(slug = "ubuntu-22-44", os = "ubuntu", os_ver = "22",
+             r_ver = "44", arm = FALSE, asr_ver = "4.2.0", url = "y")
+    ))
+
+    # Ubuntu 23 - should use ubuntu-22
+    os_ver <- list(os = "ubuntu", os_ver = "ubuntu-23-44",
+                   os_major = "23", ver = "44", arm = FALSE)
+    expect_message(
+        result <- find_package(manifest, os_ver),
+        "Using build for ubuntu 22"
+    )
+    expect_equal(result$slug, "ubuntu-22-44")
+
+    # Ubuntu 24.10 (major = 24) - should use ubuntu-22 since 24 < 22 is false,
+    # but there's no ubuntu-24, so uses ubuntu-22
+    os_ver <- list(os = "ubuntu", os_ver = "ubuntu-24-44",
+                   os_major = "24", ver = "44", arm = FALSE)
+    expect_message(
+        result <- find_package(manifest, os_ver),
+        "Using build for ubuntu 22"
+    )
+    expect_equal(result$slug, "ubuntu-22-44")
+})
+
+test_that("find_package falls back to highest compatible version on macOS", {
+    manifest <- list(packages = list(
+        list(slug = "mac-14-44-arm", os = "mac", os_ver = "14",
+             r_ver = "44", arm = TRUE, asr_ver = "4.2.0", url = "x"),
+        list(slug = "mac-15-44-arm", os = "mac", os_ver = "15",
+             r_ver = "44", arm = TRUE, asr_ver = "4.2.0", url = "y")
+    ))
+
+    os_ver <- list(os = "mac", os_ver = "mac-26-44-arm",
+                   os_major = "26", ver = "44", arm = TRUE)
+    expect_message(
+        result <- find_package(manifest, os_ver),
+        "Using build for mac 15"
+    )
+    expect_equal(result$slug, "mac-15-44-arm")
+})
+
+test_that("find_package does not use a build for a newer OS version", {
+    manifest <- list(packages = list(
+        list(slug = "ubuntu-24-44", os = "ubuntu", os_ver = "24",
+             r_ver = "44", arm = FALSE, asr_ver = "4.2.0", url = "x")
+    ))
+
+    # Ubuntu 22 should NOT use the ubuntu-24 build
+    os_ver <- list(os = "ubuntu", os_ver = "ubuntu-22-44",
+                   os_major = "22", ver = "44", arm = FALSE)
+    expect_warning(
+        result <- find_package(manifest, os_ver),
+        "No ASReml-R build found"
+    )
+    expect_null(result)
+})
+
+test_that("find_package uses exact match for Windows", {
+    manifest <- list(packages = list(
+        list(slug = "win-44", os = "win", os_ver = NULL,
+             r_ver = "44", arm = FALSE, asr_ver = "4.2.0", url = "x")
+    ))
+    os_ver <- list(os = "win", os_ver = "win-44",
+                   os_major = NULL, ver = "44", arm = FALSE)
+    result <- find_package(manifest, os_ver)
+    expect_equal(result$slug, "win-44")
+})
+
+test_that("find_package warns when no compatible build exists", {
+    manifest <- list(packages = list(
+        list(slug = "ubuntu-22-44", os = "ubuntu", os_ver = "22",
+             r_ver = "44", arm = FALSE, asr_ver = "4.2.0", url = "x")
+    ))
+    os_ver <- list(os = "ubuntu", os_ver = "ubuntu-22-45",
+                   os_major = "22", ver = "45", arm = FALSE)
+    expect_warning(
+        result <- find_package(manifest, os_ver),
+        "No ASReml-R build found"
+    )
+    expect_null(result)
+})

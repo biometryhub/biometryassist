@@ -311,29 +311,84 @@ fetch_manifest <- function(manifest_url = "https://raw.githubusercontent.com/bio
 #' Find the manifest entry matching the current system
 #'
 #' Looks up the manifest for a build exactly matching the slug built by
-#' [get_r_os()]. Returns \code{NULL} with a warning if no match is found,
-#' which indicates the user's system is not currently supported.
+#' [get_r_os()]. If no exact match is found, falls back to the highest
+#' available OS version that does not exceed the current OS version, for
+#' the same OS, R version, and architecture. This handles cases such as
+#' running on a newer OS than VSNi currently builds for.
+#'
+#' Windows has no OS version component and uses exact matching only.
 #'
 #' @param manifest A manifest list as returned by [fetch_manifest()].
 #' @param os_ver A list as returned by [get_r_os()], with elements
 #'   \code{os}, \code{os_ver}, \code{ver}, \code{os_major}, and \code{arm}.
 #'
 #' @return A single package entry list from \code{manifest$packages}, or
-#'   \code{NULL} if no match was found.
+#'   \code{NULL} if no suitable match was found.
 #' @keywords internal
 find_package <- function(manifest, os_ver) {
-    matched <- Filter(function(x) identical(x$slug, os_ver$os_ver),
-                      manifest$packages)
-    if (length(matched)) {
-        matched[[1]]
-    } else {
+
+    match_slug <- function(slug) {
+        matched <- Filter(function(x) identical(x$slug, slug), manifest$packages)
+        if (length(matched)) matched[[1]] else NULL
+    }
+
+    # Try exact match first
+    entry <- match_slug(os_ver$os_ver)
+    if (!is.null(entry)) return(entry)
+
+    # Windows has no OS version - exact match only
+    if (os_ver$os == "win" || is.null(os_ver$os_major) || os_ver$os_major == "") {
         warning(
             "No ASReml-R build found for your system (", os_ver$os_ver, "). ",
-            "Your operating system or R version may not be supported. ",
+            "Your operating system or R version may not be supported.",
             call. = FALSE
         )
-        NULL
+        return(NULL)
     }
+
+    # For all other platforms, find the highest available OS version
+    # that does not exceed the current OS version
+    current_major <- suppressWarnings(as.integer(os_ver$os_major))
+
+    candidates <- Filter(function(x) {
+        x$os     == os_ver$os &
+            x$r_ver  == os_ver$ver &
+            isTRUE(x$arm) == os_ver$arm
+    }, manifest$packages)
+
+    if (length(candidates) == 0) {
+        warning(
+            "No ASReml-R build found for your system (", os_ver$os_ver, "). ",
+            "Your operating system or R version may not be supported.",
+            call. = FALSE
+        )
+        return(NULL)
+    }
+
+    pkg_versions <- sapply(candidates, function(x) {
+        suppressWarnings(as.integer(x$os_ver))
+    })
+
+    # Keep only versions <= current
+    compatible <- !is.na(pkg_versions) & pkg_versions <= current_major
+
+    if (!any(compatible)) {
+        warning(
+            "No ASReml-R build found for your system (", os_ver$os_ver, "). ",
+            "Your operating system or R version may not be supported.",
+            call. = FALSE
+        )
+        return(NULL)
+    }
+
+    best <- candidates[[which.max(pkg_versions * compatible)]]
+
+    message(
+        "No ASReml-R build found for ", os_ver$os, " ", os_ver$os_major, ". ",
+        "Using build for ", best$os, " ", best$os_ver, " which should be compatible."
+    )
+
+    best
 }
 
 #' Detect Linux distribution and version
