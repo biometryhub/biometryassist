@@ -164,6 +164,170 @@ get_version_table <- function(url) {
     }, error = function(e) stop("Scraping failed: ", e$message))
 }
 
+
+# ---- Functions for updating links ------------------------------------
+
+get_latest_asreml_downloads <- function(vt) {
+
+    groups <- split(
+        vt,
+        list(vt$os, vt$arm, vt$r_ver),
+        drop = TRUE
+    )
+
+    latest <- lapply(groups, function(x) {
+
+        x <- x[order(
+            numeric_version(x$asr_ver),
+            x$`Date published`
+        ), , drop = FALSE]
+
+        tail(x, 1)
+    })
+
+    do.call(rbind, latest)
+}
+
+
+get_shortio_links <- function(api_key, domain_id) {
+
+    url <- "https://api.short.io/api/links"
+
+    response <- httr::GET(
+        url,
+        query = list(domain_id = domain_id),
+        httr::add_headers(Authorization = api_key),
+        httr::content_type("application/octet-stream"),
+        httr::accept("application/json")
+    )
+
+    if (httr::status_code(response) >= 300) {
+        stop(
+            "Short.io request failed: ",
+            httr::content(response, "text", encoding = "UTF-8")
+        )
+    }
+
+    dat <- httr::content(response, as = "parsed", simplifyVector = TRUE)
+
+    as.data.frame(dat$links, stringsAsFactors = FALSE)
+}
+
+
+shortio_update_link <- function(api_key, link_id, domain_id, target_url) {
+
+    res <- httr::POST(
+        paste0("https://api.short.io/links/", link_id),
+        httr::add_headers(Authorization = api_key),
+        httr::content_type_json(),
+        body = list(
+            domain_id = domain_id,
+            originalURL = target_url
+        ),
+        encode = "json"
+    )
+
+    stop_for_status(res)
+
+    invisible(TRUE)
+}
+
+
+shortio_create_link <- function(api_key, domain_id, path,
+                                target_url, tags = NULL) {
+
+    body <- list(
+        domain_id = domain_id,
+        originalURL = target_url,
+        path = path
+    )
+
+    if (!is.null(tags))
+        body$tags <- tags
+
+    res <- httr::POST(
+        "https://api.short.io/links",
+        httr::add_headers(Authorization = api_key),
+        httr::content_type_json(),
+        body = body,
+        encode = "json"
+    )
+
+    stop_for_status(res)
+}
+
+sync_asreml_shortlinks <- function(
+        vt,
+        api_key,
+        domain_id,
+        dry_run = Sys.getenv("CI") != "true"
+) {
+
+    expected <- build_expected_asreml_links(vt)
+
+    current <- get_shortio_links(api_key, domain_id)[,
+                                                     c("id", "path", "originalURL")
+    ]
+
+    merged <- merge(
+        expected,
+        current,
+        by = "path",
+        all.x = TRUE
+    )
+
+    for (i in seq_len(nrow(merged))) {
+
+        row <- merged[i, ]
+
+        if (is.na(row$id)) {
+
+            message("CREATE ", row$path)
+
+            if (!dry_run)
+                shortio_create_link(
+                    api_key,
+                    domain_id,
+                    row$path,
+                    row$target
+                )
+
+        } else if (!identical(row$target, row$originalURL)) {
+
+            message("UPDATE ", row$path)
+
+            if (!dry_run)
+                shortio_update_link(
+                    api_key,
+                    row$id,
+                    domain_id,
+                    row$target
+                )
+
+        } else {
+
+            message("SKIP   ", row$path)
+        }
+    }
+
+    invisible(TRUE)
+}
+
+
+
+build_expected_asreml_links <- function(vt) {
+
+    latest <- get_latest_asreml_downloads(vt)
+
+    data.frame(
+        path   = latest$os_ver,
+        target = latest$Download_URL,
+        os     = latest$os,
+        r_ver  = latest$r_ver,
+        stringsAsFactors = FALSE
+    )
+}
+
 # ---- Build manifest --------------------------------------------------
 
 base_url <- "https://link.biometryhubwaite.com/"
@@ -172,6 +336,21 @@ message("Fetching version table from VSNi...")
 vt <- get_version_table(vsni_url)
 
 if (nrow(vt) == 0) stop("Version table is empty")
+
+# ---- filter supported R versions ----
+vt <- vt[numeric_version(vt$r_ver) >= numeric_version("40"), ]
+
+# links <- get_shortio_links(Sys.getenv("SHORTIO_API_KEY"), Sys.getenv("SHORTIO_DOMAIN_ID"))
+
+# vt <- get_version_table(vsni_url)
+
+message("Syncing shortlinks...")
+sync_asreml_shortlinks(
+    vt,
+    api_key   = Sys.getenv("SHORTIO_API_KEY"),
+    domain_id = Sys.getenv("SHORTIO_DOMAIN_ID"),
+    dry_run   = Sys.getenv("CI") != "true"
+)
 
 message("Building manifest entries...")
 entries <- lapply(seq_len(nrow(vt)), function(i) {
@@ -191,6 +370,7 @@ entries <- lapply(seq_len(nrow(vt)), function(i) {
 })
 
 manifest <- list(
+    schema_version = 1,
     updated  = format(Sys.Date(), "%Y-%m-%d"),
     packages = entries
 )
