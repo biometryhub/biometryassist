@@ -18,6 +18,8 @@ jobs:
       - name: Update manifest
         env:
           VSNI_URL: ${{ secrets.VSNI_URL }}
+          SHORTIO_DOMAIN_ID: ${{ secrets.SHORTIO_DOMAIN_ID }}
+          SHORTIO_API_KEY: ${{ secrets.SHORTIO_API_KEY }}
         run: Rscript inst/build_manifest.R
 
       - name: Create PR if manifest changed

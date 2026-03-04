@@ -195,7 +195,7 @@ get_shortio_links <- function(api_key, domain_id) {
 
     response <- httr::GET(
         url,
-        query = list(domain_id = domain_id),
+        query = list(domain_id = as.numeric(domain_id)),
         httr::add_headers(Authorization = api_key),
         httr::content_type("application/octet-stream"),
         httr::accept("application/json")
@@ -214,33 +214,57 @@ get_shortio_links <- function(api_key, domain_id) {
 }
 
 
-shortio_update_link <- function(api_key, link_id, domain_id, target_url) {
+shortio_update_link <- function(
+        api_key,
+        link_id,
+        domain_id,
+        target_url,
+        title = NULL,
+        tags = NULL
+) {
+
+    body <- list(
+        domain_id  = domain_id,
+        originalURL = target_url
+    )
+
+    if (!is.null(title))
+        body$title <- title
+
+    if (!is.null(tags))
+        body$tags <- tags
 
     res <- httr::POST(
         paste0("https://api.short.io/links/", link_id),
         httr::add_headers(Authorization = api_key),
         httr::content_type_json(),
-        body = list(
-            domain_id = domain_id,
-            originalURL = target_url
-        ),
+        body = body,
         encode = "json"
     )
 
-    stop_for_status(res)
+    httr::stop_for_status(res)
 
     invisible(TRUE)
 }
 
 
-shortio_create_link <- function(api_key, domain_id, path,
-                                target_url, tags = NULL) {
+shortio_create_link <- function(
+        api_key,
+        domain,
+        path,
+        target_url,
+        title = NULL,
+        tags = NULL
+) {
 
     body <- list(
-        domain_id = domain_id,
+        domain      = domain,
         originalURL = target_url,
-        path = path
+        path        = path
     )
+
+    if (!is.null(title))
+        body$title <- title
 
     if (!is.null(tags))
         body$tags <- tags
@@ -253,47 +277,86 @@ shortio_create_link <- function(api_key, domain_id, path,
         encode = "json"
     )
 
-    stop_for_status(res)
+    if (httr::status_code(res) >= 300) {
+        cat(httr::content(res, "text"), "\n")
+        stop("Short.io create failed")
+    }
+
+    httr::content(res, as = "parsed", simplifyVector = TRUE)
+}
+
+shortio_set_tags <- function(api_key, link_id, domain_id, tags) {
+
+    res <- httr::POST(
+        paste0("https://api.short.io/links/", link_id),
+        httr::add_headers(Authorization = api_key),
+        httr::content_type_json(),
+        body = list(
+            domain_id = as.numeric(domain_id),
+            tags = tags
+        ),
+        encode = "json"
+    )
+
+    httr::stop_for_status(res)
+
+    invisible(TRUE)
 }
 
 sync_asreml_shortlinks <- function(
         vt,
         api_key,
+        domain,
         domain_id,
         dry_run = Sys.getenv("CI") != "true"
 ) {
 
     expected <- build_expected_asreml_links(vt)
 
-    current <- get_shortio_links(api_key, domain_id)[,
-                                                     c("id", "path", "originalURL")
-    ]
+    current <- get_shortio_links(api_key, domain_id)[, c("id","path","originalURL","title")]
 
-    merged <- merge(
-        expected,
-        current,
-        by = "path",
-        all.x = TRUE
-    )
+    merged <- merge(expected, current, by="path", all.x=TRUE)
+
+    results <- vector("list", nrow(merged))
 
     for (i in seq_len(nrow(merged))) {
 
-        row <- merged[i, ]
+        row <- merged[i,]
+
+        tags <- c(
+            row$os,
+            paste0(substr(row$r_ver,1,1),".",substr(row$r_ver,2,2))
+        )
+
+        action <- "skip"
 
         if (is.na(row$id)) {
 
+            action <- "create"
             message("CREATE ", row$path)
 
-            if (!dry_run)
-                shortio_create_link(
+            if (!dry_run) {
+
+                created <- shortio_create_link(
                     api_key,
-                    domain_id,
+                    domain,
                     row$path,
-                    row$target
+                    row$target,
+                    title = row$title,
+                    tags = c(row$os, row$r_ver)
                 )
+
+                shortio_set_tags(
+                    api_key,
+                    created$id,
+                    domain_id,
+                    tags
+                )
+            }
 
         } else if (!identical(row$target, row$originalURL)) {
 
+            action <- "update"
             message("UPDATE ", row$path)
 
             if (!dry_run)
@@ -301,16 +364,25 @@ sync_asreml_shortlinks <- function(
                     api_key,
                     row$id,
                     domain_id,
-                    row$target
+                    row$target,
+                    title = row$title,
+                    tags = c(row$os, row$r_ver)
                 )
 
         } else {
 
             message("SKIP   ", row$path)
         }
+
+        results[[i]] <- data.frame(
+            path   = row$path,
+            action = action,
+            tags   = paste(tags, collapse=","),
+            stringsAsFactors = FALSE
+        )
     }
 
-    invisible(TRUE)
+    do.call(rbind, results)
 }
 
 
@@ -319,11 +391,18 @@ build_expected_asreml_links <- function(vt) {
 
     latest <- get_latest_asreml_downloads(vt)
 
+    r_pretty <- paste0(
+        substr(latest$r_ver, 1, 1),
+        ".",
+        substr(latest$r_ver, 2, 2)
+    )
+
     data.frame(
         path   = latest$os_ver,
         target = latest$Download_URL,
+        title  = latest$os_ver,   # ← slug as title
         os     = latest$os,
-        r_ver  = latest$r_ver,
+        r_ver  = r_pretty,
         stringsAsFactors = FALSE
     )
 }
@@ -340,15 +419,13 @@ if (nrow(vt) == 0) stop("Version table is empty")
 # ---- filter supported R versions ----
 vt <- vt[numeric_version(vt$r_ver) >= numeric_version("40"), ]
 
-# links <- get_shortio_links(Sys.getenv("SHORTIO_API_KEY"), Sys.getenv("SHORTIO_DOMAIN_ID"))
-
-# vt <- get_version_table(vsni_url)
 
 message("Syncing shortlinks...")
 sync_asreml_shortlinks(
     vt,
     api_key   = Sys.getenv("SHORTIO_API_KEY"),
-    domain_id = Sys.getenv("SHORTIO_DOMAIN_ID"),
+    domain    = "link.biometryhubwaite.com",
+    domain_id = as.numeric(Sys.getenv("SHORTIO_DOMAIN_ID")),
     dry_run   = Sys.getenv("CI") != "true"
 )
 
