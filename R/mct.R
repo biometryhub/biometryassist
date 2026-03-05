@@ -409,11 +409,23 @@ calculate_pvalue_matrix <- function(pp, sed, ndf) {
 
     # Calculate the studentized range statistic and p-values in one call
     q_stat <- as.numeric(diff / sed_ij) * sqrt(2)
-    pvals <- stats::ptukey(q_stat, nmeans = n, df = ndf, lower.tail = FALSE)
-
-    pval_matrix[cbind(i, j)] <- pvals
-    pval_matrix[cbind(j, i)] <- pvals
-
+    
+    # If ndf is a matrix, convert q_stat to a matrix before calculating p-value matrix
+    if(is.matrix(ndf)==TRUE){
+      q_stat_matrix <- matrix(0, nrow=n, ncol=n)
+      q_stat_matrix[cbind(i, j)] <- q_stat
+      q_stat_matrix[cbind(j, i)] <- q_stat
+      pval_matrix <- stats::ptukey(q_stat_matrix, nmeans = n, df = ndf, lower.tail = FALSE)
+    } else {
+      pvals <- stats::ptukey(q_stat, nmeans = n, df = ndf, lower.tail = FALSE)
+      
+      # if pvals is not a matrix, then convert it to a matrix
+      if(is.matrix(pvals)==FALSE){
+        pval_matrix[cbind(i, j)] <- pvals
+        pval_matrix[cbind(j, i)] <- pvals
+      } 
+    }
+    
     return(pval_matrix)
 }
 
@@ -593,7 +605,11 @@ validate_inputs <- function(sig, classify, model.obj, trans) {
     }
 
     # Check if the response variable is transformed in the model formula
-    model_formula <- stats::formula(model.obj)
+    if(class(model.obj)[1] == c("aovlist")){
+      model_formula <- stats::formula(model.obj[[1]])
+    } else {
+      model_formula <- stats::formula(model.obj)
+    }
     if(inherits(model.obj, "asreml")) {
         response_part <- model_formula[[1]][[2]]
     }
@@ -664,6 +680,10 @@ get_diffs <- function(pp, sed, ndf, sig) {
 #' @noRd
 add_confidence_intervals <- function(pp, int.type, sig, ndf) {
     # Calculate confidence interval width
+    # If denominator df is a type matrix, use the max value (TEMPORARY SOLUTION!)
+    if(is.matrix(ndf)==TRUE){
+      ndf <- max(ndf, na.rm=TRUE)
+    }
     pp$ci <- switch(
         tolower(int.type),
         "ci" = stats::qt(p = sig/2, ndf, lower.tail = FALSE) * pp$std.error,
