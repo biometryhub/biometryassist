@@ -1154,11 +1154,13 @@ test_that("ApproxSE column is also preserved during rounding", {
 test_that("Multiple comparisons works with aovlist objects", {
   # load in oats data
   load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
-  oats.aov <- aov(yield ~ Variety*Nitrogen + Error(Blocks/Wplots), data=dat)
-  pred.aov <- multiple_comparisons(model.obj=oats.aov, classify="Nitrogen")
+  oats.aovlist <- aov(yield ~ Variety*Nitrogen + Error(Blocks/Wplots), data=dat)
+  pred.aovlist <- multiple_comparisons(model.obj=oats.aovlist, classify="Nitrogen")
   
   # check HSD value
-  expect_equal(pred.aov$hsd , 11.833,
+  expect_equal(pred.aovlist$hsd , 11.833,
+               tolerance = 5e-2)
+  expect_equal(pred.aovlist$pairwise_pvalues[3,4] , 0.180,
                tolerance = 5e-2)
 })
 
@@ -1176,12 +1178,9 @@ test_that("Multiple comparisons for asreml objects provides the same results as 
   expect_equal(pred.asr$hsd , 11.833,
                tolerance = 5e-2)
   # Check p-values matrix
-  # expect_equal(pred.asr$pairwise_pvalues , matrix(
-  #   1.000000e+00, 3.764306e-04, 3.362356e-09, 4.276357e-12,
-  #   3.764306e-04 1.000000e+00 6.390211e-03 9.244856e-06
-  #   3.362356e-09 6.390211e-03 1.000000e+00 1.797195e-01
-  #   4.276357e-12 9.244856e-06 1.797195e-01 1.000000e+00
-  # ))
+  # Note that order of nitrogen levels in p-values matrix is different for asreml objects
+  expect_equal(pred.asr$pairwise_pvalues[3,4] , 0.180,
+               tolerance = 5e-2)
 })
 
 test_that("Multiple comparisons for lmer objects provides the same results as an aovlist object", {
@@ -1194,6 +1193,9 @@ test_that("Multiple comparisons for lmer objects provides the same results as an
   
   # check HSD value
   expect_equal(pred.lme$hsd , 11.833,
+               tolerance = 5e-2)
+  # check p-values matrix
+  expect_equal(pred.lme$pairwise_pvalues[3,4] , 0.180,
                tolerance = 5e-2)
 })
 
@@ -1208,6 +1210,9 @@ test_that("Multiple comparisons for lmerTest objects provides the same results a
   
   # check HSD value
   expect_equal(pred.lmet$hsd , 11.833,
+               tolerance = 5e-2)
+  # check p-values matrix
+  expect_equal(pred.lmet$pairwise_pvalues[3,4] , 0.180,
                tolerance = 5e-2)
 })
 
