@@ -1178,7 +1178,6 @@ test_that("Multiple comparisons for asreml objects provides the same results as 
   expect_equal(pred.asr$hsd , 11.833,
                tolerance = 5e-2)
   # Check p-values matrix
-  # Note that order of nitrogen levels in p-values matrix is different for asreml objects
   expect_equal(pred.asr$pairwise_pvalues[3,4] , 0.180,
                tolerance = 5e-2)
 })
