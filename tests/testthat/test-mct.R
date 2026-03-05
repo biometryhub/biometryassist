@@ -1150,3 +1150,65 @@ test_that("ApproxSE column is also preserved during rounding", {
     expect_false(any(output$predictions$std.error == 0))
     expect_false(any(output$predictions$ApproxSE == 0))
 })
+
+test_that("Multiple comparisons works with aovlist objects", {
+  # load in oats data
+  load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+  oats.aov <- aov(yield ~ Variety*Nitrogen + Error(Blocks/Wplots), data=dat)
+  pred.aov <- multiple_comparisons(model.obj=oats.aov, classify="Nitrogen")
+  
+  # check HSD value
+  expect_equal(pred.aov$hsd , 11.833,
+               tolerance = 5e-2)
+})
+
+test_that("Multiple comparisons for asreml objects provides the same results as an aovlist object for oats data", {
+  # load in oats data
+  load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+  library(asreml)
+  oats.asr <- asreml( yield ~ Variety*Nitrogen,
+                      random =~ Blocks/Wplots,
+                      residual =~ units,
+                      data = dat)
+  pred.asr <- multiple_comparisons(model.obj=oats.asr, classify="Nitrogen")
+  
+  # check HSD value
+  expect_equal(pred.asr$hsd , 11.833,
+               tolerance = 5e-2)
+  # Check p-values matrix
+  # expect_equal(pred.asr$pairwise_pvalues , matrix(
+  #   1.000000e+00, 3.764306e-04, 3.362356e-09, 4.276357e-12,
+  #   3.764306e-04 1.000000e+00 6.390211e-03 9.244856e-06
+  #   3.362356e-09 6.390211e-03 1.000000e+00 1.797195e-01
+  #   4.276357e-12 9.244856e-06 1.797195e-01 1.000000e+00
+  # ))
+})
+
+test_that("Multiple comparisons for lmer objects provides the same results as an aovlist object", {
+  # load in oats data
+  load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+  library(lme4)
+  oats.lme <- lme4::lmer(yield ~ Variety*Nitrogen + (1| Blocks/Wplots),
+                         data=dat)
+  pred.lme <- multiple_comparisons(model.obj=oats.lme, classify="Nitrogen")
+  
+  # check HSD value
+  expect_equal(pred.lme$hsd , 11.833,
+               tolerance = 5e-2)
+})
+
+test_that("Multiple comparisons for lmerTest objects provides the same results as an aovlist object", {
+  # load in oats data
+  load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+  library(lme4)
+  library(lmerTest)
+  oats.lmet <- lmerTest::lmer(yield ~ Variety*Nitrogen + (1| Blocks/Wplots),
+                         data=dat)
+  pred.lmet <- multiple_comparisons(model.obj=oats.lmet, classify="Nitrogen")
+  
+  # check HSD value
+  expect_equal(pred.lmet$hsd , 11.833,
+               tolerance = 5e-2)
+})
+
+

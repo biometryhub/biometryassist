@@ -671,6 +671,10 @@ get_diffs <- function(pp, sed, ndf, sig) {
 #' @noRd
 add_confidence_intervals <- function(pp, int.type, sig, ndf) {
     # Calculate confidence interval width
+    # If denominator df is a type matrix, use the max value (TEMPORARY SOLUTION!)
+    if(is.matrix(ndf)==TRUE){
+      ndf <- max(ndf, na.rm=TRUE)
+    }
     pp$ci <- switch(
         tolower(int.type),
         "ci" = stats::qt(p = sig/2, ndf, lower.tail = FALSE) * pp$std.error,
