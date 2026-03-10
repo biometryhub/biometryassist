@@ -309,6 +309,9 @@ format_satab <- function(anova_structure, design_type) {
   if (design_type == "split") {
     return(format_satab_split(anova_structure))
   }
+  else if (design_type == "strip") {
+    return(format_satab_strip(anova_structure))
+  }
 
   # Standard formatting
   output <- c(
@@ -344,11 +347,13 @@ format_satab_split <- function(anova_structure) {
   names <- anova_structure$names
 
   # Determine width based on df magnitude
-  width1 <- ifelse(df[1] > 10, 44, 45)
-  width2 <- ifelse(df[2] > 10, 35, 36)
-  width3 <- ifelse(df[4] > 10, 35, 36)
-  width4 <- ifelse(df[5] > 10, 35, 36)
-  width5 <- ifelse(df[7] > 10, 44, 45)
+  width1 <- ifelse(df[1] > 9, 44, 45)
+  width2 <- ifelse(df[2] > 9, 35, 36)
+  width3 <- ifelse(df[3] > 9, 44, 45)
+  width4 <- ifelse(df[4] > 9, 35, 36)
+  width5 <- ifelse(df[5] > 9, 35, 36)
+  width6 <- ifelse(df[6] > 9, 44, 45)
+  width7 <- ifelse(df[7] > 9, 44, 45)
 
   output <- c(
     paste0(format("Source of Variation", width = 45), "df", "\n"),
@@ -357,19 +362,62 @@ format_satab_split <- function(anova_structure) {
     "--------------------------------------------------\n",
     "Whole plot stratum\n",
     paste0(format(" ", width = 9), format(sources[2], width = width2), df[2], "\n"),
-    paste0(format(sources[3], width = 45), df[3], "\n"),
+    paste0(format(sources[3], width = width3), df[3], "\n"),
     "==================================================\n",
     "Subplot stratum\n",
-    paste0(format(" ", width = 9), format(sources[4], width = width3), df[4], "\n"),
-    paste0(format(" ", width = 9), format(sources[5], width = width4), df[5], "\n"),
-    paste0(format(" ", width = 9), format(sources[6], width = 35), df[6], "\n"),
+    paste0(format(" ", width = 9), format(sources[4], width = width4), df[4], "\n"),
+    paste0(format(" ", width = 9), format(sources[5], width = width5), df[5], "\n"),
+    paste0(format(sources[6], width = width6), df[6], "\n"),
     "==================================================\n",
-    paste0(format("Total", width = width5), df[7], "\n")
+    paste0(format("Total", width = width7), df[7], "\n")
   )
 
   class(output) <- c("satab", class(output))
   return(output)
 }
+
+
+#' Format SATAB for Split Plot (special case)
+#' @noRd
+format_satab_strip <- function(anova_structure) {
+  sources <- anova_structure$sources
+  df <- anova_structure$df
+  names <- anova_structure$names
+  
+  # Determine width based on df magnitude
+  width1 <- ifelse(df[1] > 9, 44, 45)
+  width2 <- ifelse(df[2] > 9, 35, 36)
+  width3 <- ifelse(df[3] > 9, 44, 45)
+  width4 <- ifelse(df[4] > 9, 35, 36)
+  width5 <- ifelse(df[5] > 9, 44, 45)
+  width6 <- ifelse(df[6] > 9, 35, 36)
+  width7 <- ifelse(df[7] > 9, 44, 45)
+  width8 <- ifelse(df[8] > 9, 44, 45)
+  
+  output <- c(
+    paste0(format("Source of Variation", width = 45), "df", "\n"),
+    "==================================================\n",
+    paste0(format(sources[1], width = width1), df[1], "\n"),
+    "--------------------------------------------------\n",
+    "Row strip stratum\n",
+    paste0(format(" ", width = 9), format(sources[2], width = width2), df[2], "\n"),
+    paste0(format(sources[3], width = width3), df[3], "\n"),
+    "==================================================\n",
+    "Column strip stratum\n",
+    paste0(format(" ", width = 9), format(sources[4], width = width4), df[4], "\n"),
+    paste0(format(sources[5], width = width5), df[5], "\n"),
+    "==================================================\n",
+    "Observational unit stratum\n",
+    paste0(format(" ", width = 9), format(sources[6], width = width6), df[6], "\n"),
+    paste0(format(sources[7], width = width7), df[7], "\n"),
+    "==================================================\n",
+    paste0(format("Total", width = width8), df[8], "\n")
+  )
+  
+  class(output) <- c("satab", class(output))
+  return(output)
+}
+
 
 #' @noRd
 #' @method print satab
