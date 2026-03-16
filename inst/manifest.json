@@ -1,5 +1,6 @@
 {
-  "updated": "2026-02-27",
+  "schema_version": 1,
+  "updated": "2026-03-04",
   "packages": [
     {
       "asr_ver": "4.2.0.393",
@@ -500,46 +501,6 @@
       "published": "2022-05-11",
       "slug": "win-40",
       "url": "https://link.biometryhubwaite.com/win-40"
-    },
-    {
-      "asr_ver": "4.1.0.176",
-      "r_ver": "36",
-      "os": "centos",
-      "os_ver": "7",
-      "arm": false,
-      "published": "2022-05-11",
-      "slug": "centos-7-36",
-      "url": "https://link.biometryhubwaite.com/centos-7-36"
-    },
-    {
-      "asr_ver": "4.1.0.176",
-      "r_ver": "36",
-      "os": "ubuntu",
-      "os_ver": "18",
-      "arm": false,
-      "published": "2022-05-11",
-      "slug": "ubuntu-18-36",
-      "url": "https://link.biometryhubwaite.com/ubuntu-18-36"
-    },
-    {
-      "asr_ver": "4.1.0.176",
-      "r_ver": "36",
-      "os": "mac",
-      "os_ver": "mac",
-      "arm": false,
-      "published": "2022-05-11",
-      "slug": "mac-36",
-      "url": "https://link.biometryhubwaite.com/mac-36"
-    },
-    {
-      "asr_ver": "4.1.0.176",
-      "r_ver": "36",
-      "os": "win",
-      "os_ver": "win",
-      "arm": false,
-      "published": "2022-05-11",
-      "slug": "win-36",
-      "url": "https://link.biometryhubwaite.com/win-36"
     }
   ]
 }
