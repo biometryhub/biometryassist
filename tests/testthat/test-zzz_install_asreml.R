@@ -357,7 +357,9 @@ test_that("newer_version returns FALSE for empty or missing manifest", {
 
 test_that("newer_version returns FALSE when no package matches this OS slug", {
     manifest <- list(packages = list(list(slug = "win-44", asr_ver = "4.4.0.0", url = "x")))
-    mockery::stub(newer_version, "get_r_os", function() list(os_ver = "mac-14-44"))
+    mockery::stub(newer_version, "get_r_os", function() {
+        list(os_ver = "mac-14-44", os = "mac", os_major = "14", ver = "44", arm = FALSE)
+    })
     expect_warning(
         result <- newer_version(manifest = manifest),
         "No ASReml-R build found"

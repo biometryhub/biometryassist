@@ -66,7 +66,7 @@ install_asreml <- function(library = .libPaths()[1], quiet = FALSE, force = FALS
     verbose_msg("Internet connection confirmed")
 
     verbose_msg("Checking for newer version availability")
-    new_version <- if(check_version) newer_version() else FALSE
+    new_version <- if(check_version) newer_version(warn = FALSE) else FALSE
     verbose_msg(paste("Newer version available:", new_version))
 
     if(rlang::is_installed("asreml") && isFALSE(new_version) && isFALSE(force)) {
@@ -327,6 +327,20 @@ fetch_manifest <- function(manifest_url = "https://raw.githubusercontent.com/bio
 #' @keywords internal
 find_package <- function(manifest, os_ver, warn = TRUE) {
 
+    # Allow tests (and callers) to pass partial os_ver lists.
+    # Canonical get_r_os() returns: os_ver, os, os_major, ver, arm.
+    slug       <- if (!is.null(os_ver$os_ver)) as.character(os_ver$os_ver) else ""
+    os_name    <- if (!is.null(os_ver$os)) as.character(os_ver$os) else ""
+    os_major   <- if (!is.null(os_ver$os_major)) as.character(os_ver$os_major) else ""
+    r_ver      <- if (!is.null(os_ver$ver)) as.character(os_ver$ver) else ""
+    is_arm_sys <- isTRUE(os_ver$arm)
+
+    # Ensure downstream code sees a full, consistent structure.
+    os_ver <- modifyList(
+        list(os_ver = slug, os = os_name, os_major = os_major, ver = r_ver, arm = is_arm_sys),
+        os_ver
+    )
+
     warn_no_build <- function() {
         if (isTRUE(warn)) {
             warning(
@@ -361,7 +375,7 @@ find_package <- function(manifest, os_ver, warn = TRUE) {
     if (!is.null(entry)) return(entry)
 
     # Windows has no OS version - exact match only
-    if (os_ver$os == "win" || is.null(os_ver$os_major) || os_ver$os_major == "") {
+    if (identical(os_ver$os, "win") || is.null(os_ver$os_major) || identical(os_ver$os_major, "")) {
         return(warn_no_build())
     }
 
@@ -566,13 +580,13 @@ get_r_os <- function() {
 #'
 #' @returns TRUE if a newer version is available online, FALSE otherwise
 #' @keywords internal
-newer_version <- function(manifest = fetch_manifest()) {
+newer_version <- function(manifest = fetch_manifest(), warn = TRUE) {
 
     if (is.null(manifest) || length(manifest$packages) == 0)
         return(FALSE)
 
     os_ver  <- get_r_os()
-    matched <- find_package(manifest, os_ver, warn = FALSE)
+    matched <- find_package(manifest, os_ver, warn = warn)
 
     if (is.null(matched)) return(FALSE)
 
