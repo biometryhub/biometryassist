@@ -590,3 +590,92 @@ test_that("check_classify_in_terms works correctly", {
     model_terms2 <- c("A", "B", "A:B")
     expect_error(check_classify_in_terms("A:B:C", model_terms2), "not a term in the model")
 })
+
+test_that("Testing asreml predictions", {
+  skip_if_not_installed("Matrix")
+  load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
+  expect_warning(output <- multiple_comparisons(model.asr,
+                                                classify = "Nitrogen",
+                                                pred.obj = pred.asr,
+                                                dendf = dendf),
+                 "Argument `pred\\.obj` has been deprecated and will be removed in a future version\\. Predictions are now performed internally in the function\\.")
+  expect_equal(output$predictions$predicted.value,
+               c(77.76, 100.15, 114.41, 123.23),
+               tolerance = 5e-2)
+  expect_snapshot_output(output)
+  vdiffr::expect_doppelganger("asreml predictions", autoplot(output))
+})
+
+test_that("Test that aov works when using Error() to including experimental design terms", {
+  load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+  oats.aov <- aov(yield ~ Variety*Nitrogen + Error(Blocks/Wplots), data=dat)
+  pred.aov <- get_predictions.aovlist(model.obj=oats.aov, classify="Nitrogen")
+  
+  
+  expect_equal(pred.aov$predictions$predicted.value ,c(79.389, 98.889, 114.222, 123.389),
+               tolerance = 5e-2)
+  expect_equal(mean(pred.aov$sed, na.rm=TRUE) , 4.436,
+                tolerance = 5e-2)
+  expect_equal(mean(pred.aov$df, na.rm=TRUE) , 45,
+              tolerance = 5e-2)
+  # sed and df should be matrices for aovlist objects
+  expect_equal(is.matrix(pred.aov$sed), TRUE)
+  expect_equal(is.matrix(pred.aov$df), TRUE)
+})
+
+# check that predictions from asreml are the same as a aovlist object
+test_that("Test that asreml provides the same results as multi-stratum ANOVA for oats data", {
+  load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+  library(asreml)
+  oats.asr <- asreml( yield ~ Variety*Nitrogen,
+                      random =~ Blocks/Wplots,
+                      residual =~ units,
+                      data = dat)
+  pred.asr <- get_predictions.asreml(model.obj=oats.asr, classify="Nitrogen")
+  expect_equal(pred.asr$predictions$predicted.value ,c(79.389, 98.889, 114.222, 123.389),
+               tolerance = 5e-2)
+  expect_equal(mean(pred.asr$sed, na.rm=TRUE) , 4.436,
+               tolerance = 5e-2)
+  expect_equal(pred.asr$df , 45)
+  # These should be false for asreml objects
+  expect_equal(is.matrix(pred.asr$sed), FALSE)
+  expect_equal(class(pred.asr$sed)[1], "dspMatrix")
+  # This will result of very slight differences in the sed values for 
+  #   predictions where the denominator df is not the same for all comparisons
+  expect_equal(is.matrix(pred.asr$df), FALSE)
+})
+
+# check that predictions from asreml are the same as a aovlist object
+test_that("Test that lmer provides the same results as multi-stratum ANOVA for oats data", {
+  load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+  library(lme4)
+  oats.lme <- lme4::lmer(yield ~ Variety*Nitrogen + (1| Blocks/Wplots),
+              data=dat)
+  pred.lme <- get_predictions.lmerMod(model.obj=oats.lme, classify="Nitrogen")
+  expect_equal(pred.lme$predictions$predicted.value ,c(79.389, 98.889, 114.222, 123.389),
+               tolerance = 5e-2)
+  expect_equal(mean(pred.lme$sed, na.rm=TRUE) , 4.436,
+               tolerance = 5e-2)
+  expect_equal(mean(pred.lme$df, na.rm=TRUE), 45)
+  # sed and df should be matrices for lme objects
+  expect_equal(is.matrix(pred.lme$sed), TRUE)
+  expect_equal(is.matrix(pred.lme$df), TRUE)
+})
+
+# check that predictions from asreml are the same as a aovlist object
+test_that("Test that lmerTest provides the same results as multi-stratum ANOVA for oats data", {
+  load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+  library(lme4)
+  library(lmerTest)
+  oats.lmet <- lmerTest::lmer(yield ~ Variety*Nitrogen + (1| Blocks/Wplots),
+                         data=dat)
+  pred.lmet <- get_predictions.lmerModLmerTest(model.obj=oats.lmet, classify="Nitrogen")
+  expect_equal(pred.lmet$predictions$predicted.value ,c(79.389, 98.889, 114.222, 123.389),
+               tolerance = 5e-2)
+  expect_equal(mean(pred.lmet$sed, na.rm=TRUE) , 4.436,
+               tolerance = 5e-2)
+  expect_equal(mean(pred.lmet$df, na.rm=TRUE), 45)
+  # sed and df should be matrices for lme objects
+  expect_equal(is.matrix(pred.lmet$sed), TRUE)
+  expect_equal(is.matrix(pred.lmet$df), TRUE)
+})
