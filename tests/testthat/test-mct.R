@@ -1152,67 +1152,70 @@ test_that("ApproxSE column is also preserved during rounding", {
 })
 
 test_that("Multiple comparisons works with aovlist objects", {
-  # load in oats data
-  load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
-  oats.aovlist <- aov(yield ~ Variety*Nitrogen + Error(Blocks/Wplots), data=dat)
-  pred.aovlist <- multiple_comparisons(model.obj=oats.aovlist, classify="Nitrogen")
-  
-  # check HSD value
-  expect_equal(pred.aovlist$hsd , 11.833,
-               tolerance = 5e-2)
-  expect_equal(pred.aovlist$pairwise_pvalues[3,4] , 0.180,
-               tolerance = 5e-2)
+    # load in oats data
+    load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+    oats.aovlist <- aov(yield ~ Variety*Nitrogen + Error(Blocks/Wplots), data=dat)
+    pred.aovlist <- multiple_comparisons(model.obj=oats.aovlist, classify="Nitrogen")
+
+    # check HSD value
+    expect_equal(pred.aovlist$hsd , 11.833,
+                 tolerance = 5e-2)
+    expect_equal(pred.aovlist$pairwise_pvalues[3,4] , 0.180,
+                 tolerance = 5e-2)
 })
 
 test_that("Multiple comparisons for asreml objects provides the same results as an aovlist object for oats data", {
-  # load in oats data
-  load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
-  library(asreml)
-  oats.asr <- asreml( yield ~ Variety*Nitrogen,
-                      random =~ Blocks/Wplots,
-                      residual =~ units,
-                      data = dat)
-  pred.asr <- multiple_comparisons(model.obj=oats.asr, classify="Nitrogen")
-  
-  # check HSD value
-  expect_equal(pred.asr$hsd , 11.833,
-               tolerance = 5e-2)
-  # Check p-values matrix
-  expect_equal(pred.asr$pairwise_pvalues[3,4] , 0.180,
-               tolerance = 5e-2)
+    # load in oats data
+    skip_if_not_installed("asreml")
+    load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+    library(asreml)
+    oats.asr <- asreml( yield ~ Variety*Nitrogen,
+                        random =~ Blocks/Wplots,
+                        residual =~ units,
+                        data = dat)
+    pred.asr <- multiple_comparisons(model.obj=oats.asr, classify="Nitrogen")
+
+    # check HSD value
+    expect_equal(pred.asr$hsd , 11.833,
+                 tolerance = 5e-2)
+    # Check p-values matrix
+    expect_equal(pred.asr$pairwise_pvalues[3,4] , 0.180,
+                 tolerance = 5e-2)
 })
 
 test_that("Multiple comparisons for lmer objects provides the same results as an aovlist object", {
-  # load in oats data
-  load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
-  library(lme4)
-  oats.lme <- lme4::lmer(yield ~ Variety*Nitrogen + (1| Blocks/Wplots),
-                         data=dat)
-  pred.lme <- multiple_comparisons(model.obj=oats.lme, classify="Nitrogen")
-  
-  # check HSD value
-  expect_equal(pred.lme$hsd , 11.833,
-               tolerance = 5e-2)
-  # check p-values matrix
-  expect_equal(pred.lme$pairwise_pvalues[3,4] , 0.180,
-               tolerance = 5e-2)
+    skip_if_not_installed("lme4")
+    # load in oats data
+    load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+    library(lme4)
+    oats.lme <- lme4::lmer(yield ~ Variety*Nitrogen + (1| Blocks/Wplots),
+                           data=dat)
+    pred.lme <- multiple_comparisons(model.obj=oats.lme, classify="Nitrogen")
+
+    # check HSD value
+    expect_equal(pred.lme$hsd , 11.833,
+                 tolerance = 5e-2)
+    # check p-values matrix
+    expect_equal(pred.lme$pairwise_pvalues[3,4] , 0.180,
+                 tolerance = 5e-2)
 })
 
 test_that("Multiple comparisons for lmerTest objects provides the same results as an aovlist object", {
-  # load in oats data
-  load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
-  library(lme4)
-  library(lmerTest)
-  oats.lmet <- lmerTest::lmer(yield ~ Variety*Nitrogen + (1| Blocks/Wplots),
-                         data=dat)
-  pred.lmet <- multiple_comparisons(model.obj=oats.lmet, classify="Nitrogen")
-  
-  # check HSD value
-  expect_equal(pred.lmet$hsd , 11.833,
-               tolerance = 5e-2)
-  # check p-values matrix
-  expect_equal(pred.lmet$pairwise_pvalues[3,4] , 0.180,
-               tolerance = 5e-2)
+    skip_if_not_installed("lmerTest")
+    # load in oats data
+    load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+    library(lme4)
+    library(lmerTest)
+    oats.lmet <- lmerTest::lmer(yield ~ Variety*Nitrogen + (1| Blocks/Wplots),
+                                data=dat)
+    pred.lmet <- multiple_comparisons(model.obj=oats.lmet, classify="Nitrogen")
+
+    # check HSD value
+    expect_equal(pred.lmet$hsd , 11.833,
+                 tolerance = 5e-2)
+    # check p-values matrix
+    expect_equal(pred.lmet$pairwise_pvalues[3,4] , 0.180,
+                 tolerance = 5e-2)
 })
 
 

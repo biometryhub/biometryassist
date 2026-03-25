@@ -4,7 +4,7 @@
 \alias{newer_version}
 \title{Compare installed version of ASReml-R with available versions}
 \usage{
-newer_version(manifest = fetch_manifest())
+newer_version(manifest = fetch_manifest(), warn = TRUE)
 }
 \value{
 TRUE if a newer version is available online, FALSE otherwise

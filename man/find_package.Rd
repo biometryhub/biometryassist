@@ -4,7 +4,7 @@
 \alias{find_package}
 \title{Find the manifest entry matching the current system}
 \usage{
-find_package(manifest, os_ver)
+find_package(manifest, os_ver, warn = TRUE)
 }
 \arguments{
 \item{manifest}{A manifest list as returned by \code{\link[=fetch_manifest]{fetch_manifest()}}.}
@@ -14,11 +14,16 @@ find_package(manifest, os_ver)
 }
 \value{
 A single package entry list from \code{manifest$packages}, or
-\code{NULL} if no match was found.
+\code{NULL} if no suitable match was found.
 }
 \description{
 Looks up the manifest for a build exactly matching the slug built by
-\code{\link[=get_r_os]{get_r_os()}}. Returns \code{NULL} with a warning if no match is found,
-which indicates the user's system is not currently supported.
+\code{\link[=get_r_os]{get_r_os()}}. If no exact match is found, falls back to the highest
+available OS version that does not exceed the current OS version, for
+the same OS, R version, and architecture. This handles cases such as
+running on a newer OS than VSNi currently builds for.
+}
+\details{
+Windows has no OS version component and uses exact matching only.
 }
 \keyword{internal}

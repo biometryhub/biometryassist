@@ -442,7 +442,7 @@ test_that("install_asreml handles no internet connection", {
 test_that("install_asreml early return when up-to-date", {
     skip_on_cran()
     mockery::stub(install_asreml, "rlang::is_installed", function(pkg) TRUE)
-    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "newer_version", function(...) FALSE)
     mockery::stub(install_asreml, "has_internet", function() TRUE)
     expect_message(
         result <- install_asreml(force = FALSE),
@@ -721,7 +721,7 @@ test_that("install_asreml verbose parameter validation and messaging", {
 
     # Test that verbose = "verbose" produces debug messages
     mockery::stub(install_asreml, "rlang::is_installed", function(pkg) TRUE)
-    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "newer_version", function(...) FALSE)
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
 
     # Capture all messages from a single run (prevents noisy [DEBUG] output)
@@ -736,7 +736,7 @@ test_that("verbose messaging works correctly with different quiet settings", {
     skip_on_cran()
 
     mockery::stub(install_asreml, "rlang::is_installed", function(pkg) TRUE)
-    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "newer_version", function(...) FALSE)
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
 
     # Test quiet = TRUE (no messages)
@@ -918,7 +918,7 @@ test_that("manage_file verbose parameter works", {
 test_that("verbose debugging shows OS detection details", {
     skip_on_cran()
     mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
-    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "newer_version", function(...) FALSE)
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
     mockery::stub(install_asreml, "create_mac_folder", function(...) TRUE)
     mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
@@ -969,7 +969,7 @@ test_that("install_asreml verbose mode shows version check details", {
     skip_on_cran()
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
     mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
-    mockery::stub(install_asreml, "newer_version", function() TRUE)
+    mockery::stub(install_asreml, "newer_version", function(...) TRUE)
     mockery::stub(install_asreml, "create_mac_folder", function(...) TRUE)
     mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
     mockery::stub(install_asreml, "find_package", function(...) list(url = "https://example.com/asreml.zip"))
@@ -996,7 +996,7 @@ test_that("install_asreml calls create_mac_folder on macOS", {
     # Mock all the dependencies to get to the macOS check
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
     mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
-    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "newer_version", function(...) FALSE)
     mockery::stub(install_asreml, "get_r_os", function() list(os = "mac", ver = "44", arm = FALSE, os_ver = "mac-44"))
     mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
     mockery::stub(install_asreml, "find_package", function(manifest, os_ver) list(url = "x"))
@@ -1023,7 +1023,7 @@ test_that("install_asreml does not call create_mac_folder on non-macOS", {
     # Mock all the dependencies to get to the OS check (Linux)
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
     mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
-    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "newer_version", function(...) FALSE)
     mockery::stub(install_asreml, "get_r_os", function() list(os = "linux", ver = "44", arm = FALSE, os_ver = "linux-44"))
     mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
     mockery::stub(install_asreml, "find_package", function(manifest, os_ver) list(url = "x"))
@@ -1050,7 +1050,7 @@ test_that("install_asreml verbose messaging shows mac folder creation", {
     # Mock all the dependencies for macOS
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
     mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
-    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "newer_version", function(...) FALSE)
     mockery::stub(install_asreml, "get_r_os", function() list(os = "mac", ver = "44", arm = FALSE, os_ver = "mac-44"))
     mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
     mockery::stub(install_asreml, "find_package", function(manifest, os_ver) list(url = "x"))
@@ -1078,7 +1078,7 @@ test_that("install_asreml removes existing package when force=TRUE on non-Linux 
 
     # Mock all dependencies to reach the force removal logic
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
-    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "newer_version", function(...) FALSE)
     mockery::stub(install_asreml, "get_r_os", function() list(os = "win", ver = "44", arm = FALSE, os_ver = "win-44"))
     mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
     mockery::stub(install_asreml, "find_package", function(...) list(url = "https://example.com/asreml.zip"))
@@ -1113,7 +1113,7 @@ test_that("install_asreml does NOT remove existing package when force=TRUE on Li
 
     # Mock all dependencies for Linux system
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
-    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "newer_version", function(...) FALSE)
     mockery::stub(install_asreml, "get_r_os", function() list(os = "linux", ver = "44", arm = FALSE, os_ver = "linux-44"))  # Linux OS
     mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
     mockery::stub(install_asreml, "find_package", function(manifest, os_ver) list(url = "x"))
@@ -1148,7 +1148,7 @@ test_that("install_asreml does NOT remove existing package when force=FALSE", {
 
     # Mock all dependencies
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
-    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "newer_version", function(...) FALSE)
     mockery::stub(install_asreml, "get_r_os", function() list(os = "win", ver = "44", arm = FALSE, os_ver = "win-44"))
     mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
     mockery::stub(install_asreml, "find_package", function(...) list(url = "https://example.com/asreml.zip"))
@@ -1180,7 +1180,7 @@ test_that("install_asreml verbose messaging shows package removal", {
 
     # Mock all dependencies for Windows system with force=TRUE
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
-    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "newer_version", function(...) FALSE)
     mockery::stub(install_asreml, "get_r_os", function() list(os = "win", ver = "44", arm = FALSE, os_ver = "win-44"))
     mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
     mockery::stub(install_asreml, "find_package", function(...) list(url = "https://example.com/asreml.zip"))
