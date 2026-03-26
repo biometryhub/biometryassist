@@ -649,8 +649,8 @@ test_that("Test that asreml provides the same results as multi-stratum ANOVA for
 
 # check that predictions from asreml are the same as a aovlist object
 test_that("Test that lmer provides the same results as multi-stratum ANOVA for oats data", {
+    skip_if_not_installed("lme4")
     load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
-    library(lme4)
     oats.lme <- lme4::lmer(yield ~ Variety*Nitrogen + (1| Blocks/Wplots),
                            data=dat)
     pred.lme <- get_predictions.lmerMod(model.obj=oats.lme, classify="Nitrogen")
@@ -667,8 +667,8 @@ test_that("Test that lmer provides the same results as multi-stratum ANOVA for o
 # check that predictions from asreml are the same as a aovlist object
 test_that("Test that lmerTest provides the same results as multi-stratum ANOVA for oats data", {
     load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
-    library(lme4)
-    library(lmerTest)
+    skip_if_not_installed("lme4")
+    skip_if_not_installed("lmerTest")
     oats.lmet <- lmerTest::lmer(yield ~ Variety*Nitrogen + (1| Blocks/Wplots),
                                 data=dat)
     pred.lmet <- get_predictions.lmerModLmerTest(model.obj=oats.lmet, classify="Nitrogen")
