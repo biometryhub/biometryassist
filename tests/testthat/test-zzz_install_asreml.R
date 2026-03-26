@@ -1222,20 +1222,14 @@ test_that("find_package falls back to highest compatible version on Ubuntu", {
     # Ubuntu 23 - should use ubuntu-22
     os_ver <- list(os = "ubuntu", os_ver = "ubuntu-23-44",
                    os_major = "23", ver = "44", arm = FALSE)
-    expect_message(
-        result <- find_package(manifest, os_ver),
-        "Using build for ubuntu 22"
-    )
+    result <- find_package(manifest, os_ver)
     expect_equal(result$slug, "ubuntu-22-44")
 
     # Ubuntu 24.10 (major = 24) - should use ubuntu-22 since 24 < 22 is false,
     # but there's no ubuntu-24, so uses ubuntu-22
     os_ver <- list(os = "ubuntu", os_ver = "ubuntu-24-44",
                    os_major = "24", ver = "44", arm = FALSE)
-    expect_message(
-        result <- find_package(manifest, os_ver),
-        "Using build for ubuntu 22"
-    )
+    result <- find_package(manifest, os_ver)
     expect_equal(result$slug, "ubuntu-22-44")
 })
 
@@ -1249,10 +1243,7 @@ test_that("find_package falls back to highest compatible version on macOS", {
 
     os_ver <- list(os = "mac", os_ver = "mac-26-44-arm",
                    os_major = "26", ver = "44", arm = TRUE)
-    expect_message(
-        result <- find_package(manifest, os_ver),
-        "Using build for mac 15"
-    )
+    result <- find_package(manifest, os_ver)
     expect_equal(result$slug, "mac-15-44-arm")
 })
 

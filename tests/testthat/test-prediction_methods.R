@@ -635,8 +635,8 @@ test_that("Test that asreml provides the same results as multi-stratum ANOVA for
     pred.asr <- get_predictions.asreml(model.obj=oats.asr, classify="Nitrogen")
     expect_equal(pred.asr$predictions$predicted.value ,c(79.389, 98.889, 114.222, 123.389),
                  tolerance = 5e-2)
-    pred.asr$sed
-    expect_equal(mean(pred.asr$sed, na.rm=TRUE) , 4.436,
+    sed_mat <- as.matrix(pred.asr$sed)
+    expect_equal(mean(sed_mat, na.rm=TRUE) , 4.436,
                  tolerance = 5e-2)
     expect_equal(pred.asr$df , 45)
     # These should be false for asreml objects

@@ -406,11 +406,6 @@ find_package <- function(manifest, os_ver, warn = TRUE) {
 
     best <- candidates[[which.max(pkg_versions * compatible)]]
 
-    message(
-        "No ASReml-R build found for ", os_ver$os, " ", os_ver$os_major, ". ",
-        "Using build for ", best$os, " ", best$os_ver, " which should be compatible."
-    )
-
     best
 }
 
