@@ -211,7 +211,7 @@ get_predictions.aovlist <- function(model.obj, classify, ...) {
   pred.out <- emmeans::emmeans(model.obj, as.formula(paste("~", classify)), method="pairwise")
 
   # Use emmeans embedded function for multiple comparisons
-  aov_compare <- as.data.frame(emmeans::pairs(pred.out))
+  aov_compare <- as.data.frame(pairs(pred.out))
 
   # Convert emmeans predictions to a data frame
   pred.out <- as.data.frame(pred.out)
