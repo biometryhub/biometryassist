@@ -132,11 +132,27 @@ export_design_to_excel <- function(design_df, value_column = "treatments",
 
     # Apply colour coding if palette is specified
     if (!is.null(palette)) {
-        # Get unique treatments and generate colours
-        unique_treatments <- sort(unique(design_df[[value_column]]))
-        ntrt <- length(unique_treatments)
+        # Match `autoplot.design()` treatment ordering to keep colours consistent
+        trt_values <- as.character(design_df[[value_column]])
+        has_buffers <- "buffer" %in% trt_values
+
+        if (has_buffers) {
+            treatments_only <- unique(trt_values)
+            treatments_only <- treatments_only[treatments_only != "buffer"]
+            treatments_sorted <- stringi::stri_sort(treatments_only, numeric = TRUE)
+            treatment_levels <- c(treatments_sorted, "buffer")
+            ntrt <- length(treatments_sorted) # Excluding buffer
+        } else {
+            treatment_levels <- unique(stringi::stri_sort(trt_values, numeric = TRUE))
+            ntrt <- length(treatment_levels)
+        }
 
         colours <- setup_colour_palette(palette, ntrt)
+
+        # Match `autoplot.design()` behaviour: buffer gets a white fill
+        if (has_buffers) {
+            colours <- c(colours, "white")
+        }
 
         # Expand 3-digit hex codes to 6-digit and 4-digit to 8-digit for openxlsx2 compatibility
         colours <- gsub("^#([0-9A-Fa-f])([0-9A-Fa-f])([0-9A-Fa-f])$", "#\\1\\1\\2\\2\\3\\3", colours)  # 3-digit -> 6-digit
@@ -145,12 +161,12 @@ export_design_to_excel <- function(design_df, value_column = "treatments",
         colours <- gsub("^(#[0-9A-Fa-f]{6})[0-9A-Fa-f]{2}$", "\\1", colours)  # 8-digit -> 6-digit
 
         # Create colour mapping
-        colour_map <- setNames(colours, unique_treatments)
+        colour_map <- setNames(colours, treatment_levels)
 
         # Apply colours to cells
         for (i in 2:rows) {
             for (j in 2:cols) {
-                cell_value <- layout_df[i-1, j-1]
+                cell_value <- layout_df[i - 1, j - 1, drop = TRUE]
                 if (!is.na(cell_value)) {
                     colour <- colour_map[[as.character(cell_value)]]
                     cell_ref <- paste0(int2col(j), i)
