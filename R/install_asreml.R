@@ -336,7 +336,7 @@ find_package <- function(manifest, os_ver, warn = TRUE) {
     is_arm_sys <- isTRUE(os_ver$arm)
 
     # Ensure downstream code sees a full, consistent structure.
-    os_ver <- modifyList(
+    os_ver <- utils::modifyList(
         list(os_ver = slug, os = os_name, os_major = os_major, ver = r_ver, arm = is_arm_sys),
         os_ver
     )

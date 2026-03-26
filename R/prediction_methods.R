@@ -202,22 +202,20 @@ get_predictions.aovlist <- function(model.obj, classify, ...) {
   if(classify %!in% attr(stats::terms(model.obj), 'term.labels')) {
     stop(classify, " is not a term in the model. Please check model specification.", call. = FALSE)
   }
-  
+
   # Set emmeans options
   on.exit(options(emmeans = emmeans::emm_defaults))
   emmeans::emm_options("msg.interaction" = FALSE, "msg.nesting" = FALSE)
-  
+
   # Generate predictions
   pred.out <- emmeans::emmeans(model.obj, as.formula(paste("~", classify)), method="pairwise")
-  
-  # Use emmans embedded function for multiple comparisons
-  aov_compare <- pairs(pred.out) # Not sure what the correct way to call this is
-  # convert pair-wise comparison table to a data frame
-  aov_compare <- as.data.frame(aov_compare)
-  
+
+  # Use emmeans embedded function for multiple comparisons
+  aov_compare <- as.data.frame(emmeans::pairs(pred.out))
+
   # Convert emmeans predictions to a data frame
   pred.out <- as.data.frame(pred.out)
-  
+
   # Extract standard errors
   # define SED matrix
   sed <- matrix(NA, nrow=dim(pred.out)[1], ncol=dim(pred.out)[1])
@@ -233,30 +231,30 @@ get_predictions.aovlist <- function(model.obj, classify, ...) {
       k <- k+1
     }
   }
-  
+
   # Remove columns with upper and lower confidence intervals
   pred.out <- pred.out[, !grepl("CL", names(pred.out))]
   # Remove columns with degrees of freedom
   pred.out <- pred.out[, !grepl("df", names(pred.out))]
-  
+
   # Rename columns for consistency
   pp <- pred.out
   names(pp)[names(pp) == "emmean"] <- "predicted.value"
   names(pp)[names(pp) == "SE"] <- "std.error"
-  
+
   # Set diagonals to NA
   #diag(sed) <- NA
-  
+
   # Process aliased treatments
   aliased_result <- process_aliased(pp, sed, classify)
   pp <- aliased_result$predictions
   sed <- aliased_result$sed
   aliased_names <- aliased_result$aliased_names
-  
+
   # Get denominator degrees of freedom
   #ndf <- pp$df[1]
-  
-  
+
+
   # Get response variable for plot label
   if(class(model.obj)[1] %in% c("lmerMod","lmerModLmerTest")){
     formula_text <- deparse(stats::formula(model.obj))
@@ -267,7 +265,7 @@ get_predictions.aovlist <- function(model.obj, classify, ...) {
     ylab <- strsplit(formula_text, "~")[[1]][1]
     ylab <- trimws(ylab)
   }
-  
+
   return(list(
     predictions = pp,
     sed = sed,
@@ -291,9 +289,9 @@ get_predictions.listof <- function(model.obj, classify, ...) {
 get_predictions.lmerMod <- function(model.obj, classify, ...) {
     # Reuse lm method for common functionality
     #result <- get_predictions.lm(model.obj, classify, ...)
-    
+
     result <- get_predictions.aovlist(model.obj, classify, ...)
-    
+
     # Override ylab extraction for lmerMod
     # result$ylab <- model.obj@call[[2]][[2]]
 
