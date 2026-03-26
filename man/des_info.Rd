@@ -43,7 +43,7 @@ des_info(
 
 \item{fac.sep}{The separator used by \code{fac.names}. Used to combine factorial design levels. If a vector of 2 levels is supplied, the first separates factor levels and label, and the second separates the different factors.}
 
-\item{buffer}{The type of buffer. One of edge, row, column, double row, double column, or block (coming soon).}
+\item{buffer}{The type of buffer. One of edge, row, column, double row, double column, or block.}
 
 \item{plot}{Logical (default \code{TRUE}). If \code{TRUE}, display a plot of the generated design. A plot can always be produced later using \code{\link[=autoplot]{autoplot()}}.}
 

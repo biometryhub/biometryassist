@@ -81,7 +81,149 @@ create_buffers <- function(design, type, blocks = FALSE) {
     }
     # Match block, blocks, or b
     else if(grepl("(^blocks?$|^b$)", tolower(type))) {
-        stop("Block buffers are not yet supported.", call. = FALSE)
+        if (!blocks || !("block" %in% names(design))) {
+            stop("Block buffers require a 'block' column in the design.", call. = FALSE)
+        }
+
+        # Ensure we can safely add a buffer level
+        if (!is.factor(design$treatments)) {
+            design$treatments <- factor(design$treatments)
+        }
+        if (!("buffer" %in% levels(design$treatments))) {
+            levels(design$treatments) <- c(levels(design$treatments), "buffer")
+        }
+
+        # Per-block extents (assumes blocks form rectangular regions on the row/col grid)
+        min_row <- tapply(design$row, design$block, min)
+        max_row <- tapply(design$row, design$block, max)
+        min_col <- tapply(design$col, design$block, min)
+        max_col <- tapply(design$col, design$block, max)
+
+        row_min_all <- min(design$row)
+        row_max_all <- max(design$row)
+        col_min_all <- min(design$col)
+        col_max_all <- max(design$col)
+
+        # Build gap insert counts. We insert one buffer row/col for each block edge.
+        # Where two blocks are adjacent, this yields two buffer rows/cols (one per block).
+        row_gaps <- (row_min_all - 1L):row_max_all
+        col_gaps <- (col_min_all - 1L):col_max_all
+        row_gap_counts <- integer(length(row_gaps))
+        col_gap_counts <- integer(length(col_gaps))
+        names(row_gap_counts) <- as.character(row_gaps)
+        names(col_gap_counts) <- as.character(col_gaps)
+
+        add_gap_counts <- function(counts, gaps) {
+            gaps <- as.character(as.integer(gaps))
+            idx <- match(gaps, names(counts))
+            idx <- idx[!is.na(idx)]
+            if (length(idx) > 0) counts[idx] <- counts[idx] + 1L
+            counts
+        }
+
+        row_gap_counts <- add_gap_counts(row_gap_counts, as.integer(min_row) - 1L)
+        row_gap_counts <- add_gap_counts(row_gap_counts, as.integer(max_row))
+        col_gap_counts <- add_gap_counts(col_gap_counts, as.integer(min_col) - 1L)
+        col_gap_counts <- add_gap_counts(col_gap_counts, as.integer(max_col))
+
+        row_gap_prefix <- cumsum(row_gap_counts)
+        col_gap_prefix <- cumsum(col_gap_counts)
+
+        map_rows <- function(v) {
+            v <- as.integer(v)
+            idx <- match(as.character(v - 1L), names(row_gap_counts))
+            inserted_before <- row_gap_prefix[idx]
+            (v - row_min_all + 1L) + inserted_before
+        }
+
+        map_cols <- function(v) {
+            v <- as.integer(v)
+            idx <- match(as.character(v - 1L), names(col_gap_counts))
+            inserted_before <- col_gap_prefix[idx]
+            (v - col_min_all + 1L) + inserted_before
+        }
+
+        # Helper to get the inserted buffer coordinate adjacent to a block edge
+        top_buffer_row <- function(min_r) {
+            gap_k <- as.integer(min_r) - 1L
+            n_ins <- row_gap_counts[[as.character(gap_k)]]
+            base <- if (gap_k < row_min_all) 0L else map_rows(gap_k)
+            base + n_ins # closest inserted row to the block interior
+        }
+        bottom_buffer_row <- function(max_r) {
+            gap_k <- as.integer(max_r)
+            base <- map_rows(gap_k)
+            base + 1L # first inserted row after max_r
+        }
+        left_buffer_col <- function(min_c) {
+            gap_k <- as.integer(min_c) - 1L
+            n_ins <- col_gap_counts[[as.character(gap_k)]]
+            base <- if (gap_k < col_min_all) 0L else map_cols(gap_k)
+            base + n_ins
+        }
+        right_buffer_col <- function(max_c) {
+            gap_k <- as.integer(max_c)
+            base <- map_cols(gap_k)
+            base + 1L
+        }
+
+        # Remap existing design coordinates to make space for the buffers
+        design$row <- map_rows(design$row)
+        design$col <- map_cols(design$col)
+
+        # Create per-block buffer rings (one-cell thick)
+        buffers_list <- vector("list", length(min_row))
+        bnames <- names(min_row)
+        for (i in seq_along(bnames)) {
+            b <- bnames[i]
+            rmin <- as.integer(min_row[[b]])
+            rmax <- as.integer(max_row[[b]])
+            cmin <- as.integer(min_col[[b]])
+            cmax <- as.integer(max_col[[b]])
+
+            rmin_new <- map_rows(rmin)
+            rmax_new <- map_rows(rmax)
+            cmin_new <- map_cols(cmin)
+            cmax_new <- map_cols(cmax)
+
+            r_top <- top_buffer_row(rmin)
+            r_bot <- bottom_buffer_row(rmax)
+            c_left <- left_buffer_col(cmin)
+            c_right <- right_buffer_col(cmax)
+
+            # Sanity: ensure ring surrounds interior
+            stopifnot(r_top < rmin_new, r_bot > rmax_new, c_left < cmin_new, c_right > cmax_new)
+
+            top <- expand.grid(row = r_top, col = c_left:c_right)
+            bottom <- expand.grid(row = r_bot, col = c_left:c_right)
+            left <- expand.grid(row = r_top:r_bot, col = c_left)
+            right <- expand.grid(row = r_top:r_bot, col = c_right)
+
+            ring <- unique(rbind(top, bottom, left, right))
+            ring$treatments <- factor("buffer", levels = levels(design$treatments))
+
+            # Preserve block type (factor vs numeric) from the design
+            if (is.factor(design$block)) {
+                ring$block <- factor(b, levels = levels(design$block))
+            } else {
+                ring$block <- as.numeric(b)
+            }
+
+            buffers_list[[i]] <- ring
+        }
+
+        buffers_rcb <- do.call(rbind, buffers_list)
+
+        # Expand to match all design columns (other fields stay NA)
+        buffers <- data.frame(matrix(NA, nrow = nrow(buffers_rcb), ncol = ncol(design)))
+        buffers <- stats::setNames(buffers, names(design))
+        buffers$row <- buffers_rcb$row
+        buffers$col <- buffers_rcb$col
+        buffers$treatments <- buffers_rcb$treatments
+        buffers$block <- buffers_rcb$block
+
+        design <- rbind(design, buffers)
+        return(design)
     }
     else {
         stop("Invalid buffer option: ", type, call. = FALSE)
