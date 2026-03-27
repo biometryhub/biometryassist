@@ -9,7 +9,9 @@ create_buffers(design, type, blocks = FALSE)
 \arguments{
 \item{design}{The data frame of the design.}
 
-\item{type}{The type of buffer. One of edge, row, column, double row, or double column.}
+\item{type}{The type of buffer. One of edge, row, column, double row,
+double column, blocks (internal boundaries only), or double
+block/entire block/full block (buffers fully surrounding each block).}
 
 \item{blocks}{Does the design data frame contain blocks?}
 }

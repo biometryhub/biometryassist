@@ -1,7 +1,9 @@
 #' Create buffers for design plots
 #'
 #' @param design The data frame of the design.
-#' @param type The type of buffer. One of edge, row, column, double row, or double column.
+#' @param type The type of buffer. One of edge, row, column, double row,
+#' double column, blocks (internal boundaries only), or double
+#' block/entire block/full block (buffers fully surrounding each block).
 #' @param blocks Does the design data frame contain blocks?
 #'
 #' @importFrom stats setNames aggregate
@@ -79,8 +81,8 @@ create_buffers <- function(design, type, blocks = FALSE) {
         n_brow <- length(col)  # Number of rows to create in the buffer dataframe
         treatments <- rep("buffer", n_brow)
     }
-    # Match block, blocks, or b
-    else if(grepl("(^blocks?$|^b$)", tolower(type))) {
+    # Match double block(s), entire block(s), full block(s), db, eb, or fb
+    else if(grepl("(^double blocks?$|^entire blocks?$|^full blocks?$|^db$|^eb$|^fb$)", tolower(type))) {
         if (!blocks || !("block" %in% names(design))) {
             stop("Block buffers require a 'block' column in the design.", call. = FALSE)
         }
@@ -225,6 +227,108 @@ create_buffers <- function(design, type, blocks = FALSE) {
         design <- rbind(design, buffers)
         return(design)
     }
+    # Match block, blocks, or b (internal block boundaries only)
+    else if(grepl("(^blocks?$|^b$)", tolower(type))) {
+        if (!blocks || !("block" %in% names(design))) {
+            stop("Block buffers require a 'block' column in the design.", call. = FALSE)
+        }
+
+        # Ensure we can safely add a buffer level
+        if (!is.factor(design$treatments)) {
+            design$treatments <- factor(design$treatments)
+        }
+        if (!("buffer" %in% levels(design$treatments))) {
+            levels(design$treatments) <- c(levels(design$treatments), "buffer")
+        }
+
+        row_min_all <- min(design$row)
+        row_max_all <- max(design$row)
+        col_min_all <- min(design$col)
+        col_max_all <- max(design$col)
+
+        # Identify internal boundaries where adjacent plots belong to different blocks.
+        top <- design[, c("row", "col", "block")]
+        bottom <- design[, c("row", "col", "block")]
+        top$row <- top$row + 1L
+        row_pairs <- merge(top, bottom, by = c("row", "col"), suffixes = c("_top", "_bottom"))
+        row_boundary_cells <- row_pairs[row_pairs$block_top != row_pairs$block_bottom, c("row", "col")]
+
+        left <- design[, c("row", "col", "block")]
+        right <- design[, c("row", "col", "block")]
+        left$col <- left$col + 1L
+        col_pairs <- merge(left, right, by = c("row", "col"), suffixes = c("_left", "_right"))
+        col_boundary_cells <- col_pairs[col_pairs$block_left != col_pairs$block_right, c("row", "col")]
+
+        row_boundary_gaps <- sort(unique(as.integer(row_boundary_cells$row) - 1L))
+        col_boundary_gaps <- sort(unique(as.integer(col_boundary_cells$col) - 1L))
+
+        row_gaps <- (row_min_all - 1L):row_max_all
+        col_gaps <- (col_min_all - 1L):col_max_all
+        row_gap_counts <- integer(length(row_gaps))
+        col_gap_counts <- integer(length(col_gaps))
+        names(row_gap_counts) <- as.character(row_gaps)
+        names(col_gap_counts) <- as.character(col_gaps)
+
+        if (length(row_boundary_gaps) > 0) {
+            row_gap_counts[as.character(row_boundary_gaps)] <- 1L
+        }
+        if (length(col_boundary_gaps) > 0) {
+            col_gap_counts[as.character(col_boundary_gaps)] <- 1L
+        }
+
+        row_gap_prefix <- cumsum(row_gap_counts)
+        col_gap_prefix <- cumsum(col_gap_counts)
+
+        map_rows <- function(v) {
+            v <- as.integer(v)
+            idx <- match(as.character(v - 1L), names(row_gap_counts))
+            inserted_before <- row_gap_prefix[idx]
+            (v - row_min_all + 1L) + inserted_before
+        }
+
+        map_cols <- function(v) {
+            v <- as.integer(v)
+            idx <- match(as.character(v - 1L), names(col_gap_counts))
+            inserted_before <- col_gap_prefix[idx]
+            (v - col_min_all + 1L) + inserted_before
+        }
+
+        # Remap existing design coordinates to make space for inserted separators.
+        design$row <- map_rows(design$row)
+        design$col <- map_cols(design$col)
+
+        buffers_row <- data.frame(row = integer(0), col = integer(0))
+        if (nrow(row_boundary_cells) > 0) {
+            buffers_row <- data.frame(
+                row = map_rows(as.integer(row_boundary_cells$row) - 1L) + 1L,
+                col = map_cols(as.integer(row_boundary_cells$col))
+            )
+        }
+
+        buffers_col <- data.frame(row = integer(0), col = integer(0))
+        if (nrow(col_boundary_cells) > 0) {
+            buffers_col <- data.frame(
+                row = map_rows(as.integer(col_boundary_cells$row)),
+                col = map_cols(as.integer(col_boundary_cells$col) - 1L) + 1L
+            )
+        }
+
+        buffers_rc <- unique(rbind(buffers_row, buffers_col))
+
+        if (nrow(buffers_rc) == 0) {
+            return(design)
+        }
+
+        # Expand to match all design columns (other fields stay NA)
+        buffers <- data.frame(matrix(NA, nrow = nrow(buffers_rc), ncol = ncol(design)))
+        buffers <- stats::setNames(buffers, names(design))
+        buffers$row <- buffers_rc$row
+        buffers$col <- buffers_rc$col
+        buffers$treatments <- factor("buffer", levels = levels(design$treatments))
+
+        design <- rbind(design, buffers)
+        return(design)
+    }
     else {
         stop("Invalid buffer option: ", type, call. = FALSE)
     }
@@ -253,7 +357,9 @@ create_buffers <- function(design, type, blocks = FALSE) {
 #' Add buffers to an existing design
 #'
 #' @param design_obj A design object (with class "design") from the design() function
-#' @param type The type of buffer to add. One of 'edge', 'row', 'column', 'double row', or 'double column'.
+#' @param type The type of buffer to add. One of 'edge', 'row', 'column',
+#' 'double row', 'double column', 'blocks', or
+#' 'double block'/'entire block'/'full block'.
 #' @returns The modified design object with buffers added
 #' 
 #' @examples
