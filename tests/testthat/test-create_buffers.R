@@ -61,11 +61,11 @@ test_that("create_buffers adds block buffers correctly", {
   out <- create_buffers(design, type = "block", blocks = TRUE)
 
   expect_true(any(out$treatments == "buffer"))
-  expect_false(any(is.na(out$block)))
+  expect_true(any(is.na(out$block)))
 
-  # Should expand grid to make room for buffer rings
+  # Should expand rows to make room for buffers
   expect_true(max(out$row) > max(design$row))
-  expect_true(max(out$col) > max(design$col))
+  expect_true(max(out$col) == max(design$col))
 
   # No duplicated row/col coordinates
   expect_equal(nrow(out), nrow(unique(out[c("row", "col")])))

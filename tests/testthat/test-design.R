@@ -960,11 +960,6 @@ test_that("Invalid buffer options produce an error", {
     # RCBD
     expect_error(design("rcbd", treatments = LETTERS[1:11], reps = 4,
                         nrows = 11, ncols = 4, brows = 11, bcols = 1,
-                        seed = 42, quiet = TRUE, buffer = "block"),
-                 "Block buffers are not yet supported\\.")
-
-    expect_error(design("rcbd", treatments = LETTERS[1:11], reps = 4,
-                        nrows = 11, ncols = 4, brows = 11, bcols = 1,
                         seed = 42, quiet = TRUE, buffer = "abc"),
                  "Invalid buffer option: abc")
 })
