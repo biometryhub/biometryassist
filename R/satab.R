@@ -162,16 +162,23 @@ anova_factorial_crd <- function(design_book) {
     n_unique(design_book[[name]]) - 1
   })
 
-  # Interaction df
-  interaction_name <- paste(trt_names, collapse = ":")
-  interaction_df <- prod(trtdf)
+  # Add all interaction terms (2-way up to N-way)
+  interaction_sources <- character(0)
+  interaction_dfs <- numeric(0)
+  if (length(trt_names) >= 2) {
+    for (k in 2:length(trt_names)) {
+      cmb <- utils::combn(trt_names, k, simplify = FALSE)
+      interaction_sources <- c(interaction_sources, vapply(cmb, function(x) paste(x, collapse = ":"), character(1)))
+      interaction_dfs <- c(interaction_dfs, vapply(cmb, function(x) prod(trtdf[x]), numeric(1)))
+    }
+  }
 
   # Residual df
-  errdf <- totdf - sum(trtdf) - interaction_df
+  errdf <- totdf - sum(trtdf) - sum(interaction_dfs)
 
   list(
-    sources = c(trt_names, interaction_name, "Residual", "Total"),
-    df = c(trtdf, interaction_df, errdf, totdf),
+    sources = c(trt_names, interaction_sources, "Residual", "Total"),
+    df = c(trtdf, interaction_dfs, errdf, totdf),
     strata = NULL
   )
 }
@@ -196,17 +203,24 @@ anova_factorial_rcbd <- function(design_book) {
     n_unique(design_book[[name]]) - 1
   })
 
-  # Interaction df
-  interaction_name <- paste(trt_names, collapse = ":")
-  interaction_df <- prod(trtdf)
+  # Add all interaction terms (2-way up to N-way)
+  interaction_sources <- character(0)
+  interaction_dfs <- numeric(0)
+  if (length(trt_names) >= 2) {
+    for (k in 2:length(trt_names)) {
+      cmb <- utils::combn(trt_names, k, simplify = FALSE)
+      interaction_sources <- c(interaction_sources, vapply(cmb, function(x) paste(x, collapse = ":"), character(1)))
+      interaction_dfs <- c(interaction_dfs, vapply(cmb, function(x) prod(trtdf[x]), numeric(1)))
+    }
+  }
 
   # Residual df
-  errdf <- totdf - sum(trtdf) - interaction_df - blkdf
+  errdf <- totdf - sum(trtdf) - sum(interaction_dfs) - blkdf
 
   list(
-    sources = c("Block stratum", trt_names, interaction_name, "Residual", "Total"),
-    df = c(blkdf, trtdf, interaction_df, errdf, totdf),
-    strata = list(block = 1, main = 2:(2 + length(trtdf) + 1))
+    sources = c("Block stratum", trt_names, interaction_sources, "Residual", "Total"),
+    df = c(blkdf, trtdf, interaction_dfs, errdf, totdf),
+    strata = list(block = 1, main = 2:(2 + length(trtdf) + length(interaction_dfs) + 1))
   )
 }
 
@@ -232,16 +246,23 @@ anova_factorial_lsd <- function(design_book) {
     n_unique(design_book[[name]]) - 1
   })
 
-  # Interaction df
-  interaction_name <- paste(trt_names, collapse = ":")
-  interaction_df <- prod(trtdf)
+  # Add all interaction terms (2-way up to N-way)
+  interaction_sources <- character(0)
+  interaction_dfs <- numeric(0)
+  if (length(trt_names) >= 2) {
+    for (k in 2:length(trt_names)) {
+      cmb <- utils::combn(trt_names, k, simplify = FALSE)
+      interaction_sources <- c(interaction_sources, vapply(cmb, function(x) paste(x, collapse = ":"), character(1)))
+      interaction_dfs <- c(interaction_dfs, vapply(cmb, function(x) prod(trtdf[x]), numeric(1)))
+    }
+  }
 
   # Residual df
-  errdf <- totdf - sum(trtdf) - interaction_df - rowdf - coldf
+  errdf <- totdf - sum(trtdf) - sum(interaction_dfs) - rowdf - coldf
 
   list(
-    sources = c("Row", "Column", trt_names, interaction_name, "Residual", "Total"),
-    df = c(rowdf, coldf, trtdf, interaction_df, errdf, totdf),
+    sources = c("Row", "Column", trt_names, interaction_sources, "Residual", "Total"),
+    df = c(rowdf, coldf, trtdf, interaction_dfs, errdf, totdf),
     strata = NULL
   )
 }

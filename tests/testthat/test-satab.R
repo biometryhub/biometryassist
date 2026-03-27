@@ -20,6 +20,51 @@ test_that("satab examples print expected sections", {
 	expect_output(print(satab(outdesign_split_satab)), "Whole plot Residual")
 })
 
+test_that("3-way factorial designs include 2-way and 3-way interactions", {
+	fac3 <- agricolae::design.ab(trt = c(2, 3, 4), r = 2, design = "crd", seed = 42)
+	res <- biometryassist:::anova_factorial_crd(fac3$book)
+
+	# Factor names are whatever agricolae outputs (typically A, B, C)
+	structural_cols <- c(
+		"plots", "plot", "r", "rep", "reps",
+		"block", "row", "col",
+		"wholeplots", "wplots", "subplots", "splots",
+		"treatments"
+	)
+	trt_names <- names(fac3$book)[!names(fac3$book) %in% structural_cols]
+	expect_equal(length(trt_names), 3)
+
+	A <- trt_names[1]
+	B <- trt_names[2]
+	C <- trt_names[3]
+
+	# Main effect dfs
+	expected_main <- c((2 - 1), (3 - 1), (4 - 1))
+	names(expected_main) <- trt_names
+
+	# Interaction dfs
+	expected_interactions <- c(
+		`A:B` = expected_main[A] * expected_main[B],
+		`A:C` = expected_main[A] * expected_main[C],
+		`B:C` = expected_main[B] * expected_main[C],
+		`A:B:C` = expected_main[A] * expected_main[B] * expected_main[C]
+	)
+	names(expected_interactions) <- c(
+		paste(A, B, sep = ":"),
+		paste(A, C, sep = ":"),
+		paste(B, C, sep = ":"),
+		paste(A, B, C, sep = ":")
+	)
+
+	df_map <- stats::setNames(res$df, res$sources)
+
+	# Verify all interaction terms are present with correct df
+	for (nm in names(expected_interactions)) {
+		expect_true(nm %in% names(df_map))
+		expect_equal(df_map[[nm]], unname(expected_interactions[[nm]]))
+	}
+})
+
 test_that("get_anova_structure throws error for unknown design type", {
 	# Create a minimal design book
 	design_book <- data.frame(

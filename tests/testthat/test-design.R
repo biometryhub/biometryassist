@@ -329,6 +329,8 @@ test_that("3 way factorial designs are possible", {
     expect_design_df_starts_with(d9$design, c("row", "col"))
     expect_design_df_has_cols(d9$design, c("plots", "reps", "A", "B", "C", "treatments"))
     expect_equal(d9$satab[6],
+                 "A:B                                     1\n")
+    expect_equal(d9$satab[9],
                  "A:B:C                                   1\n")
     expect_snapshot_output(d9$satab)
     vdiffr::expect_doppelganger(title = "3 way factorial",
@@ -343,6 +345,8 @@ test_that("3 way factorial designs are possible", {
     expect_design_df_starts_with(d9.1$design, c("row", "col"))
     expect_design_df_has_cols(d9.1$design, c("plots", "reps", "X", "Y", "Z", "treatments"))
     expect_equal(d9.1$satab[6],
+                 "X:Y                                     1\n")
+    expect_equal(d9.1$satab[9],
                  "X:Y:Z                                   1\n")
     expect_snapshot_output(d9.1$satab)
     vdiffr::expect_doppelganger(title = "3 way factorial with names",
@@ -363,6 +367,8 @@ test_that("Adding names to 3 way factorial designs works", {
     expect_identical(levels(d9.2$design$Z), as.character(c(10, 20)))
     expect_equal(d9.2$satab[3],
                  "Block stratum                           2\n")
+    expect_equal(d9.2$satab[12],
+                 "Residual                                14\n")
     expect_snapshot_output(d9.2$satab)
     vdiffr::expect_doppelganger(title = "3 way rcbd factorial with names",
                                 autoplot(d9.2), variant = ggplot2_variant())

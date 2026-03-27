@@ -47,6 +47,7 @@ test_that("create_buffers errors for unsupported buffer type", {
                        col = rep(1:2, 2),
                        treatments = c("A", "B", "C", "D"))
   expect_error(create_buffers(design, type = "block", blocks = TRUE), "Block buffers require a 'block' column")
+  expect_error(create_buffers(design, type = "db", blocks = TRUE), "Block buffers require a 'block' column")
   expect_error(create_buffers(design, type = "notatype"), "Invalid buffer option")
 })
 
@@ -68,6 +69,52 @@ test_that("create_buffers adds block buffers correctly", {
   expect_true(max(out$col) == max(design$col))
 
   # No duplicated row/col coordinates
+  expect_equal(nrow(out), nrow(unique(out[c("row", "col")])))
+})
+
+test_that("create_buffers adds double/entire/full block buffers (numeric block)", {
+  # 4 blocks arranged in a 2x2 grid to exercise both:
+  # - blocks on the outer edge (gap_k < row_min_all/col_min_all branches)
+  # - internal adjacency (double-inserted separator rows/cols)
+  grid <- expand.grid(row = 1:4, col = 1:4)
+  grid$block <- with(grid, ifelse(row <= 2 & col <= 2, 1,
+                          ifelse(row <= 2 & col >= 3, 2,
+                          ifelse(row >= 3 & col <= 2, 3, 4))))
+  grid$treatments <- paste0("T", seq_len(nrow(grid)))
+
+  type_aliases <- c("double blocks", "entire block", "full blocks", "db", "eb", "fb")
+  for (tp in type_aliases) {
+    out <- create_buffers(grid, type = tp, blocks = TRUE)
+
+    expect_true(any(out$treatments == "buffer"))
+    expect_false(any(is.na(out$block)))
+
+    # Should expand both rows and cols to make room for the surrounding rings
+    expect_true(max(out$row) > max(grid$row))
+    expect_true(max(out$col) > max(grid$col))
+
+    # No duplicated row/col coordinates
+    expect_equal(nrow(out), nrow(unique(out[c("row", "col")])))
+  }
+})
+
+test_that("create_buffers adds double/entire/full block buffers (factor block, factor treatments)", {
+  grid <- expand.grid(row = 1:4, col = 1:4)
+  grid$block <- factor(with(grid, ifelse(row <= 2 & col <= 2, 1,
+                                 ifelse(row <= 2 & col >= 3, 2,
+                                 ifelse(row >= 3 & col <= 2, 3, 4))))
+  )
+
+  # Treatments already factor and already include buffer level: exercises the
+  # "skip" paths for the factor/level checks.
+  trt_levels <- c(paste0("T", seq_len(nrow(grid))), "buffer")
+  grid$treatments <- factor(paste0("T", seq_len(nrow(grid))), levels = trt_levels)
+
+  out <- create_buffers(grid, type = "double block", blocks = TRUE)
+  expect_true(any(out$treatments == "buffer"))
+  expect_false(any(is.na(out$block)))
+  expect_true(max(out$row) > max(grid$row))
+  expect_true(max(out$col) > max(grid$col))
   expect_equal(nrow(out), nrow(unique(out[c("row", "col")])))
 })
 
