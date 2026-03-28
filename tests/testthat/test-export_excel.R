@@ -14,6 +14,23 @@ test_that("export_design_to_excel returns correct layout matrix", {
     expect_equal(layout[2, 3], "A")
 })
 
+test_that("export_design_to_excel works with renamed row/column coordinates", {
+    skip_if_not_installed("openxlsx2")
+    df <- data.frame(
+        lane = rep(1:2, each = 3),
+        range = rep(1:3, 2),
+        treatments = c("A", "B", "C", "C", "B", "A")
+    )
+
+    expect_message(
+        layout <- export_design_to_excel(df, value_column = "treatments", row = lane, column = range),
+        "Excel file saved as: experimental_design.xlsx"
+    )
+    expect_equal(dim(layout), c(2, 3))
+    expect_equal(layout[1, 1], "A")
+    expect_equal(layout[2, 3], "A")
+})
+
 test_that("export_design_to_excel errors if required columns are missing", {
     skip_if_not_installed("openxlsx2")
     df <- data.frame(row = 1:2, treatments = c("A", "B"))
@@ -23,14 +40,9 @@ test_that("export_design_to_excel errors if required columns are missing", {
 
 test_that("export_design_to_excel works with a list input", {
     skip_if_not_installed("openxlsx2")
-    df <- data.frame(
-        row = rep(1:2, each = 2),
-        col = rep(1:2, 2),
-        treatments = c("A", "B", "B", "A")
-    )
-    design_list <- list(design = df)
+    des <- design("crd", c("A", "B"), 2, 2, 2, quiet = TRUE, plot = FALSE)
     expect_message(
-        layout <- export_design_to_excel(design_list, value_column = "treatments"),
+        layout <- export_design_to_excel(des),
         "Excel file saved as: experimental_design.xlsx")
 
     expect_s3_class(layout, "data.frame")

@@ -19,9 +19,11 @@ int2col <- function(num) {
 #' Converts an experimental design dataframe into a spatial layout matrix
 #' and exports to Excel with optional colour coding by treatment.
 #'
-#' @param design_df A dataframe containing experimental design with 'row' and 'col' columns
-#' @param value_column Character string specifying which column to use for layout values (default: "treatments")
+#' @param design A dataframe or design object containing experimental design.
 #' @param filename Character string for Excel filename (default: "experimental_design.xlsx")
+#' @param value_column Character string specifying which column to use for layout values (default: "treatments")
+#' @param row Column containing the row coordinate. Defaults to `row`.
+#' @param column Column containing the column coordinate. Defaults to `col`.
 #' @param palette colour palette for treatments. Can be a palette name (see details) or vector of colours.
 #'   Set to NULL to disable colouring (default: "default")
 #'
@@ -58,8 +60,11 @@ int2col <- function(num) {
 #' }
 #'
 #' @export
-export_design_to_excel <- function(design_df, value_column = "treatments",
+export_design_to_excel <- function(design,
                                    filename = "experimental_design.xlsx",
+                                   value_column = "treatments",
+                                   row = NULL,
+                                   column = NULL,
                                    palette = "default") {
 
     # Check if openxlsx2 is available
@@ -68,37 +73,67 @@ export_design_to_excel <- function(design_df, value_column = "treatments",
              "Install it with: install.packages('openxlsx2')")
     }
 
-    # If design_df is a list (e.g., from a design generation function), extract the design dataframe
-    if(inherits(design_df, "list")) {
-        design_df <- design_df$design
+    # If design is a list (e.g., from a design generation function), extract the design dataframe
+    if(inherits(design, "list")) {
+        design <- design$design
     }
 
+    # Handle column name expressions (match `autoplot.design()` behaviour)
+    value_expr <- rlang::enquo(value_column)
+    row_expr <- rlang::enquo(row)
+    column_expr <- rlang::enquo(column)
+
+    if (rlang::quo_is_null(value_expr)) value_expr <- rlang::sym("treatments")
+    if (rlang::quo_is_null(row_expr)) row_expr <- rlang::sym("row")
+    if (rlang::quo_is_null(column_expr)) column_expr <- rlang::sym("col")
+
+    value_name <- rlang::quo_name(value_expr)
+    row_name <- rlang::quo_name(row_expr)
+    col_name <- rlang::quo_name(column_expr)
+
     # Check required columns
-    required_cols <- c("row", "col", value_column)
-    missing_cols <- setdiff(required_cols, names(design_df))
+    required_cols <- c(row_name, col_name, value_name)
+    missing_cols <- setdiff(required_cols, names(design))
     if (length(missing_cols) > 0) {
         stop("Missing required columns: ", paste(missing_cols, collapse = ", "))
     }
 
-    # Sort by row then column to ensure correct order
-    design_sorted <- design_df[order(design_df$row, design_df$col), ]
+    row_vals <- design[[row_name]]
+    col_vals <- design[[col_name]]
 
-    # Get dimensions
-    max_row <- max(design_df$row)
-    max_col <- max(design_df$col)
+    as_int_coord <- function(x, nm) {
+        if (is.factor(x)) x <- as.character(x)
+        suppressWarnings(out <- as.integer(x))
+        if (anyNA(out)) {
+            stop("Column '", nm, "' must be coercible to integer coordinates.", call. = FALSE)
+        }
+        out
+    }
 
-    # Create matrix using vectorized approach
-    layout_matrix <- matrix(design_sorted[[value_column]],
-                            nrow = max_row,
-                            ncol = max_col,
-                            byrow = TRUE)
+    row_vals_i <- as_int_coord(row_vals, row_name)
+    col_vals_i <- as_int_coord(col_vals, col_name)
+
+    row_levels <- sort(unique(row_vals_i))
+    col_levels <- sort(unique(col_vals_i))
+
+    row_idx <- match(row_vals_i, row_levels)
+    col_idx <- match(col_vals_i, col_levels)
+
+    # Detect duplicate coordinates to avoid silent overwrites
+    coord_key <- paste(row_idx, col_idx, sep = ":")
+    if (any(duplicated(coord_key))) {
+        stop("Duplicate row/column coordinate pairs detected.", call. = FALSE)
+    }
+
+    layout_matrix <- matrix(NA, nrow = length(row_levels), ncol = length(col_levels))
+    layout_matrix[cbind(row_idx, col_idx)] <- design[[value_name]]
 
     # Convert to data frame
     layout_df <- as.data.frame(layout_matrix)
 
     # Add meaningful row and column names
-    rownames(layout_df) <- paste("Row", 1:max_row)
-    colnames(layout_df) <- paste("Col", 1:max_col)
+    rownames(layout_df) <- paste("Row", row_levels)
+    colnames(layout_df) <- paste("Col", col_levels)
 
     # Create workbook and add worksheets
     wb <- openxlsx2::wb_workbook()$
@@ -107,7 +142,7 @@ export_design_to_excel <- function(design_df, value_column = "treatments",
 
     # Write data
     wb$add_data(sheet = "Layout", x = layout_df, rowNames = TRUE)
-    wb$add_data(sheet = "Raw_Data", x = design_df)
+    wb$add_data(sheet = "Raw_Data", x = design)
 
     # Get dimensions for formatting
     rows <- nrow(layout_df) + 1
@@ -133,7 +168,7 @@ export_design_to_excel <- function(design_df, value_column = "treatments",
     # Apply colour coding if palette is specified
     if (!is.null(palette)) {
         # Match `autoplot.design()` treatment ordering to keep colours consistent
-        trt_values <- as.character(design_df[[value_column]])
+        trt_values <- as.character(design[[value_name]])
         has_buffers <- "buffer" %in% trt_values
 
         if (has_buffers) {
