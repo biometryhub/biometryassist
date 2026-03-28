@@ -1287,3 +1287,47 @@ test_that("find_package warns when no compatible build exists", {
     )
     expect_null(result)
 })
+
+test_that("find_package matches ARM entries when manifest arm is a string", {
+    # Force the non-logical arm parsing branch:
+    # s <- tolower(as.character(x_arm)); arm_val <- s %in% c("true", "t", "1")
+    manifest <- list(packages = list(
+        list(slug = "mac-14-44-arm", os = "mac", os_ver = "14",
+             r_ver = "44", arm = "TRUE", asr_ver = "4.2.0", url = "x"),
+        list(slug = "mac-14-44", os = "mac", os_ver = "14",
+             r_ver = "44", arm = "FALSE", asr_ver = "4.2.0", url = "y")
+    ))
+
+    os_ver <- list(os = "mac", os_ver = "mac-16-44-arm",
+                   os_major = "16", ver = "44", arm = TRUE)
+    result <- find_package(manifest, os_ver)
+    expect_equal(result$slug, "mac-14-44-arm")
+})
+
+test_that("find_package treats 't' and '1' as ARM=TRUE", {
+    manifest <- list(packages = list(
+        list(slug = "mac-14-44-arm", os = "mac", os_ver = "14",
+             r_ver = "44", arm = "t", asr_ver = "4.2.0", url = "x"),
+        list(slug = "mac-15-44-arm", os = "mac", os_ver = "15",
+             r_ver = "44", arm = "1", asr_ver = "4.2.0", url = "y")
+    ))
+
+    os_ver <- list(os = "mac", os_ver = "mac-16-44-arm",
+                   os_major = "16", ver = "44", arm = TRUE)
+    result <- find_package(manifest, os_ver)
+    expect_equal(result$slug, "mac-15-44-arm")
+})
+
+test_that("find_package treats other strings (e.g. '0') as ARM=FALSE", {
+    manifest <- list(packages = list(
+        list(slug = "mac-14-44", os = "mac", os_ver = "14",
+             r_ver = "44", arm = "0", asr_ver = "4.2.0", url = "x"),
+        list(slug = "mac-15-44-arm", os = "mac", os_ver = "15",
+             r_ver = "44", arm = "true", asr_ver = "4.2.0", url = "y")
+    ))
+
+    os_ver <- list(os = "mac", os_ver = "mac-16-44",
+                   os_major = "16", ver = "44", arm = FALSE)
+    result <- find_package(manifest, os_ver)
+    expect_equal(result$slug, "mac-14-44")
+})

@@ -623,6 +623,33 @@ test_that("Test that aov works when using Error() to including experimental desi
     expect_equal(is.matrix(pred.aov$df), TRUE)
 })
 
+test_that("get_predictions.aovlist errors when classify is not in model terms", {
+    load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+
+    oats.aov <- aov(yield ~ Variety*Nitrogen + Error(Blocks/Wplots), data = dat)
+
+    expect_error(
+        get_predictions.aovlist(model.obj = oats.aov, classify = "NotATerm"),
+        "NotATerm is not a term in the model"
+    )
+})
+
+test_that("get_predictions.listof delegates to get_predictions.aovlist", {
+    load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+
+    oats.aov <- aov(yield ~ Variety*Nitrogen + Error(Blocks/Wplots), data = dat)
+    pred.aov <- get_predictions.aovlist(model.obj = oats.aov, classify = "Nitrogen")
+
+    # Call the listof method directly to cover the delegation lines without
+    # changing the object's class order (which can affect emmeans dispatch).
+    pred.listof <- get_predictions.listof(model.obj = oats.aov, classify = "Nitrogen")
+
+    expect_equal(pred.listof$predictions$predicted.value, pred.aov$predictions$predicted.value)
+    expect_equal(pred.listof$ylab, pred.aov$ylab)
+    expect_equal(is.matrix(pred.listof$sed), TRUE)
+    expect_equal(is.matrix(pred.listof$df), TRUE)
+})
+
 # check that predictions from asreml are the same as a aovlist object
 test_that("Test that asreml provides the same results as multi-stratum ANOVA for oats data", {
     skip_if_not_installed("asreml")

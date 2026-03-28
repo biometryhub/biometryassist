@@ -34,8 +34,104 @@ test_that("export_design_to_excel works with renamed row/column coordinates", {
 test_that("export_design_to_excel errors if required columns are missing", {
     skip_if_not_installed("openxlsx2")
     df <- data.frame(row = 1:2, treatments = c("A", "B"))
-    expect_error(export_design_to_excel(df, value_column = "treatments"),
+    expect_error(export_design_to_excel(df, value_column = treatments),
                  "Missing required columns")
+})
+
+test_that("export_design_to_excel correctly handles factor row/col coordinates", {
+    skip_if_not_installed("openxlsx2")
+
+    # Factors that look numeric should be treated as their labels, not their
+    # internal integer codes (i.e., "10"/"20" -> 10/20, not 1/2).
+    df <- data.frame(
+        row = factor(rep(c("10", "20"), each = 2)),
+        col = factor(rep(c("1", "2"), times = 2)),
+        treatments = c("A", "B", "C", "D")
+    )
+
+    layout <- withr::with_tempfile("tmpfile", fileext = ".xlsx", {
+        out <- NULL
+        expect_message(
+            out <- export_design_to_excel(
+                df,
+                value_column = "treatments",
+                filename = tmpfile,
+                palette = NULL
+            ),
+            "Excel file saved as: "
+        )
+        expect_true(file.exists(tmpfile))
+        out
+    })
+
+    expect_equal(dim(layout), c(2, 2))
+    expect_equal(rownames(layout), c("Row 10", "Row 20"))
+    expect_equal(colnames(layout), c("Col 1", "Col 2"))
+})
+
+test_that("export_design_to_excel errors when row/col are not coercible to integer", {
+    # This failure happens before any openxlsx2 calls; stub the installed check
+    # so we can exercise the coordinate coercion error path even when openxlsx2
+    # isn't present.
+    mockery::stub(export_design_to_excel, "rlang::is_installed", function(pkg) TRUE)
+
+    df <- data.frame(
+        row = factor(c("A", "B")),
+        col = factor(c("1", "2")),
+        treatments = c("Trt1", "Trt2")
+    )
+
+    expect_error(
+        export_design_to_excel(df, value_column = "treatments", palette = NULL),
+        "Column 'row' must be coercible to integer coordinates\\."
+    )
+})
+
+test_that("export_design_to_excel errors on duplicate row/column coordinate pairs", {
+    # This error happens before any openxlsx2 calls; stub the installed check so
+    # the test can run even if openxlsx2 isn't installed.
+    mockery::stub(export_design_to_excel, "rlang::is_installed", function(pkg) TRUE)
+
+    df <- data.frame(
+        row = c(1, 1, 2),
+        col = c(1, 1, 1),
+        treatments = c("A", "B", "C")
+    )
+
+    expect_error(
+        export_design_to_excel(df, value_column = "treatments", palette = NULL),
+        "Duplicate row/column coordinate pairs detected\\."
+    )
+})
+
+test_that("export_design_to_excel supports numeric value_column (creates numeric layout)", {
+    skip_if_not_installed("openxlsx2")
+
+    df <- data.frame(
+        row = c(1, 1, 2),
+        col = c(1, 2, 1),
+        y = c(10, 20, 30)
+    )
+
+    layout <- withr::with_tempfile("tmpfile", fileext = ".xlsx", {
+        out <- NULL
+        expect_message(
+            out <- export_design_to_excel(
+                df,
+                value_column = "y",
+                filename = tmpfile,
+                palette = NULL
+            ),
+            "Excel file saved as: "
+        )
+        expect_true(file.exists(tmpfile))
+        out
+    })
+
+    expect_s3_class(layout, "data.frame")
+    expect_equal(dim(layout), c(2, 2))
+    expect_type(layout[[1]], "double")
+    expect_true(is.na(layout[2, 2]))
 })
 
 test_that("export_design_to_excel works with a list input", {
@@ -84,6 +180,46 @@ test_that("export_design_to_excel uses custom palette", {
         )
         expect_true(file.exists(tmpfile))
     })
+})
+
+test_that("export_design_to_excel handles buffer treatments (ntrt excludes buffer)", {
+    skip_if_not_installed("openxlsx2")
+    skip_if_not_installed("stringi")
+
+    df <- data.frame(
+        row = rep(1:2, each = 2),
+        col = rep(1:2, 2),
+        treatments = c("Trt2", "buffer", "Trt10", "Trt1")
+    )
+
+    expected_ntrt <- length(unique(df$treatments[df$treatments != "buffer"]))
+
+    captured <- new.env(parent = emptyenv())
+    mockery::stub(
+        export_design_to_excel,
+        "setup_colour_palette",
+        function(palette, ntrt) {
+            captured$ntrt <- ntrt
+            rep("#FF0000", ntrt)
+        }
+    )
+
+    withr::with_tempfile("tmpfile", fileext = ".xlsx", {
+        expect_message(
+            expect_invisible(
+                export_design_to_excel(
+                    df,
+                    value_column = "treatments",
+                    filename = tmpfile,
+                    palette = "default"
+                )
+            ),
+            "Excel file saved as: "
+        )
+        expect_true(file.exists(tmpfile))
+    })
+
+    expect_equal(captured$ntrt, expected_ntrt)
 })
 
 test_that("function fails gracefully when openxlsx2 is not available", {

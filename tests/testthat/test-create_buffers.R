@@ -72,6 +72,64 @@ test_that("create_buffers adds block buffers correctly", {
   expect_equal(nrow(out), nrow(unique(out[c("row", "col")])))
 })
 
+test_that("create_buffers adds internal block buffers along column boundaries", {
+  # Two blocks split left/right to force a column boundary.
+  design <- data.frame(
+    row = rep(1:2, each = 2),
+    col = rep(1:2, times = 2),
+    treatments = paste0("T", seq_len(4)),
+    block = c(1, 2, 1, 2)
+  )
+
+  out <- create_buffers(design, type = "block", blocks = TRUE)
+
+  expect_true(any(out$treatments == "buffer"))
+  # Internal boundary buffers should have NA block values
+  expect_true(any(out$treatments == "buffer" & is.na(out$block)))
+  # Column boundary insertion should expand columns
+  expect_true(max(out$col) > max(design$col))
+  # No duplicated row/col coordinates
+  expect_equal(nrow(out), nrow(unique(out[c("row", "col")])) )
+})
+
+test_that("create_buffers handles pure column boundary (1x2 grid)", {
+  # Minimal case: one row, two columns, different blocks left/right.
+  # Guarantees col_boundary_gaps is non-empty (hits col_gap_counts[...] <- 1L).
+  design <- data.frame(
+    row = c(1, 1),
+    col = c(1, 2),
+    treatments = c("A", "B"),
+    block = c(1, 2)
+  )
+
+  out <- create_buffers(design, type = "block", blocks = TRUE)
+
+  expect_true(any(out$treatments == "buffer"))
+  expect_true(any(out$treatments == "buffer" & is.na(out$block)))
+  expect_true(max(out$col) > max(design$col))
+  expect_equal(nrow(out), nrow(unique(out[c("row", "col")])) )
+})
+
+test_that("create_buffers returns design unchanged when no internal boundaries", {
+  # All plots are in the same block; there are no internal boundaries, so
+  # buffers_rc is empty and the function returns early.
+  design <- data.frame(
+    row = rep(1:2, each = 2),
+    col = rep(1:2, times = 2),
+    treatments = c("A", "B", "C", "D"),
+    block = 1
+  )
+
+  out <- create_buffers(design, type = "block", blocks = TRUE)
+
+  expect_false(any(out$treatments == "buffer"))
+  expect_equal(out$row, design$row)
+  expect_equal(out$col, design$col)
+  expect_equal(out$block, design$block)
+  expect_true(is.factor(out$treatments))
+  expect_true("buffer" %in% levels(out$treatments))
+})
+
 test_that("create_buffers adds double/entire/full block buffers (numeric block)", {
   # 4 blocks arranged in a 2x2 grid to exercise both:
   # - blocks on the outer edge (gap_k < row_min_all/col_min_all branches)
