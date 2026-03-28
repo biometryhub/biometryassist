@@ -125,8 +125,17 @@ export_design_to_excel <- function(design,
         stop("Duplicate row/column coordinate pairs detected.", call. = FALSE)
     }
 
-    layout_matrix <- matrix(NA, nrow = length(row_levels), ncol = length(col_levels))
-    layout_matrix[cbind(row_idx, col_idx)] <- design[[value_name]]
+    value_vals <- design[[value_name]]
+    if (is.factor(value_vals)) {
+        value_vals <- as.character(value_vals)
+    }
+
+    layout_matrix <- if (is.character(value_vals)) {
+        matrix(NA_character_, nrow = length(row_levels), ncol = length(col_levels))
+    } else {
+        matrix(NA, nrow = length(row_levels), ncol = length(col_levels))
+    }
+    layout_matrix[cbind(row_idx, col_idx)] <- value_vals
 
     # Convert to data frame
     layout_df <- as.data.frame(layout_matrix)
@@ -203,7 +212,10 @@ export_design_to_excel <- function(design,
             for (j in 2:cols) {
                 cell_value <- layout_df[i - 1, j - 1, drop = TRUE]
                 if (!is.na(cell_value)) {
-                    colour <- colour_map[[as.character(cell_value)]]
+                    colour <- unname(colour_map[as.character(cell_value)])
+                    if (is.na(colour)) {
+                        next
+                    }
                     cell_ref <- paste0(int2col(j), i)
 
                     # Apply fill color
