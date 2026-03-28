@@ -31,6 +31,37 @@ test_that("export_design_to_excel works with renamed row/column coordinates", {
     expect_equal(layout[2, 3], "A")
 })
 
+test_that("export_design_to_excel defaults value/row/col when NULL is passed", {
+    skip_if_not_installed("openxlsx2")
+
+    df <- data.frame(
+        row = rep(1:2, each = 2),
+        col = rep(1:2, 2),
+        treatments = c("A", "B", "C", "D")
+    )
+
+    layout <- withr::with_tempfile("tmpfile", fileext = ".xlsx", {
+        out <- NULL
+        expect_message(
+            out <- export_design_to_excel(
+                df,
+                value_column = NULL,
+                row = NULL,
+                column = NULL,
+                filename = tmpfile,
+                palette = NULL
+            ),
+            "Excel file saved as: "
+        )
+        expect_true(file.exists(tmpfile))
+        out
+    })
+
+    expect_equal(dim(layout), c(2, 2))
+    expect_equal(layout[1, 1], "A")
+    expect_equal(layout[2, 2], "D")
+})
+
 test_that("export_design_to_excel errors if required columns are missing", {
     skip_if_not_installed("openxlsx2")
     df <- data.frame(row = 1:2, treatments = c("A", "B"))
