@@ -1274,6 +1274,24 @@ test_that("find_package uses exact match for Windows", {
     expect_equal(result$slug, "win-44")
 })
 
+test_that("find_package warns and returns NULL when Windows slug has no exact match", {
+    # Windows has no OS major component, so it should not attempt fallback
+    # matching: it should immediately return(warn_no_build()).
+    manifest <- list(packages = list(
+        list(slug = "win-44", os = "win", os_ver = NULL,
+             r_ver = "44", arm = FALSE, asr_ver = "4.2.0", url = "x")
+    ))
+
+    os_ver <- list(os = "win", os_ver = "win-99",
+                   os_major = NULL, ver = "99", arm = FALSE)
+
+    expect_warning(
+        result <- find_package(manifest, os_ver),
+        "No ASReml-R build found"
+    )
+    expect_null(result)
+})
+
 test_that("find_package warns when no compatible build exists", {
     manifest <- list(packages = list(
         list(slug = "ubuntu-22-44", os = "ubuntu", os_ver = "22",

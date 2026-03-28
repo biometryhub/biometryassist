@@ -23,7 +23,7 @@ test_that("export_design_to_excel works with renamed row/column coordinates", {
     )
 
     expect_message(
-        layout <- export_design_to_excel(df, value_column = "treatments", row = lane, column = range),
+        layout <- export_design_to_excel(df, row = lane, column = range),
         "Excel file saved as: experimental_design.xlsx"
     )
     expect_equal(dim(layout), c(2, 3))
@@ -220,6 +220,39 @@ test_that("export_design_to_excel handles buffer treatments (ntrt excludes buffe
     })
 
     expect_equal(captured$ntrt, expected_ntrt)
+})
+
+test_that("export_design_to_excel skips colouring when palette returns NA", {
+    skip_if_not_installed("openxlsx2")
+    skip_if_not_installed("stringi")
+
+    # Force the colour lookup to be NA so the `next` branch is taken.
+    mockery::stub(
+        export_design_to_excel,
+        "setup_colour_palette",
+        function(palette, ntrt) rep(NA_character_, ntrt)
+    )
+
+    df <- data.frame(
+        row = 1,
+        col = 1,
+        treatments = "A"
+    )
+
+    withr::with_tempfile("tmpfile", fileext = ".xlsx", {
+        expect_message(
+            expect_invisible(
+                export_design_to_excel(
+                    df,
+                    value_column = "treatments",
+                    filename = tmpfile,
+                    palette = "default"
+                )
+            ),
+            "Excel file saved as: "
+        )
+        expect_true(file.exists(tmpfile))
+    })
 })
 
 test_that("function fails gracefully when openxlsx2 is not available", {
