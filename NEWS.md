@@ -10,6 +10,7 @@
 - Fixed Skeletal ANOVA table not showing 2 way interactions for 3 way factorials (#171)
 - Colours are now consistent between the output of designs printed with `autoplot()` and the `export_design_to_excel()` function. (#170)
 - The `export_design_to_excel()` function is now less fragile. It can handle design objects and data frames as input, and alternative names for the row and column columns. (#168 and #172)
+- Fixed a bug where asreml models didn't report the correct number of residual points in `resplot()`. (#167)
 
 
 # biometryassist 1.4.0
