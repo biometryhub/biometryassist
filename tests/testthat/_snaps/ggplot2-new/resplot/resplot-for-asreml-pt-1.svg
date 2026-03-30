@@ -305,7 +305,7 @@
 <text transform='translate(183.92,368.55) rotate(-90)' text-anchor='middle' style='font-size: 10.00px; font-family: sans;' textLength='100.63px' lengthAdjust='spacingAndGlyphs'>Standardised Residual</text>
 <text x='173.43' y='270.91' text-anchor='middle' style='font-size: 10.00px; font-family: sans;' textLength='7.22px' lengthAdjust='spacingAndGlyphs'>C</text>
 <text x='379.09' y='521.17' text-anchor='middle' style='font-size: 9.96px; font-family: sans;' textLength='189.86px' lengthAdjust='spacingAndGlyphs'>Shapiro-Wilk normality test p-value: 0.0474</text>
-<text x='379.09' y='549.44' text-anchor='middle' style='font-size: 8.54px; font-family: sans;' textLength='238.45px' lengthAdjust='spacingAndGlyphs'>The residuals do not appear to be normally distributed. (n = 40)</text>
+<text x='379.09' y='549.44' text-anchor='middle' style='font-size: 8.54px; font-family: sans;' textLength='238.45px' lengthAdjust='spacingAndGlyphs'>The residuals do not appear to be normally distributed. (n = 39)</text>
 <text x='10.46' y='14.56' style='font-size: 13.20px; font-family: sans;' textLength='132.80px' lengthAdjust='spacingAndGlyphs'>Resplot for asreml pt 1</text>
 </g>
 </svg>
