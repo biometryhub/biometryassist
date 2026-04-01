@@ -1,10 +1,11 @@
 ---
 title: "biometryassist: an R package to aid the design and analysis of agronomic-style experiments"
 tags:
-  - Python
-  - astronomy
-  - dynamics
-  - galactic dy
+  - R
+  - experimental design
+  - linear mixed models
+  - reproducible research
+  - professional development
 authors:
   - name: Sam Rogers
     orcid: 0000-0000-0000-0000
