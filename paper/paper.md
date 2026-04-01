@@ -1,0 +1,155 @@
+---
+affiliations:
+- index: 1
+  name: Biometry Hub, University of Adelaide, Australia
+authors:
+- affiliation: 1
+  corresponding: true
+  equal-contrib: true
+  name: Sam Rogers
+  orcid: 0000-0000-0000-0000
+- affiliation: 1
+  equal-contrib: true
+  name: Sharon Nielsen
+- affiliation: 1
+  name: Annie Conway
+bibliography: paper.bib
+date: 2025-06-17
+tags:
+- R
+- experimental design
+- linear mixed models
+- reproducible research
+- professional development
+title: "biometryassist: an R package to aid the design and analysis of
+  agronomic-style experiments"
+toc-title: Table of contents
+---
+
+-   [ ] A list of the authors of the software and their affiliations,
+    using the correct format (see the example below).
+-   [ ] A summary describing the high-level functionality and purpose of
+    the software for a diverse, non-specialist audience.
+-   [ ] A Statement of need section that clearly illustrates the
+    research purpose of the software and places it in the context of
+    related work.
+    -   Link to the workshops
+    -   Makes things a lot easier, especially for beginners
+    -   Not only ag, more widely used as well
+-   [ ] A list of key references, including to other software addressing
+    related needs. Note that the references should include full names of
+    venues, e.g., journals and conferences, not abbreviations only
+    understood in the context of a specific discipline.
+-   [ ] Mention (if applicable) a representative set of past or ongoing
+    research projects using the software and recent scholarly
+    publications enabled by it.
+-   [ ] Acknowledgement of any financial support.
+
+# Summary
+
+<!-- A summary describing the high-level functionality and purpose of the software for a diverse, non-specialist audience. -->
+
+Researchers and biometricians working in agriculture often face
+challenges in generating, randomising, and analysing field experiments
+with complex layouts. Designing agricultural experiments that are both
+statistically valid and practical in the field is a complex task, and
+analysing those experiments can be even more challenging.
+
+To assist researchers with practising the concepts taught in our
+biometry training workshops, we developed the *biometryassist* R package
+[@Nielsen2024] to provide easy access to documentation and helper
+functions, together with a companion website, accessible at:
+<https://biometryhub.github.io/biometryassist/>. The package is
+published publicly on the Comprehensive R Archive Network (CRAN), and is
+carefully designed to enhance the user experience of designing and
+analysing agronomic field trials, and to support researchers in their
+projects with best practice statistical techniques.
+
+The biometryassist package is utilised in each workshop of the series,
+and includes explanations and usage examples of the relevant functions
+to aid the participants' understanding of the statistical concepts.
+
+The `biometryassist` package is available on
+[GitHub](https://github.com/biometryhub/biometryassist). All
+instructions for installation and usage can be found in the [package
+documentation website](https://biometryhub.github.io/biometryassist).
+
+# Statement of need
+
+<!-- A Statement of need section that clearly illustrates the research purpose of the software and places it in the context of related work. -->
+<!-- Other related packages -->
+<!-- Not streamlined -->
+<!-- Multiple different packages -->
+
+*biometryassist* arose to reduce the cognitive load on students in
+workshops so that the emphasis was on the statistical concepts and the
+interpretation of the results. In workshop settings, learners are often
+overwhelmed by the need to navigate multiple R packages, each with its
+own conventions and idiosyncrasies, which can detract from understanding
+the underlying statistical concepts and the interpretation of results.
+By standardising syntax across key tasks---such as experimental design,
+model fitting and checking, and the extraction and presentation of
+results - *biometryassist* allows users to focus on methodological
+thinking rather than software mechanics.
+
+The primary target audience includes researchers, agronomists, and
+applied scientists, particularly within the grains industry, who require
+statistically sound analyses but may not have extensive programming
+experience. The package also supports statisticians working in
+collaborative environments by promoting reproducible and consistent
+workflows.
+
+*biometryassist* is not intended to replace existing statistical
+packages. Instead, it brings them together in a way that is easier to
+use and more consistent. This allows researchers to focus on the
+statistical thinking and interpretation, rather than the mechanics of
+the software.
+
+# State of the field
+
+There are packages inside and outside of R that handle experimental
+design (agricolae, dae, edibble), and packages that handle analysis
+(lme4, nlme, ASReml-R, emmeans), but no single package covers the entire
+workflow of designing, analysing, and reporting an agronomic experiment.
+The package *biometryassist* provides this workflow coherence with a
+consistent interface from design through to inference and reporting,
+reducing the cognitive load for new R users and non-statistician
+agronomists.
+
+*biometryassist* was developed as a companion to a workshop series, and
+was therefore built with pedagogical alignment in mind. Terminology and
+function naming mirrors how experimental design and analysis concepts
+are taught, allowing participants to continue using the package
+intuitively in their own projects beyond the workshops. The scope is
+deliberately limited to a few common designs, as users are encouraged to
+seek professional statistical assistance for more complex experiments.
+Where spatial correlation adjustment is required, biometryassist
+currently relies on ASReml-R, as it remains the most practical option
+for fitting spatial models while producing appropriate predicted values;
+the authors intend to incorporate open-source alternatives as they
+mature.
+
+# Software design
+
+The functions within *biometryassist* are grouped into three broad
+categories: design, covering functions to produce typical
+agricultural-style experimental designs, analysis where post-hoc testing
+and model evaluation functions live, and utilities which includes other
+functions such as print methods and helper functions.
+
+The primary users of *biometryassist* are agricultural researchers and
+so each function is designed to minimise the cognitive load for users,
+allowing them to concentrate on core concepts rather than wrestling with
+coding challenges. Function names are deliberately chosen to make their
+purpose clear, for example `design()` or `multiple_comparisons()`,
+enabling users to intuitively understand their purpose. The package is
+supported with comprehensive documentation available on the package
+website at https://biometryhub.github.io/biometryassist.
+
+# Research impact statement
+
+# AI usage disclosure
+
+# Acknowledgements
+
+# References {#references .unnumbered}

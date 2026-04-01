@@ -22,7 +22,7 @@ affiliations:
    index: 1
 date: 17 June 2025
 bibliography: paper.bib
-format: markdown
+format: docx
 ---
 
 - [ ] A list of the authors of the software and their affiliations, using the correct format (see the example below).
@@ -58,18 +58,20 @@ The `biometryassist` package is available on [GitHub](https://github.com/biometr
 <!-- Multiple different packages -->
 
 
-*biometryassist* arose to reduce the cognitive load on students in workshops so that the emphasis was on the statistical concepts and the interpretation of the results. In workshop settings, learners are often overwhelmed by the need to navigate multiple R packages, each with its own conventions and idiosyncrasies, which can detract from understanding the underlying statistical concepts and the interpretation of results. By standardising syntax across key tasks—such as experimental design, model fitting and checking, and the extraction and presentation of results - *biometryassist* allows users to focus on methodological thinking rather than software mechanics.
+*biometryassist* was developed as a companion to a series of biometry workshops, with the aim to reduce the cognitive load on participants so that the emphasis was on the statistical concepts and the interpretation of the results. In workshop settings, learners are often overwhelmed by the need to navigate multiple R packages, each with its own conventions and idiosyncrasies, which can detract from understanding the underlying statistical concepts and the interpretation of results. By standardising syntax across key tasks—such as experimental design, model fitting and checking, and the extraction and presentation of results  *biometryassist* allows users to focus on methodological thinking rather than software mechanics.
 
 The primary target audience includes researchers, agronomists, and applied scientists, particularly within the grains industry, who require statistically sound analyses but may not have extensive programming experience. The package also supports statisticians working in collaborative environments by promoting reproducible and consistent workflows.
 
-*biometryassist* is not intended to replace existing statistical packages. Instead, it brings them together in a way that is easier to use and more consistent. This allows researchers to focus on the statistical thinking and interpretation, rather than the mechanics of the software.
-
 # State of the field
 
+There are packages inside and outside of R that handle experimental design (agricolae, dae, edibble), and packages that handle analysis (lme4, nlme, ASReml-R, emmeans), but no single package covers the entire workflow of designing, analysing, and visualising an agronomic experiment. The package *biometryassist* provides this workflow coherence with a consistent interface from design through to inference and reporting, reducing the cognitive load for new R users and non-statistician agronomists. It also reduces the requirement of learning and installing multiple packages.
 
-There are packages inside and outside of R that handle experimental design (agricolae, dae, edibble), and packages that handle analysis (lme4, nlme, ASReml-R, emmeans), but no single package covers the entire workflow of designing, analysing, and reporting an agronomic experiment. The package *biometryassist* provides this workflow coherence with a consistent interface from design through to inference and reporting, reducing the cognitive load for new R users and non-statistician agronomists.
+<!-- *biometryassist* was developed as a companion to a workshop series, and was therefore built with pedagogical alignment in mind. Terminology and function naming mirrors how experimental design and analysis concepts are taught, allowing participants to continue using the package intuitively in their own projects beyond the workshops. -->
 
-*biometryassist* was developed as a companion to a workshop series, and was therefore built with pedagogical alignment in mind. Terminology and function naming mirrors how experimental design and analysis concepts are taught, allowing participants to continue using the package intuitively in their own projects beyond the workshops. The scope is deliberately limited to a few common designs, as users are encouraged to seek professional statistical assistance for more complex experiments. Where spatial correlation adjustment is required, biometryassist currently relies on ASReml-R, as it remains the most practical option for fitting spatial models while producing appropriate predicted values; the authors intend to incorporate open-source alternatives as they mature.
+The functions in biometryassist are compatible with many of the existing packages for analysis. *biometryassist* is not intended to replace existing statistical packages. Instead, it brings them together in a way that is easier to use and more consistent. This allows researchers to focus on the statistical thinking and interpretation, rather than the mechanics of the software. The scope is deliberately limited to a few common designs, as users are encouraged to seek professional statistical assistance for more complex experiments. 
+
+
+<!-- Where spatial correlation adjustment is required, biometryassist currently relies on ASReml-R, as it remains the most practical option for fitting spatial models while producing appropriate predicted values; the authors intend to incorporate open-source alternatives as they mature. -->
 
 # Software design
 
