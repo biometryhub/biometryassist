@@ -140,6 +140,11 @@ add_buffers <- function(design_obj, type) {
 
     # Create buffers and update the design dataframe
     design_obj$design <- create_buffers(design_obj$design, type, blocks = has_blocks)
+    
+    # Regenerate the plot with the updated design including buffers
+    if("plot.des" %in% names(design_obj)) {
+        design_obj$plot.des <- autoplot(design_obj)
+    }
 
     return(design_obj)
 }

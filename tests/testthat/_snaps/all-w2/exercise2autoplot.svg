@@ -89,12 +89,12 @@
 <polyline points='429.66,543.02 429.66,540.28 ' style='stroke-width: 1.07; stroke: #333333; stroke-linecap: butt;' />
 <polyline points='539.22,543.02 539.22,540.28 ' style='stroke-width: 1.07; stroke: #333333; stroke-linecap: butt;' />
 <polyline points='648.78,543.02 648.78,540.28 ' style='stroke-width: 1.07; stroke: #333333; stroke-linecap: butt;' />
-<text transform='translate(107.03,551.57) rotate(-90)' text-anchor='middle' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='12.23px' lengthAdjust='spacingAndGlyphs'>KC</text>
-<text transform='translate(216.59,551.57) rotate(-90)' text-anchor='middle' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='11.74px' lengthAdjust='spacingAndGlyphs'>PE</text>
-<text transform='translate(326.15,551.57) rotate(-90)' text-anchor='middle' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='11.25px' lengthAdjust='spacingAndGlyphs'>HL</text>
-<text transform='translate(435.72,551.57) rotate(-90)' text-anchor='middle' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='12.71px' lengthAdjust='spacingAndGlyphs'>CN</text>
-<text transform='translate(545.28,551.57) rotate(-90)' text-anchor='middle' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='12.23px' lengthAdjust='spacingAndGlyphs'>HE</text>
-<text transform='translate(654.84,551.57) rotate(-90)' text-anchor='middle' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='12.23px' lengthAdjust='spacingAndGlyphs'>CP</text>
+<text transform='translate(104.00,545.21) rotate(-90)' text-anchor='end' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='12.23px' lengthAdjust='spacingAndGlyphs'>KC</text>
+<text transform='translate(213.56,545.21) rotate(-90)' text-anchor='end' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='11.74px' lengthAdjust='spacingAndGlyphs'>PE</text>
+<text transform='translate(323.13,545.21) rotate(-90)' text-anchor='end' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='11.25px' lengthAdjust='spacingAndGlyphs'>HL</text>
+<text transform='translate(432.69,545.21) rotate(-90)' text-anchor='end' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='12.71px' lengthAdjust='spacingAndGlyphs'>CN</text>
+<text transform='translate(542.25,545.21) rotate(-90)' text-anchor='end' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='12.23px' lengthAdjust='spacingAndGlyphs'>HE</text>
+<text transform='translate(651.81,545.21) rotate(-90)' text-anchor='end' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='12.23px' lengthAdjust='spacingAndGlyphs'>CP</text>
 <text transform='translate(13.05,281.53) rotate(-90)' text-anchor='middle' style='font-size: 11.00px; font-family: sans;' textLength='73.98px' lengthAdjust='spacingAndGlyphs'>Predicted Time</text>
 <text x='35.24' y='14.56' style='font-size: 13.20px; font-family: sans;' textLength='103.48px' lengthAdjust='spacingAndGlyphs'>exercise2autoplot</text>
 </g>

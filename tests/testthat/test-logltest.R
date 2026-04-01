@@ -1,7 +1,7 @@
 load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
 
 test_that("function works", {
-    skip_if_not(.check_package_available("asreml"))
+    skip_if_not(rlang::is_installed("asreml"))
     quiet(library(asreml))
     oats.logl <- logl_test(model.obj = model.asr, rand.terms = c("Blocks", "Blocks:Wplots"),
                            resid.terms = c("ar1(Row)", "ar1(Column)"), decimals = 5, quiet = TRUE)
@@ -23,7 +23,7 @@ test_that("logltest gives an error on different model type", {
 })
 
 test_that("logltest gives an error on different model type", {
-    skip_if_not(.check_package_available("asreml"))
+    skip_if_not(rlang::is_installed("asreml"))
     quiet(library(asreml))
     expect_error(logl_test(model.asr),
                  "At least one of rand\\.terms or resid\\.terms must be provided\\.")
@@ -31,7 +31,7 @@ test_that("logltest gives an error on different model type", {
 
 
 test_that("logl_test works with random terms only", {
-    skip_if_not(.check_package_available("asreml"))
+    skip_if_not(rlang::is_installed("asreml"))
     quiet(library(asreml))
 
     expect_silent({
@@ -44,7 +44,7 @@ test_that("logl_test works with random terms only", {
 })
 
 test_that("logl_test works with residual terms only", {
-    skip_if_not(.check_package_available("asreml"))
+    skip_if_not(rlang::is_installed("asreml"))
     quiet(library(asreml))
 
     expect_silent({
@@ -56,7 +56,7 @@ test_that("logl_test works with residual terms only", {
 })
 
 test_that("logl_test works with both random and residual terms", {
-    skip_if_not(.check_package_available("asreml"))
+    skip_if_not(rlang::is_installed("asreml"))
     quiet(library(asreml))
 
     expect_silent({
@@ -72,7 +72,7 @@ test_that("logl_test works with both random and residual terms", {
 })
 
 test_that("logl_test returns numeric p-values when numeric = TRUE", {
-    skip_if_not(.check_package_available("asreml"))
+    skip_if_not(rlang::is_installed("asreml"))
     quiet(library(asreml))
 
     result <- logl_test(model.obj = model.asr, rand.terms = c("Blocks"), numeric = TRUE)
@@ -80,7 +80,7 @@ test_that("logl_test returns numeric p-values when numeric = TRUE", {
 })
 
 # test_that("logl_test handles small p-values with numeric = FALSE", {
-#     skip_if_not(.check_package_available("asreml"))
+#     skip_if_not(rlang::is_installed("asreml"))
 #     quiet(library(asreml))
 #
 #     result <- logl_test(model.obj = model.asr, resid.terms = c("ar1(Row)"), decimals = 2, numeric = FALSE)
@@ -89,13 +89,13 @@ test_that("logl_test returns numeric p-values when numeric = TRUE", {
 # })
 
 test_that("logl_test throws error for non-asreml model", {
-    skip_if_not(.check_package_available("asreml"))
+    skip_if_not(rlang::is_installed("asreml"))
     expect_error(logl_test(model.obj = lm(Sepal.Length ~ Species, data = iris), rand.terms = "Species"),
                  "Only asreml models are supported")
 })
 
 test_that("logl_test throws error when both term lists are NULL", {
-    skip_if_not(.check_package_available("asreml"))
+    skip_if_not(rlang::is_installed("asreml"))
     quiet(library(asreml))
 
     expect_error(logl_test(model.obj = model.asr),

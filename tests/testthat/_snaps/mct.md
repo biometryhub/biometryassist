@@ -1,5 +1,11 @@
 # Testing asreml predictions
 
+    Multiple Comparisons of Means: Tukey's HSD Test
+    Significance level: 0.05 
+    HSD value: varies by comparison (see $hsd)
+     
+    
+    Predicted values:
       Nitrogen predicted.value std.error groups    ci    low     up
     1    0_cwt           77.76      6.93      a 14.02  63.74  91.79
     2  0.2_cwt          100.15      6.90      b 13.96  86.20 114.11
@@ -8,6 +14,11 @@
 
 # save produces output
 
+    Multiple Comparisons of Means: Tukey's HSD Test
+    Significance level: 0.05 
+    HSD value: 0.0969097 
+    
+    Predicted values:
          Species predicted.value std.error  df groups   ci  low   up
     1     setosa            0.25      0.03 147      a 0.06 0.19 0.30
     2 versicolor            1.33      0.03 147      b 0.06 1.27 1.38
@@ -19,6 +30,12 @@
 
 # mct handles aliased results in asreml with a warning
 
+    Multiple Comparisons of Means: Tukey's HSD Test
+    Significance level: 0.05 
+    HSD value: varies by comparison (see $hsd)
+     
+    
+    Predicted values:
        Nitrogen     Variety predicted.value std.error groups    ci    low     up
     1     0_cwt     Victory           70.69      8.80      a 17.92  52.77  88.61
     2     0_cwt Golden_rain           77.41      8.82     ab 17.96  59.45  95.37
@@ -36,6 +53,12 @@
 
 ---
 
+    Multiple Comparisons of Means: Tukey's HSD Test
+    Significance level: 0.05 
+    HSD value: varies by comparison (see $hsd)
+     
+    
+    Predicted values:
        Nitrogen     Variety predicted.value std.error groups    ci    low     up
     1     0_cwt     Victory           70.17      9.28      a 18.90  51.27  89.08
     2     0_cwt Golden_rain           72.86      9.22      a 18.78  54.08  91.64

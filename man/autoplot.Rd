@@ -29,6 +29,7 @@ autoplot(object, ...)
   column = NULL,
   block = NULL,
   treatments = NULL,
+  legend = TRUE,
   ...
 )
 }
@@ -60,6 +61,8 @@ autoplot(object, ...)
 \item{block}{A variable to plot a column from \code{object} as blocks.}
 
 \item{treatments}{A variable to plot a column from \code{object} as treatments.}
+
+\item{legend}{Logical (default \code{TRUE}). If \code{TRUE}, displays the legend for treatment colours.}
 }
 \value{
 A \code{ggplot2} object.

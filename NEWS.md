@@ -1,9 +1,48 @@
+# biometryassist 1.4.0
+
+## Major changes
+
+- Deprecated `des_info()`. This function has been superseded by `design()`, and will be removed in a future version.
+- Implement `arcsin` transformation handling in `multiple_comparisons()` (#60).
+- Demonstrated how to add orientation information to design plots via a vignette (#126).
+- Major refactoring of `design()` in preparation for moving to a new backend later (#102). No user-facing changes.
+- Added strip-plot designs (#134).
+- Enabled output of p-value matrix from `multiple_comparisons()`. This required changing the `multiple_comparisons()` output object to a list, but printing to console and autoplot(<multiple_comparisons>) still work as before (#22).  
+
+## Minor changes
+
+- Add interval type 'none' for `multiple_comparisons()` (#125).
+- Added a print method for `satab()` to reliably get the same output (#133).
+- Switched from cowplot to patchwork to speed up resplot (and variogram) (#29).
+- Added and refactored numerous tests throughout to achieve 100% test coverage and speed up tests (#104, #143, #144, #135, #148)
+- Added asreml downloads for more operating systems and versions (#158).
+
+## Bug Fixes
+
+- Fixed a bug where hex colours don't work with `export_design_to_excel()` (#124).
+- Fixed a bug where buffers weren't added to the plot if they are added after initial design creation (#123).
+- Fixed a bug in `install_asreml()` where it threw an error with more than one new version (#122).
+- Fixed a bug where calculate_differences clashed with package "MuMIn" (#131).
+
+# biometryassist 1.3.3
+
+## Bug Fixes
+
+- Fixing test issues identified by CRAN after ggplot2 4.0.0 release
+
+# biometryassist 1.3.2
+
+## Bug Fixes
+
+- Updates to tests and histograms for compatibility with upcoming ggplot2 release.
+- Fixed a bug where standard errors that were too small would produce plots with missing upper or lower confidence limits due to rounding the SE to zero. (#119)
+- Fixed a bug that made rotated axis labels overlap the plot area (#113)
+
 # biometryassist 1.3.1
 
 ## Bug Fixes
 
-- Update to ensure compatability with upcoming ggplot2 release (#111)
-
+- Update to ensure compatibility with upcoming ggplot2 release (#111)
 
 # biometryassist 1.3.0
 

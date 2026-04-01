@@ -9,7 +9,7 @@
 \arguments{
 \item{x}{An mct object to print to the console.}
 
-\item{...}{Other arguments}
+\item{...}{Other arguments passed to print.data.frame}
 }
 \value{
 The original object invisibly.
