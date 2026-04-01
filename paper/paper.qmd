@@ -61,17 +61,17 @@ The *biometryassist* package evolved from a collection of R scripts originally d
 
 # State of the field
 
-The functions within *biometryassist* are grouped into three broad categories: design, analysis and utilities. Each function is designed to minimise the cognitive load on workshop participants, allowing them to concentrate on core concepts rather than wrestling with coding challenges. Function names are deliberately chosen to make their purpose clear, enabling users to intuitively understand their function. The functions are explained briefly below, with examples of use given in the explanation of the individual workshops. 
+
 
 # Software design
+
+The functions within *biometryassist* are grouped into three broad categories: design, covering functions to produce typical agricultural-style experimental designs, analysis where post-hoc testing and model evaluation functions live, and utilities which includes other functions such as print methods and helper functions.
+
+The primary users of *biometryassist* are agricultural researchers and so each function is designed to minimise the cognitive load for users, allowing them to concentrate on core concepts rather than wrestling with coding challenges. Function names are deliberately chosen to make their purpose clear, for example `design()` or `multiple_comparisons()`, enabling users to intuitively understand their purpose. The package is supported with comprehensive documentation available on the package website at https://biometryhub.github.io/biometryassist.
 
 # Research impact statement
 
 # AI usage disclosure
-
-# Citations
-
-Mention (if applicable) a representative set of past or ongoing research projects using the software and recent scholarly publications enabled by it.
 
 # Acknowledgements
 
