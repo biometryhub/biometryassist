@@ -59,9 +59,15 @@ The `biometryassist` package is available on [GitHub](https://github.com/biometr
 
 The *biometryassist* package evolved from a collection of R scripts originally distributed to workshop participants as individual files, initially via USB flash drive, and then internet download. These scripts allowed attendees to run analyses and apply concepts taught in the workshops without the need to write all scripts themselves. However, as the workshops grew in scope and frequency, maintaining version consistency and ensuring that all participants had access to the latest, most stable code became increasingly challenging. Additionally, the need for more detailed, accessible documentation became apparent, as each script required explanation to support participants' understanding. To address these issues, we consolidated the scripts into a cohesive package, *biometryassist*, which combines well-organised functions to streamline design and analysis pipelines and comprehensive documentation in a publicly available software library. This transition from standalone scripts to a package format has improved reliability and usability, enabling participants to focus more effectively on learning the material rather than managing code dependencies and troubleshooting. When learners can focus more on the concepts than the code, it builds their confidence and lets them fill in their mental models of the statistical process [@Wilson2019, p.7; @Onofri2014a].
 
-# Package Features or Functionality
+# State of the field
 
 The functions within *biometryassist* are grouped into three broad categories: design, analysis and utilities. Each function is designed to minimise the cognitive load on workshop participants, allowing them to concentrate on core concepts rather than wrestling with coding challenges. Function names are deliberately chosen to make their purpose clear, enabling users to intuitively understand their function. The functions are explained briefly below, with examples of use given in the explanation of the individual workshops. 
+
+# Software design
+
+# Research impact statement
+
+# AI usage disclosure
 
 # Citations
 
