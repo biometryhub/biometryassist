@@ -20,9 +20,9 @@ test_that("get_predictions.asreml uses provided pred.obj when supplied", {
             status = c("Estimable", "Estimable", "Estimable", "Estimable")
         ),
         sed = matrix(c(NA, 7, 8, 9,
-                      7, NA, 8, 9,
-                      8, 8, NA, 9,
-                      9, 9, 9, NA), nrow = 4, ncol = 4)
+                       7, NA, 8, 9,
+                       8, 8, NA, 9,
+                       9, 9, 9, NA), nrow = 4, ncol = 4)
     )
 
     # Mock the asreml functions to ensure they're NOT called when pred.obj is provided
@@ -68,9 +68,9 @@ test_that("get_predictions.asreml generates predictions when pred.obj is NULL", 
             status = c("Estimable", "Estimable", "Estimable", "Estimable")
         ),
         sed = matrix(c(NA, 7, 8, 9,
-                      7, NA, 8, 9,
-                      8, 8, NA, 9,
-                      9, 9, 9, NA), nrow = 4, ncol = 4)
+                       7, NA, 8, 9,
+                       8, 8, NA, 9,
+                       9, 9, 9, NA), nrow = 4, ncol = 4)
     )
 
     # Mock the asreml functions
@@ -165,8 +165,8 @@ test_that("get_predictions.asreml errors when all predicted values are aliased",
             status = c("Aliased", "Aliased", "Aliased")
         ),
         sed = matrix(c(NA, NA, NA,
-                      NA, NA, NA,
-                      NA, NA, NA), nrow = 3, ncol = 3)
+                       NA, NA, NA,
+                       NA, NA, NA), nrow = 3, ncol = 3)
     )
 
     # Mock the asreml functions
@@ -203,8 +203,8 @@ test_that("get_predictions.asreml errors when all std.errors are NA but predicte
             status = c("Aliased", "Aliased", "Aliased")
         ),
         sed = matrix(c(NA, NA, NA,
-                      NA, NA, NA,
-                      NA, NA, NA), nrow = 3, ncol = 3)
+                       NA, NA, NA,
+                       NA, NA, NA), nrow = 3, ncol = 3)
     )
 
     # Mock the asreml functions
@@ -241,9 +241,9 @@ test_that("get_predictions.asreml handles partial aliasing correctly", {
             status = c("Estimable", "Estimable", "Aliased", "Estimable")
         ),
         sed = matrix(c(NA, 7, 8, 9,
-                      7, NA, 8, 9,
-                      8, 8, NA, 9,
-                      9, 9, 9, NA), nrow = 4, ncol = 4)
+                       7, NA, 8, 9,
+                       8, 8, NA, 9,
+                       9, 9, 9, NA), nrow = 4, ncol = 4)
     )
 
     # Mock the asreml functions
@@ -304,8 +304,8 @@ test_that("get_predictions.asreml passes additional arguments to predict.asreml"
 
     # Call with additional arguments
     result <- get_predictions.asreml(mock_model, classify = "Nitrogen",
-                                    present = c("Nitrogen", "Blocks"),
-                                    aliasing.scheme = TRUE)
+                                     present = c("Nitrogen", "Blocks"),
+                                     aliasing.scheme = TRUE)
 
     # Verify additional arguments were passed through
     call_args <- mockery::mock_args(mock_predict)[[1]]
@@ -335,8 +335,8 @@ test_that("get_predictions.asreml uses provided dendf when supplied in args", {
             status = c("Estimable", "Estimable", "Estimable")
         ),
         sed = matrix(c(NA, 7, 8,
-                      7, NA, 8,
-                      8, 8, NA), nrow = 3, ncol = 3)
+                       7, NA, 8,
+                       8, 8, NA), nrow = 3, ncol = 3)
     )
 
     # Create custom dendf data frame
@@ -384,8 +384,8 @@ test_that("get_predictions.asreml uses residual df when classify not found in wa
             status = c("Estimable", "Estimable", "Estimable")
         ),
         sed = matrix(c(NA, 7, 8,
-                      7, NA, 8,
-                      8, 8, NA), nrow = 3, ncol = 3)
+                       7, NA, 8,
+                       8, 8, NA), nrow = 3, ncol = 3)
     )
 
     # Mock wald output that doesn't include Blocks (since it's a random term)
@@ -482,10 +482,10 @@ test_that("get_predictions.asreml handles multiple aliased values with plural wa
             status = c("Estimable", "Estimable", "Aliased", "Estimable", "Aliased")
         ),
         sed = matrix(c(NA, 7, 8, 9, 10,
-                      7, NA, 8, 9, 10,
-                      8, 8, NA, 9, 10,
-                      9, 9, 9, NA, 10,
-                      10, 10, 10, 10, NA), nrow = 5, ncol = 5)
+                       7, NA, 8, 9, 10,
+                       8, 8, NA, 9, 10,
+                       9, 9, 9, NA, 10,
+                       10, 10, 10, 10, NA), nrow = 5, ncol = 5)
     )
 
     # Mock the asreml functions
@@ -589,4 +589,122 @@ test_that("check_classify_in_terms works correctly", {
     # Wrong number of components doesn't match
     model_terms2 <- c("A", "B", "A:B")
     expect_error(check_classify_in_terms("A:B:C", model_terms2), "not a term in the model")
+})
+
+test_that("Testing asreml predictions", {
+    skip_if_not_installed("Matrix")
+    load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
+    expect_warning(output <- multiple_comparisons(model.asr,
+                                                  classify = "Nitrogen",
+                                                  pred.obj = pred.asr,
+                                                  dendf = dendf),
+                   "Argument `pred\\.obj` has been deprecated and will be removed in a future version\\. Predictions are now performed internally in the function\\.")
+    expect_equal(output$predictions$predicted.value,
+                 c(77.76, 100.15, 114.41, 123.23),
+                 tolerance = 5e-2)
+    expect_snapshot_output(output)
+    vdiffr::expect_doppelganger("asreml predictions", autoplot(output))
+})
+
+test_that("Test that aov works when using Error() to including experimental design terms", {
+    load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+    oats.aov <- aov(yield ~ Variety*Nitrogen + Error(Blocks/Wplots), data=dat)
+    pred.aov <- get_predictions.aovlist(model.obj=oats.aov, classify="Nitrogen")
+
+
+    expect_equal(pred.aov$predictions$predicted.value ,c(79.389, 98.889, 114.222, 123.389),
+                 tolerance = 5e-2)
+    expect_equal(mean(pred.aov$sed, na.rm=TRUE) , 4.436,
+                 tolerance = 5e-2)
+    expect_equal(mean(pred.aov$df, na.rm=TRUE) , 45,
+                 tolerance = 5e-2)
+    # sed and df should be matrices for aovlist objects
+    expect_equal(is.matrix(pred.aov$sed), TRUE)
+    expect_equal(is.matrix(pred.aov$df), TRUE)
+})
+
+test_that("get_predictions.aovlist errors when classify is not in model terms", {
+    load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+
+    oats.aov <- aov(yield ~ Variety*Nitrogen + Error(Blocks/Wplots), data = dat)
+
+    expect_error(
+        get_predictions.aovlist(model.obj = oats.aov, classify = "NotATerm"),
+        "NotATerm is not a term in the model"
+    )
+})
+
+test_that("get_predictions.listof delegates to get_predictions.aovlist", {
+    load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+
+    oats.aov <- aov(yield ~ Variety*Nitrogen + Error(Blocks/Wplots), data = dat)
+    pred.aov <- get_predictions.aovlist(model.obj = oats.aov, classify = "Nitrogen")
+
+    # Call the listof method directly to cover the delegation lines without
+    # changing the object's class order (which can affect emmeans dispatch).
+    pred.listof <- get_predictions.listof(model.obj = oats.aov, classify = "Nitrogen")
+
+    expect_equal(pred.listof$predictions$predicted.value, pred.aov$predictions$predicted.value)
+    expect_equal(pred.listof$ylab, pred.aov$ylab)
+    expect_equal(is.matrix(pred.listof$sed), TRUE)
+    expect_equal(is.matrix(pred.listof$df), TRUE)
+})
+
+# check that predictions from asreml are the same as a aovlist object
+test_that("Test that asreml provides the same results as multi-stratum ANOVA for oats data", {
+    skip_if_not_installed("asreml")
+    load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+    library(asreml)
+    oats.asr <- asreml(yield ~ Variety*Nitrogen,
+                       random =~ Blocks/Wplots,
+                       residual =~ units,
+                       data = dat, trace = FALSE)
+    pred.asr <- get_predictions.asreml(model.obj=oats.asr, classify="Nitrogen")
+    expect_equal(pred.asr$predictions$predicted.value ,c(79.389, 98.889, 114.222, 123.389),
+                 tolerance = 5e-2)
+    sed_mat <- as.matrix(pred.asr$sed)
+    expect_equal(mean(sed_mat, na.rm=TRUE) , 4.436,
+                 tolerance = 5e-2)
+    expect_equal(pred.asr$df , 45)
+    # These should be false for asreml objects
+    expect_equal(is.matrix(pred.asr$sed), FALSE)
+    expect_equal(class(pred.asr$sed)[1], "dspMatrix")
+    # This will result of very slight differences in the sed values for
+    #   predictions where the denominator df is not the same for all comparisons
+    expect_equal(is.matrix(pred.asr$df), FALSE)
+})
+
+# check that predictions from asreml are the same as a aovlist object
+test_that("Test that lmer provides the same results as multi-stratum ANOVA for oats data", {
+    skip_if_not_installed("lme4")
+    load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+    oats.lme <- lme4::lmer(yield ~ Variety*Nitrogen + (1| Blocks/Wplots),
+                           data=dat)
+    pred.lme <- get_predictions.lmerMod(model.obj=oats.lme, classify="Nitrogen")
+    expect_equal(pred.lme$predictions$predicted.value ,c(79.389, 98.889, 114.222, 123.389),
+                 tolerance = 5e-2)
+    expect_equal(mean(pred.lme$sed, na.rm=TRUE) , 4.436,
+                 tolerance = 5e-2)
+    expect_equal(mean(pred.lme$df, na.rm=TRUE), 45)
+    # sed and df should be matrices for lme objects
+    expect_equal(is.matrix(pred.lme$sed), TRUE)
+    expect_equal(is.matrix(pred.lme$df), TRUE)
+})
+
+# check that predictions from asreml are the same as a aovlist object
+test_that("Test that lmerTest provides the same results as multi-stratum ANOVA for oats data", {
+    load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+    skip_if_not_installed("lme4")
+    skip_if_not_installed("lmerTest")
+    oats.lmet <- lmerTest::lmer(yield ~ Variety*Nitrogen + (1| Blocks/Wplots),
+                                data=dat)
+    pred.lmet <- get_predictions.lmerModLmerTest(model.obj=oats.lmet, classify="Nitrogen")
+    expect_equal(pred.lmet$predictions$predicted.value ,c(79.389, 98.889, 114.222, 123.389),
+                 tolerance = 5e-2)
+    expect_equal(mean(pred.lmet$sed, na.rm=TRUE) , 4.436,
+                 tolerance = 5e-2)
+    expect_equal(mean(pred.lmet$df, na.rm=TRUE), 45)
+    # sed and df should be matrices for lme objects
+    expect_equal(is.matrix(pred.lmet$sed), TRUE)
+    expect_equal(is.matrix(pred.lmet$df), TRUE)
 })

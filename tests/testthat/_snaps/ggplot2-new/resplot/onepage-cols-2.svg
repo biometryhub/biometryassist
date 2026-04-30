@@ -622,7 +622,7 @@
 </g>
 <g clip-path='url(#cpMC4wMHw3MjAuMDB8MC4wMHw1NzYuMDA=)'>
 <text x='201.83' y='266.64' text-anchor='middle' style='font-size: 9.96px; font-family: sans;' textLength='189.86px' lengthAdjust='spacingAndGlyphs'>Shapiro-Wilk normality test p-value: 0.0474</text>
-<text x='201.83' y='274.00' text-anchor='middle' style='font-size: 8.54px; font-family: sans;' textLength='238.45px' lengthAdjust='spacingAndGlyphs'>The residuals do not appear to be normally distributed. (n = 40)</text>
+<text x='201.83' y='274.00' text-anchor='middle' style='font-size: 8.54px; font-family: sans;' textLength='238.45px' lengthAdjust='spacingAndGlyphs'>The residuals do not appear to be normally distributed. (n = 39)</text>
 </g>
 <g clip-path='url(#cpNS40OHwzNjAuMDB8NS40OHwyODguMDA=)'>
 </g>

@@ -34,67 +34,6 @@ get_anova_structure <- function(design_type, design_book) {
   )
 }
 
-#' ANOVA structure for Strip Plot
-#' @noRd
-anova_strip <- function(design_book) {
-  if (!"block" %in% names(design_book)) {
-    stop("Expected a 'block' column in strip plot design", call. = FALSE)
-  }
-
-  # Treatment columns are the columns that aren't structural columns.
-  structural_cols <- c("plots", "block", "wholeplots", "wplots", "subplots", "splots")
-  trt_cols <- setdiff(names(design_book), structural_cols)
-
-  if (length(trt_cols) != 2) {
-    stop("Expected 2 treatment columns in strip plot design, found ",
-         length(trt_cols), call. = FALSE)
-  }
-
-  trtAname <- trt_cols[1]
-  trtBname <- trt_cols[2]
-
-  r <- n_unique(design_book$block)
-  a <- n_unique(design_book[[trtAname]])
-  b <- n_unique(design_book[[trtBname]])
-
-  blkdf <- r - 1
-  totdf <- nrow(design_book) - 1
-  trtAdf <- a - 1
-  trtBdf <- b - 1
-  trtABdf <- trtAdf * trtBdf
-
-  # Typical strip-plot error strata dfs
-  errAdf <- (r - 1) * trtAdf
-  errBdf <- (r - 1) * trtBdf
-  errABdf <- (r - 1) * trtABdf
-
-  list(
-    sources = c(
-      "Block stratum",
-      trtAname, paste0(trtAname, " Residual"),
-      trtBname, paste0(trtBname, " Residual"),
-      paste(trtAname, trtBname, sep = ":"),
-      "Interaction Residual",
-      "Total"
-    ),
-    df = c(
-      blkdf,
-      trtAdf, errAdf,
-      trtBdf, errBdf,
-      trtABdf,
-      errABdf,
-      totdf
-    ),
-    strata = list(
-      block = 1,
-      stripA = 2:3,
-      stripB = 4:5,
-      interaction = 6:7
-    ),
-    names = c(trtAname, trtBname)
-  )
-}
-
 #' ANOVA structure for CRD
 #' @noRd
 anova_crd <- function(design_book) {
@@ -162,16 +101,23 @@ anova_factorial_crd <- function(design_book) {
     n_unique(design_book[[name]]) - 1
   })
 
-  # Interaction df
-  interaction_name <- paste(trt_names, collapse = ":")
-  interaction_df <- prod(trtdf)
+  # Add all interaction terms (2-way up to N-way)
+  interaction_sources <- character(0)
+  interaction_dfs <- numeric(0)
+  if (length(trt_names) >= 2) {
+    for (k in 2:length(trt_names)) {
+      cmb <- utils::combn(trt_names, k, simplify = FALSE)
+      interaction_sources <- c(interaction_sources, vapply(cmb, function(x) paste(x, collapse = ":"), character(1)))
+      interaction_dfs <- c(interaction_dfs, vapply(cmb, function(x) prod(trtdf[x]), numeric(1)))
+    }
+  }
 
   # Residual df
-  errdf <- totdf - sum(trtdf) - interaction_df
+  errdf <- totdf - sum(trtdf) - sum(interaction_dfs)
 
   list(
-    sources = c(trt_names, interaction_name, "Residual", "Total"),
-    df = c(trtdf, interaction_df, errdf, totdf),
+    sources = c(trt_names, interaction_sources, "Residual", "Total"),
+    df = c(trtdf, interaction_dfs, errdf, totdf),
     strata = NULL
   )
 }
@@ -196,17 +142,24 @@ anova_factorial_rcbd <- function(design_book) {
     n_unique(design_book[[name]]) - 1
   })
 
-  # Interaction df
-  interaction_name <- paste(trt_names, collapse = ":")
-  interaction_df <- prod(trtdf)
+  # Add all interaction terms (2-way up to N-way)
+  interaction_sources <- character(0)
+  interaction_dfs <- numeric(0)
+  if (length(trt_names) >= 2) {
+    for (k in 2:length(trt_names)) {
+      cmb <- utils::combn(trt_names, k, simplify = FALSE)
+      interaction_sources <- c(interaction_sources, vapply(cmb, function(x) paste(x, collapse = ":"), character(1)))
+      interaction_dfs <- c(interaction_dfs, vapply(cmb, function(x) prod(trtdf[x]), numeric(1)))
+    }
+  }
 
   # Residual df
-  errdf <- totdf - sum(trtdf) - interaction_df - blkdf
+  errdf <- totdf - sum(trtdf) - sum(interaction_dfs) - blkdf
 
   list(
-    sources = c("Block stratum", trt_names, interaction_name, "Residual", "Total"),
-    df = c(blkdf, trtdf, interaction_df, errdf, totdf),
-    strata = list(block = 1, main = 2:(2 + length(trtdf) + 1))
+    sources = c("Block stratum", trt_names, interaction_sources, "Residual", "Total"),
+    df = c(blkdf, trtdf, interaction_dfs, errdf, totdf),
+    strata = list(block = 1, main = 2:(2 + length(trtdf) + length(interaction_dfs) + 1))
   )
 }
 
@@ -232,16 +185,23 @@ anova_factorial_lsd <- function(design_book) {
     n_unique(design_book[[name]]) - 1
   })
 
-  # Interaction df
-  interaction_name <- paste(trt_names, collapse = ":")
-  interaction_df <- prod(trtdf)
+  # Add all interaction terms (2-way up to N-way)
+  interaction_sources <- character(0)
+  interaction_dfs <- numeric(0)
+  if (length(trt_names) >= 2) {
+    for (k in 2:length(trt_names)) {
+      cmb <- utils::combn(trt_names, k, simplify = FALSE)
+      interaction_sources <- c(interaction_sources, vapply(cmb, function(x) paste(x, collapse = ":"), character(1)))
+      interaction_dfs <- c(interaction_dfs, vapply(cmb, function(x) prod(trtdf[x]), numeric(1)))
+    }
+  }
 
   # Residual df
-  errdf <- totdf - sum(trtdf) - interaction_df - rowdf - coldf
+  errdf <- totdf - sum(trtdf) - sum(interaction_dfs) - rowdf - coldf
 
   list(
-    sources = c("Row", "Column", trt_names, interaction_name, "Residual", "Total"),
-    df = c(rowdf, coldf, trtdf, interaction_df, errdf, totdf),
+    sources = c("Row", "Column", trt_names, interaction_sources, "Residual", "Total"),
+    df = c(rowdf, coldf, trtdf, interaction_dfs, errdf, totdf),
     strata = NULL
   )
 }
@@ -258,7 +218,7 @@ anova_split <- function(design_book) {
 
   # Find subplots column (could be 'subplots' or 'splots')
   subplot_col <- intersect(c("subplots", "splots"), names(design_book))
-  
+
   if (length(subplot_col) == 0) {
     stop("Cannot find subplot column in design book", call. = FALSE)
   }
@@ -300,6 +260,68 @@ anova_split <- function(design_book) {
   )
 }
 
+#' ANOVA structure for Strip Plot
+#' @noRd
+anova_strip <- function(design_book) {
+  if (!"block" %in% names(design_book)) {
+    stop("Expected a 'block' column in strip plot design", call. = FALSE)
+  }
+
+  # Treatment columns are the columns that aren't structural columns.
+  structural_cols <- c("plots", "block", "wholeplots", "wplots", "subplots", "splots")
+  trt_cols <- setdiff(names(design_book), structural_cols)
+
+  if (length(trt_cols) != 2) {
+    stop("Expected 2 treatment columns in strip plot design, found ",
+         length(trt_cols), call. = FALSE)
+  }
+
+  trtAname <- trt_cols[1]
+  trtBname <- trt_cols[2]
+
+  r <- n_unique(design_book$block)
+  a <- n_unique(design_book[[trtAname]])
+  b <- n_unique(design_book[[trtBname]])
+
+  blkdf <- r - 1
+  totdf <- nrow(design_book) - 1
+  trtAdf <- a - 1
+  trtBdf <- b - 1
+  trtABdf <- trtAdf * trtBdf
+
+  # Typical strip-plot error strata dfs
+  errAdf <- (r - 1) * trtAdf
+  errBdf <- (r - 1) * trtBdf
+  errABdf <- (r - 1) * trtABdf
+
+  list(
+    sources = c(
+      "Block stratum",
+      trtAname, paste0(trtAname, " Residual"),
+      trtBname, paste0(trtBname, " Residual"),
+      paste(trtAname, trtBname, sep = ":"),
+      "Interaction Residual",
+      "Total"
+    ),
+    df = c(
+      blkdf,
+      trtAdf, errAdf,
+      trtBdf, errBdf,
+      trtABdf,
+      errABdf,
+      totdf
+    ),
+    strata = list(
+      block = 1,
+      stripA = 2:3,
+      stripB = 4:5,
+      interaction = 6:7
+    ),
+    names = c(trtAname, trtBname)
+  )
+}
+
+
 #' Format SATAB Output
 #'
 #' Creates formatted string output for ANOVA table
@@ -310,6 +332,11 @@ format_satab <- function(anova_structure, design_type) {
     return(format_satab_split(anova_structure))
   }
   else if (design_type == "strip") {
+    return(format_satab_strip(anova_structure))
+  }
+
+  # Special formatting for split plot
+  if (design_type == "strip") {
     return(format_satab_strip(anova_structure))
   }
 
@@ -376,14 +403,13 @@ format_satab_split <- function(anova_structure) {
   return(output)
 }
 
-
-#' Format SATAB for Split Plot (special case)
+#' Format SATAB for Strip Plot (special case)
 #' @noRd
 format_satab_strip <- function(anova_structure) {
   sources <- anova_structure$sources
   df <- anova_structure$df
   names <- anova_structure$names
-  
+
   # Determine width based on df magnitude
   width1 <- ifelse(df[1] > 9, 44, 45)
   width2 <- ifelse(df[2] > 9, 35, 36)
@@ -393,7 +419,7 @@ format_satab_strip <- function(anova_structure) {
   width6 <- ifelse(df[6] > 9, 35, 36)
   width7 <- ifelse(df[7] > 9, 44, 45)
   width8 <- ifelse(df[8] > 9, 44, 45)
-  
+
   output <- c(
     paste0(format("Source of Variation", width = 45), "df", "\n"),
     "==================================================\n",
@@ -413,7 +439,7 @@ format_satab_strip <- function(anova_structure) {
     "==================================================\n",
     paste0(format("Total", width = width8), df[8], "\n")
   )
-  
+
   class(output) <- c("satab", class(output))
   return(output)
 }

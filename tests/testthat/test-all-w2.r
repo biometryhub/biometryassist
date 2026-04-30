@@ -1,5 +1,5 @@
 # Load pre-computed models once for reuse across tests
-quiet(load(test_path("data", "w2_models.Rdata"), envir = .GlobalEnv))
+suppressWarnings(load(test_path("data", "w2_models.Rdata"), envir = .GlobalEnv))
 
 test_that("example 1 works", {
     skip_on_cran()

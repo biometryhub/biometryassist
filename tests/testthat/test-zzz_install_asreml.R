@@ -1,14 +1,14 @@
 test_that("get_r_os returns correct structure and values", {
     result <- get_r_os()
     expect_type(result, "list")
-    expect_named(result, c("os_ver", "os", "ver", "arm"))
+    expect_named(result, c("os_ver", "os", "os_major", "ver", "arm"))
 
     # Check OS detection
     sys_info <- Sys.info()
     expected_os <- switch(sys_info[["sysname"]],
                           Windows = "win",
                           Darwin = "mac",
-                          Linux = detect_linux()$os)
+                          Linux = map_linux_target(detect_linux()))
     expect_equal(result$os, expected_os)
     expect_match(result$ver, "\\d{2}")  # Should be something like "43" for R 4.3
     if (sys_info[["sysname"]] == "Windows") {
@@ -38,8 +38,9 @@ test_that("detect_linux parses ubuntu base OS and major version", {
 
     out <- detect_linux()
     expect_type(out, "list")
-    expect_named(out, c("os", "major"))
-    expect_equal(out$os, "ubuntu")
+    expect_named(out, c("id", "like", "major"))
+    expect_equal(out$id, "pop")
+    expect_equal(out$like, c("ubuntu", "debian"))
     expect_equal(out$major, "22")
 })
 
@@ -59,7 +60,8 @@ test_that("detect_linux parses rhel base OS from ID_LIKE", {
     mockery::stub(detect_linux, "readLines", mock_read_lines)
 
     out <- detect_linux()
-    expect_equal(out$os, "rhel")
+    expect_equal(out$id, "centos")
+    expect_equal(out$like, c("fedora", "rhel"))
     expect_equal(out$major, "8")
 })
 
@@ -78,7 +80,7 @@ test_that("detect_linux falls back to ID when ID_LIKE is missing or not ubuntu/r
     mockery::stub(detect_linux, "readLines", mock_read_lines)
 
     out <- detect_linux()
-    expect_equal(out$os, "alpine")
+    expect_equal(out$id, "alpine")
     expect_equal(out$major, "3")
 })
 
@@ -97,7 +99,7 @@ test_that("detect_linux returns NA major when VERSION_ID is non-numeric", {
     mockery::stub(detect_linux, "readLines", mock_read_lines)
 
     out <- detect_linux()
-    expect_equal(out$os, "debian")
+    expect_equal(out$id, "debian")
     expect_true(is.na(out$major))
 })
 
@@ -108,6 +110,23 @@ test_that("detect_linux errors when os-release cannot be found", {
 
     mockery::stub(detect_linux, "file.exists", mock_file_exists)
     expect_error(detect_linux(), "Cannot detect Linux OS")
+})
+
+test_that("map_linux_target maps known distro IDs", {
+    expect_equal(map_linux_target(list(id = "rocky",  like = character())), "rocky")
+    expect_equal(map_linux_target(list(id = "centos", like = character())), "centos")
+})
+
+test_that("map_linux_target maps rhel/redhat variants to redhat", {
+    expect_equal(map_linux_target(list(id = "rhel", like = character())), "redhat")
+    expect_equal(map_linux_target(list(id = "redhat", like = character())), "redhat")
+    expect_equal(map_linux_target(list(id = "redhatenterpriseserver", like = character())), "redhat")
+})
+
+test_that("map_linux_target maps RHEL-compatible clones to redhat", {
+    expect_equal(map_linux_target(list(id = "alma", like = character())), "redhat")
+    expect_equal(map_linux_target(list(id = "scientific", like = character())), "redhat")
+    expect_equal(map_linux_target(list(id = "oracle", like = character())), "redhat")
 })
 
 test_that("get_r_os constructs windows key including R version", {
@@ -131,7 +150,7 @@ test_that("get_r_os constructs linux key including distro, major, R version, and
         c(sysname = "Linux", machine = "x86_64")
     }
     mock_detect_linux <- function() {
-        list(os = "ubuntu", major = "22")
+        list(id = "ubuntu", like = "debian", major = "22")
     }
 
     mockery::stub(get_r_os, "Sys.info", mock_sys_info)
@@ -156,7 +175,7 @@ test_that("get_r_os constructs debian key without distro major when missing (R-d
         c(sysname = "Linux", machine = "x86_64")
     }
     mock_detect_linux <- function() {
-        list(os = "debian", major = NA_character_)
+        list(id = "debian", like = character(), major = NA_character_)
     }
 
     mockery::stub(get_r_os, "Sys.info", mock_sys_info)
@@ -176,27 +195,19 @@ test_that("get_r_os constructs debian key without distro major when missing (R-d
 })
 
 test_that("get_r_os constructs mac key including mac major version and optional -arm", {
-    called <- new.env(parent = emptyenv())
-    called$sw_vers <- FALSE
-
     mock_sys_info <- function() {
         c(sysname = "Darwin", machine = "x86_64")
     }
-    mock_system <- function(command, intern = FALSE, ...) {
-        if (identical(command, "sw_vers -productVersion") && isTRUE(intern)) {
-            called$sw_vers <- TRUE
-            return("14.3.1")
-        }
-        stop("Unexpected system() call in test")
+    mock_detect_macos <- function() {
+        list(os = "mac", major = "14")
     }
 
     mockery::stub(get_r_os, "Sys.info", mock_sys_info)
-    mockery::stub(get_r_os, "system", mock_system)
+    mockery::stub(get_r_os, "detect_macos", mock_detect_macos)
     mockery::stub(get_r_os, "get_r_version_compact", function() "44")
     mockery::stub(get_r_os, "is_arm", function() FALSE)
 
     out <- get_r_os()
-    expect_true(called$sw_vers)
     expect_equal(out$os, "mac")
     expect_equal(out$ver, "44")
     expect_false(out$arm)
@@ -208,6 +219,28 @@ test_that("get_r_os constructs mac key including mac major version and optional 
     expect_equal(out_arm$os_ver, "mac-14-44-arm")
 })
 
+test_that("detect_macos calls sw_vers and parses major version", {
+    called <- list(command = NULL, intern = NULL)
+
+    mock_system <- function(command, intern = FALSE, ...) {
+        called$command <<- command
+        called$intern <<- intern
+        "14.2.1"
+    }
+
+    mockery::stub(detect_macos, "system", mock_system)
+
+    out <- detect_macos()
+    expect_equal(called$command, "sw_vers -productVersion")
+    expect_true(called$intern)
+    expect_equal(out, list(os = "mac", major = "14"))
+})
+
+test_that("detect_macos handles two-digit majors (e.g. 10.15.7)", {
+    mockery::stub(detect_macos, "system", function(...) "10.15.7")
+    expect_equal(detect_macos(), list(os = "mac", major = "10"))
+})
+
 test_that("get_r_os errors for unsupported operating systems", {
     mock_sys_info <- function() {
         c(sysname = "Solaris", machine = "x86_64")
@@ -217,60 +250,7 @@ test_that("get_r_os errors for unsupported operating systems", {
     mockery::stub(get_r_os, "get_r_version_compact", function() "44")
     mockery::stub(get_r_os, "is_arm", function() FALSE)
 
-    expect_error(get_r_os(), "Unsupported operating system")
-})
-
-test_that("get_version_table cleans table rows then calls parse_version_table", {
-    # This test avoids network access by mocking xml2 + stringi and checking
-    # that NA/empty rows are removed before calling parse_version_table().
-    called <- new.env(parent = emptyenv())
-    called$tables <- NULL
-    called$headers <- NULL
-
-    mock_read_html <- function(url) {
-        structure(list(url = url), class = "mock_html")
-    }
-    mock_xml_find_all <- function(res, xpath) {
-        # Return distinguishable placeholders for headers vs tables.
-        if (identical(xpath, "//h3")) return(structure(list(kind = "h3"), class = "mock_nodes"))
-        if (identical(xpath, "//table")) return(structure(list(kind = "table"), class = "mock_nodes"))
-        stop("Unexpected xpath in test: ", xpath)
-    }
-    mock_xml_text <- function(nodes) {
-        if (inherits(nodes, "mock_nodes") && identical(nodes$kind, "h3")) {
-            return(c("ASReml-R 4.4 (All platforms) - R version 4.4"))
-        }
-        if (inherits(nodes, "mock_nodes") && identical(nodes$kind, "table")) {
-            # Only tables containing "macOS" are kept.
-            return(c("macOS\nrow1\nrow2", "Windows\nrow1\nrow2"))
-        }
-        stop("Unexpected nodes in xml_text mock")
-    }
-    mock_split_fixed <- function(x, sep) {
-        # Simulate table splitting producing NA and empty strings.
-        list(c("headerA", NA_character_, "", "headerB", "rowA"))
-    }
-    mock_parse_version_table <- function(tables, headers) {
-        called$tables <- tables
-        called$headers <- headers
-        data.frame(os = "mac", arm = FALSE, r_ver = "44", asr_ver = "4.4.0", stringsAsFactors = FALSE)
-    }
-
-    mockery::stub(get_version_table, "xml2::read_html", mock_read_html)
-    mockery::stub(get_version_table, "xml2::xml_find_all", mock_xml_find_all)
-    mockery::stub(get_version_table, "xml2::xml_text", mock_xml_text)
-    mockery::stub(get_version_table, "stringi::stri_split_fixed", mock_split_fixed)
-    mockery::stub(get_version_table, "parse_version_table", mock_parse_version_table)
-
-    out <- get_version_table(url = "http://example.com/mock")
-    expect_s3_class(out, "data.frame")
-    expect_true(all(c("os", "arm", "r_ver", "asr_ver") %in% names(out)))
-
-    expect_true(is.list(called$tables))
-    expect_length(called$tables, 1)
-    expect_equal(called$headers, "ASReml-R 4.4 (All platforms) - R version 4.4")
-    expect_false(anyNA(called$tables[[1]]))
-    expect_false(any(called$tables[[1]] == ""))
+    expect_error(get_r_os(), "Unsupported OS")
 })
 
 test_that("find_existing_package works correctly", {
@@ -370,239 +350,84 @@ test_that("manage_file handles different keep_file options", {
     })
 })
 
-test_that("parse_version_table handles edge cases", {
-    # Test with empty input
-    result <- parse_version_table(list(), character(0))
-    expect_null(result)
-
-    # Test with malformed table data
-    bad_tables <- list(c("header1", "header2"))  # Too few columns
-    expect_error(parse_version_table(bad_tables, "ASReml-R 4.2 (All platforms)"))
+test_that("newer_version returns FALSE for empty or missing manifest", {
+    expect_false(newer_version(manifest = NULL))
+    expect_false(newer_version(manifest = list(packages = list())))
 })
 
-test_that("parse_version_table parses dates and derives os/arm/r_ver/asr_ver", {
-    tbl <- c(
-        "Download", "File name", "Date published", "Other",
-        "Windows x64", "asreml_4.2.0.0.zip", "15 March 2023", "x",
-        "macOS arm", "asreml-4.3.0.0.tgz", "15/03/2023", "y",
-        "Ubuntu 22", "asreml_4.4.0.0.tgz", "15 Mar 2023", "z",
-        "Something else", "asreml_4.1.0.0.tgz", "15-03-2023", "w"
+test_that("newer_version returns FALSE when no package matches this OS slug", {
+    manifest <- list(packages = list(list(slug = "win-44", asr_ver = "4.4.0.0", url = "x")))
+    mockery::stub(newer_version, "get_r_os", function() {
+        list(os_ver = "mac-14-44", os = "mac", os_major = "14", ver = "44", arm = FALSE)
+    })
+    expect_warning(
+        result <- newer_version(manifest = manifest),
+        "No ASReml-R build found"
     )
-
-    out <- parse_version_table(
-        tables = list(tbl),
-        headers = "ASReml-R 4.4 (All platforms) - R version 4.4"
-    )
-
-    expect_s3_class(out, "data.frame")
-    expect_true(all(c("os", "arm", "r_ver", "asr_ver") %in% names(out)))
-
-    # Date parsing with multiple formats
-    expect_s3_class(out[["Date published"]], "Date")
-    expect_equal(out[["Date published"]], rep(as.Date("2023-03-15"), 4))
-
-    # OS mapping from Download
-    expect_equal(out$os, c("win", "mac", "linux", "centos"))
-
-    # ARM detection from Download
-    expect_equal(out$arm, c(FALSE, TRUE, FALSE, FALSE))
-
-    # R version derived from header
-    expect_equal(unique(out$r_ver), "44")
-
-    # asreml version derived from file name
-    expect_equal(out$asr_ver, c("4.2.0.0", "4.3.0.0", "4.4.0.0", "4.1.0.0"))
-})
-
-test_that("parse_version_table returns NA Date for missing/blank values", {
-    tbl <- c(
-        "Download", "File name", "Date published", "Other",
-        "Windows x64", "asreml_4.2.0.0.zip", NA_character_, "x",
-        "macOS", "asreml-4.2.0.0.tgz", "", "y",
-        # Non-empty but unparseable date (not in the supported formats)
-        "Ubuntu 22", "asreml_4.2.0.0.tgz", "2023-03-15", "z",
-        "CentOS", "asreml_4.2.0.0.tgz", "   ", "q",
-        "Something else", "asreml_4.2.0.0.tgz", "15 March 2023", "w"
-    )
-
-    out <- parse_version_table(
-        tables = list(tbl),
-        headers = "ASReml-R 4.4 (All platforms) - R version 4.4"
-    )
-
-    expect_s3_class(out[["Date published"]], "Date")
-    expect_equal(out[["Date published"]], as.Date(c(NA, NA, NA, NA, "2023-03-15")))
-})
-
-# Tests that require internet connection (skip on CRAN)
-test_that("get_version_table works with internet", {
-    skip_on_cran()
-    skip_if_not(curl::has_internet(), "No internet connection")
-
-    # Test with default URL
-    result <- get_version_table()
-
-    if(nrow(result) > 0) {
-        expected_cols <- c("os", "arm", "r_ver", "asr_ver")
-        expect_true(all(expected_cols %in% colnames(result)))
-        expect_true(all(result$os %in% c("win", "mac", "linux", "centos")))
-        expect_type(result$arm, "logical")
-    }
-})
-
-test_that("newer_version handles no network gracefully", {
-    skip_on_cran()
-    mockery::stub(newer_version, "get_version_table", function() data.frame())
-    result <- newer_version()
-    expect_type(result, "logical")
     expect_false(result)
 })
 
-test_that("newer_version returns FALSE if online_versions is empty", {
-    mockery::stub(newer_version, "get_version_table", function() data.frame())
-    expect_false(newer_version())
+test_that("newer_version returns TRUE when asreml is not installed (manifest match)", {
+    manifest <- list(packages = list(list(slug = "win-44", asr_ver = "4.4.0.0", url = "x")))
+
+    mockery::stub(newer_version, "get_r_os", function() list(os_ver = "win-44"))
+    mockery::stub(newer_version, "is_installed", function(pkg, ...) FALSE)
+    mockery::stub(newer_version, "packageDescription", function(pkg, ...) {
+        stop("packageDescription() should not be called when asreml is not installed")
+    })
+
+    expect_true(newer_version(manifest = manifest))
 })
 
-test_that("newer_version returns FALSE if no matching OS/version in online_versions", {
-    fake_versions <- data.frame(
-        os = "win", arm = FALSE, r_ver = "43", asr_ver = "4.2.0",
-        `Date published` = as.Date("2023-01-01")
-    )
-    mockery::stub(newer_version, "get_version_table", function() fake_versions)
-    mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
-    expect_false(newer_version())
+test_that("newer_version returns TRUE when available version is newer than installed", {
+    manifest <- list(packages = list(list(slug = "win-44", asr_ver = "4.4.0.0", url = "x")))
+
+    mockery::stub(newer_version, "get_r_os", function() list(os_ver = "win-44"))
+    mockery::stub(newer_version, "is_installed", function(pkg, ...) TRUE)
+    mockery::stub(newer_version, "packageDescription", function(pkg, ...) list(Version = "4.3.0"))
+
+    expect_true(newer_version(manifest = manifest))
 })
 
-test_that("newer_version returns FALSE if installed version is up-to-date", {
-    fake_versions <- data.frame(
-        os = "linux",
-        arm = FALSE,
-        r_ver = "44",
-        asr_ver = "4.2.0",
-        `Date published` = as.Date("2023-01-01"),
-        stringsAsFactors = FALSE
-    )
-    mockery::stub(newer_version, "get_version_table", function() fake_versions)
-    mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
-    mockery::stub(newer_version, "rlang::is_installed", function(pkg) TRUE)
-    mockery::stub(newer_version, "utils::packageDescription", function(pkg) list(Packaged = "2023-01-10", Version = "4.2.0"))
-    expect_false(newer_version())
+test_that("newer_version returns FALSE when installed is up-to-date", {
+    manifest <- list(packages = list(list(slug = "win-44", asr_ver = "4.4.0.0", url = "x")))
+
+    mockery::stub(newer_version, "get_r_os", function() list(os_ver = "win-44"))
+    mockery::stub(newer_version, "is_installed", function(pkg, ...) TRUE)
+    mockery::stub(newer_version, "packageDescription", function(pkg, ...) list(Version = "4.4.0.0"))
+
+    expect_false(newer_version(manifest = manifest))
 })
 
-test_that("newer_version returns TRUE if online version is newer and published > 7 days after installed", {
-    fake_versions <- data.frame(
-        os = "linux", arm = FALSE, r_ver = "44", asr_ver = "4.3.0",
-        Date = as.Date("2023-02-01")
-    )
-    colnames(fake_versions)[5] <- "Date published"
-    mockery::stub(newer_version, "get_version_table", function() fake_versions)
-    mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
-    mockery::stub(newer_version, "rlang::is_installed", function(pkg) TRUE)
-    mockery::stub(newer_version, "utils::packageDescription", function(pkg) list(
-        Packaged = "2023-01-01", Version = "4.2.0"
-    ))
-    expect_true(newer_version())
+test_that("newer_version returns FALSE when installed is newer than manifest", {
+    manifest <- list(packages = list(list(slug = "win-44", asr_ver = "4.4.0.0", url = "x")))
+
+    mockery::stub(newer_version, "get_r_os", function() list(os_ver = "win-44"))
+    mockery::stub(newer_version, "is_installed", function(pkg, ...) TRUE)
+    mockery::stub(newer_version, "packageDescription", function(pkg, ...) list(Version = "4.5.0.0"))
+
+    expect_false(newer_version(manifest = manifest))
 })
 
-test_that("newer_version returns TRUE if asreml is not installed", {
-    fake_versions <- data.frame(
-        os = "linux", arm = FALSE, r_ver = "44", asr_ver = "4.2.0",
-        `Date published` = as.Date("2023-01-01")
-    )
-    colnames(fake_versions)[5] <- "Date published"
-    mockery::stub(newer_version, "get_version_table", function() fake_versions)
-    mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
-    mockery::stub(newer_version, "rlang::is_installed", function(pkg) FALSE)
-    expect_true(newer_version())
+test_that("newer_version treats missing installed Version as 0", {
+    manifest <- list(packages = list(list(slug = "win-44", asr_ver = "4.4.0.0", url = "x")))
+
+    mockery::stub(newer_version, "get_r_os", function() list(os_ver = "win-44"))
+    mockery::stub(newer_version, "is_installed", function(pkg, ...) TRUE)
+    mockery::stub(newer_version, "packageDescription", function(pkg, ...) list(Version = NULL))
+
+    expect_true(newer_version(manifest = manifest))
 })
 
-test_that("newer_version handles missing Packaged or Version gracefully", {
-    fake_versions <- data.frame(
-        os = "linux", arm = FALSE, r_ver = "44", asr_ver = "4.3.0",
-        `Date published` = as.Date("2023-02-01")
-    )
-    colnames(fake_versions)[5] <- "Date published"
-    mockery::stub(newer_version, "get_version_table", function() fake_versions)
-    mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
-    mockery::stub(newer_version, "rlang::is_installed", function(pkg) TRUE)
-    mockery::stub(newer_version, "utils::packageDescription", function(pkg) list(
-        Packaged = NULL, Version = NULL
-    ))
-    expect_true(newer_version())
-})
+test_that("newer_version does not fetch manifest when manifest is supplied", {
+    manifest <- list(packages = list(list(slug = "win-44", asr_ver = "4.4.0.0", url = "x")))
 
-test_that("newer_version handles multiple newer versions correctly", {
-    # Create fake data with multiple versions, including older and newer ones
-    fake_versions <- data.frame(
-        os = c("linux", "linux", "linux", "linux"),
-        arm = c(FALSE, FALSE, FALSE, FALSE),
-        r_ver = c("44", "44", "44", "44"),
-        asr_ver = c("4.1.0", "4.3.0", "4.3.0", "4.2.5"),
-        `Date published` = as.Date(c("2023-01-01", "2023-03-15", "2023-03-01", "2023-02-15")),
-        stringsAsFactors = FALSE
-    )
-    colnames(fake_versions)[5] <- "Date published"
+    mockery::stub(newer_version, "fetch_manifest", function(...) stop("fetch_manifest called"))
+    mockery::stub(newer_version, "get_r_os", function() list(os_ver = "win-44"))
+    mockery::stub(newer_version, "is_installed", function(pkg, ...) FALSE)
 
-    mockery::stub(newer_version, "get_version_table", function() fake_versions)
-    mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
-    mockery::stub(newer_version, "rlang::is_installed", function(pkg) TRUE)
-    mockery::stub(newer_version, "utils::packageDescription", function(pkg) list(
-        Packaged = "2023-01-01", Version = "4.1.0"  # Installed version is older
-    ))
-
-    # Should return TRUE because there are newer versions (4.3.0 > 4.1.0)
-    # and the most recent 4.3.0 (2023-03-15) is > 7 days after installed date (2023-01-01)
-    expect_true(newer_version())
-})
-
-test_that("newer_version selects most recent when multiple versions have same number", {
-    # Test case where there are multiple entries with the same version number
-    # but different publication dates - should select the most recent one
-    fake_versions <- data.frame(
-        os = c("linux", "linux", "linux"),
-        arm = c(FALSE, FALSE, FALSE),
-        r_ver = c("44", "44", "44"),
-        asr_ver = c("4.3.0", "4.3.0", "4.3.0"),
-        `Date published` = as.Date(c("2023-01-01", "2023-01-15", "2023-01-10")),
-        stringsAsFactors = FALSE
-    )
-    colnames(fake_versions)[5] <- "Date published"
-
-    mockery::stub(newer_version, "get_version_table", function() fake_versions)
-    mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
-    mockery::stub(newer_version, "rlang::is_installed", function(pkg) TRUE)
-    mockery::stub(newer_version, "utils::packageDescription", function(pkg) list(
-        Packaged = "2023-01-05", Version = "4.2.0"  # Older version, earlier date
-    ))
-
-    # Should return TRUE because:
-    # 1. Version check: 4.3.0 > 4.2.0 = TRUE
-    # 2. Date check: most recent publication date (2023-01-15) > installed date + 7 days (2023-01-12) = TRUE
-    # 3. Result: TRUE && TRUE = TRUE
-    expect_true(newer_version())
-})
-
-test_that("newer_version returns FALSE when multiple versions exist but none are newer", {
-    # Test case with multiple versions but the installed version is already the newest
-    fake_versions <- data.frame(
-        os = c("linux", "linux", "linux"),
-        arm = c(FALSE, FALSE, FALSE),
-        r_ver = c("44", "44", "44"),
-        asr_ver = c("4.1.0", "4.2.0", "4.1.5"),
-        `Date published` = as.Date(c("2023-01-01", "2023-02-01", "2023-01-15")),
-        stringsAsFactors = FALSE
-    )
-    colnames(fake_versions)[5] <- "Date published"
-
-    mockery::stub(newer_version, "get_version_table", function() fake_versions)
-    mockery::stub(newer_version, "get_r_os", function() list(os = "linux", arm = FALSE, ver = "44"))
-    mockery::stub(newer_version, "rlang::is_installed", function(pkg) TRUE)
-    mockery::stub(newer_version, "utils::packageDescription", function(pkg) list(
-        Packaged = "2023-02-10", Version = "4.2.0"  # Already have the newest version
-    ))
-
-    # Should return FALSE because installed version (4.2.0) is >= newest available (4.2.0)
-    expect_false(newer_version())
+    expect_true(newer_version(manifest = manifest))
+    expect_error(newer_version(), "fetch_manifest called")
 })
 
 test_that("install_asreml handles no internet connection", {
@@ -617,13 +442,36 @@ test_that("install_asreml handles no internet connection", {
 test_that("install_asreml early return when up-to-date", {
     skip_on_cran()
     mockery::stub(install_asreml, "rlang::is_installed", function(pkg) TRUE)
-    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "newer_version", function(...) FALSE)
     mockery::stub(install_asreml, "has_internet", function() TRUE)
     expect_message(
         result <- install_asreml(force = FALSE),
         "already installed"
     )
     expect_true(result)
+})
+
+test_that("install_asreml errors when no build is available for this system", {
+    skip_on_cran()
+
+    withr::with_tempdir({
+        temp_lib <- file.path(getwd(), "test_lib")
+        dir.create(temp_lib, showWarnings = FALSE, recursive = TRUE)
+
+        mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
+        mockery::stub(install_asreml, "rlang::is_installed", function(...) FALSE)
+        mockery::stub(install_asreml, "get_r_os", function() {
+            list(os_ver = "win-44", os = "win", os_major = NULL, ver = "44", arm = FALSE)
+        })
+        mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
+        mockery::stub(install_asreml, "find_package", function(...) NULL)
+
+        expect_error(
+            install_asreml(library = temp_lib, quiet = TRUE, check_version = FALSE),
+            "No ASReml build available for this system\\.",
+            fixed = FALSE
+        )
+    })
 })
 
 test_that("update_asreml calls install_asreml with force=TRUE", {
@@ -699,197 +547,142 @@ test_that("remove_existing_asreml warns gracefully on error", {
     expect_warning(remove_existing_asreml(), "Could not remove existing asreml package")
 })
 
-# Test create_mac_folder (safe to run on any platform)
-test_that("create_mac_folder handles different scenarios", {
-    if(Sys.info()[["sysname"]] == "Darwin") {
-        # On actual macOS, test the real function
-        result <- create_mac_folder()
-        expect_is(result, "logical")
-    } else {
-        # On other platforms, mock Sys.info to simulate Linux
-        mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Linux", release = "5.0"))
-        result <- create_mac_folder()
-        expect_true(result)  # Should return TRUE for non-macOS
-
-        # Now mock Sys.info to simulate macOS and dir.exists to TRUE
-        mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21"))
-        mockery::stub(create_mac_folder, "dir.exists", function(path) TRUE)
-        result <- create_mac_folder()
-        expect_true(result)
-    }
-})
-
 test_that("create_mac_folder returns TRUE on non-macOS systems", {
-    skip_on_cran()
+    mockery::stub(create_mac_folder, "Sys.info",
+                  function() c(sysname = "Linux", release = "5.10"))
+    expect_true(create_mac_folder())
 
-    # Mock Sys.info to return Linux
-    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Linux", release = "5.10"))
-    result <- create_mac_folder()
-    expect_true(result)
-
-    # Mock Sys.info to return Windows
-    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Windows", release = "10.0"))
-    result <- create_mac_folder()
-    expect_true(result)
+    mockery::stub(create_mac_folder, "Sys.info",
+                  function() c(sysname = "Windows", release = "10.0"))
+    expect_true(create_mac_folder())
 })
 
-test_that("create_mac_folder returns TRUE when major release is less than 21", {
-    skip_on_cran()
+test_that("create_mac_folder returns TRUE on macOS older than Big Sur", {
+    mockery::stub(create_mac_folder, "Sys.info",
+                  function() c(sysname = "Darwin", release = "19.6.0"))
+    expect_true(create_mac_folder())
 
-    # macOS Catalina (Darwin 19)
-    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "19.6.0"))
-    result <- create_mac_folder()
-    expect_true(result)
-
-    # macOS Mojave (Darwin 18)
-    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "18.7.0"))
-    result <- create_mac_folder()
-    expect_true(result)
+    mockery::stub(create_mac_folder, "Sys.info",
+                  function() c(sysname = "Darwin", release = "18.7.0"))
+    expect_true(create_mac_folder())
 })
 
 test_that("create_mac_folder returns TRUE when Reprise folder already exists", {
-    skip_on_cran()
+    mockery::stub(create_mac_folder, "Sys.info",
+                  function() c(sysname = "Darwin", release = "21.0.0"))
 
-    # macOS Big Sur or later with existing folder
-    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
-    mockery::stub(create_mac_folder, "dir.exists", function(path) TRUE)
-
-    result <- create_mac_folder()
-    expect_true(result)
-})
-
-test_that("create_mac_folder creates directory successfully on macOS Big Sur+", {
-    skip_on_cran()
-
-    dir_created <- FALSE
-
-    # Mock macOS Big Sur (Darwin 21)
-    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
-    mockery::stub(create_mac_folder, "dir.exists", function(path) dir_created)
-    mockery::stub(create_mac_folder, "dir.create", function(path, recursive) {
-        dir_created <<- TRUE
-        TRUE
+    withr::with_tempdir({
+        test_path <- file.path(getwd(), "Reprise")
+        dir.create(test_path)
+        expect_true(create_mac_folder(reprise_path = test_path))
     })
-
-    result <- create_mac_folder()
-    expect_true(result)
-    expect_true(dir_created)
 })
 
-test_that("create_mac_folder prompts user when dir.create fails and user says Yes", {
+test_that("create_mac_folder returns TRUE on macOS with NA release", {
+    mockery::stub(create_mac_folder, "Sys.info",
+                  function() c(sysname = "Darwin", release = NA))
+    expect_true(create_mac_folder())
+})
+
+test_that("create_mac_folder returns TRUE on macOS with NULL release", {
+    mockery::stub(create_mac_folder, "Sys.info",
+                  function() list(sysname = "Darwin", release = NULL))
+    expect_true(create_mac_folder())
+})
+
+test_that("create_mac_folder creates folder without elevated privileges", {
     skip_on_cran()
 
-    system_called <- FALSE
+    mockery::stub(create_mac_folder, "Sys.info",
+                  function() c(sysname = "Darwin", release = "21.0.0"))
 
-    # Mock macOS Big Sur with failing dir.create
-    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
-    mockery::stub(create_mac_folder, "dir.exists", function(path) FALSE)
-    mockery::stub(create_mac_folder, "dir.create", function(path, recursive) stop("Permission denied"))
-    mockery::stub(create_mac_folder, "readline", function(prompt) "Yes")
-    mockery::stub(create_mac_folder, "Sys.sleep", function(time) NULL)
-    mockery::stub(create_mac_folder, "system", function(command, input) {
-        system_called <<- TRUE
-        0
+    withr::with_tempdir({
+        test_path <- file.path(getwd(), "Reprise")
+        expect_false(dir.exists(test_path))
+        result <- create_mac_folder(reprise_path = test_path)
+        expect_true(result)
+        expect_true(dir.exists(test_path))
     })
-    mockery::stub(create_mac_folder, "askpass::askpass", function(prompt) "password123")
-
-    expect_message(
-        result <- create_mac_folder(),
-        "The ASReml-R package uses Reprise license management"
-    )
-    expect_true(system_called)
 })
 
-test_that("create_mac_folder prompts user with 'Y' response", {
+test_that("create_mac_folder uses osascript when dir.create fails", {
     skip_on_cran()
 
-    system_called <- FALSE
+    osascript_called <- FALSE
 
-    # Mock with user responding 'Y' instead of 'Yes'
-    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
-    mockery::stub(create_mac_folder, "dir.exists", function(path) FALSE)
-    mockery::stub(create_mac_folder, "dir.create", function(path, recursive) stop("Permission denied"))
-    mockery::stub(create_mac_folder, "readline", function(prompt) "Y")
-    mockery::stub(create_mac_folder, "Sys.sleep", function(time) NULL)
-    mockery::stub(create_mac_folder, "system", function(command, input) {
-        system_called <<- TRUE
-        0
+    mockery::stub(create_mac_folder, "Sys.info",
+                  function() c(sysname = "Darwin", release = "21.0.0"))
+    mockery::stub(create_mac_folder, "dir.create",
+                  function(...) stop("Permission denied"))
+
+    withr::with_tempdir({
+        test_path <- file.path(getwd(), "Reprise")
+
+        mockery::stub(create_mac_folder, "system", function(cmd, ...) {
+            osascript_called <<- TRUE
+            dir.create(test_path, recursive = TRUE)
+            0L
+        })
+
+        expect_message(
+            result <- create_mac_folder(reprise_path = test_path),
+            "Administrator privileges are needed"
+        )
+        expect_true(result)
+        expect_true(osascript_called)
+        expect_true(dir.exists(test_path))
     })
-    mockery::stub(create_mac_folder, "askpass::askpass", function(prompt) "password123")
-
-    result <- create_mac_folder()
-    expect_true(system_called)
 })
 
-test_that("create_mac_folder prompts user with lowercase 'yes' response", {
+test_that("create_mac_folder stops with informative error when user cancels osascript", {
     skip_on_cran()
 
-    system_called <- FALSE
+    mockery::stub(create_mac_folder, "Sys.info",
+                  function() c(sysname = "Darwin", release = "21.0.0"))
+    mockery::stub(create_mac_folder, "dir.create",
+                  function(...) stop("Permission denied"))
+    mockery::stub(create_mac_folder, "system",
+                  function(...) 1L)
 
-    # Mock with user responding 'yes' (lowercase)
-    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
-    mockery::stub(create_mac_folder, "dir.exists", function(path) FALSE)
-    mockery::stub(create_mac_folder, "dir.create", function(path, recursive) stop("Permission denied"))
-    mockery::stub(create_mac_folder, "readline", function(prompt) "yes")
-    mockery::stub(create_mac_folder, "Sys.sleep", function(time) NULL)
-    mockery::stub(create_mac_folder, "system", function(command, input) {
-        system_called <<- TRUE
-        0
+    withr::with_tempdir({
+        test_path <- file.path(getwd(), "Reprise")
+        expect_message(
+            expect_error(
+                create_mac_folder(reprise_path = test_path),
+                "Please run the following command in your Terminal"
+            ),
+            "Administrator privileges are needed"
+        )
     })
-    mockery::stub(create_mac_folder, "askpass::askpass", function(prompt) "password123")
-
-    result <- create_mac_folder()
-    expect_true(system_called)
 })
 
-test_that("create_mac_folder stops when user declines to create folder", {
+test_that("create_mac_folder osascript command is correctly formed", {
     skip_on_cran()
 
-    # Mock with user saying No
-    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
-    mockery::stub(create_mac_folder, "dir.exists", function(path) FALSE)
-    mockery::stub(create_mac_folder, "dir.create", function(path, recursive) stop("Permission denied"))
-    mockery::stub(create_mac_folder, "readline", function(prompt) "No")
+    captured_cmd <- NULL
 
-    expect_error(
-        create_mac_folder(),
-        "ASReml-R cannot be installed until the folder '/Library/Application Support/Reprise' is created"
-    )
-})
+    mockery::stub(create_mac_folder, "Sys.info",
+                  function() c(sysname = "Darwin", release = "21.0.0"))
+    mockery::stub(create_mac_folder, "dir.create",
+                  function(...) stop("Permission denied"))
 
-test_that("create_mac_folder stops when user gives invalid response", {
-    skip_on_cran()
+    withr::with_tempdir({
+        test_path <- file.path(getwd(), "Reprise")
 
-    # Mock with user giving invalid response
-    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = "21.0.0"))
-    mockery::stub(create_mac_folder, "dir.exists", function(path) FALSE)
-    mockery::stub(create_mac_folder, "dir.create", function(path, recursive) stop("Permission denied"))
-    mockery::stub(create_mac_folder, "readline", function(prompt) "Maybe")
+        mockery::stub(create_mac_folder, "system", function(cmd, ...) {
+            captured_cmd <<- cmd
+            dir.create(test_path, recursive = TRUE)
+            0L
+        })
 
-    expect_error(
-        create_mac_folder(),
-        "ASReml-R cannot be installed until the folder '/Library/Application Support/Reprise' is created"
-    )
-})
+        suppressMessages(create_mac_folder(reprise_path = test_path))
 
-test_that("create_mac_folder handles NA release version gracefully", {
-    skip_on_cran()
-
-    # Mock Sys.info with NA release
-    mockery::stub(create_mac_folder, "Sys.info", function() c(sysname = "Darwin", release = NA))
-
-    result <- create_mac_folder()
-    expect_true(result)
-})
-
-test_that("create_mac_folder handles NULL release version gracefully", {
-    skip_on_cran()
-
-    # Mock Sys.info with NULL release
-    mockery::stub(create_mac_folder, "Sys.info", function() list(sysname = "Darwin", release = NULL))
-
-    result <- create_mac_folder()
-    expect_true(result)
+        expect_match(captured_cmd, "osascript")
+        expect_match(captured_cmd, "mkdir -p")
+        expect_match(captured_cmd, "chmod 777")
+        expect_match(captured_cmd, "with administrator privileges")
+        expect_match(captured_cmd, test_path, fixed = TRUE)
+    })
 })
 
 test_that("download_asreml_package handles download failures", {
@@ -928,7 +721,7 @@ test_that("install_asreml verbose parameter validation and messaging", {
 
     # Test that verbose = "verbose" produces debug messages
     mockery::stub(install_asreml, "rlang::is_installed", function(pkg) TRUE)
-    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "newer_version", function(...) FALSE)
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
 
     # Capture all messages from a single run (prevents noisy [DEBUG] output)
@@ -943,7 +736,7 @@ test_that("verbose messaging works correctly with different quiet settings", {
     skip_on_cran()
 
     mockery::stub(install_asreml, "rlang::is_installed", function(pkg) TRUE)
-    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "newer_version", function(...) FALSE)
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
 
     # Test quiet = TRUE (no messages)
@@ -1124,16 +917,17 @@ test_that("manage_file verbose parameter works", {
 
 test_that("verbose debugging shows OS detection details", {
     skip_on_cran()
-
     mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
-    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "newer_version", function(...) FALSE)
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
+    mockery::stub(install_asreml, "create_mac_folder", function(...) TRUE)
+    mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
+    mockery::stub(install_asreml, "find_package", function(...) list(url = "https://example.com/asreml.zip"))
     mockery::stub(install_asreml, "find_existing_package", function() "/tmp/asreml.zip")
     mockery::stub(install_asreml, "install_dependencies", function(...) {})
     mockery::stub(install_asreml, "install_asreml_package", function(...) TRUE)
     mockery::stub(install_asreml, "manage_file", function(...) TRUE)
 
-    # Test that OS detection details are shown in verbose mode
     msgs <- capture_messages_text(
         expect_warning(
             install_asreml(quiet = "verbose"),
@@ -1173,10 +967,12 @@ test_that("verbose debugging handles error cases appropriately", {
 
 test_that("install_asreml verbose mode shows version check details", {
     skip_on_cran()
-
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
     mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
-    mockery::stub(install_asreml, "newer_version", function() TRUE)
+    mockery::stub(install_asreml, "newer_version", function(...) TRUE)
+    mockery::stub(install_asreml, "create_mac_folder", function(...) TRUE)
+    mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
+    mockery::stub(install_asreml, "find_package", function(...) list(url = "https://example.com/asreml.zip"))
     mockery::stub(install_asreml, "find_existing_package", function() NULL)
     mockery::stub(install_asreml, "download_asreml_package", function(...) "/tmp/asreml.zip")
     mockery::stub(install_asreml, "install_dependencies", function(...) {})
@@ -1200,8 +996,10 @@ test_that("install_asreml calls create_mac_folder on macOS", {
     # Mock all the dependencies to get to the macOS check
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
     mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
-    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "newer_version", function(...) FALSE)
     mockery::stub(install_asreml, "get_r_os", function() list(os = "mac", ver = "44", arm = FALSE, os_ver = "mac-44"))
+    mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
+    mockery::stub(install_asreml, "find_package", function(manifest, os_ver) list(url = "x"))
     mockery::stub(install_asreml, "create_mac_folder", function() {
         mac_folder_called <<- TRUE
         TRUE
@@ -1225,8 +1023,10 @@ test_that("install_asreml does not call create_mac_folder on non-macOS", {
     # Mock all the dependencies to get to the OS check (Linux)
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
     mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
-    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "newer_version", function(...) FALSE)
     mockery::stub(install_asreml, "get_r_os", function() list(os = "linux", ver = "44", arm = FALSE, os_ver = "linux-44"))
+    mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
+    mockery::stub(install_asreml, "find_package", function(manifest, os_ver) list(url = "x"))
     mockery::stub(install_asreml, "create_mac_folder", function() {
         mac_folder_called <<- TRUE
         TRUE
@@ -1250,8 +1050,10 @@ test_that("install_asreml verbose messaging shows mac folder creation", {
     # Mock all the dependencies for macOS
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
     mockery::stub(install_asreml, "rlang::is_installed", function(pkg) FALSE)
-    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "newer_version", function(...) FALSE)
     mockery::stub(install_asreml, "get_r_os", function() list(os = "mac", ver = "44", arm = FALSE, os_ver = "mac-44"))
+    mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
+    mockery::stub(install_asreml, "find_package", function(manifest, os_ver) list(url = "x"))
     mockery::stub(install_asreml, "create_mac_folder", function() TRUE)
     mockery::stub(install_asreml, "find_existing_package", function() "/tmp/asreml.zip")
     mockery::stub(install_asreml, "install_dependencies", function(...) {})
@@ -1276,8 +1078,10 @@ test_that("install_asreml removes existing package when force=TRUE on non-Linux 
 
     # Mock all dependencies to reach the force removal logic
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
-    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "newer_version", function(...) FALSE)
     mockery::stub(install_asreml, "get_r_os", function() list(os = "win", ver = "44", arm = FALSE, os_ver = "win-44"))
+    mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
+    mockery::stub(install_asreml, "find_package", function(...) list(url = "https://example.com/asreml.zip"))
     mockery::stub(install_asreml, "find_existing_package", function() "/tmp/asreml.zip")
     mockery::stub(install_asreml, "install_dependencies", function(...) {})
     mockery::stub(install_asreml, "install_asreml_package", function(...) TRUE)
@@ -1309,8 +1113,10 @@ test_that("install_asreml does NOT remove existing package when force=TRUE on Li
 
     # Mock all dependencies for Linux system
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
-    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "newer_version", function(...) FALSE)
     mockery::stub(install_asreml, "get_r_os", function() list(os = "linux", ver = "44", arm = FALSE, os_ver = "linux-44"))  # Linux OS
+    mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
+    mockery::stub(install_asreml, "find_package", function(manifest, os_ver) list(url = "x"))
     mockery::stub(install_asreml, "find_existing_package", function() "/tmp/asreml.tar.gz")
     mockery::stub(install_asreml, "install_dependencies", function(...) {})
     mockery::stub(install_asreml, "install_asreml_package", function(...) TRUE)
@@ -1342,8 +1148,10 @@ test_that("install_asreml does NOT remove existing package when force=FALSE", {
 
     # Mock all dependencies
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
-    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "newer_version", function(...) FALSE)
     mockery::stub(install_asreml, "get_r_os", function() list(os = "win", ver = "44", arm = FALSE, os_ver = "win-44"))
+    mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
+    mockery::stub(install_asreml, "find_package", function(...) list(url = "https://example.com/asreml.zip"))
     mockery::stub(install_asreml, "find_existing_package", function() "/tmp/asreml.zip")
     mockery::stub(install_asreml, "install_dependencies", function(...) {})
     mockery::stub(install_asreml, "install_asreml_package", function(...) TRUE)
@@ -1372,8 +1180,10 @@ test_that("install_asreml verbose messaging shows package removal", {
 
     # Mock all dependencies for Windows system with force=TRUE
     mockery::stub(install_asreml, "curl::has_internet", function() TRUE)
-    mockery::stub(install_asreml, "newer_version", function() FALSE)
+    mockery::stub(install_asreml, "newer_version", function(...) FALSE)
     mockery::stub(install_asreml, "get_r_os", function() list(os = "win", ver = "44", arm = FALSE, os_ver = "win-44"))
+    mockery::stub(install_asreml, "fetch_manifest", function(...) list(packages = list()))
+    mockery::stub(install_asreml, "find_package", function(...) list(url = "https://example.com/asreml.zip"))
     mockery::stub(install_asreml, "find_existing_package", function() "/tmp/asreml.zip")
     mockery::stub(install_asreml, "install_dependencies", function(...) {})
     mockery::stub(install_asreml, "install_asreml_package", function(...) TRUE)
@@ -1389,93 +1199,153 @@ test_that("install_asreml verbose messaging shows package removal", {
     expect_match(msgs, "\\[DEBUG\\] Force=TRUE and existing package found - removing existing installation")
 })
 
-test_that("get_version_table handles missing version headers", {
-    skip_on_cran()
 
-    # Mock xml2 functions to simulate a page without version headers
-    mock_html <- structure(list(), class = "xml_document")
-    mockery::stub(get_version_table, "xml2::read_html", function(url) mock_html)
-    mockery::stub(get_version_table, "xml2::xml_find_all", function(doc, xpath) {
-        if(grepl("//h3", xpath)) {
-            # Return headers that don't match the expected pattern
-            structure(list(), class = "xml_nodeset")
-        } else {
-            structure(list(), class = "xml_nodeset")
-        }
-    })
-    mockery::stub(get_version_table, "xml2::xml_text", function(nodes) character(0))
-
-    # Should stop with specific error message
-    expect_warning(
-        table <- get_version_table(),
-        "URL doesn't seem to contain asreml version information\\."
-    )
-    expect_equal(nrow(table), 0)
+test_that("find_package returns exact match when available", {
+    manifest <- list(packages = list(
+        list(slug = "ubuntu-22-44", os = "ubuntu", os_ver = "22",
+             r_ver = "44", arm = FALSE, asr_ver = "4.2.0", url = "x")
+    ))
+    os_ver <- list(os = "ubuntu", os_ver = "ubuntu-22-44",
+                   os_major = "22", ver = "44", arm = FALSE)
+    result <- find_package(manifest, os_ver)
+    expect_equal(result$slug, "ubuntu-22-44")
 })
 
-test_that("get_version_table handles network/parsing errors gracefully", {
-    skip_on_cran()
+test_that("find_package falls back to highest compatible version on Ubuntu", {
+    manifest <- list(packages = list(
+        list(slug = "ubuntu-20-44", os = "ubuntu", os_ver = "20",
+             r_ver = "44", arm = FALSE, asr_ver = "4.2.0", url = "x"),
+        list(slug = "ubuntu-22-44", os = "ubuntu", os_ver = "22",
+             r_ver = "44", arm = FALSE, asr_ver = "4.2.0", url = "y")
+    ))
 
-    # Mock xml2::read_html to throw a network error
-    mockery::stub(get_version_table, "xml2::read_html", function(url) {
-        stop("Network timeout or connection failed")
-    })
+    # Ubuntu 23 - should use ubuntu-22
+    os_ver <- list(os = "ubuntu", os_ver = "ubuntu-23-44",
+                   os_major = "23", ver = "44", arm = FALSE)
+    result <- find_package(manifest, os_ver)
+    expect_equal(result$slug, "ubuntu-22-44")
 
-    # Should return empty data frame and warn about failure
-    expect_warning(
-        result <- get_version_table(),
-        "Failed to retrieve version information: Network timeout or connection failed"
-    )
-    expect_s3_class(result, "data.frame")
-    expect_equal(nrow(result), 0)
+    # Ubuntu 24.10 (major = 24) - should use ubuntu-22 since 24 < 22 is false,
+    # but there's no ubuntu-24, so uses ubuntu-22
+    os_ver <- list(os = "ubuntu", os_ver = "ubuntu-24-44",
+                   os_major = "24", ver = "44", arm = FALSE)
+    result <- find_package(manifest, os_ver)
+    expect_equal(result$slug, "ubuntu-22-44")
 })
 
-test_that("get_version_table handles XML parsing errors", {
-    skip_on_cran()
+test_that("find_package falls back to highest compatible version on macOS", {
+    manifest <- list(packages = list(
+        list(slug = "mac-14-44-arm", os = "mac", os_ver = "14",
+             r_ver = "44", arm = TRUE, asr_ver = "4.2.0", url = "x"),
+        list(slug = "mac-15-44-arm", os = "mac", os_ver = "15",
+             r_ver = "44", arm = TRUE, asr_ver = "4.2.0", url = "y")
+    ))
 
-    # Mock xml2 functions to simulate XML parsing failure
-    mock_html <- structure(list(), class = "xml_document")
-    mockery::stub(get_version_table, "xml2::read_html", function(url) mock_html)
-    mockery::stub(get_version_table, "xml2::xml_find_all", function(doc, xpath) {
-        stop("XPath expression error")
-    })
-
-    # Should return empty data frame and warn about failure
-    expect_warning(
-        result <- get_version_table(),
-        "Failed to retrieve version information: XPath expression error"
-    )
-    expect_s3_class(result, "data.frame")
-    expect_equal(nrow(result), 0)
+    os_ver <- list(os = "mac", os_ver = "mac-26-44-arm",
+                   os_major = "26", ver = "44", arm = TRUE)
+    result <- find_package(manifest, os_ver)
+    expect_equal(result$slug, "mac-15-44-arm")
 })
 
-test_that("get_version_table handles malformed table data", {
-    skip_on_cran()
+test_that("find_package does not use a build for a newer OS version", {
+    manifest <- list(packages = list(
+        list(slug = "ubuntu-24-44", os = "ubuntu", os_ver = "24",
+             r_ver = "44", arm = FALSE, asr_ver = "4.2.0", url = "x")
+    ))
 
-    # Mock xml2 functions to return valid headers but malformed table data
-    mock_html <- structure(list(), class = "xml_document")
-    mockery::stub(get_version_table, "xml2::read_html", function(url) mock_html)
-    mockery::stub(get_version_table, "xml2::xml_find_all", function(doc, xpath) {
-        structure(list(), class = "xml_nodeset")
-    })
-    mockery::stub(get_version_table, "xml2::xml_text", function(nodes) {
-        if(length(nodes) == 0) {
-            # Return valid headers for h3 search
-            "ASReml-R 4.2 (All platforms)"
-        } else {
-            # Return malformed table data
-            "Invalid table data without macOS"
-        }
-    })
-    mockery::stub(get_version_table, "stringi::stri_split_fixed", function(x, pattern) {
-        stop("String processing error")
-    })
-
-    # Should return empty data frame and warn about failure
+    # Ubuntu 22 should NOT use the ubuntu-24 build
+    os_ver <- list(os = "ubuntu", os_ver = "ubuntu-22-44",
+                   os_major = "22", ver = "44", arm = FALSE)
     expect_warning(
-        result <- get_version_table(),
-        "Failed to retrieve version information: String processing error"
+        result <- find_package(manifest, os_ver),
+        "No ASReml-R build found"
     )
-    expect_s3_class(result, "data.frame")
-    expect_equal(nrow(result), 0)
+    expect_null(result)
+})
+
+test_that("find_package uses exact match for Windows", {
+    manifest <- list(packages = list(
+        list(slug = "win-44", os = "win", os_ver = NULL,
+             r_ver = "44", arm = FALSE, asr_ver = "4.2.0", url = "x")
+    ))
+    os_ver <- list(os = "win", os_ver = "win-44",
+                   os_major = NULL, ver = "44", arm = FALSE)
+    result <- find_package(manifest, os_ver)
+    expect_equal(result$slug, "win-44")
+})
+
+test_that("find_package warns and returns NULL when Windows slug has no exact match", {
+    # Windows has no OS major component, so it should not attempt fallback
+    # matching: it should immediately return(warn_no_build()).
+    manifest <- list(packages = list(
+        list(slug = "win-44", os = "win", os_ver = NULL,
+             r_ver = "44", arm = FALSE, asr_ver = "4.2.0", url = "x")
+    ))
+
+    os_ver <- list(os = "win", os_ver = "win-99",
+                   os_major = NULL, ver = "99", arm = FALSE)
+
+    expect_warning(
+        result <- find_package(manifest, os_ver),
+        "No ASReml-R build found"
+    )
+    expect_null(result)
+})
+
+test_that("find_package warns when no compatible build exists", {
+    manifest <- list(packages = list(
+        list(slug = "ubuntu-22-44", os = "ubuntu", os_ver = "22",
+             r_ver = "44", arm = FALSE, asr_ver = "4.2.0", url = "x")
+    ))
+    os_ver <- list(os = "ubuntu", os_ver = "ubuntu-22-45",
+                   os_major = "22", ver = "45", arm = FALSE)
+    expect_warning(
+        result <- find_package(manifest, os_ver),
+        "No ASReml-R build found"
+    )
+    expect_null(result)
+})
+
+test_that("find_package matches ARM entries when manifest arm is a string", {
+    # Force the non-logical arm parsing branch:
+    # s <- tolower(as.character(x_arm)); arm_val <- s %in% c("true", "t", "1")
+    manifest <- list(packages = list(
+        list(slug = "mac-14-44-arm", os = "mac", os_ver = "14",
+             r_ver = "44", arm = "TRUE", asr_ver = "4.2.0", url = "x"),
+        list(slug = "mac-14-44", os = "mac", os_ver = "14",
+             r_ver = "44", arm = "FALSE", asr_ver = "4.2.0", url = "y")
+    ))
+
+    os_ver <- list(os = "mac", os_ver = "mac-16-44-arm",
+                   os_major = "16", ver = "44", arm = TRUE)
+    result <- find_package(manifest, os_ver)
+    expect_equal(result$slug, "mac-14-44-arm")
+})
+
+test_that("find_package treats 't' and '1' as ARM=TRUE", {
+    manifest <- list(packages = list(
+        list(slug = "mac-14-44-arm", os = "mac", os_ver = "14",
+             r_ver = "44", arm = "t", asr_ver = "4.2.0", url = "x"),
+        list(slug = "mac-15-44-arm", os = "mac", os_ver = "15",
+             r_ver = "44", arm = "1", asr_ver = "4.2.0", url = "y")
+    ))
+
+    os_ver <- list(os = "mac", os_ver = "mac-16-44-arm",
+                   os_major = "16", ver = "44", arm = TRUE)
+    result <- find_package(manifest, os_ver)
+    expect_equal(result$slug, "mac-15-44-arm")
+})
+
+test_that("find_package treats other strings (e.g. '0') as ARM=FALSE", {
+    manifest <- list(packages = list(
+        list(slug = "mac-14-44", os = "mac", os_ver = "14",
+             r_ver = "44", arm = "0", asr_ver = "4.2.0", url = "x"),
+        list(slug = "mac-15-44-arm", os = "mac", os_ver = "15",
+             r_ver = "44", arm = "true", asr_ver = "4.2.0", url = "y")
+    ))
+
+    os_ver <- list(os = "mac", os_ver = "mac-16-44",
+                   os_major = "16", ver = "44", arm = FALSE)
+    result <- find_package(manifest, os_ver)
+    expect_equal(result$slug, "mac-14-44")
 })
