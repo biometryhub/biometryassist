@@ -162,7 +162,7 @@ shapiro_test <- function(group_residuals) {
     }
 
     shap <- shapiro.test(group_residuals$residuals)
-    n <- length(group_residuals$residuals)
+    n <- sum(!is.na(group_residuals$residuals))
     output <- list(text1 = paste(shap$method, "p-value:", round(shap$p.value, 4)),
                    text2 = ifelse(
                        shap$p.value > 0.05,

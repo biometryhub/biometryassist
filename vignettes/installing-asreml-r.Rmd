@@ -77,7 +77,7 @@ source("https://raw.githubusercontent.com/biometryhub/biometryassist/main/R/inst
 
 This will enable use of the function within the current R session. If you close R, you will need to run the line above again to enable use of the function. Note this requires the packages `rlang` and `curl` to be installed, which is accomplished in the first line above if necessary. 
 
-## Installing ASReml-R
+## Installing The ASReml-R Package
 
 Once the install function is available, simply run it and wait for it to finish:
 

@@ -1,3 +1,18 @@
+# biometryassist 1.4.1
+
+## Minor changes
+
+- Added the ability to add buffers or double buffers around blocks. (#169)
+
+## Bug Fixes
+
+- Fixed an issue where asreml doesn't install properly on macOS because the link isn't constructed properly. (#163)
+- Fixed Skeletal ANOVA table not showing 2 way interactions for 3 way factorials (#171)
+- Colours are now consistent between the output of designs printed with `autoplot()` and the `export_design_to_excel()` function. (#170)
+- The `export_design_to_excel()` function is now less fragile. It can handle design objects and data frames as input, and alternative names for the row and column columns. (#168 and #172)
+- Fixed a bug where asreml models didn't report the correct number of residual points in `resplot()`. (#167)
+
+
 # biometryassist 1.4.0
 
 ## Major changes
@@ -13,7 +28,7 @@
 
 - Add interval type 'none' for `multiple_comparisons()` (#125).
 - Added a print method for `satab()` to reliably get the same output (#133).
-- Switched from cowplot to patchwork to speed up resplot (and variogram) (#29).
+- Switched from `cowplot` to `patchwork` to speed up `resplot()` (and `variogram()`) (#29).
 - Added and refactored numerous tests throughout to achieve 100% test coverage and speed up tests (#104, #143, #144, #135, #148)
 - Added asreml downloads for more operating systems and versions (#158).
 
@@ -22,7 +37,7 @@
 - Fixed a bug where hex colours don't work with `export_design_to_excel()` (#124).
 - Fixed a bug where buffers weren't added to the plot if they are added after initial design creation (#123).
 - Fixed a bug in `install_asreml()` where it threw an error with more than one new version (#122).
-- Fixed a bug where calculate_differences clashed with package "MuMIn" (#131).
+- Fixed a bug where `calculate_differences()` clashed with package "MuMIn" (#131).
 
 # biometryassist 1.3.3
 

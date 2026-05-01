@@ -5,18 +5,24 @@
 \title{Export Experimental Design Layout to Excel}
 \usage{
 export_design_to_excel(
-  design_df,
-  value_column = "treatments",
+  design,
   filename = "experimental_design.xlsx",
+  value_column = "treatments",
+  row = NULL,
+  column = NULL,
   palette = "default"
 )
 }
 \arguments{
-\item{design_df}{A dataframe containing experimental design with 'row' and 'col' columns}
+\item{design}{A dataframe or design object containing experimental design.}
+
+\item{filename}{Character string for Excel filename (default: "experimental_design.xlsx")}
 
 \item{value_column}{Character string specifying which column to use for layout values (default: "treatments")}
 
-\item{filename}{Character string for Excel filename (default: "experimental_design.xlsx")}
+\item{row}{Column containing the row coordinate. Defaults to \code{row}.}
+
+\item{column}{Column containing the column coordinate. Defaults to \code{col}.}
 
 \item{palette}{colour palette for treatments. Can be a palette name (see details) or vector of colours.
 Set to NULL to disable colouring (default: "default")}

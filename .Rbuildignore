@@ -33,3 +33,5 @@ Update_links\.R
 normalitycheck.R
 ^\.positai$
 ^\.claude$
+inst/build_manifest.R
+inst/manifest.json

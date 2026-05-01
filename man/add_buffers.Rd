@@ -9,7 +9,9 @@ add_buffers(design_obj, type)
 \arguments{
 \item{design_obj}{A design object (with class "design") from the design() function}
 
-\item{type}{The type of buffer to add. One of 'edge', 'row', 'column', 'double row', or 'double column'.}
+\item{type}{The type of buffer to add. One of 'edge', 'row', 'column',
+'double row', 'double column', 'blocks', or
+'double block'/'entire block'/'full block'.}
 }
 \value{
 The modified design object with buffers added

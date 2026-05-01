@@ -101,8 +101,9 @@ transformation, add 0.1 in the \code{offset} argument.
 The power argument allows the specification of arbitrary powers to be
 back transformed, if they have been used to attempt to improve normality of
 residuals.
+}
 
-#' ## Confidence Intervals & Comparison Intervals
+\subsection{Confidence Intervals & Comparison Intervals}{
 
 The function provides several options for confidence intervals via the \code{int.type} argument:
 \itemize{
@@ -247,5 +248,5 @@ autoplot(pred.out, label_height = 0.5)
 }
 \references{
 Jørgensen, E. & Pedersen, A. R. (1997). How to Obtain Those Nasty
-Standard Errors From Transformed Data - and Why They Should Not Be Used. \url{https://pure.au.dk/portal/en/publications/how-to-obtain-those-nasty-standard-errors-from-transformed-data-a}
+Standard Errors From Transformed Data - and Why They Should Not Be Used.
 }
