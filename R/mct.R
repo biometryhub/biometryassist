@@ -295,7 +295,7 @@ multiple_comparisons <- function(model.obj,
     }
 
     # Prepare HSD value(s) for output
-    if (stats::var(as.vector(crit_val), na.rm = TRUE) < 1e-10) {
+    if (isTRUE(stats::var(as.vector(crit_val), na.rm = TRUE) < 1e-10)) {
         hsd_output <- crit_val[1, 2]
     } else {
         hsd_output <- crit_val
