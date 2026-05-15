@@ -1274,9 +1274,8 @@ test_that("find_package uses exact match for Windows", {
     expect_equal(result$slug, "win-44")
 })
 
-test_that("find_package warns and returns NULL when Windows slug has no exact match", {
-    # Windows has no OS major component, so it should not attempt fallback
-    # matching: it should immediately return(warn_no_build()).
+test_that("find_package warns and returns NULL when Windows slug has no exact match and no prior R version", {
+    # win-99 has no build, and prev R version win-98 also has no build.
     manifest <- list(packages = list(
         list(slug = "win-44", os = "win", os_ver = NULL,
              r_ver = "44", arm = FALSE, asr_ver = "4.2.0", url = "x")
@@ -1292,13 +1291,39 @@ test_that("find_package warns and returns NULL when Windows slug has no exact ma
     expect_null(result)
 })
 
-test_that("find_package warns when no compatible build exists", {
+test_that("find_package falls back to previous R version on Windows", {
+    manifest <- list(packages = list(
+        list(slug = "win-44", os = "win", os_ver = NULL,
+             r_ver = "44", arm = FALSE, asr_ver = "4.2.0", url = "x")
+    ))
+
+    # R 4.5 has no build; should fall back to win-44
+    os_ver <- list(os = "win", os_ver = "win-45",
+                   os_major = NULL, ver = "45", arm = FALSE)
+    result <- find_package(manifest, os_ver, warn = FALSE)
+    expect_equal(result$slug, "win-44")
+})
+
+test_that("find_package falls back to previous R version on Ubuntu", {
     manifest <- list(packages = list(
         list(slug = "ubuntu-22-44", os = "ubuntu", os_ver = "22",
              r_ver = "44", arm = FALSE, asr_ver = "4.2.0", url = "x")
     ))
+    # R 4.5 has no build; should fall back to ubuntu-22-44
     os_ver <- list(os = "ubuntu", os_ver = "ubuntu-22-45",
                    os_major = "22", ver = "45", arm = FALSE)
+    result <- find_package(manifest, os_ver, warn = FALSE)
+    expect_equal(result$slug, "ubuntu-22-44")
+})
+
+test_that("find_package warns when no compatible build exists for any R version", {
+    manifest <- list(packages = list(
+        list(slug = "ubuntu-22-44", os = "ubuntu", os_ver = "22",
+             r_ver = "44", arm = FALSE, asr_ver = "4.2.0", url = "x")
+    ))
+    # R 4.3 and 4.2 both have no build
+    os_ver <- list(os = "ubuntu", os_ver = "ubuntu-22-43",
+                   os_major = "22", ver = "43", arm = FALSE)
     expect_warning(
         result <- find_package(manifest, os_ver),
         "No ASReml-R build found"

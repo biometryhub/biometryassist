@@ -370,43 +370,66 @@ find_package <- function(manifest, os_ver, warn = TRUE) {
         if (length(matched)) matched[[1]] else NULL
     }
 
+    # Compute the previous compact R version string (e.g. "46" -> "45")
+    prev_r_ver <- function(ver) {
+        if (nchar(ver) < 2) return(NULL)
+        minor <- suppressWarnings(as.integer(substr(ver, nchar(ver), nchar(ver))))
+        if (is.na(minor) || minor == 0L) return(NULL)
+        paste0(substr(ver, 1, nchar(ver) - 1), minor - 1L)
+    }
+
+    # Find best package for a given R version string, respecting OS version fallback
+    find_for_r_ver <- function(r_ver_str) {
+        if (identical(os_ver$os, "win")) {
+            # Windows: exact slug match only (no OS version component)
+            win_slug <- paste0("win-", r_ver_str)
+            return(match_slug(win_slug))
+        }
+
+        # Non-Windows with no OS major: exact slug match only
+        if (is.null(os_ver$os_major) || identical(os_ver$os_major, "")) {
+            return(NULL)
+        }
+
+        # Find the highest available OS version that does not exceed current
+        current_major <- suppressWarnings(as.integer(os_ver$os_major))
+
+        candidates <- Filter(function(x) {
+            identical(as.character(x$os), as.character(os_ver$os)) &&
+                identical(as.character(x$r_ver), r_ver_str) &&
+                is_arm_match(x$arm, os_ver$arm)
+        }, manifest$packages)
+
+        if (length(candidates) == 0) return(NULL)
+
+        pkg_versions <- sapply(candidates, function(x) {
+            suppressWarnings(as.integer(x$os_ver))
+        })
+
+        compatible <- !is.na(pkg_versions) & pkg_versions <= current_major
+        if (!any(compatible)) return(NULL)
+
+        candidates[[which.max(pkg_versions * compatible)]]
+    }
+
     # Try exact match first
     entry <- match_slug(os_ver$os_ver)
     if (!is.null(entry)) return(entry)
 
-    # Windows has no OS version - exact match only
-    if (identical(os_ver$os, "win") || is.null(os_ver$os_major) || identical(os_ver$os_major, "")) {
-        return(warn_no_build())
+    # Try OS-version fallback for current R version (non-Windows only)
+    if (!identical(os_ver$os, "win") && !is.null(os_ver$os_major) && !identical(os_ver$os_major, "")) {
+        entry <- find_for_r_ver(os_ver$ver)
+        if (!is.null(entry)) return(entry)
     }
 
-    # For all other platforms, find the highest available OS version
-    # that does not exceed the current OS version
-    current_major <- suppressWarnings(as.integer(os_ver$os_major))
-
-    candidates <- Filter(function(x) {
-        identical(as.character(x$os), as.character(os_ver$os)) &&
-            identical(as.character(x$r_ver), as.character(os_ver$ver)) &&
-            is_arm_match(x$arm, os_ver$arm)
-    }, manifest$packages)
-
-    if (length(candidates) == 0) {
-        return(warn_no_build())
+    # Fall back to previous R version
+    prev <- prev_r_ver(os_ver$ver)
+    if (!is.null(prev)) {
+        entry <- find_for_r_ver(prev)
+        if (!is.null(entry)) return(entry)
     }
 
-    pkg_versions <- sapply(candidates, function(x) {
-        suppressWarnings(as.integer(x$os_ver))
-    })
-
-    # Keep only versions <= current
-    compatible <- !is.na(pkg_versions) & pkg_versions <= current_major
-
-    if (!any(compatible)) {
-        return(warn_no_build())
-    }
-
-    best <- candidates[[which.max(pkg_versions * compatible)]]
-
-    best
+    warn_no_build()
 }
 
 #' Detect Linux distribution and version
