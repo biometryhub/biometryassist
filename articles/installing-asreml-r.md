@@ -5,6 +5,7 @@ Quick Version
 Run the following code to install and licence ASReml-R:
 
 ``` r
+
 install.packages("biometryassist")
 biometryassist::install_asreml()
 asreml::asreml.license.activate()
@@ -59,12 +60,14 @@ The `biometryassist` package is on CRAN, so can be installed using the
 regular method:
 
 ``` r
+
 install.packages("biometryassist")
 ```
 
 Once installed, load the package ready for use with:
 
 ``` r
+
 library(biometryassist)
 ```
 
@@ -78,6 +81,7 @@ To use only the function, without the additional overhead of the
 biometryassist package, source it with the following command:
 
 ``` r
+
 if(!require(rlang) | !require(curl)) install.packages(c("rlang", "curl"))
 source("https://raw.githubusercontent.com/biometryhub/biometryassist/main/R/install_asreml.R")
 ```
@@ -93,6 +97,7 @@ Once the install function is available, simply run it and wait for it to
 finish:
 
 ``` r
+
 install_asreml()
 ```
 
@@ -127,6 +132,7 @@ To activate the licence code once asreml is installed, run the following
 commands (noting the spelling of licen**s**e):
 
 ``` r
+
 library(asreml)
 asreml.license.activate()
 ```
@@ -159,6 +165,7 @@ reinstall it, you can use the
 function, or `install_asreml(force = TRUE)`.
 
 ``` r
+
 update_asreml()
 install_asreml(force = TRUE) # Equivalent to the above
 ```

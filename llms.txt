@@ -18,6 +18,7 @@ CRAN](https://cran.r-project.org/package=biometryassist) 🙌 That means
 that installation is as easy as running:
 
 ``` r
+
 install.packages("biometryassist")
 ```
 
@@ -31,6 +32,7 @@ Use the following code to install the latest development version of this
 package.
 
 ``` r
+
 if(!require("remotes")) install.packages("remotes") 
 remotes::install_github("biometryhub/biometryassist@dev")
 ```
@@ -40,6 +42,7 @@ remotes::install_github("biometryhub/biometryassist@dev")
 Load the package and start using it with:
 
 ``` r
+
 library(biometryassist)
 ```
 

@@ -67,6 +67,7 @@ to plots. While it’s primarily intended for spatial data with coordinate
 reference systems, it works well for field layout plots too.
 
 ``` r
+
 des.out$plot.des + 
   annotation_north_arrow(
     location = "tr",
@@ -137,6 +138,7 @@ Let’s break down each component of this code:
 You can customize the arrow style parameters to match your needs:
 
 ``` r
+
 des.out$plot.des + 
   annotation_north_arrow(
     location = "tr",
@@ -166,6 +168,7 @@ objects) to specific locations on the plot. Unlike the north arrow,
 these annotations use the plot’s coordinate system.
 
 ``` r
+
 des.out$plot.des + 
   annotate(
     "text",
@@ -271,6 +274,7 @@ You can add as many annotations as needed by chaining multiple
 `annotate()` calls:
 
 ``` r
+
 des.out$plot.des + 
   annotate("text", x = 5.8, y = mean(des.out$design$row), 
            label = "Boundary Road", angle = 270, hjust = 0.5, vjust = -0.5, size = 6) +
@@ -293,6 +297,7 @@ You can combine both techniques to create a fully annotated field
 layout:
 
 ``` r
+
 des.out$plot.des + 
   # Add north arrow
   annotation_north_arrow(
@@ -391,6 +396,7 @@ Total                                   23
 ![](plot_annotation_files/figure-html/rcbd_example-1.png)
 
 ``` r
+
 
 # Add annotations
 des.rcbd$plot.des +

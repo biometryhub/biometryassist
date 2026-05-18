@@ -73,6 +73,7 @@ A `ggplot2` object.
 ## Examples
 
 ``` r
+
 set.seed(42)
 dat <- expand.grid(x = 1:5, y = 1:6)
 dat$value <- rnorm(30)

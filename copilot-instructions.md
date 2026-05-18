@@ -31,6 +31,7 @@ MIT - Main purpose: Design and analysis tools for agronomic experiments
 ### Installing Dependencies
 
 ``` r
+
 # Install development dependencies
 install.packages("devtools")
 devtools::install_deps(dependencies = TRUE)
@@ -44,6 +45,7 @@ Tests use the testthat framework (edition 3) with parallel execution
 enabled:
 
 ``` r
+
 # Run all tests
 devtools::test()
 
@@ -54,6 +56,7 @@ testthat::test_dir("tests/testthat")
 ### Building the Package
 
 ``` r
+
 # Build and check the package (standard R CMD check)
 devtools::check()
 
@@ -64,6 +67,7 @@ devtools::load_all()
 ### Code Coverage
 
 ``` r
+
 # Generate coverage report
 covr::package_coverage()
 ```
@@ -73,6 +77,7 @@ covr::package_coverage()
 Documentation is generated using roxygen2:
 
 ``` r
+
 # Update documentation
 devtools::document()
 ```

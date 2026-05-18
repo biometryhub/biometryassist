@@ -46,6 +46,7 @@ with the third used to facet the plot.
 ## Examples
 
 ``` r
+
 summary_graph(iris, "Petal.Length", "Species", "mm")
 
 
