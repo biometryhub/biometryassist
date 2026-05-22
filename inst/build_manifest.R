@@ -210,7 +210,7 @@ get_latest_asreml_downloads <- function(vt) {
 
     groups <- split(
         vt,
-        list(vt$os, vt$arm, vt$r_ver),
+        list(vt$os_ver, vt$arm),
         drop = TRUE
     )
 
@@ -364,7 +364,7 @@ sync_asreml_shortlinks <- function(
 
         tags <- c(
             row$os,
-            paste0(substr(row$r_ver,1,1),".",substr(row$r_ver,2,2))
+            row$r_ver
         )
 
         action <- "skip"
