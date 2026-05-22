@@ -2,6 +2,7 @@
 # Scrapes VSNi download page and writes manifest.json
 # Requires VSNI_URL environment variable to be set
 
+if(interactive()) library(dotenv)
 vsni_url <- Sys.getenv("VSNI_URL")
 if (nchar(vsni_url) == 0) stop("VSNI_URL environment variable not set")
 
