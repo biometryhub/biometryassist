@@ -30,7 +30,12 @@ logl_test <- function(model.obj, rand.terms = NULL, resid.terms = NULL, decimals
     # Identify boundary terms
     vc <- summary(model.obj)$varcomp
     boundary <- rownames(vc[vc$bound == "B", , drop = FALSE])
-    terms.df$OnBoundary <- terms.df$Term %in% boundary
+    # ASReml names VC rows with suffixes (e.g. "row!row.var"), so match by prefix
+    terms.df$OnBoundary <- vapply(
+        terms.df$Term,
+        function(t) any(startsWith(boundary, paste0(t, "!")) | boundary == t),
+        logical(1)
+    )
 
     # Terms to test
     test.terms <- terms.df[!terms.df$OnBoundary, ]
@@ -60,9 +65,12 @@ logl_test <- function(model.obj, rand.terms = NULL, resid.terms = NULL, decimals
         round(pval, decimals)
     }
 
+    # Preserve original rand.terms for use in final output ordering
+    orig.rand.terms <- rand.terms
+
     # Drop any random terms that are on the boundary before starting
     if (!is.null(rand.terms)) {
-        boundary.rand <- intersect(rand.terms, boundary)
+        boundary.rand <- rand.terms[terms.df$OnBoundary & terms.df$Type == "random"]
         if (length(boundary.rand) > 0) {
             rand.terms <- setdiff(rand.terms, boundary.rand)
             model.obj <- quiet(asreml::update.asreml(model.obj, random = stats::as.formula(paste("~ . -", paste(boundary.rand, collapse = " - "))), trace = !quiet))
@@ -124,7 +132,7 @@ logl_test <- function(model.obj, rand.terms = NULL, resid.terms = NULL, decimals
             max(as.numeric(paste0("1e-", decimals)), .Machine$double.eps)
     }
 
-    test.df <- test.df[match(c(rand.terms, resid.terms), test.df$Term), , drop = FALSE]
+    test.df <- test.df[match(c(orig.rand.terms, resid.terms), test.df$Term), , drop = FALSE]
     rownames(test.df) <- NULL
     return(test.df)
 }
