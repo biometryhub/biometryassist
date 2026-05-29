@@ -70,7 +70,7 @@ logl_test <- function(model.obj, rand.terms = NULL, resid.terms = NULL, decimals
 
     # Drop any random terms that are on the boundary before starting
     if (!is.null(rand.terms)) {
-        boundary.rand <- rand.terms[terms.df$OnBoundary & terms.df$Type == "random"]
+        boundary.rand <- terms.df$Term[terms.df$OnBoundary & terms.df$Type == "random"]
         if (length(boundary.rand) > 0) {
             rand.terms <- setdiff(rand.terms, boundary.rand)
             model.obj <- quiet(asreml::update.asreml(model.obj, random = stats::as.formula(paste("~ . -", paste(boundary.rand, collapse = " - "))), trace = !quiet))

@@ -187,13 +187,13 @@ test_that("logl_test handles boundary terms correctly", {
                         rand.terms = c("Block", "Block:Plot"),
                         resid.terms = c("ar1(Row)", "ar1(Col)"))
 
-    # Check that boundary terms have p-value = 1
-    expect_false("Block" %in% result$Term)
+    # Check that boundary terms are included in the output
+    expect_true("Block" %in% result$Term)
     expect_true("ar1(Row)" %in% result$Term)
 
     # Check structure
     expect_true(all(c("Term", "LogLRT.pvalue") %in% colnames(result)))
-    expect_equal(nrow(result), 3)
+    expect_equal(nrow(result), 4)
 })
 
 test_that("logl_test processes random terms correctly", {
@@ -455,9 +455,9 @@ test_that("logl_test integration test", {
                         numeric = FALSE,
                         quiet = TRUE)
 
-    # Check comprehensive results
-    expect_equal(nrow(result), 3)
-    expect_equal(result$Term, c("Block:Plot", "ar1(Row)", "ar1(Col)"))
+    # Check comprehensive results — boundary term "Block" is now included with p=1
+    expect_equal(nrow(result), 4)
+    expect_equal(result$Term, c("Block", "Block:Plot", "ar1(Row)", "ar1(Col)"))
     expect_true(all(c("Term", "LogLRT.pvalue") %in% colnames(result)))
 
     # All should have character p-values (numeric = FALSE)
