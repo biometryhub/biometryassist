@@ -11,128 +11,170 @@
 #'
 #' @returns A data frame of terms and corresponding log-likelihood ratio test p-values.
 #' @export
-logl_test <- function(model.obj, rand.terms = NULL, resid.terms = NULL, decimals = 3, numeric = FALSE, quiet = FALSE) {
-    if (!inherits(model.obj, "asreml")) {
-        stop("Only asreml models are supported.", call. = FALSE)
-    }
+logl_test <- function(
+	model.obj,
+	rand.terms = NULL,
+	resid.terms = NULL,
+	decimals = 3,
+	numeric = FALSE,
+	quiet = FALSE
+) {
+	if (!inherits(model.obj, "asreml")) {
+		stop("Only asreml models are supported.", call. = FALSE)
+	}
 
-    if (is.null(rand.terms) & is.null(resid.terms)) {
-        stop("At least one of rand.terms or resid.terms must be provided.", call. = FALSE)
-    }
+	if (is.null(rand.terms) & is.null(resid.terms)) {
+		stop(
+			"At least one of rand.terms or resid.terms must be provided.",
+			call. = FALSE
+		)
+	}
 
-    # Prepare term table
-    terms.df <- data.frame(
-        Term = c(rand.terms, resid.terms),
-        Type = c(rep("random", length(rand.terms)), rep("residual", length(resid.terms))),
-        stringsAsFactors = FALSE
-    )
+	# Prepare term table
+	terms.df <- data.frame(
+		Term = c(rand.terms, resid.terms),
+		Type = c(
+			rep("random", length(rand.terms)),
+			rep("residual", length(resid.terms))
+		),
+		stringsAsFactors = FALSE
+	)
 
-    # Identify boundary terms
-    vc <- summary(model.obj)$varcomp
-    boundary <- rownames(vc[vc$bound == "B", , drop = FALSE])
-    # ASReml names VC rows with suffixes (e.g. "row!row.var"), so match by prefix
-    terms.df$OnBoundary <- vapply(
-        terms.df$Term,
-        function(t) any(startsWith(boundary, paste0(t, "!")) | boundary == t),
-        logical(1)
-    )
+	# Identify boundary terms
+	vc <- summary(model.obj)$varcomp
+	boundary <- rownames(vc[vc$bound == "B", , drop = FALSE])
+	# ASReml names VC rows with suffixes (e.g. "row!row.var"), so match by prefix
+	terms.df$OnBoundary <- vapply(
+		terms.df$Term,
+		function(t) any(startsWith(boundary, paste0(t, "!")) | boundary == t),
+		logical(1)
+	)
 
-    # Terms to test
-    test.terms <- terms.df[!terms.df$OnBoundary, ]
+	# Terms to test
+	test.terms <- terms.df[!terms.df$OnBoundary, ]
 
-    # Terms on boundary – assign p = 1
-    boundary.df <- terms.df[terms.df$OnBoundary, ]
-    if (nrow(boundary.df) > 0) {
-        boundary.df$LogLRT.pvalue <- 1
-    }
+	# Terms on boundary – assign p = 1
+	boundary.df <- terms.df[terms.df$OnBoundary, ]
+	if (nrow(boundary.df) > 0) {
+		boundary.df$LogLRT.pvalue <- 1
+	}
 
-    # Helper: refit loop
-    refit_until_converged <- function(model, max_iter = 10) {
-        i <- 1
-        while (!model$converge && i <= max_iter) {
-            model <- quiet(asreml::update.asreml(model, trace = !quiet))
-            i <- i + 1
-        }
-        return(model)
-    }
+	# Helper: refit loop
+	refit_until_converged <- function(model, max_iter = 10) {
+		i <- 1
+		while (!model$converge && i <= max_iter) {
+			model <- quiet(asreml::update.asreml(model, trace = !quiet))
+			i <- i + 1
+		}
+		return(model)
+	}
 
-    # Helper: log-likelihood test
-    loglik_test <- function(full, reduced, decimals = 3) {
-        df <- (length(full$vparameters) + length(full$coefficients$fixed)) -
-            (length(reduced$vparameters) + length(reduced$coefficients$fixed))
-        logl <- 2 * (full$loglik - reduced$loglik)
-        pval <- 1 - stats::pchisq(logl, df)
-        round(pval, decimals)
-    }
+	# Helper: log-likelihood test
+	loglik_test <- function(full, reduced, decimals = 3) {
+		df <- (length(full$vparameters) + length(full$coefficients$fixed)) -
+			(length(reduced$vparameters) + length(reduced$coefficients$fixed))
+		logl <- 2 * (full$loglik - reduced$loglik)
+		pval <- 1 - stats::pchisq(logl, df)
+		round(pval, decimals)
+	}
 
-    # Preserve original rand.terms for use in final output ordering
-    orig.rand.terms <- rand.terms
+	# Preserve original rand.terms for use in final output ordering
+	orig.rand.terms <- rand.terms
 
-    # Drop any random terms that are on the boundary before starting
-    if (!is.null(rand.terms)) {
-        boundary.rand <- terms.df$Term[terms.df$OnBoundary & terms.df$Type == "random"]
-        if (length(boundary.rand) > 0) {
-            rand.terms <- setdiff(rand.terms, boundary.rand)
-            model.obj <- quiet(asreml::update.asreml(model.obj, random = stats::as.formula(paste("~ . -", paste(boundary.rand, collapse = " - "))), trace = !quiet))
-            model.obj <- refit_until_converged(model.obj)
-        }
-    }
+	# Drop any random terms that are on the boundary before starting
+	if (!is.null(rand.terms)) {
+		boundary.rand <- terms.df$Term[
+			terms.df$OnBoundary & terms.df$Type == "random"
+		]
+		if (length(boundary.rand) > 0) {
+			rand.terms <- setdiff(rand.terms, boundary.rand)
+			model.obj <- quiet(asreml::update.asreml(
+				model.obj,
+				random = stats::as.formula(paste(
+					"~ . -",
+					paste(boundary.rand, collapse = " - ")
+				)),
+				trace = !quiet
+			))
+			model.obj <- refit_until_converged(model.obj)
+		}
+	}
 
-    # Perform tests
-    result.list <- list()
+	# Perform tests
+	result.list <- list()
 
-    for (i in seq_len(nrow(test.terms))) {
-        term <- test.terms$Term[i]
-        type <- test.terms$Type[i]
+	for (i in seq_len(nrow(test.terms))) {
+		term <- test.terms$Term[i]
+		type <- test.terms$Type[i]
 
-        if (type == "residual") {
-            orig.resid <- as.character(model.obj$formulae$residual)[2]
-            if (grepl("^ar[0-9]", term)) {
-                # Handle AR terms
-                updated.resid <- gsub(term, paste0("id", substring(term, 4)), orig.resid, fixed = TRUE)
-            } else {
-                # Handle other residual structures - might need different logic
-                updated.resid <- gsub(paste0("\\b", term, "\\b"), "units", orig.resid)
-            }
-            new.resid.formula <- stats::as.formula(paste("~", updated.resid))
-            reduced.model <- quiet(asreml::update.asreml(model.obj, residual = new.resid.formula, trace = !quiet))
-        }
-        else if (type == "random") {
-            new.rand.formula <- stats::as.formula(paste("~ . -", term))
-            reduced.model <- quiet(asreml::update.asreml(model.obj, random = new.rand.formula, trace = !quiet))
-        }
+		if (type == "residual") {
+			orig.resid <- as.character(model.obj$formulae$residual)[2]
+			if (grepl("^ar[0-9]", term)) {
+				# Handle AR terms
+				updated.resid <- gsub(
+					term,
+					paste0("id", substring(term, 4)),
+					orig.resid,
+					fixed = TRUE
+				)
+			} else {
+				# Handle other residual structures - might need different logic
+				updated.resid <- gsub(
+					paste0("\\b", term, "\\b"),
+					"units",
+					orig.resid
+				)
+			}
+			new.resid.formula <- stats::as.formula(paste("~", updated.resid))
+			reduced.model <- quiet(asreml::update.asreml(
+				model.obj,
+				residual = new.resid.formula,
+				trace = !quiet
+			))
+		} else if (type == "random") {
+			new.rand.formula <- stats::as.formula(paste("~ . -", term))
+			reduced.model <- quiet(asreml::update.asreml(
+				model.obj,
+				random = new.rand.formula,
+				trace = !quiet
+			))
+		}
 
-        reduced.model <- refit_until_converged(reduced.model)
+		reduced.model <- refit_until_converged(reduced.model)
 
-        pval <- loglik_test(model.obj, reduced.model, decimals)
+		pval <- loglik_test(model.obj, reduced.model, decimals)
 
-        result.list[[length(result.list) + 1]] <- data.frame(
-            Term = term,
-            LogLRT.pvalue = pval,
-            stringsAsFactors = FALSE
-        )
-    }
+		result.list[[length(result.list) + 1]] <- data.frame(
+			Term = term,
+			LogLRT.pvalue = pval,
+			stringsAsFactors = FALSE
+		)
+	}
 
-    test.df <- do.call(rbind, result.list)
+	test.df <- do.call(rbind, result.list)
 
-    # Combine with boundary terms
-    if (nrow(boundary.df) > 0) {
-        test.df <- rbind(test.df, boundary.df[, c("Term", "LogLRT.pvalue")])
-    }
+	# Combine with boundary terms
+	if (nrow(boundary.df) > 0) {
+		test.df <- rbind(test.df, boundary.df[, c("Term", "LogLRT.pvalue")])
+	}
 
-    # Format p-values
-    if (!numeric) {
-        test.df$LogLRT.pvalue <- format.pval(
-            test.df$LogLRT.pvalue,
-            digits = decimals,
-            eps = max(as.numeric(paste0("1e-", decimals)), .Machine$double.eps)
-        )
-    } else {
-        test.df$LogLRT.pvalue[test.df$LogLRT.pvalue == 0] <-
-            max(as.numeric(paste0("1e-", decimals)), .Machine$double.eps)
-    }
+	# Format p-values
+	if (!numeric) {
+		test.df$LogLRT.pvalue <- format.pval(
+			test.df$LogLRT.pvalue,
+			digits = decimals,
+			eps = max(as.numeric(paste0("1e-", decimals)), .Machine$double.eps)
+		)
+	} else {
+		test.df$LogLRT.pvalue[test.df$LogLRT.pvalue == 0] <-
+			max(as.numeric(paste0("1e-", decimals)), .Machine$double.eps)
+	}
 
-    test.df <- test.df[match(c(orig.rand.terms, resid.terms), test.df$Term), , drop = FALSE]
-    rownames(test.df) <- NULL
-    return(test.df)
+	test.df <- test.df[
+		match(c(orig.rand.terms, resid.terms), test.df$Term),
+		,
+		drop = FALSE
+	]
+	rownames(test.df) <- NULL
+	return(test.df)
 }

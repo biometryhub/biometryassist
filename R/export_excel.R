@@ -3,15 +3,17 @@
 #' @return Character Excel column letter(s)
 #' @keywords internal
 int2col <- function(num) {
-    # Convert integer to Excel column letters (A, B, ..., Z, AA, AB, ...)
-    if (num <= 0) stop("Column number must be positive")
-    result <- ""
-    while (num > 0) {
-        remainder <- (num - 1) %% 26
-        result <- paste0(LETTERS[remainder + 1], result)
-        num <- (num - remainder - 1) %/% 26
-    }
-    return(result)
+	# Convert integer to Excel column letters (A, B, ..., Z, AA, AB, ...)
+	if (num <= 0) {
+		stop("Column number must be positive")
+	}
+	result <- ""
+	while (num > 0) {
+		remainder <- (num - 1) %% 26
+		result <- paste0(LETTERS[remainder + 1], result)
+		num <- (num - remainder - 1) %/% 26
+	}
+	return(result)
 }
 
 #' Export Experimental Design Layout to Excel
@@ -60,190 +62,252 @@ int2col <- function(num) {
 #' }
 #'
 #' @export
-export_design_to_excel <- function(design,
-                                   filename = "experimental_design.xlsx",
-                                   value_column = "treatments",
-                                   row = NULL,
-                                   column = NULL,
-                                   palette = "default") {
+export_design_to_excel <- function(
+	design,
+	filename = "experimental_design.xlsx",
+	value_column = "treatments",
+	row = NULL,
+	column = NULL,
+	palette = "default"
+) {
+	# Check if openxlsx2 is available
+	if (!rlang::is_installed("openxlsx2")) {
+		stop(
+			"Package 'openxlsx2' is required for Excel export but is not installed.\n",
+			"Install it with: install.packages('openxlsx2')"
+		)
+	}
 
-    # Check if openxlsx2 is available
-    if (!rlang::is_installed("openxlsx2")) {
-        stop("Package 'openxlsx2' is required for Excel export but is not installed.\n",
-             "Install it with: install.packages('openxlsx2')")
-    }
+	# If design is a list (e.g., from a design generation function), extract the design dataframe
+	if (inherits(design, "list")) {
+		design <- design$design
+	}
 
-    # If design is a list (e.g., from a design generation function), extract the design dataframe
-    if(inherits(design, "list")) {
-        design <- design$design
-    }
+	# Handle column name expressions (match `autoplot.design()` behaviour)
+	value_expr <- rlang::enquo(value_column)
+	row_expr <- rlang::enquo(row)
+	column_expr <- rlang::enquo(column)
 
-    # Handle column name expressions (match `autoplot.design()` behaviour)
-    value_expr <- rlang::enquo(value_column)
-    row_expr <- rlang::enquo(row)
-    column_expr <- rlang::enquo(column)
+	if (rlang::quo_is_null(value_expr)) {
+		value_expr <- rlang::sym("treatments")
+	}
+	if (rlang::quo_is_null(row_expr)) {
+		row_expr <- rlang::sym("row")
+	}
+	if (rlang::quo_is_null(column_expr)) {
+		column_expr <- rlang::sym("col")
+	}
 
-    if (rlang::quo_is_null(value_expr)) value_expr <- rlang::sym("treatments")
-    if (rlang::quo_is_null(row_expr)) row_expr <- rlang::sym("row")
-    if (rlang::quo_is_null(column_expr)) column_expr <- rlang::sym("col")
+	value_name <- rlang::quo_name(value_expr)
+	row_name <- rlang::quo_name(row_expr)
+	col_name <- rlang::quo_name(column_expr)
 
-    value_name <- rlang::quo_name(value_expr)
-    row_name <- rlang::quo_name(row_expr)
-    col_name <- rlang::quo_name(column_expr)
+	# Check required columns
+	required_cols <- c(row_name, col_name, value_name)
+	missing_cols <- setdiff(required_cols, names(design))
+	if (length(missing_cols) > 0) {
+		stop("Missing required columns: ", paste(missing_cols, collapse = ", "))
+	}
 
-    # Check required columns
-    required_cols <- c(row_name, col_name, value_name)
-    missing_cols <- setdiff(required_cols, names(design))
-    if (length(missing_cols) > 0) {
-        stop("Missing required columns: ", paste(missing_cols, collapse = ", "))
-    }
+	row_vals <- design[[row_name]]
+	col_vals <- design[[col_name]]
 
-    row_vals <- design[[row_name]]
-    col_vals <- design[[col_name]]
+	as_int_coord <- function(x, nm) {
+		if (is.factor(x)) {
+			x <- as.character(x)
+		}
+		suppressWarnings(out <- as.integer(x))
+		if (anyNA(out)) {
+			stop(
+				"Column '",
+				nm,
+				"' must be coercible to integer coordinates.",
+				call. = FALSE
+			)
+		}
+		out
+	}
 
-    as_int_coord <- function(x, nm) {
-        if (is.factor(x)) x <- as.character(x)
-        suppressWarnings(out <- as.integer(x))
-        if (anyNA(out)) {
-            stop("Column '", nm, "' must be coercible to integer coordinates.", call. = FALSE)
-        }
-        out
-    }
+	row_vals_i <- as_int_coord(row_vals, row_name)
+	col_vals_i <- as_int_coord(col_vals, col_name)
 
-    row_vals_i <- as_int_coord(row_vals, row_name)
-    col_vals_i <- as_int_coord(col_vals, col_name)
+	row_levels <- sort(unique(row_vals_i))
+	col_levels <- sort(unique(col_vals_i))
 
-    row_levels <- sort(unique(row_vals_i))
-    col_levels <- sort(unique(col_vals_i))
+	row_idx <- match(row_vals_i, row_levels)
+	col_idx <- match(col_vals_i, col_levels)
 
-    row_idx <- match(row_vals_i, row_levels)
-    col_idx <- match(col_vals_i, col_levels)
+	# Detect duplicate coordinates to avoid silent overwrites
+	coord_key <- paste(row_idx, col_idx, sep = ":")
+	if (any(duplicated(coord_key))) {
+		stop("Duplicate row/column coordinate pairs detected.", call. = FALSE)
+	}
 
-    # Detect duplicate coordinates to avoid silent overwrites
-    coord_key <- paste(row_idx, col_idx, sep = ":")
-    if (any(duplicated(coord_key))) {
-        stop("Duplicate row/column coordinate pairs detected.", call. = FALSE)
-    }
+	value_vals <- design[[value_name]]
+	if (is.factor(value_vals)) {
+		value_vals <- as.character(value_vals)
+	}
 
-    value_vals <- design[[value_name]]
-    if (is.factor(value_vals)) {
-        value_vals <- as.character(value_vals)
-    }
+	layout_matrix <- if (is.character(value_vals)) {
+		matrix(
+			NA_character_,
+			nrow = length(row_levels),
+			ncol = length(col_levels)
+		)
+	} else {
+		matrix(NA, nrow = length(row_levels), ncol = length(col_levels))
+	}
+	layout_matrix[cbind(row_idx, col_idx)] <- value_vals
 
-    layout_matrix <- if (is.character(value_vals)) {
-        matrix(NA_character_, nrow = length(row_levels), ncol = length(col_levels))
-    } else {
-        matrix(NA, nrow = length(row_levels), ncol = length(col_levels))
-    }
-    layout_matrix[cbind(row_idx, col_idx)] <- value_vals
+	# Convert to data frame
+	layout_df <- as.data.frame(layout_matrix)
 
-    # Convert to data frame
-    layout_df <- as.data.frame(layout_matrix)
+	# Add meaningful row and column names
+	rownames(layout_df) <- paste("Row", row_levels)
+	colnames(layout_df) <- paste("Col", col_levels)
 
-    # Add meaningful row and column names
-    rownames(layout_df) <- paste("Row", row_levels)
-    colnames(layout_df) <- paste("Col", col_levels)
+	# Create workbook and add worksheets
+	wb <- openxlsx2::wb_workbook()$add_worksheet("Layout")$add_worksheet(
+		"Raw_Data"
+	)
 
-    # Create workbook and add worksheets
-    wb <- openxlsx2::wb_workbook()$
-        add_worksheet("Layout")$
-        add_worksheet("Raw_Data")
+	# Write data
+	wb$add_data(sheet = "Layout", x = layout_df, rowNames = TRUE)
+	wb$add_data(sheet = "Raw_Data", x = design)
 
-    # Write data
-    wb$add_data(sheet = "Layout", x = layout_df, rowNames = TRUE)
-    wb$add_data(sheet = "Raw_Data", x = design)
+	# Get dimensions for formatting
+	rows <- nrow(layout_df) + 1
+	cols <- ncol(layout_df) + 1
 
-    # Get dimensions for formatting
-    rows <- nrow(layout_df) + 1
-    cols <- ncol(layout_df) + 1
+	# Apply header style (row 1 and column 1)
+	# wb$add_fill(sheet = "Layout", dims = paste0("A1:", int2col(cols), "1"), color = openxlsx2::wb_color("#4F81BD"))
+	# wb$add_fill(sheet = "Layout", dims = paste0("A1:A", rows), color = openxlsx2::wb_color("#4F81BD"))
+	wb$add_font(
+		sheet = "Layout",
+		dims = paste0("A1:", int2col(cols), "1"),
+		bold = TRUE,
+		size = 12
+	)
+	wb$add_font(
+		sheet = "Layout",
+		dims = paste0("A1:A", rows),
+		bold = TRUE,
+		size = 12
+	)
+	wb$add_cell_style(
+		sheet = "Layout",
+		dims = paste0("A1:", int2col(cols), rows),
+		horizontal = "center",
+		vertical = "center"
+	)
 
-    # Apply header style (row 1 and column 1)
-    # wb$add_fill(sheet = "Layout", dims = paste0("A1:", int2col(cols), "1"), color = openxlsx2::wb_color("#4F81BD"))
-    # wb$add_fill(sheet = "Layout", dims = paste0("A1:A", rows), color = openxlsx2::wb_color("#4F81BD"))
-    wb$add_font(sheet = "Layout", dims = paste0("A1:", int2col(cols), "1"),
-                bold = TRUE, size = 12)
-    wb$add_font(sheet = "Layout", dims = paste0("A1:A", rows),
-                bold = TRUE, size = 12)
-    wb$add_cell_style(sheet = "Layout", dims = paste0("A1:", int2col(cols), rows),
-                      horizontal = "center", vertical = "center")
+	# Apply borders to data cells
+	wb$add_border(
+		sheet = "Layout",
+		dims = paste0("B2:", int2col(cols), rows),
+		top_color = openxlsx2::wb_color("black"),
+		bottom_color = openxlsx2::wb_color("black"),
+		left_color = openxlsx2::wb_color("black"),
+		right_color = openxlsx2::wb_color("black")
+	)
 
-    # Apply borders to data cells
-    wb$add_border(sheet = "Layout", dims = paste0("B2:", int2col(cols), rows),
-                  top_color = openxlsx2::wb_color("black"),
-                  bottom_color = openxlsx2::wb_color("black"),
-                  left_color = openxlsx2::wb_color("black"),
-                  right_color = openxlsx2::wb_color("black"))
+	# Apply colour coding if palette is specified
+	if (!is.null(palette)) {
+		# Match `autoplot.design()` treatment ordering to keep colours consistent
+		trt_values <- as.character(design[[value_name]])
+		has_buffers <- "buffer" %in% trt_values
 
-    # Apply colour coding if palette is specified
-    if (!is.null(palette)) {
-        # Match `autoplot.design()` treatment ordering to keep colours consistent
-        trt_values <- as.character(design[[value_name]])
-        has_buffers <- "buffer" %in% trt_values
+		if (has_buffers) {
+			treatments_only <- unique(trt_values)
+			treatments_only <- treatments_only[treatments_only != "buffer"]
+			treatments_sorted <- stringi::stri_sort(
+				treatments_only,
+				numeric = TRUE
+			)
+			treatment_levels <- c(treatments_sorted, "buffer")
+			ntrt <- length(treatments_sorted) # Excluding buffer
+		} else {
+			treatment_levels <- unique(stringi::stri_sort(
+				trt_values,
+				numeric = TRUE
+			))
+			ntrt <- length(treatment_levels)
+		}
 
-        if (has_buffers) {
-            treatments_only <- unique(trt_values)
-            treatments_only <- treatments_only[treatments_only != "buffer"]
-            treatments_sorted <- stringi::stri_sort(treatments_only, numeric = TRUE)
-            treatment_levels <- c(treatments_sorted, "buffer")
-            ntrt <- length(treatments_sorted) # Excluding buffer
-        } else {
-            treatment_levels <- unique(stringi::stri_sort(trt_values, numeric = TRUE))
-            ntrt <- length(treatment_levels)
-        }
+		colours <- setup_colour_palette(palette, ntrt)
 
-        colours <- setup_colour_palette(palette, ntrt)
+		# Match `autoplot.design()` behaviour: buffer gets a white fill
+		if (has_buffers) {
+			colours <- c(colours, "white")
+		}
 
-        # Match `autoplot.design()` behaviour: buffer gets a white fill
-        if (has_buffers) {
-            colours <- c(colours, "white")
-        }
+		# Expand 3-digit hex codes to 6-digit and 4-digit to 8-digit for openxlsx2 compatibility
+		colours <- gsub(
+			"^#([0-9A-Fa-f])([0-9A-Fa-f])([0-9A-Fa-f])$",
+			"#\\1\\1\\2\\2\\3\\3",
+			colours
+		) # 3-digit -> 6-digit
+		colours <- gsub(
+			"^#([0-9A-Fa-f])([0-9A-Fa-f])([0-9A-Fa-f])([0-9A-Fa-f])$",
+			"#\\1\\1\\2\\2\\3\\3\\4\\4",
+			colours
+		) # 4-digit -> 8-digit
+		# Remove transparency from 8-digit hex codes
+		colours <- gsub("^(#[0-9A-Fa-f]{6})[0-9A-Fa-f]{2}$", "\\1", colours) # 8-digit -> 6-digit
 
-        # Expand 3-digit hex codes to 6-digit and 4-digit to 8-digit for openxlsx2 compatibility
-        colours <- gsub("^#([0-9A-Fa-f])([0-9A-Fa-f])([0-9A-Fa-f])$", "#\\1\\1\\2\\2\\3\\3", colours)  # 3-digit -> 6-digit
-        colours <- gsub("^#([0-9A-Fa-f])([0-9A-Fa-f])([0-9A-Fa-f])([0-9A-Fa-f])$", "#\\1\\1\\2\\2\\3\\3\\4\\4", colours)  # 4-digit -> 8-digit
-        # Remove transparency from 8-digit hex codes
-        colours <- gsub("^(#[0-9A-Fa-f]{6})[0-9A-Fa-f]{2}$", "\\1", colours)  # 8-digit -> 6-digit
+		# Create colour mapping
+		colour_map <- setNames(colours, treatment_levels)
 
-        # Create colour mapping
-        colour_map <- setNames(colours, treatment_levels)
+		# Apply colours to cells
+		for (i in 2:rows) {
+			for (j in 2:cols) {
+				cell_value <- layout_df[i - 1, j - 1, drop = TRUE]
+				if (!is.na(cell_value)) {
+					colour <- unname(colour_map[as.character(cell_value)])
+					if (is.na(colour)) {
+						next
+					}
+					cell_ref <- paste0(int2col(j), i)
 
-        # Apply colours to cells
-        for (i in 2:rows) {
-            for (j in 2:cols) {
-                cell_value <- layout_df[i - 1, j - 1, drop = TRUE]
-                if (!is.na(cell_value)) {
-                    colour <- unname(colour_map[as.character(cell_value)])
-                    if (is.na(colour)) {
-                        next
-                    }
-                    cell_ref <- paste0(int2col(j), i)
+					# Apply fill color
+					wb$add_fill(
+						sheet = "Layout",
+						dims = cell_ref,
+						color = openxlsx2::wb_color(colour)
+					)
 
-                    # Apply fill color
-                    wb$add_fill(sheet = "Layout", dims = cell_ref,
-                               color = openxlsx2::wb_color(colour))
+					# Apply font color based on background lightness
+					font_col <- ifelse(
+						is_light_colour(colour),
+						"black",
+						"white"
+					)
+					wb$add_font(
+						sheet = "Layout",
+						dims = cell_ref,
+						color = openxlsx2::wb_color(font_col)
+					)
 
-                    # Apply font color based on background lightness
-                    font_col <- ifelse(is_light_colour(colour), "black", "white")
-                    wb$add_font(sheet = "Layout", dims = cell_ref,
-                               color = openxlsx2::wb_color(font_col))
+					# Apply borders
+					wb$add_border(
+						sheet = "Layout",
+						dims = cell_ref,
+						top_color = openxlsx2::wb_color("black"),
+						bottom_color = openxlsx2::wb_color("black"),
+						left_color = openxlsx2::wb_color("black"),
+						right_color = openxlsx2::wb_color("black")
+					)
+				}
+			}
+		}
+	}
 
-                    # Apply borders
-                    wb$add_border(sheet = "Layout", dims = cell_ref,
-                                 top_color = openxlsx2::wb_color("black"),
-                                 bottom_color = openxlsx2::wb_color("black"),
-                                 left_color = openxlsx2::wb_color("black"),
-                                 right_color = openxlsx2::wb_color("black"))
-                }
-            }
-        }
-    }
+	# Auto-size columns
+	wb$set_col_widths(sheet = "Layout", cols = 1:cols, widths = "auto")
 
-    # Auto-size columns
-    wb$set_col_widths(sheet = "Layout", cols = 1:cols, widths = "auto")
+	# Save workbook
+	wb$save(file = filename, overwrite = TRUE)
 
-    # Save workbook
-    wb$save(file = filename, overwrite = TRUE)
-
-    message("Excel file saved as: ", filename)
-    return(invisible(layout_df))
+	message("Excel file saved as: ", filename)
+	return(invisible(layout_df))
 }
