@@ -1,0 +1,21 @@
+# Configuration for air, the R formatter/linter (https://posit-dev.github.io/air/)
+[format]
+line-width = 80
+indent-width = 4
+indent-style = "space"
+line-ending = "auto"
+
+# Keep loose research/scratch scripts in the repo root out of formatting —
+# these mirror the entries already excluded from the package build in .Rbuildignore.
+exclude = [
+  "*SamVariogram.R",
+  "asreml_activation.R",
+  "asreml_licencing.R",
+  "other_model_types.R",
+  "r_code_03c_paper_model_asreml.R",
+  "sommer_vs_asreml.R",
+  "sommer_vs_asreml_Jules.R",
+  "normalitycheck.R",
+  "check_rhub.R",
+  "Update_links.R",
+]
