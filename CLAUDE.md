@@ -30,6 +30,11 @@ devtools::test(filter = "design")   # runs test-design.R
 # Full R CMD check (what CI runs; must pass clean for CRAN)
 devtools::check()
 
+# Format R code with Air (run from a shell, not the R console).
+# CI enforces formatting — code that isn't Air-formatted fails the build.
+air format .          # format the whole package in place
+air format --check .  # check only (what the format-check CI job runs)
+
 # Build README.md from README.Rmd (never edit README.md directly)
 devtools::build_readme()
 
@@ -77,6 +82,14 @@ These functions operate on already-fitted model objects (`aov`, `asreml`, `lme`/
 - `tests/testthat/helper-expectations.R` defines custom expectations (e.g. `expect_design_output`, `equivalent_ggplot2`) and helpers — reuse these rather than re-asserting structure inline.
 - `tests/testthat/data/*.Rdata` are pre-fitted model objects for each supported engine, so tests don't need the (commercial/heavy) modelling packages installed at test time.
 - `setup-*.R` / `teardown-*.R` files manage per-suite fixtures (e.g. `teardown-install_asreml.R`).
+
+## Code formatting (Air)
+
+The package is formatted with [Air](https://posit-dev.github.io/air/), Posit's R formatter, configured in `air.toml` (line width 80, 4-space indent). Key implications:
+
+- **Formatting is enforced in CI** via `.github/workflows/format-check.yaml` (`air format --check .` on PRs and pushes to `main`). Run `air format .` before committing or the check will fail.
+- `.vscode/settings.json` enables format-on-save for R files using the `Posit.air-vscode` extension (recommended in `.vscode/extensions.json`), so edits in VS Code are auto-formatted.
+- The scratch/research `.R` scripts in the repo root are excluded from formatting via the `exclude` list in `air.toml` — mirroring their `.Rbuildignore` entries. Add new scratch scripts to both lists.
 
 ## Conventions
 
