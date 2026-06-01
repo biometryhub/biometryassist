@@ -30,7 +30,12 @@ dat <- dat %>% mutate(across(c(1:5, 7:8), factor))
 # dat <- dat %>% mutate(across(c(Row, Column, Blocks, Wplots, Subplots, Nitrogen, Variety), factor)) # Equivalently
 
 # Explore the data as necessary
-summary_graph(dat, response, exp_var = c(var1, var2), resp_units = "Y axis units")
+summary_graph(
+	dat,
+	response,
+	exp_var = c(var1, var2),
+	resp_units = "Y axis units"
+)
 
 # fitting the model
 dat.aov <- aov(response ~ structural + treatments, data = dat) # fitting the model
@@ -47,4 +52,4 @@ pred.out
 
 # Graph the predicted values
 autoplot(pred.out) +
-    labs(x = "Treatments", y = "Predicted Response")
+	labs(x = "Treatments", y = "Predicted Response")

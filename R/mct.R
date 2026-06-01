@@ -203,136 +203,141 @@
 #'
 #' @export
 #'
-multiple_comparisons <- function(model.obj,
-                                 classify,
-                                 sig = 0.05,
-                                 int.type = "ci",
-                                 trans = NULL,
-                                 offset = NULL,
-                                 power = NULL,
-                                 decimals = 2,
-                                 descending = FALSE,
-                                 groups = TRUE,
-                                 plot = FALSE,
-                                 label_height = 0.1,
-                                 rotation = 0,
-                                 save = FALSE,
-                                 savename = "predicted_values",
-                                 order,
-                                 pred.obj,
-                                 pred,
-                                 ...) {
+multiple_comparisons <- function(
+	model.obj,
+	classify,
+	sig = 0.05,
+	int.type = "ci",
+	trans = NULL,
+	offset = NULL,
+	power = NULL,
+	decimals = 2,
+	descending = FALSE,
+	groups = TRUE,
+	plot = FALSE,
+	label_height = 0.1,
+	rotation = 0,
+	save = FALSE,
+	savename = "predicted_values",
+	order,
+	pred.obj,
+	pred,
+	...
+) {
+	# Handle deprecated parameters
+	handle_deprecated_param("pred", "classify", classify)
+	handle_deprecated_param("order", "descending", descending)
 
-    # Handle deprecated parameters
-    handle_deprecated_param("pred", "classify", classify)
-    handle_deprecated_param("order", "descending", descending)
+	vars <- validate_inputs(sig, classify, model.obj, trans)
 
-    vars <- validate_inputs(sig, classify, model.obj, trans)
+	# Handle deprecated parameter that's being removed
+	handle_deprecated_param(
+		"pred.obj",
+		NULL,
+		"Predictions are now performed internally in the function."
+	)
 
-    # Handle deprecated parameter that's being removed
-    handle_deprecated_param("pred.obj", NULL, "Predictions are now performed internally in the function.")
+	# Process dots
+	rlang::check_dots_used()
+	args = list(...)
 
-    # Process dots
-    rlang::check_dots_used()
-    args = list(...)
+	# Check for alias 'letters' instead of 'groups'
+	if ("letters" %in% names(args)) {
+		if (!missing(groups)) {
+			warning("Both 'groups' and 'letters' provided. Using 'groups'.")
+		} else {
+			groups <- args$letters
+		}
+	}
 
-    # Check for alias 'letters' instead of 'groups'
-    if ("letters" %in% names(args)) {
-        if (!missing(groups)) {
-            warning("Both 'groups' and 'letters' provided. Using 'groups'.")
-        } else {
-            groups <- args$letters
-        }
-    }
+	# Get model-specific predictions and SED
+	result <- get_predictions(model.obj, classify, pred.obj, ...)
 
-    # Get model-specific predictions and SED
-    result <- get_predictions(model.obj, classify, pred.obj, ...)
+	pp <- result$predictions
+	sed <- result$sed
+	ndf <- result$df
+	ylab <- result$ylab
+	aliased <- result$aliased_names
 
-    pp <- result$predictions
-    sed <- result$sed
-    ndf <- result$df
-    ylab <- result$ylab
-    aliased <- result$aliased_names
+	# Process treatment names
+	pp <- process_treatment_names(pp, classify, vars)
 
-    # Process treatment names
-    pp <- process_treatment_names(pp, classify, vars)
+	# Calculate critical values and determine pairs that are significantly different
+	result <- get_diffs(pp, sed, ndf, sig)
+	crit_val <- result$crit_val
+	diffs <- result$diffs
 
-    # Calculate critical values and determine pairs that are significantly different
-    result <- get_diffs(pp, sed, ndf, sig)
-    crit_val <- result$crit_val
-    diffs <- result$diffs
+	# Calculate p-value matrix for all pairwise comparisons
+	pval_matrix <- calculate_pvalue_matrix(pp, sed, ndf)
 
-    # Calculate p-value matrix for all pairwise comparisons
-    pval_matrix <- calculate_pvalue_matrix(pp, sed, ndf)
+	# Add letter groups if requested
+	if (groups) {
+		pp <- add_letter_groups(pp, diffs, descending)
+	}
 
-    # Add letter groups if requested
-    if (groups) {
-        pp <- add_letter_groups(pp, diffs, descending)
-    }
+	# Calculate confidence intervals
+	pp <- add_confidence_intervals(pp, int.type, sig, ndf)
 
-    # Calculate confidence intervals
-    pp <- add_confidence_intervals(pp, int.type, sig, ndf)
+	# Apply transformations if requested
+	if (!is.null(trans)) {
+		pp <- apply_transformation(pp, trans, offset, power)
+	} else {
+		pp$low <- pp$predicted.value - pp$ci
+		pp$up <- pp$predicted.value + pp$ci
+	}
 
-    # Apply transformations if requested
-    if (!is.null(trans)) {
-        pp <- apply_transformation(pp, trans, offset, power)
-    } else {
-        pp$low <- pp$predicted.value - pp$ci
-        pp$up <- pp$predicted.value + pp$ci
-    }
+	# Order results and format output
+	pp <- format_output(pp, descending, vars, decimals)
 
-    # Order results and format output
-    pp <- format_output(pp, descending, vars, decimals)
+	# Save if requested
+	if (save) {
+		utils::write.csv(pp, file = paste0(savename, ".csv"), row.names = FALSE)
+	}
 
-    # Save if requested
-    if (save) {
-        utils::write.csv(pp, file = paste0(savename, ".csv"), row.names = FALSE)
-    }
+	# Check for CI/letter group inconsistencies and warn if needed
+	if (groups && tolower(int.type) == "ci") {
+		check_ci_consistency(pp)
+	}
 
-    # Check for CI/letter group inconsistencies and warn if needed
-    if (groups && tolower(int.type) == "ci") {
-        check_ci_consistency(pp)
-    }
+	# Prepare HSD value(s) for output
+	if (isTRUE(stats::var(as.vector(crit_val), na.rm = TRUE) < 1e-10)) {
+		hsd_output <- crit_val[1, 2]
+	} else {
+		hsd_output <- crit_val
+	}
 
-    # Prepare HSD value(s) for output
-    if (stats::var(as.vector(crit_val), na.rm = TRUE) < 1e-10) {
-        hsd_output <- crit_val[1, 2]
-    } else {
-        hsd_output <- crit_val
-    }
+	# Create output list
+	output <- list(
+		predictions = pp,
+		pairwise_pvalues = pval_matrix,
+		hsd = hsd_output,
+		sig_level = sig
+	)
 
-    # Create output list
-    output <- list(
-        predictions = pp,
-        pairwise_pvalues = pval_matrix,
-        hsd = hsd_output,
-        sig_level = sig
-    )
+	# Add aliased treatments if present
+	if (!is.null(aliased)) {
+		output$aliased <- as.character(aliased)
+	}
 
-    # Add aliased treatments if present
-    if (!is.null(aliased)) {
-        output$aliased <- as.character(aliased)
-    }
+	# Strip transformation from ylab if trans is provided
+	ylab <- strip_transformation_from_label(ylab, trans)
 
-    # Strip transformation from ylab if trans is provided
-    ylab <- strip_transformation_from_label(ylab, trans)
+	# Add attributes for backward compatibility
+	attr(output, "ylab") <- ylab
+	attr(output, "HSD") <- hsd_output # Keep for backward compatibility
+	if (!is.null(aliased)) {
+		attr(output, "aliased") <- as.character(aliased)
+	}
 
-    # Add attributes for backward compatibility
-    attr(output, "ylab") <- ylab
-    attr(output, "HSD") <- hsd_output  # Keep for backward compatibility
-    if (!is.null(aliased)) {
-        attr(output, "aliased") <- as.character(aliased)
-    }
+	# Add class
+	class(output) <- c("mct", "list")
 
-    # Add class
-    class(output) <- c("mct", "list")
+	# Plot if requested
+	if (plot) {
+		print(autoplot(output))
+	}
 
-    # Plot if requested
-    if (plot) {
-        print(autoplot(output))
-    }
-
-    return(output)
+	return(output)
 }
 
 
@@ -350,25 +355,34 @@ multiple_comparisons <- function(model.obj,
 #' output <- multiple_comparisons(dat.aov, classify = "Species")
 #' print(output)
 print.mct <- function(x, ...) {
-    stopifnot(inherits(x, "mct"))
+	stopifnot(inherits(x, "mct"))
 
-    cat("Multiple Comparisons of Means: Tukey's HSD Test\n")
-    cat("Significance level:", x$sig_level, "\n")
-    cat("HSD value:", if(length(x$hsd) == 1) x$hsd else "varies by comparison (see $hsd)\n", "\n")
-    cat("\nPredicted values:\n")
-    print.data.frame(x$predictions, ...)
+	cat("Multiple Comparisons of Means: Tukey's HSD Test\n")
+	cat("Significance level:", x$sig_level, "\n")
+	cat(
+		"HSD value:",
+		if (length(x$hsd) == 1) x$hsd else "varies by comparison (see $hsd)\n",
+		"\n"
+	)
+	cat("\nPredicted values:\n")
+	print.data.frame(x$predictions, ...)
 
-    if(!is.null(x$aliased)) {
-        aliased <- x$aliased
-        if(length(aliased) > 1) {
-            cat("\nAliased levels are:", paste(aliased[1:(length(aliased)-1)], collapse = ", "), "and", aliased[length(aliased)], "\n")
-        }
-        else {
-            cat("\nAliased level is:", aliased, "\n")
-        }
-    }
+	if (!is.null(x$aliased)) {
+		aliased <- x$aliased
+		if (length(aliased) > 1) {
+			cat(
+				"\nAliased levels are:",
+				paste(aliased[1:(length(aliased) - 1)], collapse = ", "),
+				"and",
+				aliased[length(aliased)],
+				"\n"
+			)
+		} else {
+			cat("\nAliased level is:", aliased, "\n")
+		}
+	}
 
-    invisible(x)
+	invisible(x)
 }
 
 
@@ -381,188 +395,242 @@ print.mct <- function(x, ...) {
 #' @return Symmetric matrix of p-values with treatment names as row/column names
 #' @noRd
 calculate_pvalue_matrix <- function(pp, sed, ndf) {
-    n <- nrow(pp)
-    treatment_names <- pp$Names
+	n <- nrow(pp)
+	treatment_names <- pp$Names
 
-    # Initialize p-value matrix
-    pval_matrix <- matrix(1, nrow = n, ncol = n,
-                         dimnames = list(treatment_names, treatment_names))
+	# Initialize p-value matrix
+	pval_matrix <- matrix(
+		1,
+		nrow = n,
+		ncol = n,
+		dimnames = list(treatment_names, treatment_names)
+	)
 
-    if (n <= 1) {
-        return(pval_matrix)
-    }
+	if (n <= 1) {
+		return(pval_matrix)
+	}
 
-    # Vectorized pairwise differences for the upper triangle
-    pair_idx <- which(upper.tri(pval_matrix), arr.ind = TRUE)
-    i <- pair_idx[, 1]
-    j <- pair_idx[, 2]
+	# Vectorized pairwise differences for the upper triangle
+	pair_idx <- which(upper.tri(pval_matrix), arr.ind = TRUE)
+	i <- pair_idx[, 1]
+	j <- pair_idx[, 2]
 
-    diff <- abs(pp$predicted.value[i] - pp$predicted.value[j])
+	diff <- abs(pp$predicted.value[i] - pp$predicted.value[j])
 
-    # Get the appropriate SED for each comparison.
-    # `sed` may be a scalar, a base matrix, or a Matrix::* matrix.
-    sed_ij <- if (!is.null(dim(sed))) {
-        as.numeric(sed[cbind(i, j)])
-    } else {
-        rep_len(sed, length(diff))
-    }
+	# Get the appropriate SED for each comparison.
+	# `sed` may be a scalar, a base matrix, or a Matrix::* matrix.
+	sed_ij <- if (!is.null(dim(sed))) {
+		as.numeric(sed[cbind(i, j)])
+	} else {
+		rep_len(sed, length(diff))
+	}
 
-    # Calculate the studentized range statistic and p-values in one call
-    q_stat <- as.numeric(diff / sed_ij) * sqrt(2)
-    pvals <- stats::ptukey(q_stat, nmeans = n, df = ndf, lower.tail = FALSE)
+	# Calculate the studentized range statistic and p-values in one call
+	q_stat <- as.numeric(diff / sed_ij) * sqrt(2)
 
-    pval_matrix[cbind(i, j)] <- pvals
-    pval_matrix[cbind(j, i)] <- pvals
+	# If ndf is a matrix, convert q_stat to a matrix before calculating p-value matrix
+	if (is.matrix(ndf) == TRUE) {
+		q_stat_matrix <- matrix(0, nrow = n, ncol = n)
+		q_stat_matrix[cbind(i, j)] <- q_stat
+		q_stat_matrix[cbind(j, i)] <- q_stat
+		pval_matrix <- stats::ptukey(
+			q_stat_matrix,
+			nmeans = n,
+			df = ndf,
+			lower.tail = FALSE
+		)
+	} else {
+		pvals <- stats::ptukey(q_stat, nmeans = n, df = ndf, lower.tail = FALSE)
 
-    return(pval_matrix)
+		# if pvals is not a matrix, then convert it to a matrix
+		if (is.matrix(pvals) == FALSE) {
+			pval_matrix[cbind(i, j)] <- pvals
+			pval_matrix[cbind(j, i)] <- pvals
+		}
+	}
+
+	return(pval_matrix)
 }
 
 
 #' @noRd
 add_letter_groups <- function(pp, diffs, descending) {
-    ll <- multcompView::multcompLetters3("Names", "predicted.value", diffs, pp, reversed = !descending)
+	ll <- multcompView::multcompLetters3(
+		"Names",
+		"predicted.value",
+		diffs,
+		pp,
+		reversed = !descending
+	)
 
-    rr <- data.frame(groups = ll$Letters)
-    rr$Names <- row.names(rr)
+	rr <- data.frame(groups = ll$Letters)
+	rr$Names <- row.names(rr)
 
-    pp <- merge(pp, rr)
-    return(pp)
+	pp <- merge(pp, rr)
+	return(pp)
 }
 
 
 #' @noRd
 format_output <- function(pp, descending, vars, decimals) {
-    # Order by predicted value
-    pp <- pp[base::order(pp$predicted.value, decreasing = descending), ]
+	# Order by predicted value
+	pp <- pp[base::order(pp$predicted.value, decreasing = descending), ]
 
-    # Remove Names column
-    pp$Names <- NULL
+	# Remove Names column
+	pp$Names <- NULL
 
-    # Extract treatment variable names
-    trtindex <- max(unlist(lapply(paste0("^", vars, "$"), grep, x = names(pp))))
-    trtnam <- names(pp)[1:trtindex]
+	# Extract treatment variable names
+	trtindex <- max(unlist(lapply(paste0("^", vars, "$"), grep, x = names(pp))))
+	trtnam <- names(pp)[1:trtindex]
 
-    # Exclude reserved column names
-    reserved_cols <- c("predicted.value", "std.error", "Df", "groups",
-                       "PredictedValue", "ApproxSE", "ci", "low", "up")
-    trtnam <- trtnam[trtnam %!in% reserved_cols]
+	# Exclude reserved column names
+	reserved_cols <- c(
+		"predicted.value",
+		"std.error",
+		"Df",
+		"groups",
+		"PredictedValue",
+		"ApproxSE",
+		"ci",
+		"low",
+		"up"
+	)
+	trtnam <- trtnam[trtnam %!in% reserved_cols]
 
-    # Convert treatment columns to factors with ordered levels
-    for (i in seq_along(trtnam)) {
-        pp[[trtnam[i]]] <- factor(pp[[trtnam[i]]], levels = unique(pp[[trtnam[i]]]))
-    }
+	# Convert treatment columns to factors with ordered levels
+	for (i in seq_along(trtnam)) {
+		pp[[trtnam[i]]] <- factor(
+			pp[[trtnam[i]]],
+			levels = unique(pp[[trtnam[i]]])
+		)
+	}
 
-    # Helper function to calculate decimal places needed to avoid rounding to zero
-    calc_se_decimals <- function(values, default_decimals) {
-        min_val <- min(values, na.rm = TRUE)
-        if (min_val > 0 && round(min_val, default_decimals) == 0) {
-            max(default_decimals, -floor(log10(min_val)) + 1)
-        } else {
-            default_decimals
-        }
-    }
+	# Helper function to calculate decimal places needed to avoid rounding to zero
+	calc_se_decimals <- function(values, default_decimals) {
+		min_val <- min(values, na.rm = TRUE)
+		if (min_val > 0 && round(min_val, default_decimals) == 0) {
+			max(default_decimals, -floor(log10(min_val)) + 1)
+		} else {
+			default_decimals
+		}
+	}
 
-    # Identify SE columns and calculate needed decimal places
-    se_cols <- intersect(c("std.error", "ApproxSE"), names(pp))
-    se_decimals <- sapply(se_cols, function(col) calc_se_decimals(pp[[col]], decimals))
+	# Identify SE columns and calculate needed decimal places
+	se_cols <- intersect(c("std.error", "ApproxSE"), names(pp))
+	se_decimals <- sapply(se_cols, function(col) {
+		calc_se_decimals(pp[[col]], decimals)
+	})
 
-    # Warn if any SE columns need more decimal places
-    if (any(se_decimals > decimals)) {
-        warning("Some standard errors are very small and would round to zero with ",
-                decimals, " decimal places. Using ", max(se_decimals),
-                " decimal places for standard error columns to preserve error bar display.",
-                call. = FALSE)
-    }
+	# Warn if any SE columns need more decimal places
+	if (any(se_decimals > decimals)) {
+		warning(
+			"Some standard errors are very small and would round to zero with ",
+			decimals,
+			" decimal places. Using ",
+			max(se_decimals),
+			" decimal places for standard error columns to preserve error bar display.",
+			call. = FALSE
+		)
+	}
 
-    # Round all numeric columns
-    numeric_cols <- names(pp)[sapply(pp, is.numeric)]
-    for (col in numeric_cols) {
-        pp[[col]] <- round(pp[[col]],
-                           if (col %in% names(se_decimals)) se_decimals[[col]] else decimals)
-    }
+	# Round all numeric columns
+	numeric_cols <- names(pp)[sapply(pp, is.numeric)]
+	for (col in numeric_cols) {
+		pp[[col]] <- round(
+			pp[[col]],
+			if (col %in% names(se_decimals)) se_decimals[[col]] else decimals
+		)
+	}
 
-    # Remove row names
-    rownames(pp) <- NULL
-    return(pp)
+	# Remove row names
+	rownames(pp) <- NULL
+	return(pp)
 }
 
 
 #' @noRd
 strip_transformation_from_label <- function(ylab, trans) {
-    if (is.null(trans)) {
-        return(ylab)
-    }
+	if (is.null(trans)) {
+		return(ylab)
+	}
 
-    # Convert to character
-    ylab_char <- if (is.language(ylab)) deparse(ylab) else as.character(ylab)
+	# Convert to character
+	ylab_char <- if (is.language(ylab)) deparse(ylab) else as.character(ylab)
 
-    # Simple pattern matching for common transformations
-    stripped <- switch(trans,
-                       "log" = sub("^log(10)?\\((.+)\\)$", "\\2", ylab_char),
-                       "sqrt" = sub("^sqrt\\((.+)\\)$", "\\1", ylab_char),
-                       "logit" = sub("^logit\\((.+)\\)$", "\\1", ylab_char),
-                       "arcsin" = sub("^a?r?c?sin\\(sqrt\\((.+)\\)\\)$", "\\1", ylab_char),
-                       "inverse" = sub("^\\(?1/([^)]+)\\)?$", "\\1", ylab_char),
-                       "power" = sub("^\\(?(.+?)\\)?\\^.+$", "\\1", ylab_char),
-                       ylab_char  # default: return as-is
-    )
+	# Simple pattern matching for common transformations
+	stripped <- switch(
+		trans,
+		"log" = sub("^log(10)?\\((.+)\\)$", "\\2", ylab_char),
+		"sqrt" = sub("^sqrt\\((.+)\\)$", "\\1", ylab_char),
+		"logit" = sub("^logit\\((.+)\\)$", "\\1", ylab_char),
+		"arcsin" = sub("^a?r?c?sin\\(sqrt\\((.+)\\)\\)$", "\\1", ylab_char),
+		"inverse" = sub("^\\(?1/([^)]+)\\)?$", "\\1", ylab_char),
+		"power" = sub("^\\(?(.+?)\\)?\\^.+$", "\\1", ylab_char),
+		ylab_char # default: return as-is
+	)
 
-    return(stripped)
+	return(stripped)
 }
 
 
 #' @noRd
 check_ci_consistency <- function(pp) {
+	result <- FALSE
+	# Pre-extract and validate data once
+	n <- nrow(pp)
+	low <- pp$predicted.value - pp$ci
+	up <- pp$predicted.value + pp$ci
+	groups <- as.character(pp$groups)
 
-    result <- FALSE
-    # Pre-extract and validate data once
-    n <- nrow(pp)
-    low <- pp$predicted.value - pp$ci
-    up <- pp$predicted.value + pp$ci
-    groups <- as.character(pp$groups)
+	# Pre-process group letters efficiently
+	group_letters <- vector("list", length(groups))
+	for (i in seq_along(groups)) {
+		group_letters[[i]] <- unique(strsplit(groups[i], "")[[1]])
+	}
 
-    # Pre-process group letters efficiently
-    group_letters <- vector("list", length(groups))
-    for (i in seq_along(groups)) {
-        group_letters[[i]] <- unique(strsplit(groups[i], "")[[1]])
-    }
+	# Vectorized overlap detection using outer operations
+	# Two intervals [a,b] and [c,d] overlap if max(a,c) <= min(b,d)
+	low_matrix <- matrix(low, nrow = n, ncol = n, byrow = TRUE)
+	up_matrix <- matrix(up, nrow = n, ncol = n, byrow = FALSE)
 
-    # Vectorized overlap detection using outer operations
-    # Two intervals [a,b] and [c,d] overlap if max(a,c) <= min(b,d)
-    low_matrix <- matrix(low, nrow = n, ncol = n, byrow = TRUE)
-    up_matrix <- matrix(up, nrow = n, ncol = n, byrow = FALSE)
+	# Only compute upper triangle to avoid redundant comparisons
+	upper_tri <- upper.tri(matrix(TRUE, n, n))
 
-    # Only compute upper triangle to avoid redundant comparisons
-    upper_tri <- upper.tri(matrix(TRUE, n, n))
+	# Vectorized overlap check
+	max_lows <- pmax(low_matrix, t(low_matrix))
+	min_ups <- pmin(up_matrix, t(up_matrix))
+	overlaps <- max_lows <= min_ups
 
-    # Vectorized overlap check
-    max_lows <- pmax(low_matrix, t(low_matrix))
-    min_ups <- pmin(up_matrix, t(up_matrix))
-    overlaps <- max_lows <= min_ups
+	# Find non-overlapping pairs in upper triangle only
+	non_overlapping <- upper_tri & !overlaps
 
-    # Find non-overlapping pairs in upper triangle only
-    non_overlapping <- upper_tri & !overlaps
+	if (!any(non_overlapping)) {
+		return(FALSE)
+	}
 
-    if (!any(non_overlapping)) return(FALSE)
+	# Get indices efficiently
+	indices <- which(non_overlapping, arr.ind = TRUE)
 
-    # Get indices efficiently
-    indices <- which(non_overlapping, arr.ind = TRUE)
+	# Check for shared letters only among non-overlapping pairs
+	for (k in seq_len(nrow(indices))) {
+		i <- indices[k, 1]
+		j <- indices[k, 2]
 
-    # Check for shared letters only among non-overlapping pairs
-    for (k in seq_len(nrow(indices))) {
-        i <- indices[k, 1]
-        j <- indices[k, 2]
+		if (
+			groups[i] == groups[j] |
+				length(intersect(group_letters[[i]], group_letters[[j]])) > 0
+		) {
+			message(
+				"Note: Some treatments sharing the same letter group have non-overlapping confidence intervals.\n",
+				"This is expected behavior as regular confidence intervals estimate individual mean precision,\n",
+				"while Tukey's HSD controls family-wise error rates. For visual consistency with letter groups,\n",
+				"consider using 'int.type = \"tukey\"' to display Tukey comparison intervals."
+			)
+			return(TRUE)
+		}
+	}
 
-        if (groups[i] == groups[j] | length(intersect(group_letters[[i]], group_letters[[j]])) > 0) {
-            message("Note: Some treatments sharing the same letter group have non-overlapping confidence intervals.\n",
-                    "This is expected behavior as regular confidence intervals estimate individual mean precision,\n",
-                    "while Tukey's HSD controls family-wise error rates. For visual consistency with letter groups,\n",
-                    "consider using 'int.type = \"tukey\"' to display Tukey comparison intervals.")
-            return(TRUE)
-        }
-    }
-
-    invisible(result)
+	invisible(result)
 }
 
 
@@ -570,280 +638,364 @@ check_ci_consistency <- function(pp) {
 #' @keywords internal
 #' @noRd
 validate_inputs <- function(sig, classify, model.obj, trans) {
-    # Check significance level
-    if (sig >= 0.5) {
-        if(sig >= 1 & sig < 50) {
-            stop("Significance level given by `sig` is high. Perhaps you meant ", sig/100, "?", call. = FALSE)
-        }
-        else if(sig >= 1 & sig >= 50) {
-            stop("Significance level given by `sig` is high. Perhaps you meant ", 1-(sig/100), "?", call. = FALSE)
-        }
-        else {
-            warning("Significance level given by `sig` is high. Perhaps you meant ", 1-sig, "?", call. = FALSE)
-        }
-    }
+	# Check significance level
+	if (sig >= 0.5) {
+		if (sig >= 1 & sig < 50) {
+			stop(
+				"Significance level given by `sig` is high. Perhaps you meant ",
+				sig / 100,
+				"?",
+				call. = FALSE
+			)
+		} else if (sig >= 1 & sig >= 50) {
+			stop(
+				"Significance level given by `sig` is high. Perhaps you meant ",
+				1 - (sig / 100),
+				"?",
+				call. = FALSE
+			)
+		} else {
+			warning(
+				"Significance level given by `sig` is high. Perhaps you meant ",
+				1 - sig,
+				"?",
+				call. = FALSE
+			)
+		}
+	}
 
-    # Get the individual names provided in classify
-    vars <- unlist(strsplit(classify, "\\:"))
-    reserved_col_names <- c("predicted.value", "std.error", "Df",
-                            "groups", "PredictedValue", "ApproxSE", "ci", "low", "up")
-    if (any(vars %in% reserved_col_names)) {
-        stop("Invalid column name. Please change the name of column(s): ",
-             vars[vars %in% reserved_col_names], call. = FALSE)
-    }
+	# Get the individual names provided in classify
+	vars <- unlist(strsplit(classify, "\\:"))
+	reserved_col_names <- c(
+		"predicted.value",
+		"std.error",
+		"Df",
+		"groups",
+		"PredictedValue",
+		"ApproxSE",
+		"ci",
+		"low",
+		"up"
+	)
+	if (any(vars %in% reserved_col_names)) {
+		stop(
+			"Invalid column name. Please change the name of column(s): ",
+			vars[vars %in% reserved_col_names],
+			call. = FALSE
+		)
+	}
 
-    # Check if the response variable is transformed in the model formula
-    model_formula <- stats::formula(model.obj)
-    if(inherits(model.obj, "asreml")) {
-        response_part <- model_formula[[1]][[2]]
-    }
-    else {
-        response_part <- model_formula[[2]]
-    }
-    if (is.call(response_part) & is.null(trans)) {
-        warning(call. = FALSE,
-            sprintf(
-                "The response variable appears to be transformed in the model formula: %s.",
-                deparse(response_part)
-            ),
-            "\nPlease specify the 'trans' argument if you want back-transformed predictions."
-        )
-    }
+	# Check if the response variable is transformed in the model formula
+	if (class(model.obj)[1] == c("aovlist")) {
+		model_formula <- stats::formula(model.obj[[1]])
+	} else {
+		model_formula <- stats::formula(model.obj)
+	}
+	if (inherits(model.obj, "asreml")) {
+		response_part <- model_formula[[1]][[2]]
+	} else {
+		response_part <- model_formula[[2]]
+	}
+	if (is.call(response_part) & is.null(trans)) {
+		warning(
+			call. = FALSE,
+			sprintf(
+				"The response variable appears to be transformed in the model formula: %s.",
+				deparse(response_part)
+			),
+			"\nPlease specify the 'trans' argument if you want back-transformed predictions."
+		)
+	}
 
-    return(vars)
+	return(vars)
 }
 
 
 #' @noRd
 process_treatment_names <- function(pp, classify, vars) {
-    # Create Names column
-    if (grepl(":", classify)) {
-        pp$Names <- apply(pp[, vars], 1, paste, collapse = "_")
-    } else {
-        pp$Names <- pp[[classify]]
-    }
+	# Create Names column
+	if (grepl(":", classify)) {
+		pp$Names <- apply(pp[, vars], 1, paste, collapse = "_")
+	} else {
+		pp$Names <- pp[[classify]]
+	}
 
-    # Check and replace dashes in treatment names
-    if (any(grepl("-", pp$Names) | any(grepl("-", pp[, 1])))) {
-        levs <- unique(c(grep("-", pp[, 1], value = TRUE), grep("-", pp$Names, value = TRUE)))
-        if (length(levs) > 1) {
-            warning("The treatment levels ", paste(levs, collapse = ", "),
-                    " contained '-', which has been replaced in the final output with '_'")
-        } else {
-            warning("The treatment level ", levs,
-                    " contained '-', which has been replaced in the final output with '_'")
-        }
-        pp[, 1] <- gsub(pattern = "-", replacement = "_", pp[, 1])
-        pp$Names <- gsub(pattern = "-", replacement = "_", pp$Names)
-    }
+	# Check and replace dashes in treatment names
+	if (any(grepl("-", pp$Names) | any(grepl("-", pp[, 1])))) {
+		levs <- unique(c(
+			grep("-", pp[, 1], value = TRUE),
+			grep("-", pp$Names, value = TRUE)
+		))
+		if (length(levs) > 1) {
+			warning(
+				"The treatment levels ",
+				paste(levs, collapse = ", "),
+				" contained '-', which has been replaced in the final output with '_'"
+			)
+		} else {
+			warning(
+				"The treatment level ",
+				levs,
+				" contained '-', which has been replaced in the final output with '_'"
+			)
+		}
+		pp[, 1] <- gsub(pattern = "-", replacement = "_", pp[, 1])
+		pp$Names <- gsub(pattern = "-", replacement = "_", pp$Names)
+	}
 
-    return(pp)
+	return(pp)
 }
 
 
 #' @noRd
 get_diffs <- function(pp, sed, ndf, sig) {
-    # Calculate the critical value
-    crit_val <- 1 / sqrt(2) * stats::qtukey((1 - sig), nrow(pp), ndf) * sed
+	# Calculate the critical value
+	crit_val <- 1 / sqrt(2) * stats::qtukey((1 - sig), nrow(pp), ndf) * sed
 
-    # Determine pairs that are significantly different
-    diffs <- abs(outer(pp$predicted.value, pp$predicted.value, "-")) > crit_val
-    diffs <- diffs[lower.tri(diffs)]
+	# Determine pairs that are significantly different
+	diffs <- abs(outer(pp$predicted.value, pp$predicted.value, "-")) > crit_val
+	diffs <- diffs[lower.tri(diffs)]
 
-    # Create a vector of treatment comparison names
-    m <- outer(pp$Names, pp$Names, paste, sep = "-")
-    m <- m[lower.tri(m)]
+	# Create a vector of treatment comparison names
+	m <- outer(pp$Names, pp$Names, paste, sep = "-")
+	m <- m[lower.tri(m)]
 
-    names(diffs) <- m
+	names(diffs) <- m
 
-    # Return both the critical value and the differences
-    return(list(crit_val = crit_val, diffs = diffs))
+	# Return both the critical value and the differences
+	return(list(crit_val = crit_val, diffs = diffs))
 }
 
 
 #' @noRd
 add_confidence_intervals <- function(pp, int.type, sig, ndf) {
-    # Calculate confidence interval width
-    pp$ci <- switch(
-        tolower(int.type),
-        "ci" = stats::qt(p = sig/2, ndf, lower.tail = FALSE) * pp$std.error,
-        "tukey" = stats::qtukey(p = 1 - sig, nmeans = nrow(pp), df = ndf) / sqrt(2) * pp$std.error,
-        "1se" = pp$std.error,
-        "2se" = 2 * pp$std.error,
-        "none" = 0,
-        stop("Invalid int.type. Use 'ci', 'tukey', '1se', '2se', or 'none'.")
-    )
+	# Calculate confidence interval width
+	# If denominator df is a type matrix, use the max value (TEMPORARY SOLUTION!)
+	if (is.matrix(ndf) == TRUE) {
+		ndf <- max(ndf, na.rm = TRUE)
+	}
+	pp$ci <- switch(
+		tolower(int.type),
+		"ci" = stats::qt(p = sig / 2, ndf, lower.tail = FALSE) * pp$std.error,
+		"tukey" = stats::qtukey(p = 1 - sig, nmeans = nrow(pp), df = ndf) /
+			sqrt(2) *
+			pp$std.error,
+		"1se" = pp$std.error,
+		"2se" = 2 * pp$std.error,
+		"none" = 0,
+		stop("Invalid int.type. Use 'ci', 'tukey', '1se', '2se', or 'none'.")
+	)
 
-    return(pp)
+	return(pp)
 }
 
 
 #' @noRd
 apply_transformation <- function(pp, trans, offset, power) {
-    # Set default offset if not provided
-    if (is.null(offset)) {
-        warning("Offset value assumed to be 0. Change with `offset` argument.", call. = FALSE)
-        offset <- 0
-    }
+	# Set default offset if not provided
+	if (is.null(offset)) {
+		warning(
+			"Offset value assumed to be 0. Change with `offset` argument.",
+			call. = FALSE
+		)
+		offset <- 0
+	}
 
-    # Apply appropriate transformation
-    if (trans == "sqrt") {
-        # From paper: g(x) = sqrt(x), g^-1(y) = y^2, g'(x) = 1/(2*sqrt(x))
-        # Back-transformed value: X~ = Y^2 - offset
-        # Approx SE: ~X = 2*sqrt(X~ + offset)*Y_se
-        pp$PredictedValue <- (pp$predicted.value)^2 - offset
+	# Apply appropriate transformation
+	if (trans == "sqrt") {
+		# From paper: g(x) = sqrt(x), g^-1(y) = y^2, g'(x) = 1/(2*sqrt(x))
+		# Back-transformed value: X~ = Y^2 - offset
+		# Approx SE: ~X = 2*sqrt(X~ + offset)*Y_se
+		pp$PredictedValue <- (pp$predicted.value)^2 - offset
 
-        # Bounds check: predicted values should be non-negative after transformation
-        if (any(pp$PredictedValue < 0, na.rm = TRUE)) {
-            warning("Square root back-transformation produced negative values. Check offset parameter.", call. = FALSE)
-        }
+		# Bounds check: predicted values should be non-negative after transformation
+		if (any(pp$PredictedValue < 0, na.rm = TRUE)) {
+			warning(
+				"Square root back-transformation produced negative values. Check offset parameter.",
+				call. = FALSE
+			)
+		}
 
-        # SE uses value on original scale (before offset removal) per paper formula
-        pp$ApproxSE <- 2 * abs(pp$std.error) * abs(pp$predicted.value)
+		# SE uses value on original scale (before offset removal) per paper formula
+		pp$ApproxSE <- 2 * abs(pp$std.error) * abs(pp$predicted.value)
 
-        pp$low <- (pp$predicted.value - pp$ci)^2 - offset
-        pp$up <- (pp$predicted.value + pp$ci)^2 - offset
+		pp$low <- (pp$predicted.value - pp$ci)^2 - offset
+		pp$up <- (pp$predicted.value + pp$ci)^2 - offset
+	} else if (trans == "log") {
+		# From paper: g(x) = ln(x), g^-1(y) = exp(y), g'(x) = 1/x
+		# Back-transformed value: X~ = exp(Y) - offset
+		# Approx SE: ~X = X~*Y_se (where X~ is before offset removal)
+		x_tilde <- exp(pp$predicted.value)
+		pp$PredictedValue <- x_tilde - offset
 
-    } else if (trans == "log") {
-        # From paper: g(x) = ln(x), g^-1(y) = exp(y), g'(x) = 1/x
-        # Back-transformed value: X~ = exp(Y) - offset
-        # Approx SE: ~X = X~*Y_se (where X~ is before offset removal)
-        x_tilde <- exp(pp$predicted.value)
-        pp$PredictedValue <- x_tilde - offset
+		# Bounds check: values should be positive after offset removal
+		if (any(pp$PredictedValue <= 0, na.rm = TRUE)) {
+			warning(
+				"Log back-transformation produced non-positive values. Check offset parameter.",
+				call. = FALSE
+			)
+		}
 
-        # Bounds check: values should be positive after offset removal
-        if (any(pp$PredictedValue <= 0, na.rm = TRUE)) {
-            warning("Log back-transformation produced non-positive values. Check offset parameter.", call. = FALSE)
-        }
+		# SE uses back-transformed value before offset removal
+		pp$ApproxSE <- abs(pp$std.error) * x_tilde
 
-        # SE uses back-transformed value before offset removal
-        pp$ApproxSE <- abs(pp$std.error) * x_tilde
+		pp$low <- exp(pp$predicted.value - pp$ci) - offset
+		pp$up <- exp(pp$predicted.value + pp$ci) - offset
+	} else if (trans == "logit") {
+		# From paper: g(x) = ln(x/(1-x)), g^-1(y) = exp(y)/(1+exp(y)), g'(x) = 1/(x(1-x))
+		# Back-transformed value: X~ = exp(Y)/(1+exp(Y))
+		# Approx SE: ~X = X~*(1-X~)*Y_se
+		pp$PredictedValue <- exp(pp$predicted.value) /
+			(1 + exp(pp$predicted.value))
 
-        pp$low <- exp(pp$predicted.value - pp$ci) - offset
-        pp$up <- exp(pp$predicted.value + pp$ci) - offset
+		# Bounds check: values should be in (0, 1)
+		if (any(pp$PredictedValue <= 0 | pp$PredictedValue >= 1, na.rm = TRUE)) {
+			warning(
+				"Logit back-transformation produced values outside (0,1). This may indicate numerical issues.",
+				call. = FALSE
+			)
+		}
 
-    } else if (trans == "logit") {
-        # From paper: g(x) = ln(x/(1-x)), g^-1(y) = exp(y)/(1+exp(y)), g'(x) = 1/(x(1-x))
-        # Back-transformed value: X~ = exp(Y)/(1+exp(Y))
-        # Approx SE: ~X = X~*(1-X~)*Y_se
-        pp$PredictedValue <- exp(pp$predicted.value) / (1 + exp(pp$predicted.value))
+		pp$ApproxSE <- pp$PredictedValue *
+			(1 - pp$PredictedValue) *
+			abs(pp$std.error)
 
-        # Bounds check: values should be in (0, 1)
-        if (any(pp$PredictedValue <= 0 | pp$PredictedValue >= 1, na.rm = TRUE)) {
-            warning("Logit back-transformation produced values outside (0,1). This may indicate numerical issues.", call. = FALSE)
-        }
+		ll <- pp$predicted.value - pp$ci
+		pp$low <- exp(ll) / (1 + exp(ll))
+		uu <- pp$predicted.value + pp$ci
+		pp$up <- exp(uu) / (1 + exp(uu))
+	} else if (trans == "power") {
+		# From paper: g(x) = x^a, g^-1(y) = y^(1/a), g'(x) = a*x^(a-1)
+		# Back-transformed value: X~ = Y^(1/a) - offset
+		# Approx SE: ~X = Y_se / |a*X~^(a-1)| (where X~ is before offset removal)
+		if (is.null(power) || !is.numeric(power) || power == 0) {
+			stop(
+				"Power transformation requires a non-zero numeric 'power' argument.",
+				call. = FALSE
+			)
+		}
 
-        pp$ApproxSE <- pp$PredictedValue * (1 - pp$PredictedValue) * abs(pp$std.error)
+		x_tilde <- (pp$predicted.value)^(1 / power)
+		pp$PredictedValue <- x_tilde - offset
 
-        ll <- pp$predicted.value - pp$ci
-        pp$low <- exp(ll) / (1 + exp(ll))
-        uu <- pp$predicted.value + pp$ci
-        pp$up <- exp(uu) / (1 + exp(uu))
+		# Bounds check depends on power sign and offset
+		if (
+			power < 0 &&
+				any(abs(pp$PredictedValue) < .Machine$double.eps, na.rm = TRUE)
+		) {
+			warning(
+				"Power back-transformation with negative power produced values near zero.",
+				call. = FALSE
+			)
+		}
 
-    } else if (trans == "power") {
-        # From paper: g(x) = x^a, g^-1(y) = y^(1/a), g'(x) = a*x^(a-1)
-        # Back-transformed value: X~ = Y^(1/a) - offset
-        # Approx SE: ~X = Y_se / |a*X~^(a-1)| (where X~ is before offset removal)
-        if (is.null(power) || !is.numeric(power) || power == 0) {
-            stop("Power transformation requires a non-zero numeric 'power' argument.", call. = FALSE)
-        }
+		# SE uses back-transformed value before offset removal (x_tilde not PredictedValue)
+		pp$ApproxSE <- abs(pp$std.error) / abs(power * x_tilde^(power - 1))
 
-        x_tilde <- (pp$predicted.value)^(1/power)
-        pp$PredictedValue <- x_tilde - offset
+		pp$low <- (pp$predicted.value - pp$ci)^(1 / power) - offset
+		pp$up <- (pp$predicted.value + pp$ci)^(1 / power) - offset
+	} else if (trans == "inverse") {
+		# From paper: g(x) = 1/x, g^-1(y) = 1/y, g'(x) = -1/x^2
+		# Back-transformed value: X~ = 1/Y
+		# Approx SE: ~X = X~^2*Y_se (using absolute value of g'(x))
 
-        # Bounds check depends on power sign and offset
-        if (power < 0 && any(abs(pp$PredictedValue) < .Machine$double.eps, na.rm = TRUE)) {
-            warning("Power back-transformation with negative power produced values near zero.", call. = FALSE)
-        }
+		# Bounds check: avoid division by zero
+		if (any(abs(pp$predicted.value) < .Machine$double.eps, na.rm = TRUE)) {
+			warning(
+				"Inverse transformation: predicted values very close to zero detected.",
+				call. = FALSE
+			)
+		}
 
-        # SE uses back-transformed value before offset removal (x_tilde not PredictedValue)
-        pp$ApproxSE <- abs(pp$std.error) / abs(power * x_tilde^(power - 1))
+		pp$PredictedValue <- 1 / pp$predicted.value
+		pp$ApproxSE <- abs(pp$std.error) * pp$PredictedValue^2
 
-        pp$low <- (pp$predicted.value - pp$ci)^(1/power) - offset
-        pp$up <- (pp$predicted.value + pp$ci)^(1/power) - offset
+		# Check for sign changes across confidence interval
+		lower_bound <- pp$predicted.value - pp$ci
+		upper_bound <- pp$predicted.value + pp$ci
 
-    } else if (trans == "inverse") {
-        # From paper: g(x) = 1/x, g^-1(y) = 1/y, g'(x) = -1/x^2
-        # Back-transformed value: X~ = 1/Y
-        # Approx SE: ~X = X~^2*Y_se (using absolute value of g'(x))
+		if (any(sign(lower_bound) != sign(upper_bound), na.rm = TRUE)) {
+			warning(
+				"Inverse transformation: confidence interval crosses zero. Results may be unreliable.",
+				call. = FALSE
+			)
+		}
 
-        # Bounds check: avoid division by zero
-        if (any(abs(pp$predicted.value) < .Machine$double.eps, na.rm = TRUE)) {
-            warning("Inverse transformation: predicted values very close to zero detected.", call. = FALSE)
-        }
+		# Inverse function is monotone decreasing, so bounds swap
+		# Use pmin/pmax to ensure pp$low < pp$up regardless of sign
+		inv_lower <- 1 / (pp$predicted.value + pp$ci)
+		inv_upper <- 1 / (pp$predicted.value - pp$ci)
 
-        pp$PredictedValue <- 1 / pp$predicted.value
-        pp$ApproxSE <- abs(pp$std.error) * pp$PredictedValue^2
+		pp$low <- pmin(inv_lower, inv_upper)
+		pp$up <- pmax(inv_lower, inv_upper)
+	} else if (trans == "arcsin") {
+		# From paper: g(x) = sin^-1(sqrt(x)), g^-1(y) = sin(y)^2,
+		# g'(x) = 1/(2*sqrt(x)*cos(sin^-1(sqrt(x))))
+		# Back-transformed value: X~ = sin(Y)^2
+		# Approx SE: ~X = 2*sqrt(X~)*cos(sin^-1(sqrt(X~)))*Y_se
 
-        # Check for sign changes across confidence interval
-        lower_bound <- pp$predicted.value - pp$ci
-        upper_bound <- pp$predicted.value + pp$ci
+		# Bounds check: predicted.value should be in valid arcsin range
+		if (
+			any(
+				pp$predicted.value < -pi / 2 | pp$predicted.value > pi / 2,
+				na.rm = TRUE
+			)
+		) {
+			warning(
+				"Arcsin transformation: some predicted values outside [-pi/2, pi/2].",
+				call. = FALSE
+			)
+		}
 
-        if (any(sign(lower_bound) != sign(upper_bound), na.rm = TRUE)) {
-            warning("Inverse transformation: confidence interval crosses zero. Results may be unreliable.", call. = FALSE)
-        }
+		pp$PredictedValue <- sin(pp$predicted.value)^2
 
-        # Inverse function is monotone decreasing, so bounds swap
-        # Use pmin/pmax to ensure pp$low < pp$up regardless of sign
-        inv_lower <- 1 / (pp$predicted.value + pp$ci)
-        inv_upper <- 1 / (pp$predicted.value - pp$ci)
+		# Bounds check: values should be in [0, 1]
+		if (any(pp$PredictedValue < 0 | pp$PredictedValue > 1, na.rm = TRUE)) {
+			warning(
+				"Arcsin back-transformation produced values outside [0,1]. This may indicate numerical issues.",
+				call. = FALSE
+			)
+		}
 
-        pp$low <- pmin(inv_lower, inv_upper)
-        pp$up <- pmax(inv_lower, inv_upper)
+		# Simplify: cos(asin(sqrt(x))) = sqrt(1 - x) for x in [0,1]
+		pp$ApproxSE <- 2 *
+			abs(pp$std.error) *
+			sqrt(pp$PredictedValue * (1 - pp$PredictedValue))
 
-    } else if (trans == "arcsin") {
-        # From paper: g(x) = sin^-1(sqrt(x)), g^-1(y) = sin(y)^2,
-        # g'(x) = 1/(2*sqrt(x)*cos(sin^-1(sqrt(x))))
-        # Back-transformed value: X~ = sin(Y)^2
-        # Approx SE: ~X = 2*sqrt(X~)*cos(sin^-1(sqrt(X~)))*Y_se
+		pp$low <- sin(pp$predicted.value - pp$ci)^2
+		pp$up <- sin(pp$predicted.value + pp$ci)^2
+	} else {
+		stop(
+			"Invalid trans value. Must be one of: 'sqrt', 'log', 'logit', 'power', 'inverse', 'arcsin'.",
+			call. = FALSE
+		)
+	}
 
-        # Bounds check: predicted.value should be in valid arcsin range
-        if (any(pp$predicted.value < -pi/2 | pp$predicted.value > pi/2, na.rm = TRUE)) {
-            warning("Arcsin transformation: some predicted values outside [-pi/2, pi/2].", call. = FALSE)
-        }
-
-        pp$PredictedValue <- sin(pp$predicted.value)^2
-
-        # Bounds check: values should be in [0, 1]
-        if (any(pp$PredictedValue < 0 | pp$PredictedValue > 1, na.rm = TRUE)) {
-            warning("Arcsin back-transformation produced values outside [0,1]. This may indicate numerical issues.", call. = FALSE)
-        }
-
-        # Simplify: cos(asin(sqrt(x))) = sqrt(1 - x) for x in [0,1]
-        pp$ApproxSE <- 2 * abs(pp$std.error) * sqrt(pp$PredictedValue * (1 - pp$PredictedValue))
-
-        pp$low <- sin(pp$predicted.value - pp$ci)^2
-        pp$up <- sin(pp$predicted.value + pp$ci)^2
-
-    } else {
-        stop("Invalid trans value. Must be one of: 'sqrt', 'log', 'logit', 'power', 'inverse', 'arcsin'.", call. = FALSE)
-    }
-
-    return(pp)
+	return(pp)
 }
 
 
 #' @noRd
 add_attributes <- function(pp, ylab, crit_val, aliased_names, trans = NULL) {
-    # Strip transformation from ylab if trans is provided
-    ylab <- strip_transformation_from_label(ylab, trans)
+	# Strip transformation from ylab if trans is provided
+	ylab <- strip_transformation_from_label(ylab, trans)
 
-    attr(pp, "ylab") <- ylab
+	attr(pp, "ylab") <- ylab
 
-    # Add class
-    class(pp) <- c("mct", class(pp))
+	# Add class
+	class(pp) <- c("mct", class(pp))
 
-    # Add aliased treatments as attribute
-    if (!is.null(aliased_names)) {
-        attr(pp, 'aliased') <- as.character(aliased_names)
-    }
+	# Add aliased treatments as attribute
+	if (!is.null(aliased_names)) {
+		attr(pp, 'aliased') <- as.character(aliased_names)
+	}
 
-    # Add critical value as attribute
-    if (stats::var(as.vector(crit_val), na.rm = TRUE) < 1e-10) {
-        attr(pp, 'HSD') <- crit_val[1, 2]
-    } else {
-        attr(pp, 'HSD') <- crit_val
-    }
+	# Add critical value as attribute
+	if (stats::var(as.vector(crit_val), na.rm = TRUE) < 1e-10) {
+		attr(pp, 'HSD') <- crit_val[1, 2]
+	} else {
+		attr(pp, 'HSD') <- crit_val
+	}
 
-    return(pp)
+	return(pp)
 }

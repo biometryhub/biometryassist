@@ -39,59 +39,70 @@
 #' heat_map(dat, value, x, y, groups, scales = "free_y")
 #' heat_map(dat, value, x, y, groups, nrow = 1)
 #' }
-heat_map <- function(data, value, x_axis, y_axis, grouping = NULL, raster = TRUE, smooth = FALSE, palette = "default", ...) {
+heat_map <- function(
+	data,
+	value,
+	x_axis,
+	y_axis,
+	grouping = NULL,
+	raster = TRUE,
+	smooth = FALSE,
+	palette = "default",
+	...
+) {
+	# TODO:
+	# - Error and sanity checking
+	if (!is.data.frame(data)) {
+		stop(data, " is not a data frame.", call. = FALSE)
+	}
 
-    # TODO:
-    # - Error and sanity checking
-    if(!is.data.frame(data)) {
-        stop(data, " is not a data frame.", call. = FALSE)
-    }
+	rlang::check_dots_used()
 
-    rlang::check_dots_used()
+	value <- rlang::ensym(value)
+	x_axis <- rlang::ensym(x_axis)
+	y_axis <- rlang::ensym(y_axis)
+	grouping <- rlang::enquo(grouping)
 
-    value <- rlang::ensym(value)
-    x_axis <- rlang::ensym(x_axis)
-    y_axis <- rlang::ensym(y_axis)
-    grouping <- rlang::enquo(grouping)
+	# Set the default palette to viridis
+	if (palette == "default") {
+		palette <- "viridis"
+	}
 
-    # Set the default palette to viridis
-    if(palette=="default") {
-        palette <- "viridis"
-    }
+	# rlang::check_dots_used()
 
-    # rlang::check_dots_used()
+	plt <- ggplot2::ggplot(
+		data,
+		ggplot2::aes(x = {{ x_axis }}, y = {{ y_axis }}, fill = {{ value }})
+	)
 
-    plt <- ggplot2::ggplot(data, ggplot2::aes(x = {{ x_axis }}, y = {{ y_axis }}, fill = {{ value }}))
+	if (raster) {
+		plt <- plt + ggplot2::geom_raster(interpolate = smooth)
+	} else {
+		plt <- plt + ggplot2::geom_tile()
+	}
 
-    if(raster) {
-        plt <- plt + ggplot2::geom_raster(interpolate = smooth)
-    }
-    else {
-        plt <- plt + ggplot2::geom_tile()
-    }
+	plt <- plt +
+		ggplot2::scale_fill_gradientn(
+			colours = grDevices::hcl.colors(10, palette = palette)
+		)
 
-    plt <- plt + ggplot2::scale_fill_gradientn(colours = grDevices::hcl.colors(10, palette = palette))
+	# Expand the axes appropriately for the data type
+	if (is.numeric(data[[x_axis]])) {
+		plt <- plt + ggplot2::scale_x_continuous(expand = c(0, 0))
+	} else {
+		plt <- plt + ggplot2::scale_x_discrete(expand = c(0, 0))
+	}
+	if (is.numeric(data[[y_axis]])) {
+		plt <- plt + ggplot2::scale_y_continuous(expand = c(0, 0))
+	} else {
+		plt <- plt + ggplot2::scale_y_discrete(expand = c(0, 0))
+	}
 
-    # Expand the axes appropriately for the data type
-    if(is.numeric(data[[x_axis]])) {
-        plt <- plt + ggplot2::scale_x_continuous(expand = c(0, 0))
-    }
-    else {
-        plt <- plt + ggplot2::scale_x_discrete(expand = c(0, 0))
-    }
-    if(is.numeric(data[[y_axis]])) {
-        plt <- plt + ggplot2::scale_y_continuous(expand = c(0, 0))
-    }
-    else {
-        plt <- plt + ggplot2::scale_y_discrete(expand = c(0, 0))
-    }
+	if (!rlang::quo_is_null(grouping)) {
+		grouping <- rlang::ensym(grouping)
+		plt <- plt + ggplot2::facet_wrap(ggplot2::vars({{ grouping }}), ...)
+	}
 
-
-    if(!rlang::quo_is_null(grouping)) {
-        grouping <- rlang::ensym(grouping)
-        plt <- plt + ggplot2::facet_wrap(ggplot2::vars({{ grouping }}), ...)
-    }
-
-    plt <- plt+ggplot2::theme_bw()
-    return(plt)
+	plt <- plt + ggplot2::theme_bw()
+	return(plt)
 }

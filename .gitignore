@@ -11,3 +11,8 @@ biometryassist.Rproj
 *.Rdata
 *.Rds
 inst/doc
+.positai
+.httr-oauth
+.DS_Store
+.quarto
+.env

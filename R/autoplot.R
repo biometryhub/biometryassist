@@ -38,82 +38,132 @@ ggplot2::autoplot
 #' dat.aov <- aov(Petal.Width ~ Species, data = iris)
 #' output <- multiple_comparisons(dat.aov, classify = "Species")
 #' autoplot(output, label_height = 0.5)
-autoplot.mct <- function(object, size = 4, label_height = 0.1,
-                         rotation = 0, axis_rotation = rotation,
-                         label_rotation = rotation, type = "point", ...) {
-    stopifnot(inherits(object, "mct"))
+autoplot.mct <- function(
+	object,
+	size = 4,
+	label_height = 0.1,
+	rotation = 0,
+	axis_rotation = rotation,
+	label_rotation = rotation,
+	type = "point",
+	...
+) {
+	stopifnot(inherits(object, "mct"))
 
-    rlang::check_dots_used()
+	rlang::check_dots_used()
 
-    # Extract the predictions data frame from the mct object
-    # For new structure: object is a list with $predictions
-    # For backward compatibility: also handle old structure where object is a data frame
-    if (is.list(object) && "predictions" %in% names(object)) {
-        pred_df <- object$predictions
-    } else {
-        # Backward compatibility: object is already the data frame
-        pred_df <- as.data.frame(object)
-    }
+	# Extract the predictions data frame from the mct object
+	# For new structure: object is a list with $predictions
+	# For backward compatibility: also handle old structure where object is a data frame
+	if (is.list(object) && "predictions" %in% names(object)) {
+		pred_df <- object$predictions
+	} else {
+		# Backward compatibility: object is already the data frame
+		pred_df <- as.data.frame(object)
+	}
 
-    # classify is just the first n columns (before predicted.value)
-    classify <- colnames(pred_df)[1]
-    classify <- rlang::ensym(classify)
-    if(colnames(pred_df)[2] != "predicted.value") {
-        classify2 <- colnames(pred_df)[2]
-    }
-    if(colnames(pred_df)[2] != "predicted.value" & colnames(pred_df)[3] != "predicted.value") {
-        classify3 <- colnames(pred_df)[3]
-    }
+	# classify is just the first n columns (before predicted.value)
+	classify <- colnames(pred_df)[1]
+	classify <- rlang::ensym(classify)
+	if (colnames(pred_df)[2] != "predicted.value") {
+		classify2 <- colnames(pred_df)[2]
+	}
+	if (
+		colnames(pred_df)[2] != "predicted.value" &
+			colnames(pred_df)[3] != "predicted.value"
+	) {
+		classify3 <- colnames(pred_df)[3]
+	}
 
-    # Get ylab as attribute (works for both old and new structure)
-    ylab <- attributes(object)$ylab
+	# Get ylab as attribute (works for both old and new structure)
+	ylab <- attributes(object)$ylab
 
-    yval <- ifelse("PredictedValue" %in% colnames(pred_df), "PredictedValue", "predicted.value")
-    yval <- rlang::ensym(yval)
+	yval <- ifelse(
+		"PredictedValue" %in% colnames(pred_df),
+		"PredictedValue",
+		"predicted.value"
+	)
+	yval <- rlang::ensym(yval)
 
-    # Calculate hjust based on axis rotation
-    hjust_value <- if (axis_rotation %% 360 == 90) {
-        1
-    } else if (axis_rotation %% 360 == 270 || axis_rotation %% 360 == -90) {
-        0
-    } else {
-        0.5
-    }
+	# Calculate hjust based on axis rotation
+	hjust_value <- if (axis_rotation %% 360 == 90) {
+		1
+	} else if (axis_rotation %% 360 == 270 || axis_rotation %% 360 == -90) {
+		0
+	} else {
+		0.5
+	}
 
-    plot <- ggplot2::ggplot(data = pred_df, ggplot2::aes(x = {{ classify }})) +
-        ggplot2::theme_bw() +
-        ggplot2::theme(axis.text.x = ggplot2::element_text(angle = axis_rotation, vjust = 0.5, hjust = hjust_value, ...)) +
-        ggplot2::labs(x = "", y = paste0("Predicted ", ylab))
+	plot <- ggplot2::ggplot(data = pred_df, ggplot2::aes(x = {{ classify }})) +
+		ggplot2::theme_bw() +
+		ggplot2::theme(
+			axis.text.x = ggplot2::element_text(
+				angle = axis_rotation,
+				vjust = 0.5,
+				hjust = hjust_value,
+				...
+			)
+		) +
+		ggplot2::labs(x = "", y = paste0("Predicted ", ylab))
 
-    if(tolower(type) == "point") {
-        plot <- plot + ggplot2::geom_point(ggplot2::aes(y = {{ yval }}), colour = "black", shape = 16, size = 2) +
-            ggplot2::geom_errorbar(aes(ymin = .data[["low"]], ymax = .data[["up"]]), width = 0.2)
-    }
-    else if(tolower(type) %in% c("col", "column")) {
-        plot <- plot + ggplot2::geom_col(ggplot2::aes(y = {{ yval }}), colour = "black", fill = "cornflowerblue", alpha = 0.75) +
-            ggplot2::geom_errorbar(aes(ymin = .data[["low"]], ymax = .data[["up"]]), width = 0.2)
-    }
+	if (tolower(type) == "point") {
+		plot <- plot +
+			ggplot2::geom_point(
+				ggplot2::aes(y = {{ yval }}),
+				colour = "black",
+				shape = 16,
+				size = 2
+			) +
+			ggplot2::geom_errorbar(
+				aes(ymin = .data[["low"]], ymax = .data[["up"]]),
+				width = 0.2
+			)
+	} else if (tolower(type) %in% c("col", "column")) {
+		plot <- plot +
+			ggplot2::geom_col(
+				ggplot2::aes(y = {{ yval }}),
+				colour = "black",
+				fill = "cornflowerblue",
+				alpha = 0.75
+			) +
+			ggplot2::geom_errorbar(
+				aes(ymin = .data[["low"]], ymax = .data[["up"]]),
+				width = 0.2
+			)
+	}
 
-    if("groups" %in% colnames(pred_df)) {
-        # Calculate outside of aes()
-        y_pos <- ifelse(pred_df$up > pred_df$low, pred_df$up, pred_df$low)
-        nudge_val <- ifelse(abs(label_height) <= 1,
-                            abs(pred_df$up - pred_df$low) * label_height,
-                            label_height)
+	if ("groups" %in% colnames(pred_df)) {
+		# Calculate outside of aes()
+		y_pos <- ifelse(pred_df$up > pred_df$low, pred_df$up, pred_df$low)
+		nudge_val <- ifelse(
+			abs(label_height) <= 1,
+			abs(pred_df$up - pred_df$low) * label_height,
+			label_height
+		)
 
-        plot <- plot +
-            ggplot2::geom_text(ggplot2::aes(y = y_pos, label = .data[["groups"]]),
-                               nudge_y = nudge_val,
-                               size = size, angle = label_rotation, ...)
-    }
+		plot <- plot +
+			ggplot2::geom_text(
+				ggplot2::aes(y = y_pos, label = .data[["groups"]]),
+				nudge_y = nudge_val,
+				size = size,
+				angle = label_rotation,
+				...
+			)
+	}
 
-    if(exists("classify3")) {
-        plot <- plot + ggplot2::facet_wrap(stats::as.formula(paste("~", classify2, "+", classify3)))
-    }
-    else if(exists("classify2")) {
-        plot <- plot + ggplot2::facet_wrap(stats::as.formula(paste("~", classify2)))
-    }
-    return(plot)
+	if (exists("classify3")) {
+		plot <- plot +
+			ggplot2::facet_wrap(stats::as.formula(paste(
+				"~",
+				classify2,
+				"+",
+				classify3
+			)))
+	} else if (exists("classify2")) {
+		plot <- plot +
+			ggplot2::facet_wrap(stats::as.formula(paste("~", classify2)))
+	}
+	return(plot)
 }
 
 
@@ -148,174 +198,285 @@ autoplot.mct <- function(object, size = 4, label_height = 0.1,
 #'
 #' # Display block level
 #' autoplot(des.out, treatments = block)
-autoplot.design <- function(object,
-                            rotation = 0,
-                            size = 4,
-                            margin = FALSE,
-                            palette = "default",
-                            row = NULL,
-                            column = NULL,
-                            block = NULL,
-                            treatments = NULL,
-                            legend = TRUE, ...) {
-    stopifnot(inherits(object, "design"))
-    rlang::check_dots_used()
+autoplot.design <- function(
+	object,
+	rotation = 0,
+	size = 4,
+	margin = FALSE,
+	palette = "default",
+	row = NULL,
+	column = NULL,
+	block = NULL,
+	treatments = NULL,
+	legend = TRUE,
+	...
+) {
+	stopifnot(inherits(object, "design"))
+	rlang::check_dots_used()
 
-    if(inherits(object, "list")) {
-        object <- object$design
-    }
+	if (inherits(object, "list")) {
+		object <- object$design
+	}
 
-    # Handle column name expressions (existing code)
-    row_expr <- rlang::enquo(row)
-    column_expr <- rlang::enquo(column)
-    block_expr <- rlang::enquo(block)
-    trt_expr <- rlang::enquo(treatments)
+	# Handle column name expressions (existing code)
+	row_expr <- rlang::enquo(row)
+	column_expr <- rlang::enquo(column)
+	block_expr <- rlang::enquo(block)
+	trt_expr <- rlang::enquo(treatments)
 
-    if(rlang::quo_is_null(row_expr)) row_expr <- rlang::sym("row")
-    if(rlang::quo_is_null(column_expr)) column_expr <- rlang::sym("col")
-    if(rlang::quo_is_null(block_expr)) block_expr <- rlang::sym("block")
-    if(rlang::quo_is_null(trt_expr)) trt_expr <- rlang::sym("treatments")
+	if (rlang::quo_is_null(row_expr)) {
+		row_expr <- rlang::sym("row")
+	}
+	if (rlang::quo_is_null(column_expr)) {
+		column_expr <- rlang::sym("col")
+	}
+	if (rlang::quo_is_null(block_expr)) {
+		block_expr <- rlang::sym("block")
+	}
+	if (rlang::quo_is_null(trt_expr)) {
+		trt_expr <- rlang::sym("treatments")
+	}
 
-    row_expr <- rlang::quo_name(row_expr)
-    column_expr <- rlang::quo_name(column_expr)
-    block_expr <- rlang::quo_name(block_expr)
-    trt_expr <- rlang::quo_name(trt_expr)
+	row_expr <- rlang::quo_name(row_expr)
+	column_expr <- rlang::quo_name(column_expr)
+	block_expr <- rlang::quo_name(block_expr)
+	trt_expr <- rlang::quo_name(trt_expr)
 
-    # Set up treatments and colours
-    has_buffers <- "buffer" %in% as.character(object[[trt_expr]])
+	# Set up treatments and colours
+	has_buffers <- "buffer" %in% as.character(object[[trt_expr]])
 
-    if(has_buffers) {
-        # Separate treatments and buffers for proper ordering
-        treatments_only <- unique(as.character(object[[trt_expr]]))
-        treatments_only <- treatments_only[treatments_only != "buffer"]
-        treatments_sorted <- stringi::stri_sort(treatments_only, numeric = TRUE)
+	if (has_buffers) {
+		# Separate treatments and buffers for proper ordering
+		treatments_only <- unique(as.character(object[[trt_expr]]))
+		treatments_only <- treatments_only[treatments_only != "buffer"]
+		treatments_sorted <- stringi::stri_sort(treatments_only, numeric = TRUE)
 
-        # Set factor levels with treatments first, then buffer at the end
-        factor_levels <- c(treatments_sorted, "buffer")
-        object[[trt_expr]] <- factor(as.character(object[[trt_expr]]), levels = factor_levels)
-        ntrt <- length(treatments_sorted)  # Number of actual treatments (excluding buffer)
-    } else {
-        # Original logic for designs without buffers
-        object[[trt_expr]] <- factor(as.character(object[[trt_expr]]),
-                                     levels = unique(stringi::stri_sort(as.character(object[[trt_expr]]), numeric = TRUE)))
-        ntrt <- nlevels(object[[trt_expr]])
-    }
+		# Set factor levels with treatments first, then buffer at the end
+		factor_levels <- c(treatments_sorted, "buffer")
+		object[[trt_expr]] <- factor(
+			as.character(object[[trt_expr]]),
+			levels = factor_levels
+		)
+		ntrt <- length(treatments_sorted) # Number of actual treatments (excluding buffer)
+	} else {
+		# Original logic for designs without buffers
+		object[[trt_expr]] <- factor(
+			as.character(object[[trt_expr]]),
+			levels = unique(stringi::stri_sort(
+				as.character(object[[trt_expr]]),
+				numeric = TRUE
+			))
+		)
+		ntrt <- nlevels(object[[trt_expr]])
+	}
 
-    # Colour palette setup
-    colour_palette <- setup_colour_palette(palette, ntrt)
+	# Colour palette setup
+	colour_palette <- setup_colour_palette(palette, ntrt)
 
-    # Check if buffers exist and adjust palette
-    if("buffer" %in% levels(object[[trt_expr]])) {
-        colour_palette <- c(colour_palette, "white")
-    }
+	# Check if buffers exist and adjust palette
+	if ("buffer" %in% levels(object[[trt_expr]])) {
+		colour_palette <- c(colour_palette, "white")
+	}
 
-    # Text colour setup
-    colours <- data.frame(treatments = levels(object[[trt_expr]]),
-                          text_col = ifelse(is_light_colour(colour_palette), "black", "white"))
-    colnames(colours)[1] <- trt_expr
-    object <- merge(object, colours)
+	# Text colour setup
+	colours <- data.frame(
+		treatments = levels(object[[trt_expr]]),
+		text_col = ifelse(is_light_colour(colour_palette), "black", "white")
+	)
+	colnames(colours)[1] <- trt_expr
+	object <- merge(object, colours)
 
+	# Create plot based on whether blocks exist
+	if (!any(grepl("block", tolower(names(object))))) {
+		plt <- create_basic_plot(
+			object,
+			row_expr,
+			column_expr,
+			trt_expr,
+			rotation,
+			size,
+			...
+		)
+	} else {
+		plt <- create_blocked_plot(
+			object,
+			row_expr,
+			column_expr,
+			block_expr,
+			trt_expr,
+			rotation,
+			size,
+			...
+		)
+	}
 
-    # Create plot based on whether blocks exist
-    if(!any(grepl("block", tolower(names(object))))) {
-        plt <- create_basic_plot(object, row_expr, column_expr, trt_expr, rotation, size, ...)
-    } else {
-        plt <- create_blocked_plot(object, row_expr, column_expr, block_expr, trt_expr, rotation, size, ...)
-    }
+	# Apply styling
+	plt <- plt +
+		scale_fill_manual(
+			values = colour_palette,
+			name = tools::toTitleCase(trt_expr)
+		)
 
-    # Apply styling
-    plt <- plt + scale_fill_manual(values = colour_palette, name = tools::toTitleCase(trt_expr))
+	# Control legend visibility
+	if (!legend) {
+		plt <- plt + ggplot2::theme(legend.position = "none")
+	}
 
-    # Control legend visibility
-    if (!legend) {
-        plt <- plt + ggplot2::theme(legend.position = "none")
-    }
+	plt <- apply_axis_styling(plt, margin, object, row_expr, column_expr)
 
-    plt <- apply_axis_styling(plt, margin, object, row_expr, column_expr)
-
-    return(plt)
+	return(plt)
 }
 
 
-create_basic_plot <- function(object, row_expr, column_expr, trt_expr, rotation, size, ...) {
-    # Separate buffer plots from treatment plots
-    buffer_plots <- object[object[[trt_expr]] == "buffer", ]
-    treatment_plots <- object[object[[trt_expr]] != "buffer", ]
+create_basic_plot <- function(
+	object,
+	row_expr,
+	column_expr,
+	trt_expr,
+	rotation,
+	size,
+	...
+) {
+	# Separate buffer plots from treatment plots
+	buffer_plots <- object[object[[trt_expr]] == "buffer", ]
+	treatment_plots <- object[object[[trt_expr]] != "buffer", ]
 
-    ggplot2::ggplot() +
-        ggplot2::geom_tile(data = object,
-                           mapping = ggplot2::aes(x = .data[[column_expr]],
-                                                  y = .data[[row_expr]],
-                                                  fill = .data[[trt_expr]]),
-                           colour = "black") +
-        # Only add text to non-buffer plots
-        ggplot2::geom_text(data = treatment_plots,
-                           mapping = ggplot2::aes(x = .data[[column_expr]],
-                                                  y = .data[[row_expr]],
-                                                  label = .data[[trt_expr]]),
-                           colour = treatment_plots$text_col, angle = rotation, size = size, ...) +
-        ggplot2::theme_bw()
+	ggplot2::ggplot() +
+		ggplot2::geom_tile(
+			data = object,
+			mapping = ggplot2::aes(
+				x = .data[[column_expr]],
+				y = .data[[row_expr]],
+				fill = .data[[trt_expr]]
+			),
+			colour = "black"
+		) +
+		# Only add text to non-buffer plots
+		ggplot2::geom_text(
+			data = treatment_plots,
+			mapping = ggplot2::aes(
+				x = .data[[column_expr]],
+				y = .data[[row_expr]],
+				label = .data[[trt_expr]]
+			),
+			colour = treatment_plots$text_col,
+			angle = rotation,
+			size = size,
+			...
+		) +
+		ggplot2::theme_bw()
 }
 
-create_blocked_plot <- function(object, row_expr, column_expr, block_expr, trt_expr, rotation, size, ...) {
-    # Block boundary calculation
-    blkdf <- calculate_block_boundaries(object, block_expr)
+create_blocked_plot <- function(
+	object,
+	row_expr,
+	column_expr,
+	block_expr,
+	trt_expr,
+	rotation,
+	size,
+	...
+) {
+	# Block boundary calculation
+	blkdf <- calculate_block_boundaries(object, block_expr)
 
-    # Separate buffer plots from treatment plots
-    buffer_plots <- object[object[[trt_expr]] == "buffer", ]
-    treatment_plots <- object[object[[trt_expr]] != "buffer", ]
+	# Separate buffer plots from treatment plots
+	buffer_plots <- object[object[[trt_expr]] == "buffer", ]
+	treatment_plots <- object[object[[trt_expr]] != "buffer", ]
 
-    ggplot2::ggplot() +
-        ggplot2::geom_tile(data = object,
-                           mapping = ggplot2::aes(x = .data[[column_expr]],
-                                                  y = .data[[row_expr]],
-                                                  fill = .data[[trt_expr]]),
-                           colour = "black") +
-        # Only add text to non-buffer plots
-        ggplot2::geom_text(data = treatment_plots,
-                           mapping = ggplot2::aes(x = .data[[column_expr]],
-                                                  y = .data[[row_expr]],
-                                                  label = .data[[trt_expr]]),
-                           colour = treatment_plots$text_col, angle = rotation, size = size, ...) +
-        ggplot2::geom_rect(data = blkdf,
-                           mapping = ggplot2::aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
-                           linewidth = 1.8, colour = "black", fill = NA) +
-        ggplot2::geom_rect(data = blkdf,
-                           mapping = ggplot2::aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
-                           linewidth = 0.6, colour = "white", fill = NA) +
-        ggplot2::theme_bw()
+	ggplot2::ggplot() +
+		ggplot2::geom_tile(
+			data = object,
+			mapping = ggplot2::aes(
+				x = .data[[column_expr]],
+				y = .data[[row_expr]],
+				fill = .data[[trt_expr]]
+			),
+			colour = "black"
+		) +
+		# Only add text to non-buffer plots
+		ggplot2::geom_text(
+			data = treatment_plots,
+			mapping = ggplot2::aes(
+				x = .data[[column_expr]],
+				y = .data[[row_expr]],
+				label = .data[[trt_expr]]
+			),
+			colour = treatment_plots$text_col,
+			angle = rotation,
+			size = size,
+			...
+		) +
+		ggplot2::geom_rect(
+			data = blkdf,
+			mapping = ggplot2::aes(
+				xmin = xmin,
+				xmax = xmax,
+				ymin = ymin,
+				ymax = ymax
+			),
+			linewidth = 1.8,
+			colour = "black",
+			fill = NA
+		) +
+		ggplot2::geom_rect(
+			data = blkdf,
+			mapping = ggplot2::aes(
+				xmin = xmin,
+				xmax = xmax,
+				ymin = ymin,
+				ymax = ymax
+			),
+			linewidth = 0.6,
+			colour = "white",
+			fill = NA
+		) +
+		ggplot2::theme_bw()
 }
 
 apply_axis_styling <- function(plot, margin, object, row_expr, column_expr) {
-    if(!margin) {
-        # No margin - expand plot to edges with no white space
-        plot <- plot + ggplot2::scale_x_continuous(expand = c(0, 0),
-                                                   breaks = seq(1, max(object[[column_expr]]), 1)) +
-            ggplot2::scale_y_continuous(expand = c(0, 0),
-                                        trans = scales::reverse_trans(),
-                                        breaks = seq(1, max(object[[row_expr]]), 1))
-    } else {
-        # With margin - default ggplot spacing
-        plot <- plot + ggplot2::scale_x_continuous(breaks = seq(1, max(object[[column_expr]]), 1)) +
-            ggplot2::scale_y_continuous(trans = scales::reverse_trans(),
-                                        breaks = seq(1, max(object[[row_expr]]), 1))
-    }
-    return(plot)
+	if (!margin) {
+		# No margin - expand plot to edges with no white space
+		plot <- plot +
+			ggplot2::scale_x_continuous(
+				expand = c(0, 0),
+				breaks = seq(1, max(object[[column_expr]]), 1)
+			) +
+			ggplot2::scale_y_continuous(
+				expand = c(0, 0),
+				trans = scales::reverse_trans(),
+				breaks = seq(1, max(object[[row_expr]]), 1)
+			)
+	} else {
+		# With margin - default ggplot spacing
+		plot <- plot +
+			ggplot2::scale_x_continuous(
+				breaks = seq(1, max(object[[column_expr]]), 1)
+			) +
+			ggplot2::scale_y_continuous(
+				trans = scales::reverse_trans(),
+				breaks = seq(1, max(object[[row_expr]]), 1)
+			)
+	}
+	return(plot)
 }
 
 calculate_block_boundaries <- function(object, block_expr) {
-    blkdf <- data.frame(
-        block = sort(unique(object[[block_expr]])),
-        xmin = 0, xmax = 0, ymin = 0, ymax = 0
-    )
+	blkdf <- data.frame(
+		block = sort(unique(object[[block_expr]])),
+		xmin = 0,
+		xmax = 0,
+		ymin = 0,
+		ymax = 0
+	)
 
-    for (i in 1:nrow(blkdf)) {
-        tmp <- object[object[[block_expr]] == blkdf$block[i], ]
-        blkdf[i, "ymin"] <- (min(tmp$row) - 0.5)
-        blkdf[i, "ymax"] <- (max(tmp$row) + 0.5)
-        blkdf[i, "xmin"] <- (min(tmp$col) - 0.5)
-        blkdf[i, "xmax"] <- (max(tmp$col) + 0.5)
-    }
+	for (i in 1:nrow(blkdf)) {
+		tmp <- object[object[[block_expr]] == blkdf$block[i], ]
+		blkdf[i, "ymin"] <- (min(tmp$row) - 0.5)
+		blkdf[i, "ymax"] <- (max(tmp$row) + 0.5)
+		blkdf[i, "xmin"] <- (min(tmp$col) - 0.5)
+		blkdf[i, "xmax"] <- (max(tmp$col) + 0.5)
+	}
 
-    return(blkdf)
+	return(blkdf)
 }
