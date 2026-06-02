@@ -242,8 +242,9 @@
 ---
 
     Code
-      data.frame(lapply(pred2e.out$predictions, function(y) if (is.numeric(y)) round(
-        y, 1) else y))
+      data.frame(lapply(pred2e.out$predictions, function(y) {
+        if (is.numeric(y)) round(y, 1) else y
+      }))
     Output
         Treatment predicted.value std.error df groups  ci low  up
       1        KC             2.1       0.2 18      a 0.4 1.7 2.5
