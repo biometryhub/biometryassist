@@ -23,7 +23,8 @@ authors:
 affiliations:
  - name: Biometry Hub, Adelaide University, Australia
    index: 1
-date: today
+date: 02 June 2026
+date-format: "D MMMM YYYY"
 bibliography: paper.bib
 format: markdown
 ---

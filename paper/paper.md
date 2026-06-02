@@ -17,7 +17,8 @@ authors:
   name: Annie Conway
   orcid: 0009-0003-8385-7615
 bibliography: paper.bib
-date: 2026-06-02
+date: 2 June 2026
+date-format: D MMMM YYYY
 engines:
 - path: "C:`\\PROGRA`{=tex}\\~1`\\Quarto\\share\\extension`{=tex}``{=tex}``{=tex}-subtrees`\\julia`{=tex}-engine_extensions`\\julia`{=tex}-engine`\\julia`{=tex}-engine.js"
 tags:
