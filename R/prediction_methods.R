@@ -55,19 +55,14 @@ check_classify_in_terms <- function(classify, model_terms) {
 #' @param classify Name of predictor variable as a string.
 #' @param pred.obj Optional precomputed prediction object.
 #' @param ... Additional arguments passed to specific methods.
-#'
-#' @name predictions
-#'
-#' @return A list containing predictions, standard errors, degrees of freedom,
-#' response variable label, and aliased names.
 #' @keywords internal
+#' @noRd
 get_predictions <- function(model.obj, classify, pred.obj = NULL, ...) {
 	UseMethod("get_predictions")
 }
 
-#' @rdname predictions
-#'
-#' @keywords internal
+#' @noRd
+#' @exportS3Method get_predictions default
 get_predictions.default <- function(model.obj, ...) {
 	supported_types <- c(
 		"aov",
@@ -84,9 +79,8 @@ get_predictions.default <- function(model.obj, ...) {
 	)
 }
 
-#' @rdname predictions
-#'
-#' @keywords internal
+#' @noRd
+#' @exportS3Method get_predictions asreml
 get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 	args <- list(...)
 	# asr_args <- args[names(args) %in% names(formals(asreml::predict.asreml))]
@@ -182,11 +176,9 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 	))
 }
 
-#' @rdname predictions
-#'
+#' @noRd
+#' @exportS3Method get_predictions lm
 #' @importFrom emmeans emmeans
-#'
-#' @keywords internal
 get_predictions.lm <- function(model.obj, classify, ...) {
 	# Check if classify is in model terms (handles reversed interaction order)
 	model_terms <- attr(stats::terms(model.obj), 'term.labels')
@@ -239,11 +231,9 @@ get_predictions.lm <- function(model.obj, classify, ...) {
 }
 
 
-#' @rdname predictions
-#'
+#' @noRd
+#' @exportS3Method get_predictions aovlist
 #' @importFrom emmeans emmeans
-#'
-#' @keywords internal
 get_predictions.aovlist <- function(model.obj, classify, ...) {
 	# Check if classify is in model terms
 	if (classify %!in% attr(stats::terms(model.obj), 'term.labels')) {
@@ -329,17 +319,15 @@ get_predictions.aovlist <- function(model.obj, classify, ...) {
 	))
 }
 
-#' @rdname predictions
-#'
-#' @keywords internal
+#' @noRd
+#' @exportS3Method get_predictions listof
 get_predictions.listof <- function(model.obj, classify, ...) {
 	get_predictions.aovlist(model.obj, classify, ...)
 }
 
 
-#' @rdname predictions
-#'
-#' @keywords internal
+#' @noRd
+#' @exportS3Method get_predictions lmerMod
 get_predictions.lmerMod <- function(model.obj, classify, ...) {
 	# Reuse lm method for common functionality
 	#result <- get_predictions.lm(model.obj, classify, ...)
@@ -352,14 +340,14 @@ get_predictions.lmerMod <- function(model.obj, classify, ...) {
 	return(result)
 }
 
-#' @rdname predictions
-#' @keywords internal
+#' @noRd
+#' @exportS3Method get_predictions lmerModLmerTest
 get_predictions.lmerModLmerTest <- function(model.obj, classify, ...) {
 	get_predictions.lmerMod(model.obj, classify, ...)
 }
 
-#' @rdname predictions
-#' @keywords internal
+#' @noRd
+#' @exportS3Method get_predictions lme
 get_predictions.lme <- function(model.obj, classify, ...) {
 	get_predictions.lm(model.obj, classify, ...)
 }

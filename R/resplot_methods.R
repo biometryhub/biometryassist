@@ -2,11 +2,13 @@
 #' @param model.obj Model object
 #' @param call Logical, whether to extract model call
 #' @keywords internal
+#' @noRd
 extract_model_info <- function(model.obj, call = FALSE) {
 	UseMethod("extract_model_info")
 }
 
-#' @keywords internal
+#' @noRd
+#' @exportS3Method extract_model_info default
 extract_model_info.default <- function(model.obj, call = FALSE) {
 	supported_types <- c(
 		"aov",
@@ -26,7 +28,8 @@ extract_model_info.default <- function(model.obj, call = FALSE) {
 	)
 }
 
-#' @keywords internal
+#' @noRd
+#' @exportS3Method extract_model_info aov
 extract_model_info.aov <- function(model.obj, call = FALSE) {
 	resids <- residuals(model.obj)
 	fits <- fitted(model.obj)
@@ -52,13 +55,16 @@ extract_model_info.aov <- function(model.obj, call = FALSE) {
 	return(output)
 }
 
-#' @keywords internal
+#' @noRd
+#' @exportS3Method extract_model_info lm
 extract_model_info.lm <- extract_model_info.aov
 
-#' @keywords internal
+#' @noRd
+#' @exportS3Method extract_model_info lme
 extract_model_info.lme <- extract_model_info.aov
 
-#' @keywords internal
+#' @noRd
+#' @exportS3Method extract_model_info lmerMod
 extract_model_info.lmerMod <- function(model.obj, call = FALSE) {
 	resids <- residuals(model.obj)
 	fits <- fitted(model.obj)
@@ -84,10 +90,12 @@ extract_model_info.lmerMod <- function(model.obj, call = FALSE) {
 	return(output)
 }
 
-#' @keywords internal
+#' @noRd
+#' @exportS3Method extract_model_info lmerModLmerTest
 extract_model_info.lmerModLmerTest <- extract_model_info.lmerMod
 
-#' @keywords internal
+#' @noRd
+#' @exportS3Method extract_model_info asreml
 extract_model_info.asreml <- function(model.obj, call = FALSE) {
 	facet <- length(names(model.obj$R.param))
 
@@ -134,7 +142,8 @@ extract_model_info.asreml <- function(model.obj, call = FALSE) {
 	return(output)
 }
 
-#' @keywords internal
+#' @noRd
+#' @exportS3Method extract_model_info mmer
 extract_model_info.mmer <- function(model.obj, call = FALSE) {
 	facet <- model.obj$termsN$rcov
 	k <- length(model.obj$residual)
@@ -166,7 +175,8 @@ extract_model_info.mmer <- function(model.obj, call = FALSE) {
 	return(output)
 }
 
-#' @keywords internal
+#' @noRd
+#' @exportS3Method extract_model_info mmes
 extract_model_info.mmes <- function(model.obj, call = FALSE) {
 	k <- length(model.obj$residual)
 
@@ -188,7 +198,8 @@ extract_model_info.mmes <- function(model.obj, call = FALSE) {
 	)
 }
 
-#' @keywords internal
+#' @noRd
+#' @exportS3Method extract_model_info art
 extract_model_info.art <- function(model.obj, call = FALSE) {
 	resids <- residuals(model.obj)
 	k <- length(resids)

@@ -20,7 +20,7 @@
 #' @param order Deprecated. Use `descending` instead.
 #' @param pred Deprecated. Use `classify` instead.
 #' @param pred.obj Deprecated. Predicted values are calculated within the function from version 1.0.1 onwards.
-#' @param ... Other arguments passed through to [get_predictions()].
+#' @param ... Other arguments passed internally to model-specific prediction methods.
 #'
 #' @importFrom multcompView multcompLetters
 #' @importFrom emmeans emmeans

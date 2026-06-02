@@ -63,7 +63,7 @@ multiple_comparisons(
 
 \item{pred}{Deprecated. Use \code{classify} instead.}
 
-\item{...}{Other arguments passed through to \code{\link[=get_predictions]{get_predictions()}}.}
+\item{...}{Other arguments passed internally to model-specific prediction methods.}
 }
 \value{
 An object of class \code{mct} (a list with class attributes) containing:
