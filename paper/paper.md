@@ -1,155 +1,263 @@
 ---
 affiliations:
 - index: 1
-  name: Biometry Hub, University of Adelaide, Australia
+  name: Biometry Hub, Adelaide University, Australia
 authors:
 - affiliation: 1
   corresponding: true
   equal-contrib: true
   name: Sam Rogers
-  orcid: 0000-0000-0000-0000
+  orcid: 0000-0002-8147-1239
 - affiliation: 1
   equal-contrib: true
   name: Sharon Nielsen
+  orcid: 0000-0003-4245-7300
 - affiliation: 1
+  equal-contrib: true
   name: Annie Conway
+  orcid: 0009-0003-8385-7615
 bibliography: paper.bib
-date: 2025-06-17
+date: 2026-06-02
+engines:
+- path: "C:`\\PROGRA`{=tex}\\~1`\\Quarto\\share\\extension`{=tex}``{=tex}``{=tex}-subtrees`\\julia`{=tex}-engine_extensions`\\julia`{=tex}-engine`\\julia`{=tex}-engine.js"
 tags:
 - R
 - experimental design
 - linear mixed models
 - reproducible research
 - professional development
-title: "biometryassist: an R package to aid the design and analysis of
-  agronomic-style experiments"
+title: "*biometryassist*: an R package to aid the design and analysis of
+  agronomic experiments"
 toc-title: Table of contents
 ---
 
--   [ ] A list of the authors of the software and their affiliations,
-    using the correct format (see the example below).
--   [ ] A summary describing the high-level functionality and purpose of
-    the software for a diverse, non-specialist audience.
--   [ ] A Statement of need section that clearly illustrates the
-    research purpose of the software and places it in the context of
-    related work.
-    -   Link to the workshops
-    -   Makes things a lot easier, especially for beginners
-    -   Not only ag, more widely used as well
--   [ ] A list of key references, including to other software addressing
-    related needs. Note that the references should include full names of
-    venues, e.g., journals and conferences, not abbreviations only
-    understood in the context of a specific discipline.
--   [ ] Mention (if applicable) a representative set of past or ongoing
-    research projects using the software and recent scholarly
-    publications enabled by it.
--   [ ] Acknowledgement of any financial support.
-
 # Summary
 
-<!-- A summary describing the high-level functionality and purpose of the software for a diverse, non-specialist audience. -->
+We developed the *biometryassist* R package (Nielsen et al. 2026) to
+provide helper functions and documentation supporting the design and
+analysis of agronomic field experiments, and have published it on the
+Comprehensive R Archive Network (CRAN). Its functions cover the common
+steps of a field trial workflow, including generating and randomising
+experimental designs, fitting and checking mixed models, and presenting
+the results. We designed them for agricultural researchers who need
+robust analyses but may have limited statistical or programming
+experience.
 
-Researchers and biometricians working in agriculture often face
-challenges in generating, randomising, and analysing field experiments
-with complex layouts. Designing agricultural experiments that are both
-statistically valid and practical in the field is a complex task, and
-analysing those experiments can be even more challenging.
-
-To assist researchers with practising the concepts taught in our
-biometry training workshops, we developed the *biometryassist* R package
-[@Nielsen2024] to provide easy access to documentation and helper
-functions, together with a companion website, accessible at:
-<https://biometryhub.github.io/biometryassist/>. The package is
-published publicly on the Comprehensive R Archive Network (CRAN), and is
-carefully designed to enhance the user experience of designing and
-analysing agronomic field trials, and to support researchers in their
-projects with best practice statistical techniques.
-
-The biometryassist package is utilised in each workshop of the series,
-and includes explanations and usage examples of the relevant functions
-to aid the participants' understanding of the statistical concepts.
-
-The `biometryassist` package is available on
-[GitHub](https://github.com/biometryhub/biometryassist). All
-instructions for installation and usage can be found in the [package
-documentation website](https://biometryhub.github.io/biometryassist).
+The package also serves as a companion to our biometry training
+workshops at the Biometry Hub, Adelaide University, where we use it to
+reduce the cognitive load on participants so that emphasis remains on
+statistical concepts and interpretation rather than software mechanics.
+The functions and documentation deliberately align with the concepts
+taught, so participants can continue using the package in their own work
+after the workshops, alongside researchers who adopt it independently.
+We maintain a companion website with comprehensive documentation and
+usage examples at <https://biometryhub.github.io/biometryassist/>.
 
 # Statement of need
 
-<!-- A Statement of need section that clearly illustrates the research purpose of the software and places it in the context of related work. -->
-<!-- Other related packages -->
-<!-- Not streamlined -->
-<!-- Multiple different packages -->
+Agricultural researchers are often expected to design and analyse their
+own experiments, yet rigorous experimental design and mixed-model
+analysis draw on statistical methods that fall outside most researchers'
+training (Kozak 2016). In R, these tasks are typically spread across
+several packages, each with its own conventions and syntax, and learning
+to navigate them adds effort that has little to do with the statistics.
+This can distract from understanding the underlying concepts and
+interpreting the results.
 
-*biometryassist* arose to reduce the cognitive load on students in
-workshops so that the emphasis was on the statistical concepts and the
-interpretation of the results. In workshop settings, learners are often
-overwhelmed by the need to navigate multiple R packages, each with its
-own conventions and idiosyncrasies, which can detract from understanding
-the underlying statistical concepts and the interpretation of results.
-By standardising syntax across key tasks---such as experimental design,
-model fitting and checking, and the extraction and presentation of
-results - *biometryassist* allows users to focus on methodological
-thinking rather than software mechanics.
-
-The primary target audience includes researchers, agronomists, and
-applied scientists, particularly within the grains industry, who require
-statistically sound analyses but may not have extensive programming
-experience. The package also supports statisticians working in
-collaborative environments by promoting reproducible and consistent
-workflows.
-
-*biometryassist* is not intended to replace existing statistical
-packages. Instead, it brings them together in a way that is easier to
-use and more consistent. This allows researchers to focus on the
-statistical thinking and interpretation, rather than the mechanics of
-the software.
+We wrote *biometryassist* in response to this, having seen through a
+long-running biometry training workshop series that participants
+consistently struggled with software mechanics as well as the
+statistics. The package provides a consistent interface across the key
+steps of an agricultural experiment, allowing users to concentrate on
+statistical reasoning instead of the software itself. We built it
+primarily for researchers, agronomists, and applied scientists who
+require statistically sound analyses but may not have extensive
+programming experience, though it applies wherever designed experiments
+are analysed.
 
 # State of the field
 
-There are packages inside and outside of R that handle experimental
-design (agricolae, dae, edibble), and packages that handle analysis
-(lme4, nlme, ASReml-R, emmeans), but no single package covers the entire
-workflow of designing, analysing, and reporting an agronomic experiment.
-The package *biometryassist* provides this workflow coherence with a
-consistent interface from design through to inference and reporting,
-reducing the cognitive load for new R users and non-statistician
-agronomists.
+Several R packages address individual stages of the field trial process.
+Experimental designs can be generated by `agricolae` ([de
+Mendiburu]{.nocase} 2023), `dae` (Brien 2025), and `edibble` (Tanaka
+2023); linear mixed models can be fitted with ASReml-R (The VSNi Team
+2023), `lme4` (Bates et al. 2015), or `nlme` (Pinheiro et al. 2026); and
+post-hoc inference can be provided by `emmeans` (Lenth and Piaskowski
+2026). No single tool spans the full process however, and combining
+several requires reconciling different syntax, conventions, and
+documentation standards.
 
-*biometryassist* was developed as a companion to a workshop series, and
-was therefore built with pedagogical alignment in mind. Terminology and
-function naming mirrors how experimental design and analysis concepts
-are taught, allowing participants to continue using the package
-intuitively in their own projects beyond the workshops. The scope is
-deliberately limited to a few common designs, as users are encouraged to
-seek professional statistical assistance for more complex experiments.
-Where spatial correlation adjustment is required, biometryassist
-currently relies on ASReml-R, as it remains the most practical option
-for fitting spatial models while producing appropriate predicted values;
-the authors intend to incorporate open-source alternatives as they
-mature.
+We did not build *biometryassist* to replace these packages, but to wrap
+and extend them within one consistently documented interface. Our case
+for a new package rather than contributing to an existing one is
+straightforward: no existing package had the scope required, and the
+fragmentation is architectural. Improving post-hoc testing in `emmeans`,
+for example, would not address the design or reporting stages, nor
+reduce the number of packages a user must load. The documentation in
+`agricolae` was a particular motivation for us: its sparse and
+inconsistent help pages were a recurring obstacle in our workshops, and
+approachable documentation was one of our explicit goals.
+
+The package also provides capabilities not available elsewhere. Buffer
+rows and columns can be added to generated designs for example, which is
+common practice in agronomic trials but unsupported by other design
+packages. Designs can also be exported directly to formatted Excel
+workbooks with a colour-coded field layout together with a spreadsheet
+experiment field book. The analysis functions reduce a typical analysis
+from around 50 lines of code across several packages to about 10, using
+one package, or two with ASReml-R. Fitting models remains outside the
+scope of *biometryassist* as the complexity of this task is better
+handled by the specialised packages already available. The package is
+fully open source and released under the MIT License.
 
 # Software design
 
-The functions within *biometryassist* are grouped into three broad
-categories: design, covering functions to produce typical
-agricultural-style experimental designs, analysis where post-hoc testing
-and model evaluation functions live, and utilities which includes other
-functions such as print methods and helper functions.
+We organised the functions in *biometryassist* into three categories:
+design, for generating and randomising experimental layouts
+(`design()`), adding buffer plots (`add_buffers()`), and exporting them
+to formatted Excel workbooks (`export_design_to_excel()`); analysis,
+covering model checking, post-hoc testing, and prediction (`resplot()`,
+`variogram()`, `multiple_comparisons()` and `autoplot()`); and
+utilities, including installation helpers (`install_asreml()`) and
+reporting templates (`use_template()`). This structure mirrors the
+stages of a typical field trial and follows the sequence of topics we
+cover in the workshops.
 
-The primary users of *biometryassist* are agricultural researchers and
-so each function is designed to minimise the cognitive load for users,
-allowing them to concentrate on core concepts rather than wrestling with
-coding challenges. Function names are deliberately chosen to make their
-purpose clear, for example `design()` or `multiple_comparisons()`,
-enabling users to intuitively understand their purpose. The package is
-supported with comprehensive documentation available on the package
-website at https://biometryhub.github.io/biometryassist.
+We chose function names and terminology to reflect how concepts are
+taught rather than how they are implemented, intending names such as
+`design()` and `multiple_comparisons()` to be self-explanatory to a
+researcher with little prior R experience.
+
+For model fitting, *biometryassist* supports ASReml-R (The VSNi Team
+2023), `lme4` (Bates et al. 2015), `nlme` (Pinheiro et al. 2026), and
+base `aov()`. We recommend ASReml-R for the mixed-model analyses of
+typical agronomic field trials, and concentrate most development effort
+there, but it is not a hard dependency; the package loads and functions
+correctly without it, and we have written it to support alternative
+backends where possible. This keeps *biometryassist* useful across
+institutional settings where a commercial ASReml-R licence may not be
+available.
+
+We designed the package to extend as the R ecosystem evolves. We add
+support for additional model classes in response to user needs, such as
+the recent addition of `lme4` support in `resplot()` and
+`multiple_comparisons()`, and will continue to do so as new packages are
+developed and gain traction.
 
 # Research impact statement
 
+*biometryassist* began as a collection of analysis scripts we shared
+with workshop participants, before we formalised it as a package
+distributed through CRAN. Our workshop series has run for more than
+eight years, and the package features in each one; we encourage and
+support participants to apply it in their own work afterwards. Beyond
+the workshops, researchers have adopted it independently of our team,
+and it has been downloaded more than 25,000 times from CRAN as of June
+2026. It has also been cited in published work spanning agricultural and
+other applied disciplines (Fanning et al. 2022; Reed-Métayer et al.
+2025; Wenham et al. 2026; Kesser et al. 2026), demonstrating use beyond
+the field of agronomy for which we originally designed it.
+
 # AI usage disclosure
+
+We used Anthropic's Claude to suggest edits improving the clarity and
+flow of text we had drafted, and to assist with some recent refactoring
+of the package's code. In both cases we reviewed all AI-generated or
+AI-edited content, and confirmed the correctness of code changes with
+the package's existing suite of formal unit tests. We take full
+responsibility for the final content of both the software and this
+paper.
 
 # Acknowledgements
 
+We gratefully acknowledge support for the development of
+*biometryassist* from the Grains Research and Development Corporation
+(GRDC) under project numbers UOA1606-008RTX and UOA2301-005OPX, and from
+Adelaide University (formerly the University of Adelaide).
+
 # References {#references .unnumbered}
+
+:::::::::::::::: {#refs .references .csl-bib-body .hanging-indent}
+::: {#ref-Bates2015 .csl-entry}
+Bates, Douglas, Martin Mächler, Ben Bolker, and Steve Walker. 2015.
+"Fitting Linear Mixed-Effects Models Using [lme4]{.nocase}." *Journal of
+Statistical Software* 67 (1): 1--48.
+<https://doi.org/10.18637/jss.v067.i01>.
+:::
+
+::: {#ref-Brien2025 .csl-entry}
+Brien, Chris. 2025. *Dae: Functions Useful in the Design and ANOVA of
+Experiments*. <https://doi.org/10.32614/CRAN.package.dae>.
+:::
+
+::: {#ref-Mendiburu2023 .csl-entry}
+[de Mendiburu, Felipe]{.nocase}. 2023. *Agricolae: Statistical
+Procedures for Agricultural Research*.
+<https://doi.org/10.32614/CRAN.package.agricolae>.
+:::
+
+::: {#ref-fanning2022management .csl-entry}
+Fanning, Joshua, Jason Brand, Isabel Munoz Santa, Linda McDonald, Julian
+Taylor, and Grant Hollaway. 2022. "Management of Chickpea Ascochyta
+Blight Using Fungicides and Cultivar Resistance Improves Grain Yield,
+Quality, and Grower Profitability." *Frontiers in Plant Science* 13:
+942220.
+:::
+
+::: {#ref-kesser2026grower .csl-entry}
+Kesser, Merek M, Timothy R Cavagnaro, Roberta De Bei, and Cassandra
+Collins. 2026. "Grower Motivations, Challenges, and Perceptions of
+Sustainability for Vineyard Floor Management in Australia." *Agronomy
+for Sustainable Development* 46 (1): 2.
+:::
+
+::: {#ref-Kozak2016 .csl-entry}
+Kozak, Marcin. 2016. "Communication Between Agricultural Scientists and
+Statisticians: A Broken Bridge?" *Scientia Agricola* 73 (6): 505--11.
+<https://doi.org/10.1590/0103-9016-2015-0399>.
+:::
+
+::: {#ref-Lenth2026 .csl-entry}
+Lenth, Russell V., and Julia Piaskowski. 2026. *Emmeans: Estimated
+Marginal Means, Aka Least-Squares Means*.
+<https://doi.org/10.32614/CRAN.package.emmeans>.
+:::
+
+::: {#ref-Nielsen2026 .csl-entry}
+Nielsen, Sharon, Sam Rogers, and Annie Conway. 2026. *Biometryassist:
+Functions to Assist Design and Analysis of Agronomic Experiments*.
+<https://doi.org/10.32614/CRAN.package.biometryassist>.
+:::
+
+::: {#ref-Pinheiro2026 .csl-entry}
+Pinheiro, José, Douglas Bates, and R Core Team. 2026. *Nlme: Linear and
+Nonlinear Mixed Effects Models*.
+<https://doi.org/10.32614/CRAN.package.nlme>.
+:::
+
+::: {#ref-reed2025spruce .csl-entry}
+Reed-Métayer, Edouard, Claire Depardieu, Patrick Lenz, Jean Bousquet,
+and Martin Perron. 2025. "Spruce Hybrids Show Superior Lifespan Growth
+but Intermediate Response to Climate Stress Compared to Their
+Ecologically Divergent Parental Species." *Forest Ecology and
+Management* 581: 122550.
+:::
+
+::: {#ref-Tanaka2023 .csl-entry}
+Tanaka, Emi. 2023. *Edibble: An r Package to Encapsulate Elements of
+Experimental Designs for Better Planning, Management and Workflow*.
+arXiv:2311.09705. arXiv. <https://arxiv.org/abs/2311.09705>.
+:::
+
+::: {#ref-VSNInternational2023 .csl-entry}
+The VSNi Team. 2023. *Asreml: Fits Linear Mixed Models Using REML*.
+:::
+
+::: {#ref-wenham2026efficacy .csl-entry}
+Wenham, Kellie M, Yohannes E Messele, Kiro R Petrovski, Stephen J Lee,
+and Mariana Caetano. 2026. "Efficacy of Bromoform Extract Oil
+Supplementation to Mitigate Methane Emissions in Angus Cows in an
+Extensive System and the Health Impact on the Cow-Calf Pair." *Frontiers
+in Animal Science* 7: 1789660.
+:::
+::::::::::::::::

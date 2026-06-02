@@ -25,7 +25,7 @@ affiliations:
    index: 1
 date: today
 bibliography: paper.bib
-format: docx
+format: markdown
 ---
 
 # Summary
