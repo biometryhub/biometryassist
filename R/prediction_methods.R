@@ -262,19 +262,17 @@ get_predictions.aovlist <- function(model.obj, classify, ...) {
 	pred.out <- as.data.frame(pred.out)
 
 	# Extract standard errors
-	# define SED matrix
-	sed <- matrix(NA, nrow = dim(pred.out)[1], ncol = dim(pred.out)[1])
+	# define SED matrix (vectorised fill of upper triangle then mirror)
+	n <- nrow(pred.out)
+	sed <- matrix(NA_real_, nrow = n, ncol = n)
 	# obtain residual degrees of freedom matrix
-	ndf <- matrix(NA, nrow = dim(pred.out)[1], ncol = dim(pred.out)[1])
-	k <- 1 # define counter k
-	for (i in 1:(dim(pred.out)[1] - 1)) {
-		for (j in (i + 1):dim(pred.out)[1]) {
-			sed[i, j] <- aov_compare$SE[k]
-			sed[j, i] <- sed[i, j]
-			ndf[i, j] <- aov_compare$df[k]
-			ndf[j, i] <- ndf[i, j]
-			k <- k + 1
-		}
+	ndf <- matrix(NA_real_, nrow = n, ncol = n)
+	if (n > 1) {
+		upper_idx <- upper.tri(sed)
+		sed[upper_idx] <- aov_compare$SE
+		ndf[upper_idx] <- aov_compare$df
+		sed[lower.tri(sed)] <- t(sed)[lower.tri(sed)]
+		ndf[lower.tri(ndf)] <- t(ndf)[lower.tri(ndf)]
 	}
 
 	# Remove columns with upper and lower confidence intervals
@@ -287,17 +285,11 @@ get_predictions.aovlist <- function(model.obj, classify, ...) {
 	names(pp)[names(pp) == "emmean"] <- "predicted.value"
 	names(pp)[names(pp) == "SE"] <- "std.error"
 
-	# Set diagonals to NA
-	#diag(sed) <- NA
-
 	# Process aliased treatments
 	aliased_result <- process_aliased(pp, sed, classify)
 	pp <- aliased_result$predictions
 	sed <- aliased_result$sed
 	aliased_names <- aliased_result$aliased_names
-
-	# Get denominator degrees of freedom
-	#ndf <- pp$df[1]
 
 	# Get response variable for plot label
 	if (class(model.obj)[1] %in% c("lmerMod", "lmerModLmerTest")) {
