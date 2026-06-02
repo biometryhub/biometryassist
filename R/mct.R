@@ -12,6 +12,8 @@
 #' @param decimals Controls rounding of decimal places in output. Default is 2 decimal places.
 #' @param descending Logical (default `FALSE`). Order of the output sorted by the predicted value. If `TRUE`, largest will be first, through to smallest last.
 #' @param groups Logical (default `TRUE`). If `TRUE`, the significance letter groupings will be calculated and displayed. This can get overwhelming for large numbers of comparisons, so can be turned off by setting to `FALSE`.
+#' @param adjust The method used to adjust p-values for multiple comparisons. Either `"tukey"` (default, Tukey's HSD) or any method accepted by [stats::p.adjust()] (`"bonferroni"`, `"holm"`, `"hochberg"`, `"hommel"`, `"BH"` (or `"fdr"`), `"BY"`, or `"none"`). See Details.
+#' @param by A character vector of column name(s) in the predictions over which to split comparisons. Comparisons are run independently within each level (or combination of levels) of the `by` variable(s); no p-values are pooled or adjusted across groups. Default `NULL`. See Details.
 #' @param plot Automatically produce a plot of the output of the multiple comparison test? Default is `FALSE`. This is maintained for backwards compatibility, but the preferred method now is to use `autoplot(<multiple_comparisons output>)`. See [biometryassist::autoplot.mct()] for more details.
 #' @param label_height Height of the text labels above the upper error bar on the plot. Default is 0.1 (10%) of the difference between upper and lower error bars above the top error bar.
 #' @param rotation Rotate the text output as Treatments within the plot. Allows for easier reading of long treatment labels. Number between 0 and 360 (inclusive) - default 0
@@ -24,7 +26,7 @@
 #'
 #' @importFrom multcompView multcompLetters
 #' @importFrom emmeans emmeans
-#' @importFrom stats model.frame predict qtukey qt terms var ptukey
+#' @importFrom stats model.frame predict qtukey qt terms var ptukey pt p.adjust
 #' @importFrom utils packageVersion
 #'
 #' @details
@@ -43,6 +45,29 @@
 #' The power argument allows the specification of arbitrary powers to be
 #' back transformed, if they have been used to attempt to improve normality of
 #' residuals.
+#'
+#' ## P-value adjustment (`adjust`)
+#' By default (`adjust = "tukey"`) the function uses Tukey's HSD, which is exact
+#' for the complete set of all pairwise comparisons. Alternatively, `adjust` may
+#' be any method accepted by [stats::p.adjust()]. In that case a matrix of *raw*
+#' two-sided t-test p-values is computed first and the chosen adjustment is
+#' applied to the lower-triangle vector of those raw p-values, avoiding the
+#' double-adjustment that would occur if Tukey-adjusted p-values were passed to
+#' `p.adjust()`. Bonferroni and Holm control the family-wise error rate and are
+#' valid under arbitrary dependence; BH/BY (FDR) are valid under positive
+#' dependence, which pairwise comparisons satisfy. The returned
+#' `$pairwise_pvalues` always holds the adjusted p-values for the chosen method
+#' (the Tukey p-values when `adjust = "tukey"`). When `adjust` is not `"tukey"`,
+#' `$hsd` is `NULL`, as an HSD value is only meaningful for Tukey's test.
+#'
+#' ## Grouped comparisons (`by`)
+#' When `by` is supplied, the predictions are split into subgroups defined by
+#' the level(s) of the `by` variable(s) and the comparison procedure is run
+#' independently within each subgroup. Each subgroup is treated as a separate
+#' family of comparisons: there is no pooling and no cross-group p-value
+#' adjustment, and letter groupings restart within each subgroup. When `by` is
+#' used, `$pairwise_pvalues` (and `$hsd` where applicable) are returned as named
+#' lists with one element per subgroup.
 #'
 #' ## Confidence Intervals & Comparison Intervals
 #'
@@ -83,14 +108,19 @@
 #'  \item{predictions}{A data frame with predicted means, standard errors,
 #'    confidence interval upper and lower bounds, and significant group
 #'    allocations}
-#'  \item{pairwise_pvalues}{A symmetric matrix of p-values for all pairwise
-#'    comparisons using Tukey's HSD test}
-#'  \item{hsd}{The Honest Significant Difference value(s) used in the comparisons.
-#'    Either a single numeric value (if constant across comparisons) or a matrix
-#'    (if varies by comparison)}
+#'  \item{pairwise_pvalues}{A symmetric matrix of adjusted p-values for all
+#'    pairwise comparisons (Tukey's HSD by default, otherwise adjusted by the
+#'    `adjust` method). When `by` is supplied, a named list of such matrices,
+#'    one per subgroup}
+#'  \item{hsd}{The Honest Significant Difference value(s) used in the comparisons
+#'    when `adjust = "tukey"`. Either a single numeric value (if constant across
+#'    comparisons) or a matrix (if it varies by comparison). `NULL` when `adjust`
+#'    is not `"tukey"`}
+#'  \item{sig_level}{The significance level used (default 0.05)}
+#'  \item{comparison_method}{The p-value adjustment method used (the value of
+#'    `adjust`)}
 #'  \item{aliased}{Character vector of aliased treatment levels (only present if
 #'    some predictions are aliased)}
-#'  \item{sig_level}{The significance level used (default 0.05)}
 #'
 #' @references Jørgensen, E. & Pedersen, A. R. (1997). How to Obtain Those Nasty
 #'  Standard Errors From Transformed Data - and Why They Should Not Be Used.
@@ -214,6 +244,8 @@ multiple_comparisons <- function(
 	decimals = 2,
 	descending = FALSE,
 	groups = TRUE,
+	adjust = "tukey",
+	by = NULL,
 	plot = FALSE,
 	label_height = 0.1,
 	rotation = 0,
@@ -250,6 +282,27 @@ multiple_comparisons <- function(
 		}
 	}
 
+	# Validate p-value adjustment method
+	valid_adjust <- c(
+		"tukey",
+		"holm",
+		"hochberg",
+		"hommel",
+		"bonferroni",
+		"BH",
+		"BY",
+		"fdr",
+		"none"
+	)
+	if (length(adjust) != 1 || !adjust %in% valid_adjust) {
+		stop(
+			"Invalid `adjust` method. Must be one of: ",
+			paste(valid_adjust, collapse = ", "),
+			".",
+			call. = FALSE
+		)
+	}
+
 	# Get model-specific predictions and SED
 	result <- get_predictions(model.obj, classify, pred.obj, ...)
 
@@ -262,17 +315,76 @@ multiple_comparisons <- function(
 	# Process treatment names
 	pp <- process_treatment_names(pp, classify, vars)
 
-	# Calculate critical values and determine pairs that are significantly different
-	result <- get_diffs(pp, sed, ndf, sig)
-	crit_val <- result$crit_val
-	diffs <- result$diffs
+	# Validate `by` columns
+	if (!is.null(by)) {
+		if (!all(by %in% names(pp))) {
+			missing_by <- by[by %!in% names(pp)]
+			stop(
+				"The `by` variable(s) ",
+				paste(missing_by, collapse = ", "),
+				" are not present in the predictions. Available columns are: ",
+				paste(names(pp), collapse = ", "),
+				".",
+				call. = FALSE
+			)
+		}
+	}
 
-	# Calculate p-value matrix for all pairwise comparisons
-	pval_matrix <- calculate_pvalue_matrix(pp, sed, ndf)
+	# Run the comparison procedure for a single (sub)group of predictions.
+	# Returns the (optionally letter-grouped) predictions plus the p-value
+	# matrix (Tukey-adjusted or `adjust`-adjusted) and the Tukey critical value
+	# (NULL for other methods).
+	run_comparisons <- function(pp_g, sed_g, ndf_g) {
+		if (adjust == "tukey") {
+			# Tukey-adjusted p-values via the studentized range distribution.
+			# calculate_pvalue_matrix() drops dimnames when ndf is a matrix
+			# (aovlist/lmer), so restore them from the predictions order.
+			tukey_matrix <- calculate_pvalue_matrix(pp_g, sed_g, ndf_g)
+			dimnames(tukey_matrix) <- list(pp_g$Names, pp_g$Names)
+			crit_val_g <- 1 /
+				sqrt(2) *
+				stats::qtukey((1 - sig), nrow(pp_g), ndf_g) *
+				sed_g
+			diff_res <- get_diffs_from_pvalues(tukey_matrix, sig, adjust)
+		} else {
+			# Raw two-sided t-test p-values are adjusted via stats::p.adjust().
+			# Computing raw p-values first avoids double-adjustment.
+			raw_matrix <- calculate_raw_pvalue_matrix(pp_g, sed_g, ndf_g)
+			crit_val_g <- NULL
+			diff_res <- get_diffs_from_pvalues(raw_matrix, sig, adjust)
+		}
 
-	# Add letter groups if requested
-	if (groups) {
-		pp <- add_letter_groups(pp, diffs, descending)
+		if (groups) {
+			pp_g <- add_letter_groups(pp_g, diff_res$diffs, descending)
+		}
+
+		list(
+			pp = pp_g,
+			pval_matrix = diff_res$adjusted_matrix,
+			crit_val = crit_val_g
+		)
+	}
+
+	if (is.null(by)) {
+		res <- run_comparisons(pp, sed, ndf)
+		pp <- res$pp
+		pval_matrix <- res$pval_matrix
+		crit_val <- res$crit_val
+	} else {
+		by_vals <- interaction(pp[, by, drop = FALSE], drop = TRUE)
+		groups_list <- split(seq_len(nrow(pp)), by_vals)
+
+		res_list <- lapply(groups_list, function(idx) {
+			pp_g <- pp[idx, , drop = FALSE]
+			sed_g <- sed[idx, idx, drop = FALSE]
+			ndf_g <- if (is.matrix(ndf)) ndf[idx, idx, drop = FALSE] else ndf
+			run_comparisons(pp_g, sed_g, ndf_g)
+		})
+
+		pp <- do.call(rbind, lapply(res_list, function(r) r$pp))
+		rownames(pp) <- NULL
+		pval_matrix <- lapply(res_list, function(r) r$pval_matrix)
+		crit_val <- lapply(res_list, function(r) r$crit_val)
 	}
 
 	# Calculate confidence intervals
@@ -287,7 +399,7 @@ multiple_comparisons <- function(
 	}
 
 	# Order results and format output
-	pp <- format_output(pp, descending, vars, decimals)
+	pp <- format_output(pp, descending, vars, decimals, by)
 
 	# Save if requested
 	if (save) {
@@ -295,23 +407,37 @@ multiple_comparisons <- function(
 	}
 
 	# Check for CI/letter group inconsistencies and warn if needed
-	if (groups && tolower(int.type) == "ci") {
+	if (groups && tolower(int.type) == "ci" && adjust == "tukey" && is.null(by)) {
 		check_ci_consistency(pp)
 	}
 
-	# Prepare HSD value(s) for output
-	if (isTRUE(stats::var(as.vector(crit_val), na.rm = TRUE) < 1e-10)) {
-		hsd_output <- crit_val[1, 2]
+	# Prepare HSD value(s) for output. Only meaningful for Tukey's HSD.
+	summarise_hsd <- function(cv) {
+		if (isTRUE(stats::var(as.vector(cv), na.rm = TRUE) < 1e-10)) {
+			cv[1, 2]
+		} else {
+			cv
+		}
+	}
+	if (adjust != "tukey") {
+		hsd_output <- NULL
+	} else if (is.null(by)) {
+		hsd_output <- summarise_hsd(crit_val)
 	} else {
-		hsd_output <- crit_val
+		hsd_output <- lapply(crit_val, summarise_hsd)
 	}
 
-	# Create output list
+	# Create output list. The first four elements (predictions, pairwise_pvalues,
+	# hsd, sig_level) keep their historical positions for backwards-compatible
+	# positional access; new elements are appended after them. `pairwise_pvalues`
+	# holds the adjusted p-values (Tukey's by default, otherwise the `adjust`
+	# method).
 	output <- list(
 		predictions = pp,
 		pairwise_pvalues = pval_matrix,
 		hsd = hsd_output,
-		sig_level = sig
+		sig_level = sig,
+		comparison_method = adjust
 	)
 
 	# Add aliased treatments if present
@@ -357,13 +483,24 @@ multiple_comparisons <- function(
 print.mct <- function(x, ...) {
 	stopifnot(inherits(x, "mct"))
 
-	cat("Multiple Comparisons of Means: Tukey's HSD Test\n")
-	cat("Significance level:", x$sig_level, "\n")
-	cat(
-		"HSD value:",
-		if (length(x$hsd) == 1) x$hsd else "varies by comparison (see $hsd)\n",
-		"\n"
-	)
+	method <- if (is.null(x$comparison_method)) "tukey" else x$comparison_method
+
+	if (method == "tukey") {
+		cat("Multiple Comparisons of Means: Tukey's HSD Test\n")
+		cat("Significance level:", x$sig_level, "\n")
+		cat(
+			"HSD value:",
+			if (length(x$hsd) == 1) x$hsd else "varies by comparison (see $hsd)\n",
+			"\n"
+		)
+	} else {
+		cat(
+			"Multiple Comparisons of Means: p-value adjustment =",
+			method,
+			"\n"
+		)
+		cat("Significance level:", x$sig_level, "\n")
+	}
 	cat("\nPredicted values:\n")
 	print.data.frame(x$predictions, ...)
 
@@ -453,6 +590,128 @@ calculate_pvalue_matrix <- function(pp, sed, ndf) {
 }
 
 
+#' Calculate matrix of raw (unadjusted) pairwise p-values
+#'
+#' Computes a symmetric matrix of two-sided t-test p-values for all pairwise
+#' comparisons. These are the *unadjusted* p-values; any multiple-comparison
+#' adjustment is applied later. Computing raw p-values first avoids the
+#' double-adjustment that would occur if Tukey-adjusted p-values were passed to
+#' [stats::p.adjust()].
+#'
+#' @param pp Data frame with predicted values and a `Names` column
+#' @param sed Standard error of differences (matrix or scalar)
+#' @param ndf Degrees of freedom (scalar or matrix)
+#'
+#' @return Symmetric matrix of raw p-values with treatment names as row/column
+#'   names (diagonal set to 1)
+#' @noRd
+calculate_raw_pvalue_matrix <- function(pp, sed, ndf) {
+	n <- nrow(pp)
+	treatment_names <- pp$Names
+
+	pval_matrix <- matrix(
+		1,
+		nrow = n,
+		ncol = n,
+		dimnames = list(treatment_names, treatment_names)
+	)
+
+	if (n <= 1) {
+		return(pval_matrix)
+	}
+
+	pair_idx <- which(upper.tri(pval_matrix), arr.ind = TRUE)
+	i <- pair_idx[, 1]
+	j <- pair_idx[, 2]
+
+	diff <- abs(pp$predicted.value[i] - pp$predicted.value[j])
+
+	sed_ij <- if (!is.null(dim(sed))) {
+		as.numeric(sed[cbind(i, j)])
+	} else {
+		rep_len(sed, length(diff))
+	}
+
+	ndf_ij <- if (is.matrix(ndf)) {
+		as.numeric(ndf[cbind(i, j)])
+	} else {
+		rep_len(ndf, length(diff))
+	}
+
+	t_stat <- diff / sed_ij
+	p_raw <- 2 * stats::pt(-abs(t_stat), df = ndf_ij)
+
+	pval_matrix[cbind(i, j)] <- p_raw
+	pval_matrix[cbind(j, i)] <- p_raw
+
+	return(pval_matrix)
+}
+
+
+#' Determine significant differences from a p-value matrix
+#'
+#' Replaces `get_diffs()` as the source of the `diffs` named logical vector
+#' consumed by [multcompView::multcompLetters3()].
+#'
+#' For `adjust = "tukey"`, `pval_matrix` is expected to already contain
+#' Tukey-adjusted p-values (no further adjustment is applied). For any other
+#' method, `pval_matrix` is expected to contain raw two-sided t-test p-values,
+#' and the requested [stats::p.adjust()] method is applied to the lower-triangle
+#' vector of p-values.
+#'
+#' @param pval_matrix Symmetric p-value matrix with treatment names as row/col
+#'   names (Tukey-adjusted when `adjust == "tukey"`, otherwise raw)
+#' @param sig Significance level
+#' @param adjust Adjustment method (`"tukey"` or a [stats::p.adjust()] method)
+#'
+#' @return A list with `diffs` (named logical vector, `TRUE` = significantly
+#'   different), `adjusted_pvalues` (named numeric vector for the lower
+#'   triangle), `adjusted_matrix` (symmetric adjusted p-value matrix), and
+#'   `pair_names`.
+#' @noRd
+get_diffs_from_pvalues <- function(pval_matrix, sig, adjust) {
+	nm <- rownames(pval_matrix)
+	n <- nrow(pval_matrix)
+
+	lower <- lower.tri(pval_matrix)
+	m <- outer(nm, nm, paste, sep = "-")
+	pair_names <- m[lower]
+	p_low <- as.numeric(pval_matrix[lower])
+
+	# Apply adjustment. For Tukey, p_low is already adjusted via the
+	# studentized range distribution, so no further adjustment is applied.
+	p_adj <- p_low
+	if (adjust != "tukey") {
+		p_adj <- stats::p.adjust(p_low, method = adjust)
+	}
+
+	names(p_adj) <- pair_names
+
+	# diffs: TRUE = significantly different.
+	diffs <- p_adj < sig
+	diffs[is.na(diffs)] <- FALSE
+	names(diffs) <- pair_names
+
+	# Reconstruct a symmetric adjusted p-value matrix for output
+	adj_matrix <- matrix(
+		NA_real_,
+		nrow = n,
+		ncol = n,
+		dimnames = list(nm, nm)
+	)
+	diag(adj_matrix) <- 1
+	adj_matrix[lower] <- p_adj
+	adj_matrix[upper.tri(adj_matrix)] <- t(adj_matrix)[upper.tri(adj_matrix)]
+
+	list(
+		diffs = diffs,
+		adjusted_pvalues = p_adj,
+		adjusted_matrix = adj_matrix,
+		pair_names = pair_names
+	)
+}
+
+
 #' @noRd
 add_letter_groups <- function(pp, diffs, descending) {
 	ll <- multcompView::multcompLetters3(
@@ -472,9 +731,16 @@ add_letter_groups <- function(pp, diffs, descending) {
 
 
 #' @noRd
-format_output <- function(pp, descending, vars, decimals) {
-	# Order by predicted value
-	pp <- pp[base::order(pp$predicted.value, decreasing = descending), ]
+format_output <- function(pp, descending, vars, decimals, by = NULL) {
+	# Order by predicted value. When `by` is supplied, keep subgroups together
+	# (ascending by the `by` variable(s)) and order by predicted value within.
+	if (is.null(by)) {
+		pp <- pp[base::order(pp$predicted.value, decreasing = descending), ]
+	} else {
+		pv <- if (descending) -pp$predicted.value else pp$predicted.value
+		order_args <- c(lapply(by, function(b) pp[[b]]), list(pv))
+		pp <- pp[do.call(base::order, order_args), ]
+	}
 
 	# Remove Names column
 	pp$Names <- NULL

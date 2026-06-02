@@ -353,6 +353,171 @@ test_that("p-value matrix with transformations", {
 
 
 # ============================================================================
+# TESTS FOR adjust / by ARGUMENTS
+# ============================================================================
+
+test_that("default adjust is tukey and adds comparison_method", {
+	output <- multiple_comparisons(dat.aov, classify = "Species")
+	expect_equal(output$comparison_method, "tukey")
+	expect_type(output$hsd, "double")
+	# Only a single p-value object is returned
+	expect_false("raw_pvalues" %in% names(output))
+	expect_true("pairwise_pvalues" %in% names(output))
+	# Backwards-compatible positional access preserved
+	expect_identical(output$predictions, output[[1]])
+	expect_identical(output$pairwise_pvalues, output[[2]])
+	expect_identical(output$hsd, output[[3]])
+	expect_identical(output$sig_level, output[[4]])
+})
+
+test_that("invalid adjust method errors", {
+	expect_error(
+		multiple_comparisons(dat.aov, classify = "Species", adjust = "nope"),
+		"Invalid `adjust` method"
+	)
+})
+
+test_that("non-tukey adjust sets hsd NULL and returns a single p-value matrix", {
+	output <- multiple_comparisons(
+		dat.aov,
+		classify = "Species",
+		adjust = "bonferroni"
+	)
+	expect_equal(output$comparison_method, "bonferroni")
+	expect_null(output$hsd)
+	# A single adjusted p-value object, no separate raw_pvalues
+	expect_false("raw_pvalues" %in% names(output))
+	expect_true(is.matrix(output$pairwise_pvalues))
+	expect_true(isSymmetric(output$pairwise_pvalues))
+	expect_equal(diag(output$pairwise_pvalues), rep(1, 3), ignore_attr = TRUE)
+})
+
+test_that("adjust does not double-adjust p-values", {
+	# Build data with non-trivial (non-zero) p-values
+	set.seed(42)
+	d <- data.frame(
+		Trt = factor(rep(c("A", "B", "C", "D"), each = 8)),
+		y = rnorm(32)
+	)
+	d$y[d$Trt == "A"] <- d$y[d$Trt == "A"] + 1.2
+	m <- aov(y ~ Trt, data = d)
+
+	out_bonf <- multiple_comparisons(m, classify = "Trt", adjust = "bonferroni")
+	out_none <- multiple_comparisons(m, classify = "Trt", adjust = "none")
+
+	# adjust = "none" returns the raw (unadjusted) p-values, so Bonferroni
+	# should equal those raw values * (number of comparisons), capped at 1.
+	raw <- out_none$pairwise_pvalues
+	adj <- out_bonf$pairwise_pvalues
+	manual <- pmin(raw * choose(4, 2), 1)
+	expect_equal(adj[lower.tri(adj)], manual[lower.tri(manual)])
+})
+
+test_that("adjust = none returns raw two-sided t-test p-values", {
+	output <- multiple_comparisons(
+		dat.aov,
+		classify = "Species",
+		adjust = "none"
+	)
+	expect_true(is.matrix(output$pairwise_pvalues))
+	expect_equal(diag(output$pairwise_pvalues), rep(1, 3), ignore_attr = TRUE)
+	expect_true(isSymmetric(output$pairwise_pvalues))
+})
+
+test_that("by splits comparisons into per-group families", {
+	set.seed(1)
+	d <- expand.grid(
+		Trt = factor(c("A", "B", "C")),
+		Grp = factor(c("G1", "G2")),
+		rep = 1:6
+	)
+	d$y <- rnorm(
+		nrow(d),
+		mean = as.numeric(d$Trt) * ifelse(d$Grp == "G1", 5, 1)
+	)
+	m <- aov(y ~ Trt * Grp, data = d)
+
+	output <- multiple_comparisons(m, classify = "Trt:Grp", by = "Grp")
+
+	# pairwise_pvalues and hsd are per-group lists
+	expect_type(output$pairwise_pvalues, "list")
+	expect_equal(sort(names(output$pairwise_pvalues)), c("G1", "G2"))
+	expect_type(output$hsd, "list")
+
+	# Each group's matrix only contains that group's treatments
+	expect_equal(
+		sort(rownames(output$pairwise_pvalues$G1)),
+		c("A_G1", "B_G1", "C_G1")
+	)
+
+	# Letter groupings restart within each group
+	expect_true("groups" %in% names(output$predictions))
+})
+
+test_that("by with a missing column errors", {
+	expect_error(
+		multiple_comparisons(dat.aov, classify = "Species", by = "NotAColumn"),
+		"are not present in the predictions"
+	)
+})
+
+test_that("calculate_raw_pvalue_matrix matches a direct t-test", {
+	pp <- data.frame(
+		predicted.value = c(10, 11, 15),
+		Names = c("A", "B", "C")
+	)
+	sed_mat <- matrix(
+		0.5,
+		nrow = 3,
+		ncol = 3,
+		dimnames = list(pp$Names, pp$Names)
+	)
+	diag(sed_mat) <- NA_real_
+
+	pvals <- biometryassist:::calculate_raw_pvalue_matrix(pp, sed_mat, ndf = 10)
+
+	expect_true(isSymmetric(pvals))
+	expect_equal(diag(pvals), rep(1, 3), ignore_attr = TRUE)
+
+	t_ab <- abs(10 - 11) / 0.5
+	expected_ab <- 2 * stats::pt(-abs(t_ab), df = 10)
+	expect_equal(pvals["A", "B"], expected_ab, tolerance = 1e-12)
+})
+
+test_that("get_diffs_from_pvalues flags significant pairs and adjusts", {
+	pmat <- matrix(
+		c(1, 0.001, 0.5, 0.001, 1, 0.5, 0.5, 0.5, 1),
+		nrow = 3,
+		dimnames = list(c("A", "B", "C"), c("A", "B", "C"))
+	)
+
+	# adjust = "none": diffs follow the raw matrix directly
+	res <- biometryassist:::get_diffs_from_pvalues(
+		pmat,
+		sig = 0.05,
+		adjust = "none"
+	)
+	expect_true(res$diffs[["B-A"]]) # 0.001 < 0.05
+	expect_false(res$diffs[["C-A"]]) # 0.5 not < 0.05
+	expect_false(res$diffs[["C-B"]])
+	# adjusted matrix is symmetric with diagonal 1 and no NAs (all pairs tested)
+	expect_equal(diag(res$adjusted_matrix), rep(1, 3), ignore_attr = TRUE)
+	expect_false(anyNA(res$adjusted_matrix))
+
+	# adjust = "bonferroni": p-values scaled by number of comparisons
+	res_bonf <- biometryassist:::get_diffs_from_pvalues(
+		pmat,
+		sig = 0.05,
+		adjust = "bonferroni"
+	)
+	expect_equal(
+		unname(res_bonf$adjusted_pvalues),
+		pmin(c(0.001, 0.5, 0.5) * 3, 1)
+	)
+})
+
+
+# ============================================================================
 # ORIGINAL TESTS (Updated to work with new structure)
 # ============================================================================
 
