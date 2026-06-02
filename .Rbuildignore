@@ -34,3 +34,5 @@ normalitycheck.R
 ^\.vscode$
 inst/build_manifest.R
 inst/manifest.json
+CLAUDE.md
+.env
