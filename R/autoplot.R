@@ -62,18 +62,23 @@ autoplot.mct <- function(
 		pred_df <- as.data.frame(object)
 	}
 
-	# classify is just the first n columns (before predicted.value)
-	classify <- colnames(pred_df)[1]
-	classify <- rlang::ensym(classify)
-	if (colnames(pred_df)[2] != "predicted.value") {
-		classify2 <- colnames(pred_df)[2]
+	# The classify factor columns are those before "predicted.value".
+	pv_pos <- match("predicted.value", colnames(pred_df))
+	factor_cols <- colnames(pred_df)[seq_len(pv_pos - 1)]
+
+	# If `by` was used (recorded as an attribute), it becomes the default
+	# faceting variable(s) and the remaining classify factor(s) form the x-axis.
+	# Otherwise the first factor is the x-axis and any remaining factors facet.
+	by_attr <- attributes(object)$by
+	if (!is.null(by_attr)) {
+		x_cols <- setdiff(factor_cols, by_attr)
+		x_var <- x_cols[1]
+		facet_cols <- c(x_cols[-1], by_attr)
+	} else {
+		x_var <- factor_cols[1]
+		facet_cols <- factor_cols[-1]
 	}
-	if (
-		colnames(pred_df)[2] != "predicted.value" &
-			colnames(pred_df)[3] != "predicted.value"
-	) {
-		classify3 <- colnames(pred_df)[3]
-	}
+	classify <- rlang::ensym(x_var)
 
 	# Get ylab as attribute (works for both old and new structure)
 	ylab <- attributes(object)$ylab
@@ -151,17 +156,12 @@ autoplot.mct <- function(
 			)
 	}
 
-	if (exists("classify3")) {
+	if (length(facet_cols) > 0) {
 		plot <- plot +
 			ggplot2::facet_wrap(stats::as.formula(paste(
 				"~",
-				classify2,
-				"+",
-				classify3
+				paste(facet_cols, collapse = " + ")
 			)))
-	} else if (exists("classify2")) {
-		plot <- plot +
-			ggplot2::facet_wrap(stats::as.formula(paste("~", classify2)))
 	}
 	return(plot)
 }

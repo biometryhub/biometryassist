@@ -452,6 +452,9 @@ test_that("by splits comparisons into per-group families", {
 
 	# Letter groupings restart within each group
 	expect_true("groups" %in% names(output$predictions))
+
+	# `by` is recorded as an attribute for autoplot faceting
+	expect_equal(attr(output, "by"), "Grp")
 })
 
 test_that("by with a missing column errors", {
@@ -459,6 +462,50 @@ test_that("by with a missing column errors", {
 		multiple_comparisons(dat.aov, classify = "Species", by = "NotAColumn"),
 		"are not present in the predictions"
 	)
+})
+
+test_that("by with a single-factor classify errors", {
+	# Only one factor in classify leaves nothing to compare within groups
+	expect_error(
+		multiple_comparisons(dat.aov, classify = "Species", by = "Species"),
+		"cannot include all of the `classify` variable"
+	)
+})
+
+test_that("by errors when it consumes all classify factors", {
+	set.seed(1)
+	d <- expand.grid(
+		Trt = factor(c("A", "B", "C")),
+		Grp = factor(c("G1", "G2")),
+		rep = 1:6
+	)
+	d$y <- rnorm(nrow(d))
+	m <- aov(y ~ Trt * Grp, data = d)
+
+	expect_error(
+		multiple_comparisons(m, classify = "Trt:Grp", by = c("Trt", "Grp")),
+		"cannot include all of the `classify` variable"
+	)
+})
+
+test_that("autoplot facets by the `by` variable", {
+	set.seed(1)
+	d <- expand.grid(
+		Trt = factor(c("A", "B", "C")),
+		Grp = factor(c("G1", "G2")),
+		rep = 1:6
+	)
+	d$y <- rnorm(
+		nrow(d),
+		mean = as.numeric(d$Trt) * ifelse(d$Grp == "G1", 5, 1)
+	)
+	m <- aov(y ~ Trt * Grp, data = d)
+	output <- multiple_comparisons(m, classify = "Trt:Grp", by = "Grp")
+
+	p <- autoplot(output)
+	facet_vars <- names(p$facet$params$facets)
+	expect_true("Grp" %in% facet_vars)
+	expect_false("Trt" %in% facet_vars) # Trt is the x-axis, not a facet
 })
 
 test_that("calculate_raw_pvalue_matrix matches a direct t-test", {

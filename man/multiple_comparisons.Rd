@@ -138,7 +138,10 @@ independently within each subgroup. Each subgroup is treated as a separate
 family of comparisons: there is no pooling and no cross-group p-value
 adjustment, and letter groupings restart within each subgroup. When \code{by} is
 used, \verb{$pairwise_pvalues} (and \verb{$hsd} where applicable) are returned as named
-lists with one element per subgroup.
+lists with one element per subgroup, and \code{autoplot()} facets the plot by the
+\code{by} variable(s) by default. \code{by} must leave at least one \code{classify} factor
+to compare within each subgroup, so a single-factor \code{classify} cannot be
+split with \code{by}.
 }
 
 \subsection{Confidence Intervals & Comparison Intervals}{

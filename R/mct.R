@@ -67,7 +67,10 @@
 #' family of comparisons: there is no pooling and no cross-group p-value
 #' adjustment, and letter groupings restart within each subgroup. When `by` is
 #' used, `$pairwise_pvalues` (and `$hsd` where applicable) are returned as named
-#' lists with one element per subgroup.
+#' lists with one element per subgroup, and `autoplot()` facets the plot by the
+#' `by` variable(s) by default. `by` must leave at least one `classify` factor
+#' to compare within each subgroup, so a single-factor `classify` cannot be
+#' split with `by`.
 #'
 #' ## Confidence Intervals & Comparison Intervals
 #'
@@ -328,6 +331,17 @@ multiple_comparisons <- function(
 				call. = FALSE
 			)
 		}
+		# At least one `classify` factor must remain to compare within each group.
+		# This rules out a single-factor `classify`, or a `by` that consumes all
+		# of the `classify` variable(s).
+		if (length(setdiff(vars, by)) < 1) {
+			stop(
+				"`by` cannot include all of the `classify` variable(s); at least ",
+				"one factor must remain to compare within each group. A `classify` ",
+				"with a single factor cannot be split using `by`.",
+				call. = FALSE
+			)
+		}
 	}
 
 	# Run the comparison procedure for a single (sub)group of predictions.
@@ -453,6 +467,10 @@ multiple_comparisons <- function(
 	attr(output, "HSD") <- hsd_output # Keep for backward compatibility
 	if (!is.null(aliased)) {
 		attr(output, "aliased") <- as.character(aliased)
+	}
+	# Record the `by` variable(s) so autoplot() can use them for faceting
+	if (!is.null(by)) {
+		attr(output, "by") <- by
 	}
 
 	# Add class
