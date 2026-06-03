@@ -2,7 +2,7 @@
 affiliations:
 - index: 1
   name: Biometry Hub, School of Agriculture, Food and Wine, Adelaide
-    University, Adelaide SA 5005, Australia
+    University, Adelaide, South Australia
 - index: 2
   name: Adelaide EpiCentre, Adelaide University and Central Adelaide
     Local Health Network (CALHN), Adelaide, South Australia

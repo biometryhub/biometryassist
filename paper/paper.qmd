@@ -21,7 +21,7 @@ authors:
     equal-contrib: true
     affiliation: "1, 2"
 affiliations:
- - name: Biometry Hub, School of Agriculture, Food and Wine, Adelaide University, Adelaide SA 5005, Australia
+ - name: Biometry Hub, School of Agriculture, Food and Wine, Adelaide University, Adelaide, South Australia
    index: 1
  - name: Adelaide EpiCentre, Adelaide University and Central Adelaide Local Health Network (CALHN), Adelaide, South Australia
    index: 2
