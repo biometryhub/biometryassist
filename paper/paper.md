@@ -1,7 +1,11 @@
 ---
 affiliations:
 - index: 1
-  name: Biometry Hub, Adelaide University, Australia
+  name: Biometry Hub, School of Agriculture, Food and Wine, Adelaide
+    University, Adelaide SA 5005, Australia
+- index: 2
+  name: Adelaide EpiCentre, Adelaide University and Central Adelaide
+    Local Health Network (CALHN), Adelaide, South Australia
 authors:
 - affiliation: 1
   corresponding: true
@@ -12,7 +16,7 @@ authors:
   equal-contrib: true
   name: Sharon Nielsen
   orcid: 0000-0003-4245-7300
-- affiliation: 1
+- affiliation: 1, 2
   equal-contrib: true
   name: Annie Conway
   orcid: 0009-0003-8385-7615

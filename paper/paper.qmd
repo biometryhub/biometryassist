@@ -19,10 +19,12 @@ authors:
   - name: Annie Conway
     orcid: 0009-0003-8385-7615
     equal-contrib: true
-    affiliation: 1
+    affiliation: "1, 2"
 affiliations:
- - name: Biometry Hub, Adelaide University, Australia
+ - name: Biometry Hub, School of Agriculture, Food and Wine, Adelaide University, Adelaide SA 5005, Australia
    index: 1
+ - name: Adelaide EpiCentre, Adelaide University and Central Adelaide Local Health Network (CALHN), Adelaide, South Australia
+   index: 2
 date: 02 June 2026
 date-format: "D MMMM YYYY"
 bibliography: paper.bib
