@@ -9,7 +9,7 @@
 #' @param trans Transformation that was applied to the response variable. One of `log`, `sqrt`, `logit`, `power`, `inverse`, or `arcsin`. Default is `NULL`.
 #' @param offset Numeric offset applied to response variable prior to transformation. Default is `NULL`. Use 0 if no offset was applied to the transformed data. See Details for more information.
 #' @param power Numeric power applied to response variable with power transformation. Default is `NULL`. See Details for more information.
-#' @param decimals Controls rounding of decimal places in output. Default is 2 decimal places.
+#' @param decimals Deprecated. Rounding is now controlled via the `decimals` argument of [print.mct()].
 #' @param descending Logical (default `FALSE`). Order of the output sorted by the predicted value. If `TRUE`, largest will be first, through to smallest last.
 #' @param groups Logical (default `TRUE`). If `TRUE`, the significance letter groupings will be calculated and displayed. This can get overwhelming for large numbers of comparisons, so can be turned off by setting to `FALSE`.
 #' @param adjust The method used to adjust p-values for multiple comparisons. Either `"tukey"` (default, Tukey's HSD) or any method accepted by [stats::p.adjust()] (`"bonferroni"`, `"holm"`, `"hochberg"`, `"hommel"`, `"BH"` (or `"fdr"`), `"BY"`, or `"none"`). See Details.
@@ -197,9 +197,9 @@
 #'
 #' #Determine ranking and groups according to Tukey's Test
 #' pred.out <- multiple_comparisons(model.obj = model.asr, classify = "Nitrogen",
-#'                     descending = TRUE, decimals = 5)
+#'                     descending = TRUE)
 #'
-#' pred.out
+#' print(pred.out, decimals = 5)
 #'
 #' # Example using a box-cox transformation
 #' set.seed(42) # See the seed for reproducibility
@@ -262,6 +262,7 @@ multiple_comparisons <- function(
 	# Handle deprecated parameters
 	handle_deprecated_param("pred", "classify", classify)
 	handle_deprecated_param("order", "descending", descending)
+	handle_deprecated_param("decimals", NULL, "Rounding is now controlled via the `decimals` argument of `print.mct()`.")
 
 	vars <- validate_inputs(sig, classify, model.obj, trans)
 
@@ -413,9 +414,9 @@ multiple_comparisons <- function(
 	}
 
 	# Order results and format output
-	pp <- format_output(pp, descending, vars, decimals, by)
+	pp <- format_output(pp, descending, vars, by)
 
-	# Save if requested
+	# Save if requested (full precision values)
 	if (save) {
 		utils::write.csv(pp, file = paste0(savename, ".csv"), row.names = FALSE)
 	}
@@ -492,9 +493,12 @@ multiple_comparisons <- function(
 }
 
 
+
+
 #' Print output of multiple_comparisons
 #'
 #' @param x An mct object to print to the console.
+#' @param decimals Number of decimal places to display. Default is 2.
 #' @param ... Other arguments passed to print.data.frame
 #'
 #' @returns The original object invisibly.
@@ -505,7 +509,8 @@ multiple_comparisons <- function(
 #' dat.aov <- aov(Petal.Width ~ Species, data = iris)
 #' output <- multiple_comparisons(dat.aov, classify = "Species")
 #' print(output)
-print.mct <- function(x, ...) {
+#' print(output, decimals = 4)
+print.mct <- function(x, decimals = 2, ...) {
 	stopifnot(inherits(x, "mct"))
 
 	method <- if (is.null(x$comparison_method)) "tukey" else x$comparison_method
@@ -527,7 +532,10 @@ print.mct <- function(x, ...) {
 		cat("Significance level:", x$sig_level, "\n")
 	}
 	cat("\nPredicted values:\n")
-	print.data.frame(x$predictions, ...)
+	pp <- x$predictions
+	numeric_cols <- vapply(pp, is.numeric, logical(1))
+	pp[numeric_cols] <- lapply(pp[numeric_cols], round, decimals)
+	print.data.frame(pp, ...)
 
 	if (!is.null(x$aliased)) {
 		aliased <- x$aliased
@@ -756,7 +764,7 @@ add_letter_groups <- function(pp, diffs, descending) {
 
 
 #' @noRd
-format_output <- function(pp, descending, vars, decimals, by = NULL) {
+format_output <- function(pp, descending, vars, by = NULL) {
 	# Order by predicted value. When `by` is supplied, keep subgroups together
 	# (ascending by the `by` variable(s)) and order by predicted value within.
 	if (is.null(by)) {
@@ -793,43 +801,6 @@ format_output <- function(pp, descending, vars, decimals, by = NULL) {
 		pp[[trtnam[i]]] <- factor(
 			pp[[trtnam[i]]],
 			levels = unique(pp[[trtnam[i]]])
-		)
-	}
-
-	# Helper function to calculate decimal places needed to avoid rounding to zero
-	calc_se_decimals <- function(values, default_decimals) {
-		min_val <- min(values, na.rm = TRUE)
-		if (min_val > 0 && round(min_val, default_decimals) == 0) {
-			max(default_decimals, -floor(log10(min_val)) + 1)
-		} else {
-			default_decimals
-		}
-	}
-
-	# Identify SE columns and calculate needed decimal places
-	se_cols <- intersect(c("std.error", "ApproxSE"), names(pp))
-	se_decimals <- sapply(se_cols, function(col) {
-		calc_se_decimals(pp[[col]], decimals)
-	})
-
-	# Warn if any SE columns need more decimal places
-	if (any(se_decimals > decimals)) {
-		warning(
-			"Some standard errors are very small and would round to zero with ",
-			decimals,
-			" decimal places. Using ",
-			max(se_decimals),
-			" decimal places for standard error columns to preserve error bar display.",
-			call. = FALSE
-		)
-	}
-
-	# Round all numeric columns
-	numeric_cols <- names(pp)[sapply(pp, is.numeric)]
-	for (col in numeric_cols) {
-		pp[[col]] <- round(
-			pp[[col]],
-			if (col %in% names(se_decimals)) se_decimals[[col]] else decimals
 		)
 	}
 

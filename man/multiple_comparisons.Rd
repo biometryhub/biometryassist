@@ -43,7 +43,7 @@ multiple_comparisons(
 
 \item{power}{Numeric power applied to response variable with power transformation. Default is \code{NULL}. See Details for more information.}
 
-\item{decimals}{Controls rounding of decimal places in output. Default is 2 decimal places.}
+\item{decimals}{Controls rounding of decimal places in printed output and saved CSV files. Default is 2 decimal places. Full precision values are stored internally.}
 
 \item{descending}{Logical (default \code{FALSE}). Order of the output sorted by the predicted value. If \code{TRUE}, largest will be first, through to smallest last.}
 
