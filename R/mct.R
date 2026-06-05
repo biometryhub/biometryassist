@@ -9,7 +9,7 @@
 #' @param trans Transformation that was applied to the response variable. One of `log`, `sqrt`, `logit`, `power`, `inverse`, or `arcsin`. Default is `NULL`.
 #' @param offset Numeric offset applied to response variable prior to transformation. Default is `NULL`. Use 0 if no offset was applied to the transformed data. See Details for more information.
 #' @param power Numeric power applied to response variable with power transformation. Default is `NULL`. See Details for more information.
-#' @param decimals Controls rounding of decimal places in printed output. Default is 2 decimal places. Full precision values are stored internally and in saved CSV files.
+#' @param decimals Deprecated. Rounding is now controlled via the `decimals` argument of [print.mct()].
 #' @param descending Logical (default `FALSE`). Order of the output sorted by the predicted value. If `TRUE`, largest will be first, through to smallest last.
 #' @param groups Logical (default `TRUE`). If `TRUE`, the significance letter groupings will be calculated and displayed. This can get overwhelming for large numbers of comparisons, so can be turned off by setting to `FALSE`.
 #' @param adjust The method used to adjust p-values for multiple comparisons. Either `"tukey"` (default, Tukey's HSD) or any method accepted by [stats::p.adjust()] (`"bonferroni"`, `"holm"`, `"hochberg"`, `"hommel"`, `"BH"` (or `"fdr"`), `"BY"`, or `"none"`). See Details.
@@ -197,9 +197,9 @@
 #'
 #' #Determine ranking and groups according to Tukey's Test
 #' pred.out <- multiple_comparisons(model.obj = model.asr, classify = "Nitrogen",
-#'                     descending = TRUE, decimals = 5)
+#'                     descending = TRUE)
 #'
-#' pred.out
+#' print(pred.out, decimals = 5)
 #'
 #' # Example using a box-cox transformation
 #' set.seed(42) # See the seed for reproducibility
@@ -262,6 +262,7 @@ multiple_comparisons <- function(
 	# Handle deprecated parameters
 	handle_deprecated_param("pred", "classify", classify)
 	handle_deprecated_param("order", "descending", descending)
+	handle_deprecated_param("decimals", NULL, "Rounding is now controlled via the `decimals` argument of `print.mct()`.")
 
 	vars <- validate_inputs(sig, classify, model.obj, trans)
 
@@ -464,7 +465,6 @@ multiple_comparisons <- function(
 
 	# Add attributes for backward compatibility
 	attr(output, "ylab") <- ylab
-	attr(output, "decimals") <- decimals
 	attr(output, "HSD") <- hsd_output # Keep for backward compatibility
 	if (!is.null(aliased)) {
 		attr(output, "aliased") <- as.character(aliased)
@@ -486,25 +486,12 @@ multiple_comparisons <- function(
 }
 
 
-#' Round numeric columns of a predictions data frame for display
-#'
-#' @param pp Data frame of predictions.
-#' @param decimals Number of decimal places.
-#'
-#' @return A data frame with numeric columns rounded.
-#' @noRd
-round_predictions <- function(pp, decimals) {
-	numeric_cols <- names(pp)[vapply(pp, is.numeric, logical(1))]
-	for (col in numeric_cols) {
-		pp[[col]] <- round(pp[[col]], decimals)
-	}
-	pp
-}
 
 
 #' Print output of multiple_comparisons
 #'
 #' @param x An mct object to print to the console.
+#' @param decimals Number of decimal places to display. Default is 2.
 #' @param ... Other arguments passed to print.data.frame
 #'
 #' @returns The original object invisibly.
@@ -515,7 +502,8 @@ round_predictions <- function(pp, decimals) {
 #' dat.aov <- aov(Petal.Width ~ Species, data = iris)
 #' output <- multiple_comparisons(dat.aov, classify = "Species")
 #' print(output)
-print.mct <- function(x, ...) {
+#' print(output, decimals = 4)
+print.mct <- function(x, decimals = 2, ...) {
 	stopifnot(inherits(x, "mct"))
 
 	method <- if (is.null(x$comparison_method)) "tukey" else x$comparison_method
@@ -537,8 +525,10 @@ print.mct <- function(x, ...) {
 		cat("Significance level:", x$sig_level, "\n")
 	}
 	cat("\nPredicted values:\n")
-	decimals <- attr(x, "decimals") %||% 2L
-	print.data.frame(round_predictions(x$predictions, decimals), ...)
+	pp <- x$predictions
+	numeric_cols <- vapply(pp, is.numeric, logical(1))
+	pp[numeric_cols] <- lapply(pp[numeric_cols], round, decimals)
+	print.data.frame(pp, ...)
 
 	if (!is.null(x$aliased)) {
 		aliased <- x$aliased

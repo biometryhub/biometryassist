@@ -1719,11 +1719,10 @@ test_that("Full precision values are stored in predictions", {
 
 	dat.aov <- aov(response ~ treatment, data = precise_data)
 
-	# No warning should be produced - values are stored at full precision
+	# Values are stored at full precision
 	output <- multiple_comparisons(
 		dat.aov,
-		classify = "treatment",
-		decimals = 2
+		classify = "treatment"
 	)
 
 	# Check that standard errors are preserved at full precision (not rounded to 0)
@@ -1763,8 +1762,7 @@ test_that("Full precision values stored with transformed data", {
 		dat.aov,
 		classify = "treatment",
 		trans = "log",
-		offset = 0,
-		decimals = 3
+		offset = 0
 	)
 
 	# Check that both standard error columns are preserved at full precision
@@ -1774,33 +1772,29 @@ test_that("Full precision values stored with transformed data", {
 	expect_false(any(output$predictions$ApproxSE == 0))
 })
 
-test_that("Decimals attribute controls print rounding", {
+test_that("Decimals argument in print.mct controls rounding", {
 	# Use the standard iris data which has reasonable standard errors
 	dat.aov <- aov(Petal.Width ~ Species, data = iris)
 
-	# Should not trigger any warning
-	expect_no_warning(
-		output <- multiple_comparisons(
-			dat.aov,
-			classify = "Species",
-			decimals = 2
-		)
+	output <- multiple_comparisons(
+		dat.aov,
+		classify = "Species"
 	)
 
-	# Full precision values are stored - they may have more than 2 decimal places
+	# Full precision values are stored
 	expect_true(is.numeric(output$predictions$predicted.value))
 	expect_true(is.numeric(output$predictions$std.error))
 
-	# The decimals attribute is stored for print use
-	expect_equal(attr(output, "decimals"), 2)
-
-	# Print output should show rounded values
-	printed <- capture.output(print(output))
-	# The printed table should contain values with limited decimal places
+	# Print output with decimals = 2 should show rounded values
+	printed <- capture.output(print(output, decimals = 2))
 	expect_true(any(grepl("0\\.25|0\\.246", printed)))
+
+	# Print output with decimals = 4 should show more precision
+	printed4 <- capture.output(print(output, decimals = 4))
+	expect_true(any(grepl("0\\.246", printed4)))
 })
 
-test_that("Different decimal settings are stored as attribute", {
+test_that("Decimals parameter in multiple_comparisons is deprecated", {
 	# Create data with moderately small standard errors
 	set.seed(789)
 	moderate_data <- data.frame(
@@ -1810,25 +1804,15 @@ test_that("Different decimal settings are stored as attribute", {
 
 	dat.aov <- aov(response ~ treatment, data = moderate_data)
 
-	# Test with decimals = 4
-	output4 <- multiple_comparisons(
-		dat.aov,
-		classify = "treatment",
-		decimals = 4
+	# Using decimals in multiple_comparisons should produce a deprecation warning
+	expect_warning(
+		multiple_comparisons(dat.aov, classify = "treatment", decimals = 4),
+		"decimals.*deprecated"
 	)
-	expect_equal(attr(output4, "decimals"), 4)
-
-	# Test with decimals = 1
-	output1 <- multiple_comparisons(
-		dat.aov,
-		classify = "treatment",
-		decimals = 1
-	)
-	expect_equal(attr(output1, "decimals"), 1)
 
 	# Full precision standard errors are always stored
-	expect_true(all(output1$predictions$std.error > 0))
-	expect_true(all(output4$predictions$std.error > 0))
+	output <- multiple_comparisons(dat.aov, classify = "treatment")
+	expect_true(all(output$predictions$std.error > 0))
 })
 
 
@@ -1851,8 +1835,7 @@ test_that("ApproxSE column preserves full precision", {
 		dat.aov,
 		classify = "treatment",
 		trans = "log",
-		offset = 0,
-		decimals = 2
+		offset = 0
 	)
 
 	# Both standard error columns should be preserved at full precision
