@@ -472,6 +472,13 @@ multiple_comparisons <- function(
 	if (!is.null(by)) {
 		attr(output, "by") <- by
 	}
+	# Record the back-transformation so autoplot() can build an exact
+	# back-transformed secondary axis when plotting on the model scale.
+	if (!is.null(trans)) {
+		attr(output, "trans") <- trans
+		attr(output, "offset") <- if (is.null(offset)) 0 else offset
+		attr(output, "power") <- power
+	}
 
 	# Add class
 	class(output) <- c("mct", "list")
@@ -1074,7 +1081,39 @@ add_confidence_intervals <- function(pp, int.type, sig, ndf) {
 }
 
 
+#' Back-transform values from the model (transformed) scale to the original scale
+#'
+#' Single source of truth for the inverse of each supported transformation. Used
+#' both to compute the `PredictedValue` column in `apply_transformation()` and to
+#' build the back-transformed secondary axis in [autoplot.mct()], so the two can
+#' never drift apart.
+#'
+#' @param x Numeric vector on the model (transformed) scale.
+#' @param trans One of `"sqrt"`, `"log"`, `"logit"`, `"power"`, `"inverse"`, `"arcsin"`.
+#' @param offset Additive offset used on the original scale (applied for `sqrt`,
+#'   `log` and `power`). `NULL` is treated as `0`.
+#' @param power The power used for `trans = "power"`.
 #' @noRd
+back_transform <- function(x, trans, offset = 0, power = NULL) {
+	if (is.null(offset)) {
+		offset <- 0
+	}
+	switch(
+		trans,
+		"sqrt" = x^2 - offset,
+		"log" = exp(x) - offset,
+		"logit" = exp(x) / (1 + exp(x)),
+		"power" = x^(1 / power) - offset,
+		"inverse" = 1 / x,
+		"arcsin" = sin(x)^2,
+		stop(
+			"Invalid trans value. Must be one of: 'sqrt', 'log', 'logit', 'power', 'inverse', 'arcsin'.",
+			call. = FALSE
+		)
+	)
+}
+
+
 apply_transformation <- function(pp, trans, offset, power) {
 	# Set default offset if not provided
 	if (is.null(offset)) {
@@ -1090,7 +1129,7 @@ apply_transformation <- function(pp, trans, offset, power) {
 		# From paper: g(x) = sqrt(x), g^-1(y) = y^2, g'(x) = 1/(2*sqrt(x))
 		# Back-transformed value: X~ = Y^2 - offset
 		# Approx SE: ~X = 2*sqrt(X~ + offset)*Y_se
-		pp$PredictedValue <- (pp$predicted.value)^2 - offset
+		pp$PredictedValue <- back_transform(pp$predicted.value, "sqrt", offset)
 
 		# Bounds check: predicted values should be non-negative after transformation
 		if (any(pp$PredictedValue < 0, na.rm = TRUE)) {
@@ -1110,7 +1149,7 @@ apply_transformation <- function(pp, trans, offset, power) {
 		# Back-transformed value: X~ = exp(Y) - offset
 		# Approx SE: ~X = X~*Y_se (where X~ is before offset removal)
 		x_tilde <- exp(pp$predicted.value)
-		pp$PredictedValue <- x_tilde - offset
+		pp$PredictedValue <- back_transform(pp$predicted.value, "log", offset)
 
 		# Bounds check: values should be positive after offset removal
 		if (any(pp$PredictedValue <= 0, na.rm = TRUE)) {
@@ -1129,8 +1168,7 @@ apply_transformation <- function(pp, trans, offset, power) {
 		# From paper: g(x) = ln(x/(1-x)), g^-1(y) = exp(y)/(1+exp(y)), g'(x) = 1/(x(1-x))
 		# Back-transformed value: X~ = exp(Y)/(1+exp(Y))
 		# Approx SE: ~X = X~*(1-X~)*Y_se
-		pp$PredictedValue <- exp(pp$predicted.value) /
-			(1 + exp(pp$predicted.value))
+		pp$PredictedValue <- back_transform(pp$predicted.value, "logit")
 
 		# Bounds check: values should be in (0, 1)
 		if (any(pp$PredictedValue <= 0 | pp$PredictedValue >= 1, na.rm = TRUE)) {
@@ -1160,7 +1198,12 @@ apply_transformation <- function(pp, trans, offset, power) {
 		}
 
 		x_tilde <- (pp$predicted.value)^(1 / power)
-		pp$PredictedValue <- x_tilde - offset
+		pp$PredictedValue <- back_transform(
+			pp$predicted.value,
+			"power",
+			offset,
+			power
+		)
 
 		# Bounds check depends on power sign and offset
 		if (
@@ -1191,7 +1234,7 @@ apply_transformation <- function(pp, trans, offset, power) {
 			)
 		}
 
-		pp$PredictedValue <- 1 / pp$predicted.value
+		pp$PredictedValue <- back_transform(pp$predicted.value, "inverse")
 		pp$ApproxSE <- abs(pp$std.error) * pp$PredictedValue^2
 
 		# Check for sign changes across confidence interval
@@ -1231,7 +1274,7 @@ apply_transformation <- function(pp, trans, offset, power) {
 			)
 		}
 
-		pp$PredictedValue <- sin(pp$predicted.value)^2
+		pp$PredictedValue <- back_transform(pp$predicted.value, "arcsin")
 
 		# Bounds check: values should be in [0, 1]
 		if (any(pp$PredictedValue < 0 | pp$PredictedValue > 1, na.rm = TRUE)) {

@@ -16,6 +16,10 @@ autoplot(object, ...)
   axis_rotation = rotation,
   label_rotation = rotation,
   type = "point",
+  errorbar_type = "ci",
+  include_errorbar = TRUE,
+  include_lettering = TRUE,
+  trans_scale = FALSE,
   ...
 )
 
@@ -48,7 +52,15 @@ autoplot(object, ...)
 
 \item{label_rotation}{Enables rotation of the treatment group labels independently of the x axis labels within the plot.}
 
-\item{type}{A string specifying the type of plot to display. The default of 'point' will display a point estimate with error bars. The alternative, 'column' (or 'col'), will display a column graph with error bars.}
+\item{type}{A string specifying the type of plot to display. One of \code{"point"} (the default; point estimates), \code{"line"} (point estimates joined by a line), or \code{"column"} (also \code{"col"} or \code{"bar"}; a column graph). Error bars are added according to \code{errorbar_type} unless \code{include_errorbar = FALSE}.}
+
+\item{errorbar_type}{A string (default \code{"ci"}) specifying what the error bars represent. \code{"ci"} draws an interval around each mean (the interval type chosen via \code{int.type} in \code{\link[=multiple_comparisons]{multiple_comparisons()}}). \code{"hsd"} draws a single Tukey's Honest Significant Difference reference bar instead of per-mean intervals. An HSD bar is only meaningful on the model (transformed) scale, so requesting \code{"hsd"} plots the means on that scale.}
+
+\item{include_errorbar}{Logical (default \code{TRUE}). Whether to draw error bars. \code{FALSE} omits them entirely (the \code{errorbar_type} is then ignored).}
+
+\item{include_lettering}{Logical (default \code{TRUE}). Whether to draw the significance-group lettering above the means.}
+
+\item{trans_scale}{Logical (default \code{FALSE}). When the means were back-transformed in \code{\link[=multiple_comparisons]{multiple_comparisons()}}, \code{FALSE} plots them on the original (back-transformed) scale, while \code{TRUE} plots them on the model (transformed) scale and adds a back-transformed secondary axis. Has no effect when no transformation was used.}
 
 \item{margin}{Logical (default \code{FALSE}). A value of \code{FALSE} will expand the plot to the edges of the plotting area i.e. remove white space between plot and axes.}
 
@@ -74,6 +86,12 @@ Generate automatic plots for objects generated in biometryassist
 dat.aov <- aov(Petal.Width ~ Species, data = iris)
 output <- multiple_comparisons(dat.aov, classify = "Species")
 autoplot(output, label_height = 0.5)
+
+# Join the means with a line
+autoplot(output, type = "line", label_height = 0.5)
+
+# Show a single Tukey's HSD reference bar instead of per-mean intervals
+autoplot(output, errorbar_type = "hsd")
 des.out <- design(type = "crd", treatments = c(1, 5, 10, 20),
                   reps = 5, nrows = 4, ncols = 5, seed = 42, plot = FALSE)
 autoplot(des.out)

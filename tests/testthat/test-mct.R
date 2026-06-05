@@ -508,6 +508,97 @@ test_that("autoplot facets by the `by` variable", {
 	expect_false("Trt" %in% facet_vars) # Trt is the x-axis, not a facet
 })
 
+test_that("autoplot.mct type, errorbar and lettering options behave", {
+	has_geom <- function(p, cls) {
+		any(vapply(p$layers, function(l) inherits(l$geom, cls), logical(1)))
+	}
+
+	dat.aov <- aov(Petal.Width ~ Species, data = iris)
+	out <- multiple_comparisons(dat.aov, classify = "Species")
+
+	# type = "line" adds a line layer; "bar" is an alias for a column graph
+	expect_true(has_geom(autoplot(out, type = "line"), "GeomLine"))
+	expect_true(has_geom(autoplot(out, type = "bar"), "GeomCol"))
+
+	# Toggles remove the relevant layers
+	expect_false(has_geom(
+		autoplot(out, include_errorbar = FALSE),
+		"GeomErrorbar"
+	))
+	expect_false(has_geom(autoplot(out, include_lettering = FALSE), "GeomText"))
+
+	# Invalid type errors cleanly rather than silently producing an empty plot
+	expect_error(autoplot(out, type = "wiggle"), "should be one of")
+})
+
+test_that("autoplot.mct HSD reference bar works without a transformation", {
+	# Regression: requesting an HSD bar on an untransformed model previously
+	# errored via a forced back-transformation path.
+	dat.aov <- aov(Petal.Width ~ Species, data = iris)
+	out <- multiple_comparisons(dat.aov, classify = "Species")
+
+	p <- autoplot(out, errorbar_type = "hsd")
+	expect_s3_class(p, "ggplot")
+	expect_silent(ggplot2::ggplot_build(p))
+
+	# The HSD bar is a single reference bar, so its layer carries one row of data
+	eb <- Filter(function(l) inherits(l$geom, "GeomErrorbar"), p$layers)
+	expect_length(eb, 1)
+	expect_equal(nrow(eb[[1]]$data), 1)
+})
+
+test_that("autoplot.mct errors for an HSD bar when no single HSD is available", {
+	dat.aov <- aov(Petal.Width ~ Species, data = iris)
+	# Non-Tukey adjustment => $hsd is NULL
+	out <- multiple_comparisons(
+		dat.aov,
+		classify = "Species",
+		adjust = "bonferroni"
+	)
+	expect_error(
+		autoplot(out, errorbar_type = "hsd"),
+		"Honest Significant"
+	)
+})
+
+test_that("autoplot.mct adds a back-transformed secondary axis on the model scale", {
+	has_sec_axis <- function(p) {
+		any(vapply(
+			p$scales$scales,
+			function(s) inherits(s$secondary.axis, "AxisSecondary"),
+			logical(1)
+		))
+	}
+
+	m_log <- aov(log(Petal.Width) ~ Species, data = iris)
+	out_log <- multiple_comparisons(
+		m_log,
+		classify = "Species",
+		trans = "log",
+		offset = 0
+	)
+
+	# Default plots on the (interpretable) back-transformed scale: no second axis
+	expect_false(has_sec_axis(autoplot(out_log)))
+	# Model scale shows the back-transformed secondary axis
+	expect_true(has_sec_axis(autoplot(out_log, trans_scale = TRUE)))
+	# HSD forces the model scale, so it also gets the secondary axis
+	expect_true(has_sec_axis(autoplot(out_log, errorbar_type = "hsd")))
+
+	# The transform metadata is recorded on the object for the axis
+	expect_equal(attr(out_log, "trans"), "log")
+	expect_equal(attr(out_log, "offset"), 0)
+})
+
+test_that("back_transform is the inverse used to build PredictedValue", {
+	x <- c(0.5, 1, 1.5, 2)
+	expect_equal(biometryassist:::back_transform(x, "log", 0), exp(x))
+	expect_equal(biometryassist:::back_transform(x, "sqrt", 0), x^2)
+	expect_equal(biometryassist:::back_transform(x, "power", 0, 2), x^(1 / 2))
+	expect_equal(biometryassist:::back_transform(x, "inverse"), 1 / x)
+	expect_error(biometryassist:::back_transform(x, "nonsense"), "Invalid trans")
+})
+
 test_that("calculate_raw_pvalue_matrix matches a direct t-test", {
 	pp <- data.frame(
 		predicted.value = c(10, 11, 15),
@@ -1080,12 +1171,16 @@ test_that("apply_transformation arcsin warning and bounds", {
 })
 
 test_that("apply_transformation arcsin warns when back-transformation is outside [0,1]", {
-	# This branch is numerically very hard to reach with real sin() output because sin(x)^2
-	# should be in [0,1]. Here we temporarily override `sin()` and `sqrt()` in the
-	# apply_transformation() function environment to force an out-of-bounds value.
+	# This branch is numerically very hard to reach because back_transform()'s
+	# arcsin (sin(x)^2) is always in [0,1]. Here we temporarily override
+	# `back_transform()` (which now computes PredictedValue) and `sqrt()` (used
+	# for ApproxSE) in the apply_transformation() function environment to force an
+	# out-of-bounds value and exercise the bounds-check warning.
 	fn2 <- biometryassist:::apply_transformation
 	fn2_env <- new.env(parent = environment(fn2))
-	fn2_env$sin <- function(x) rep(2, length(x))
+	fn2_env$back_transform <- function(x, trans, offset = 0, power = NULL) {
+		rep(2, length(x))
+	}
 	fn2_env$sqrt <- function(x) rep(0, length(x))
 	environment(fn2) <- fn2_env
 
