@@ -599,6 +599,46 @@ test_that("back_transform is the inverse used to build PredictedValue", {
 	expect_error(biometryassist:::back_transform(x, "nonsense"), "Invalid trans")
 })
 
+test_that("autoplot.mct new options render as expected", {
+	dat.aov <- aov(Petal.Width ~ Species, data = iris)
+	out <- multiple_comparisons(dat.aov, classify = "Species")
+
+	vdiffr::expect_doppelganger("mct line plot", autoplot(out, type = "line"))
+	vdiffr::expect_doppelganger(
+		"mct hsd bar",
+		autoplot(out, errorbar_type = "hsd")
+	)
+	vdiffr::expect_doppelganger(
+		"mct no errorbar",
+		autoplot(out, include_errorbar = FALSE)
+	)
+	vdiffr::expect_doppelganger(
+		"mct no lettering",
+		autoplot(out, include_lettering = FALSE)
+	)
+})
+
+test_that("autoplot.mct transformed-scale options render as expected", {
+	dat.aov.log <- aov(log(Petal.Width) ~ Species, data = iris)
+	output.log <- multiple_comparisons(
+		dat.aov.log,
+		classify = "Species",
+		trans = "log",
+		offset = 0
+	)
+
+	# Model scale with the back-transformed secondary axis
+	vdiffr::expect_doppelganger(
+		"mct log transformed scale",
+		autoplot(output.log, trans_scale = TRUE)
+	)
+	# HSD bar forces the model scale and adds the secondary axis
+	vdiffr::expect_doppelganger(
+		"mct log hsd bar",
+		autoplot(output.log, errorbar_type = "hsd")
+	)
+})
+
 test_that("calculate_raw_pvalue_matrix matches a direct t-test", {
 	pp <- data.frame(
 		predicted.value = c(10, 11, 15),
@@ -1830,7 +1870,8 @@ test_that("Full precision values are stored in predictions", {
 			".*\\.",
 			"",
 			as.character(output$predictions$predicted.value)
-		)) > 2
+		)) >
+			2
 	))
 })
 
