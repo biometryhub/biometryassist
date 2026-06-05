@@ -1191,14 +1191,8 @@ test_that("save produces output", {
 	)
 	expect_snapshot_output(output)
 
-	# CSV contains rounded values; compare with rounded predictions
-	decimals <- attr(output, "decimals")
-	pp_rounded <- output$predictions
-	numeric_cols <- names(pp_rounded)[vapply(pp_rounded, is.numeric, logical(1))]
-	for (col in numeric_cols) {
-		pp_rounded[[col]] <- round(pp_rounded[[col]], decimals)
-	}
-	expect_csv_matches_df(pp_rounded, "pred_vals.csv")
+	# CSV contains full precision values
+	expect_csv_matches_df(output$predictions, "pred_vals.csv")
 })
 
 test_that("Interaction terms work", {

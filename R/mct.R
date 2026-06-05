@@ -9,7 +9,7 @@
 #' @param trans Transformation that was applied to the response variable. One of `log`, `sqrt`, `logit`, `power`, `inverse`, or `arcsin`. Default is `NULL`.
 #' @param offset Numeric offset applied to response variable prior to transformation. Default is `NULL`. Use 0 if no offset was applied to the transformed data. See Details for more information.
 #' @param power Numeric power applied to response variable with power transformation. Default is `NULL`. See Details for more information.
-#' @param decimals Controls rounding of decimal places in printed output and saved CSV files. Default is 2 decimal places. Full precision values are stored internally.
+#' @param decimals Controls rounding of decimal places in printed output. Default is 2 decimal places. Full precision values are stored internally and in saved CSV files.
 #' @param descending Logical (default `FALSE`). Order of the output sorted by the predicted value. If `TRUE`, largest will be first, through to smallest last.
 #' @param groups Logical (default `TRUE`). If `TRUE`, the significance letter groupings will be calculated and displayed. This can get overwhelming for large numbers of comparisons, so can be turned off by setting to `FALSE`.
 #' @param adjust The method used to adjust p-values for multiple comparisons. Either `"tukey"` (default, Tukey's HSD) or any method accepted by [stats::p.adjust()] (`"bonferroni"`, `"holm"`, `"hochberg"`, `"hommel"`, `"BH"` (or `"fdr"`), `"BY"`, or `"none"`). See Details.
@@ -415,10 +415,9 @@ multiple_comparisons <- function(
 	# Order results and format output
 	pp <- format_output(pp, descending, vars, by)
 
-	# Save if requested (with rounded values for display)
+	# Save if requested (full precision values)
 	if (save) {
-		pp_rounded <- round_predictions(pp, decimals)
-		utils::write.csv(pp_rounded, file = paste0(savename, ".csv"), row.names = FALSE)
+		utils::write.csv(pp, file = paste0(savename, ".csv"), row.names = FALSE)
 	}
 
 	# Check for CI/letter group inconsistencies and warn if needed
