@@ -9,7 +9,7 @@
 #' @param trans Transformation that was applied to the response variable. One of `log`, `sqrt`, `logit`, `power`, `inverse`, or `arcsin`. Default is `NULL`.
 #' @param offset Numeric offset applied to response variable prior to transformation. Default is `NULL`. Use 0 if no offset was applied to the transformed data. See Details for more information.
 #' @param power Numeric power applied to response variable with power transformation. Default is `NULL`. See Details for more information.
-#' @param decimals Controls rounding of decimal places in output. Default is 2 decimal places.
+#' @param decimals Controls rounding of decimal places in printed output and saved CSV files. Default is 2 decimal places. Full precision values are stored internally.
 #' @param descending Logical (default `FALSE`). Order of the output sorted by the predicted value. If `TRUE`, largest will be first, through to smallest last.
 #' @param groups Logical (default `TRUE`). If `TRUE`, the significance letter groupings will be calculated and displayed. This can get overwhelming for large numbers of comparisons, so can be turned off by setting to `FALSE`.
 #' @param adjust The method used to adjust p-values for multiple comparisons. Either `"tukey"` (default, Tukey's HSD) or any method accepted by [stats::p.adjust()] (`"bonferroni"`, `"holm"`, `"hochberg"`, `"hommel"`, `"BH"` (or `"fdr"`), `"BY"`, or `"none"`). See Details.
@@ -413,11 +413,12 @@ multiple_comparisons <- function(
 	}
 
 	# Order results and format output
-	pp <- format_output(pp, descending, vars, decimals, by)
+	pp <- format_output(pp, descending, vars, by)
 
-	# Save if requested
+	# Save if requested (with rounded values for display)
 	if (save) {
-		utils::write.csv(pp, file = paste0(savename, ".csv"), row.names = FALSE)
+		pp_rounded <- round_predictions(pp, decimals)
+		utils::write.csv(pp_rounded, file = paste0(savename, ".csv"), row.names = FALSE)
 	}
 
 	# Check for CI/letter group inconsistencies and warn if needed
@@ -464,6 +465,7 @@ multiple_comparisons <- function(
 
 	# Add attributes for backward compatibility
 	attr(output, "ylab") <- ylab
+	attr(output, "decimals") <- decimals
 	attr(output, "HSD") <- hsd_output # Keep for backward compatibility
 	if (!is.null(aliased)) {
 		attr(output, "aliased") <- as.character(aliased)
@@ -482,6 +484,22 @@ multiple_comparisons <- function(
 	}
 
 	return(output)
+}
+
+
+#' Round numeric columns of a predictions data frame for display
+#'
+#' @param pp Data frame of predictions.
+#' @param decimals Number of decimal places.
+#'
+#' @return A data frame with numeric columns rounded.
+#' @noRd
+round_predictions <- function(pp, decimals) {
+	numeric_cols <- names(pp)[vapply(pp, is.numeric, logical(1))]
+	for (col in numeric_cols) {
+		pp[[col]] <- round(pp[[col]], decimals)
+	}
+	pp
 }
 
 
@@ -520,7 +538,8 @@ print.mct <- function(x, ...) {
 		cat("Significance level:", x$sig_level, "\n")
 	}
 	cat("\nPredicted values:\n")
-	print.data.frame(x$predictions, ...)
+	decimals <- attr(x, "decimals") %||% 2L
+	print.data.frame(round_predictions(x$predictions, decimals), ...)
 
 	if (!is.null(x$aliased)) {
 		aliased <- x$aliased
@@ -749,7 +768,7 @@ add_letter_groups <- function(pp, diffs, descending) {
 
 
 #' @noRd
-format_output <- function(pp, descending, vars, decimals, by = NULL) {
+format_output <- function(pp, descending, vars, by = NULL) {
 	# Order by predicted value. When `by` is supplied, keep subgroups together
 	# (ascending by the `by` variable(s)) and order by predicted value within.
 	if (is.null(by)) {
@@ -786,43 +805,6 @@ format_output <- function(pp, descending, vars, decimals, by = NULL) {
 		pp[[trtnam[i]]] <- factor(
 			pp[[trtnam[i]]],
 			levels = unique(pp[[trtnam[i]]])
-		)
-	}
-
-	# Helper function to calculate decimal places needed to avoid rounding to zero
-	calc_se_decimals <- function(values, default_decimals) {
-		min_val <- min(values, na.rm = TRUE)
-		if (min_val > 0 && round(min_val, default_decimals) == 0) {
-			max(default_decimals, -floor(log10(min_val)) + 1)
-		} else {
-			default_decimals
-		}
-	}
-
-	# Identify SE columns and calculate needed decimal places
-	se_cols <- intersect(c("std.error", "ApproxSE"), names(pp))
-	se_decimals <- sapply(se_cols, function(col) {
-		calc_se_decimals(pp[[col]], decimals)
-	})
-
-	# Warn if any SE columns need more decimal places
-	if (any(se_decimals > decimals)) {
-		warning(
-			"Some standard errors are very small and would round to zero with ",
-			decimals,
-			" decimal places. Using ",
-			max(se_decimals),
-			" decimal places for standard error columns to preserve error bar display.",
-			call. = FALSE
-		)
-	}
-
-	# Round all numeric columns
-	numeric_cols <- names(pp)[sapply(pp, is.numeric)]
-	for (col in numeric_cols) {
-		pp[[col]] <- round(
-			pp[[col]],
-			if (col %in% names(se_decimals)) se_decimals[[col]] else decimals
 		)
 	}
 

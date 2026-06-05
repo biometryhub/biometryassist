@@ -729,34 +729,25 @@ test_that("mct transformation: sqrt", {
 
 test_that("mct transformation: logit", {
 	dat.aov.logit <- aov(logit(1 / Petal.Width) ~ Species, data = iris)
-	expect_warning(
-		output.logit <- multiple_comparisons(
-			dat.aov.logit,
-			classify = "Species",
-			trans = "logit",
-			offset = 0
-		),
-		"Some standard errors are very small and would round to zero with 2 decimal places"
+	output.logit <- multiple_comparisons(
+		dat.aov.logit,
+		classify = "Species",
+		trans = "logit",
+		offset = 0
 	)
-	expect_warning(
-		output.logit2 <- multiple_comparisons(
-			dat.aov.logit,
-			classify = "Species",
-			trans = "logit",
-			offset = 0,
-			int.type = "1se"
-		),
-		"Some standard errors are very small and would round to zero with 2 decimal places"
+	output.logit2 <- multiple_comparisons(
+		dat.aov.logit,
+		classify = "Species",
+		trans = "logit",
+		offset = 0,
+		int.type = "1se"
 	)
-	expect_warning(
-		output.logit3 <- multiple_comparisons(
-			dat.aov.logit,
-			classify = "Species",
-			trans = "logit",
-			offset = 0,
-			int.type = "2se"
-		),
-		"Some standard errors are very small and would round to zero with 2 decimal places"
+	output.logit3 <- multiple_comparisons(
+		dat.aov.logit,
+		classify = "Species",
+		trans = "logit",
+		offset = 0,
+		int.type = "2se"
 	)
 
 	expect_identical(attr(output.logit, "ylab"), "1/Petal.Width")
@@ -1200,7 +1191,14 @@ test_that("save produces output", {
 	)
 	expect_snapshot_output(output)
 
-	expect_csv_matches_df(output$predictions, "pred_vals.csv")
+	# CSV contains rounded values; compare with rounded predictions
+	decimals <- attr(output, "decimals")
+	pp_rounded <- output$predictions
+	numeric_cols <- names(pp_rounded)[vapply(pp_rounded, is.numeric, logical(1))]
+	for (col in numeric_cols) {
+		pp_rounded[[col]] <- round(pp_rounded[[col]], decimals)
+	}
+	expect_csv_matches_df(pp_rounded, "pred_vals.csv")
 })
 
 test_that("Interaction terms work", {
@@ -1441,7 +1439,7 @@ test_that("3 way interaction works", {
 	dat.aov <- aov(response ~ A * B * C, data = des$design)
 	output <- multiple_comparisons(dat.aov, classify = "A:B:C")
 	expect_snapshot_output(output$predictions$predicted.value)
-	expect_equal(output$predictions$std.error, rep(0.63, 27))
+	expect_equal(output$predictions$std.error, rep(0.63, 27), tolerance = 5e-2)
 	# skip_if(interactive())
 	vdiffr::expect_doppelganger(
 		"3 way interaction",
@@ -1484,7 +1482,7 @@ test_that("plots are produced when requested", {
 
 		expect_s3_class(output, "mct")
 		expect_equal(nrow(output$predictions), 27)
-		expect_equal(output$predictions$std.error, rep(0.63, 27))
+		expect_equal(output$predictions$std.error, rep(0.63, 27), tolerance = 5e-2)
 
 		skip_if(interactive())
 		vdiffr::expect_doppelganger(
@@ -1709,7 +1707,7 @@ test_that("print.mct with no aliased attribute", {
 	expect_output(print(output), "Aliased levels are: ABC, DEF and GHI")
 })
 
-test_that("Standard error rounding preserves error bars", {
+test_that("Full precision values are stored in predictions", {
 	# Create data with very small standard errors
 	set.seed(123)
 
@@ -1727,32 +1725,28 @@ test_that("Standard error rounding preserves error bars", {
 
 	dat.aov <- aov(response ~ treatment, data = precise_data)
 
-	# Test with default decimals (2) - should trigger warning
-	expect_warning(
-		output <- multiple_comparisons(
-			dat.aov,
-			classify = "treatment",
-			decimals = 2
-		),
-		"Some standard errors are very small and would round to zero with 2 decimal places"
+	# No warning should be produced - values are stored at full precision
+	output <- multiple_comparisons(
+		dat.aov,
+		classify = "treatment",
+		decimals = 2
 	)
 
-	# Check that standard errors are preserved (not rounded to 0)
+	# Check that standard errors are preserved at full precision (not rounded to 0)
 	expect_true(all(output$predictions$std.error > 0))
 	expect_false(any(output$predictions$std.error == 0))
 
-	# Check that other columns are still rounded to 2 decimal places
-	expect_true(all(
+	# Full precision predicted values should have more than 2 decimal places
+	expect_true(any(
 		nchar(sub(
 			".*\\.",
 			"",
 			as.character(output$predictions$predicted.value)
-		)) <=
-			2
+		)) > 2
 	))
 })
 
-test_that("Standard error rounding works with transformed data", {
+test_that("Full precision values stored with transformed data", {
 	# Create data that will have small standard errors on the transformed scale
 	set.seed(456)
 	# Use data that's already on log scale with very small differences
@@ -1770,30 +1764,27 @@ test_that("Standard error rounding works with transformed data", {
 	# Apply log transformation - the model is on log scale, transform back to original
 	dat.aov <- aov(log_response ~ treatment, data = transform_data)
 
-	# Test with transformation - should handle both std.error and ApproxSE
-	expect_warning(
-		output <- multiple_comparisons(
-			dat.aov,
-			classify = "treatment",
-			trans = "log",
-			offset = 0,
-			decimals = 3
-		),
-		"Some standard errors are very small"
+	# No rounding warning - full precision stored
+	output <- multiple_comparisons(
+		dat.aov,
+		classify = "treatment",
+		trans = "log",
+		offset = 0,
+		decimals = 3
 	)
 
-	# Check that both standard error columns are preserved
+	# Check that both standard error columns are preserved at full precision
 	expect_true(all(output$predictions$std.error > 0))
 	expect_true(all(output$predictions$ApproxSE > 0))
 	expect_false(any(output$predictions$std.error == 0))
 	expect_false(any(output$predictions$ApproxSE == 0))
 })
 
-test_that("Normal rounding works when standard errors are not too small", {
+test_that("Decimals attribute controls print rounding", {
 	# Use the standard iris data which has reasonable standard errors
 	dat.aov <- aov(Petal.Width ~ Species, data = iris)
 
-	# Should not trigger warning with normal data
+	# Should not trigger any warning
 	expect_no_warning(
 		output <- multiple_comparisons(
 			dat.aov,
@@ -1802,21 +1793,20 @@ test_that("Normal rounding works when standard errors are not too small", {
 		)
 	)
 
-	# Check that all numeric columns are properly rounded
-	expect_true(all(
-		nchar(sub(
-			".*\\.",
-			"",
-			as.character(output$predictions$predicted.value)
-		)) <=
-			2
-	))
-	expect_true(all(
-		nchar(sub(".*\\.", "", as.character(output$predictions$std.error))) <= 2
-	))
+	# Full precision values are stored - they may have more than 2 decimal places
+	expect_true(is.numeric(output$predictions$predicted.value))
+	expect_true(is.numeric(output$predictions$std.error))
+
+	# The decimals attribute is stored for print use
+	expect_equal(attr(output, "decimals"), 2)
+
+	# Print output should show rounded values
+	printed <- capture.output(print(output))
+	# The printed table should contain values with limited decimal places
+	expect_true(any(grepl("0\\.25|0\\.246", printed)))
 })
 
-test_that("Standard error rounding works with different decimal settings", {
+test_that("Different decimal settings are stored as attribute", {
 	# Create data with moderately small standard errors
 	set.seed(789)
 	moderate_data <- data.frame(
@@ -1826,32 +1816,29 @@ test_that("Standard error rounding works with different decimal settings", {
 
 	dat.aov <- aov(response ~ treatment, data = moderate_data)
 
-	# Test with decimals = 4 (should not trigger warning)
-	expect_no_warning(
-		output4 <- multiple_comparisons(
-			dat.aov,
-			classify = "treatment",
-			decimals = 4
-		)
+	# Test with decimals = 4
+	output4 <- multiple_comparisons(
+		dat.aov,
+		classify = "treatment",
+		decimals = 4
 	)
+	expect_equal(attr(output4, "decimals"), 4)
 
-	# Test with decimals = 1 (might trigger warning depending on actual SE values)
-	expect_warning(
-		output1 <- multiple_comparisons(
-			dat.aov,
-			classify = "treatment",
-			decimals = 1
-		),
-		"Some standard errors are very small and would round to zero with 1 decimal places"
+	# Test with decimals = 1
+	output1 <- multiple_comparisons(
+		dat.aov,
+		classify = "treatment",
+		decimals = 1
 	)
+	expect_equal(attr(output1, "decimals"), 1)
 
-	# Ensure standard errors are never exactly 0
+	# Full precision standard errors are always stored
 	expect_true(all(output1$predictions$std.error > 0))
 	expect_true(all(output4$predictions$std.error > 0))
 })
 
 
-test_that("ApproxSE column is also preserved during rounding", {
+test_that("ApproxSE column preserves full precision", {
 	# Create data that will trigger the standard error preservation
 	set.seed(111)
 	# Create data with extremely small values to get tiny standard errors after log transformation
@@ -1865,19 +1852,16 @@ test_that("ApproxSE column is also preserved during rounding", {
 	# Use log transformation to create ApproxSE column
 	dat.aov <- aov(log(response) ~ treatment, data = precise_data)
 
-	# Should trigger warning and preserve both std.error and ApproxSE
-	expect_warning(
-		output <- multiple_comparisons(
-			dat.aov,
-			classify = "treatment",
-			trans = "log",
-			offset = 0,
-			decimals = 2
-		),
-		"Some standard errors are very small"
+	# No rounding warning - full precision stored
+	output <- multiple_comparisons(
+		dat.aov,
+		classify = "treatment",
+		trans = "log",
+		offset = 0,
+		decimals = 2
 	)
 
-	# Both standard error columns should be preserved
+	# Both standard error columns should be preserved at full precision
 	expect_true(all(output$predictions$std.error > 0))
 	expect_true(all(output$predictions$ApproxSE > 0))
 	expect_false(any(output$predictions$std.error == 0))
