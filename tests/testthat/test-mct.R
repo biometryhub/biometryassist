@@ -1271,8 +1271,50 @@ test_that("ordering output works", {
 		tolerance = 5e-2
 	)
 
-	vdiffr::expect_doppelganger("mct ascending order", autoplot(output1))
-	vdiffr::expect_doppelganger("mct descending output", autoplot(output2))
+	# --- OS-robust plot checks (proof of concept) ------------------------
+	# Instead of comparing a full-precision rendered SVG (whose coordinates
+	# drift in the last decimals across OSes), pull the data each layer will
+	# draw with ggplot2::layer_data() and assert on it numerically. This
+	# verifies the plot maps the right values in the right order, with no
+	# dependency on fonts/pixels/svglite, so it behaves identically on every
+	# platform. For autoplot.mct: layer 1 = points (means), 2 = error bars,
+	# 3 = group letters.
+	asc <- autoplot(output1)
+	desc <- autoplot(output2)
+
+	asc_pts <- ggplot2::layer_data(asc, 1)
+	desc_pts <- ggplot2::layer_data(desc, 1)
+
+	# The plotted means are exactly the (full-precision) predictions, in the
+	# order they appear on the x axis.
+	expect_equal(asc_pts$y, output1$predictions$predicted.value)
+	expect_equal(desc_pts$y, output2$predictions$predicted.value)
+
+	# The actual behaviour under test: ascending vs descending ordering.
+	expect_false(is.unsorted(asc_pts$y)) # rises left-to-right
+	expect_false(is.unsorted(rev(desc_pts$y))) # falls left-to-right
+
+	# Error bars (layer 2) match the stored interval bounds.
+	asc_bars <- ggplot2::layer_data(asc, 2)
+	expect_equal(asc_bars$ymin, output1$predictions$low, tolerance = 1e-6)
+	expect_equal(asc_bars$ymax, output1$predictions$up, tolerance = 1e-6)
+
+	# Group letters (layer 3) are drawn in the same order as the predictions.
+	expect_equal(
+		as.character(ggplot2::layer_data(asc, 3)$label),
+		output1$predictions$groups
+	)
+
+	# --- Visual regression (kept, but pinned to one reference platform) --
+	# vdiffr SVGs are inherently platform-specific (font metrics, svglite),
+	# so the pixel-exact check runs only where the baselines are generated
+	# (Linux here). Correctness is already covered portably above, so this is
+	# a true visual-only check rather than a second copy of the value test.
+	skip_on_covr()
+	skip_if(packageVersion("grid") < "4.2.1")
+	skip_on_os(c("windows", "mac"))
+	vdiffr::expect_doppelganger("mct ascending order", asc)
+	vdiffr::expect_doppelganger("mct descending output", desc)
 })
 
 test_that("different interval types work", {

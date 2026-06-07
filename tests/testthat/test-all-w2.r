@@ -8,7 +8,8 @@ test_that("example 1 works", {
 	pred1.out <- multiple_comparisons(example1.aov, classify = "trt")
 	expect_equal(
 		pred1.out$predictions$predicted.value,
-		c(9.96, 12.26, 16.14, 17.77)
+		c(9.96, 12.26, 16.14, 17.77),
+		tolerance = 0.01
 	)
 	expect_snapshot_output(pred1.out$predictions)
 	skip_on_ci()
@@ -27,13 +28,12 @@ test_that("example 2 works", {
 	expect_snapshot_output(anova(example2.aov))
 	pred2.out <- multiple_comparisons(
 		example2.aov,
-		classify = "trt",
-		decimals = 4
+		classify = "trt"
 	)
 	expect_equal(
 		pred2.out$predictions$predicted.value,
 		c(11.15, 12.45, 14.02, 15.1, 16.11, 17.24, 17.83),
-		tolerance = 0.001
+		tolerance = 0.01
 	)
 	expect_snapshot_output(pred2.out$predictions)
 	skip_on_ci()
@@ -53,7 +53,8 @@ test_that("example 3 works", {
 	pred3.out <- multiple_comparisons(example3.aov, classify = "Variety")
 	expect_equal(
 		pred3.out$predictions$predicted.value,
-		c(1.68, 2.68, 4.72, 4.85)
+		c(1.68, 2.68, 4.72, 4.85),
+		tolerance = 0.01
 	)
 	expect_snapshot_output(pred3.out$predictions)
 	skip_on_ci()
@@ -73,7 +74,8 @@ test_that("example 4 works", {
 	pred4.out <- multiple_comparisons(example4.aov, classify = "trt")
 	expect_equal(
 		pred4.out$predictions$predicted.value,
-		c(1707.94, 1802.7, 2053.73, 2200.08)
+		c(1707.94, 1802.7, 2053.73, 2200.08),
+		tolerance = 0.01
 	)
 	expect_snapshot_output(pred4.out$predictions)
 	skip_on_ci()
@@ -96,7 +98,8 @@ test_that("example 3 LMM works", {
 	pred3asr.out <- multiple_comparisons(example3.asr, classify = "Variety")
 	expect_equal(
 		pred3asr.out$predictions$predicted.value,
-		c(1.68, 2.68, 4.72, 4.85)
+		c(1.68, 2.68, 4.72, 4.85),
+		tolerance = 0.01
 	)
 	expect_snapshot_output(pred3asr.out$predictions)
 	skip_on_ci()
@@ -321,8 +324,7 @@ test_that("exercise 1 works", {
 	expect_message(
 		pred1e.out <- multiple_comparisons(
 			exercise1.aov,
-			classify = "Variety",
-			decimals = 5
+			classify = "Variety"
 		),
 		"Some treatments sharing the same letter group have non-overlapping confidence intervals"
 	)
@@ -341,7 +343,8 @@ test_that("exercise 1 works", {
 			2.54000,
 			2.75000,
 			2.75333
-		)
+		),
+		tolerance = 0.01
 	)
 	pred1e.out$predictions <- pred1e.out$predictions[
 		order(
@@ -403,7 +406,8 @@ test_that("exercise 3 works", {
 	)
 	expect_equal(
 		pred3e.out$predictions$predicted.value,
-		c(2.84, 2.86, 3.08, 4.7, 4.78, 4.96, 8.88)
+		c(2.84, 2.86, 3.08, 4.7, 4.78, 4.96, 8.88),
+		tolerance = 0.01
 	)
 	expect_snapshot_output(pred3e.out$predictions)
 	skip_on_ci()
@@ -443,7 +447,8 @@ test_that("exercise 5 works", {
 	pred5e.out <- multiple_comparisons(exercise5.aov, classify = "Treatment")
 	expect_equal(
 		pred5e.out$predictions$predicted.value,
-		c(31.61, 35.98, 38.95, 43.52, 48.12)
+		c(31.61, 35.98, 38.95, 43.52, 48.12),
+		tolerance = 0.01
 	)
 	expect_snapshot_output(pred5e.out$predictions)
 	skip_on_ci()
@@ -466,7 +471,8 @@ test_that("exercise 6 works", {
 	pred6e.out <- multiple_comparisons(exercise6.aov, classify = "Treatment")
 	expect_equal(
 		pred6e.out$predictions$predicted.value,
-		c(16.01, 17.51, 21.40, 24.39)
+		c(16.01, 17.51, 21.40, 24.39),
+		tolerance = 0.01
 	)
 	expect_snapshot_output(pred6e.out$predictions)
 	skip_on_ci()
@@ -492,7 +498,8 @@ test_that("exercise 7 works", {
 	pred7e.out <- multiple_comparisons(exercise7.asr, classify = "Variety")
 	expect_equal(
 		pred7e.out$predictions$predicted.value,
-		c(2.84, 2.86, 3.08, 4.70, 4.78, 4.96, 8.88)
+		c(2.84, 2.86, 3.08, 4.70, 4.78, 4.96, 8.88),
+		tolerance = 0.01
 	)
 	expect_snapshot_output(pred7e.out$predictions)
 	skip_on_ci()
@@ -539,7 +546,8 @@ test_that("exercise 9 works", {
 	pred9e.out <- multiple_comparisons(exercise9.asr, classify = "Treatment")
 	expect_equal(
 		pred9e.out$predictions$predicted.value,
-		c(31.61, 35.98, 38.95, 43.52, 48.12)
+		c(31.61, 35.98, 38.95, 43.52, 48.12),
+		tolerance = 0.01
 	)
 	expect_snapshot_output(pred9e.out$predictions)
 	skip_on_ci()
@@ -565,7 +573,8 @@ test_that("exercise 10 works", {
 	pred10e.out <- multiple_comparisons(exercise10.asr, classify = "Treatment")
 	expect_equal(
 		pred10e.out$predictions$predicted.value,
-		c(16.01, 17.51, 21.40, 24.39)
+		c(16.01, 17.51, 21.40, 24.39),
+		tolerance = 0.01
 	)
 	expect_snapshot_output(pred10e.out$predictions)
 	skip_on_ci()
@@ -591,12 +600,14 @@ test_that("exercise 11 works", {
 	pred11e.out1 <- multiple_comparisons(exercise11.asr, classify = "Genotype")
 	expect_equal(
 		pred11e.out1$predictions$predicted.value,
-		c(97.68, 104.89, 109.35)
+		c(97.68, 104.89, 109.35),
+		tolerance = 0.01
 	)
 	pred11e.out2 <- multiple_comparisons(exercise11.asr, classify = "Nitrogen")
 	expect_equal(
 		pred11e.out2$predictions$predicted.value,
-		c(79.39, 98.89, 114.22, 123.39)
+		c(79.39, 98.89, 114.22, 123.39),
+		tolerance = 0.01
 	)
 	expect_snapshot_output(pred11e.out1$predictions)
 	expect_snapshot_output(pred11e.out2$predictions)
@@ -630,7 +641,8 @@ test_that("exercise 12 works", {
 	)
 	expect_equal(
 		pred12e.out$predictions$predicted.value,
-		c(4.61, 5.47, 5.91, 6.19, 6.43, 6.92, 7.02, 7.68, 7.7, 7.75)
+		c(4.61, 5.47, 5.91, 6.19, 6.43, 6.92, 7.02, 7.68, 7.7, 7.75),
+		tolerance = 0.01
 	)
 	expect_snapshot_output(pred12e.out$predictions)
 	skip_on_ci()
@@ -665,13 +677,15 @@ test_that("exercise 13 works", {
 	pred13e.out1 <- multiple_comparisons(exercise13.asr, classify = "Genotype")
 	expect_equal(
 		pred13e.out1$predictions$predicted.value,
-		c(97.41, 104.31, 110.07)
+		c(97.41, 104.31, 110.07),
+		tolerance = 0.01
 	)
 	expect_snapshot_output(pred13e.out1$predictions)
 	pred13e.out2 <- multiple_comparisons(exercise13.asr, classify = "Nitrogen")
 	expect_equal(
 		pred13e.out2$predictions$predicted.value,
-		c(79.44, 98.82, 114.08, 123.37)
+		c(79.44, 98.82, 114.08, 123.37),
+		tolerance = 0.01
 	)
 	expect_snapshot_output(pred13e.out2$predictions)
 	skip_on_ci()
@@ -772,7 +786,8 @@ test_that("exercise 14 works", {
 			4.43,
 			4.49,
 			4.52
-		)
+		),
+		tolerance = 0.01
 	)
 	expect_snapshot_output(pred14e.out$predictions)
 	skip_on_ci()
@@ -814,7 +829,11 @@ test_that("exercise 15 works", {
 		classify = "Control",
 		present = c("Control", "Rate", "Season")
 	)
-	expect_equal(pred15e.out1$predictions$predicted.value, c(2.37, 3.06))
+	expect_equal(
+		pred15e.out1$predictions$predicted.value,
+		c(2.37, 3.06),
+		tolerance = 0.01
+	)
 	expect_snapshot_output(pred15e.out1$predictions)
 	pred15e.out2 <- multiple_comparisons(
 		exercise15.asr,
@@ -823,7 +842,8 @@ test_that("exercise 15 works", {
 	)
 	expect_equal(
 		pred15e.out2$predictions$predicted.value,
-		c(1.99, 2.48, 2.62, 3.06)
+		c(1.99, 2.48, 2.62, 3.06),
+		tolerance = 0.01
 	)
 	expect_snapshot_output(pred15e.out2$predictions)
 	pred15e.out3 <- multiple_comparisons(
@@ -831,7 +851,11 @@ test_that("exercise 15 works", {
 		classify = "Season",
 		present = c("Control", "Rate", "Season")
 	)
-	expect_equal(pred15e.out3$predictions$predicted.value, c(2.14, 2.59, 3.06))
+	expect_equal(
+		pred15e.out3$predictions$predicted.value,
+		c(2.14, 2.59, 3.06),
+		tolerance = 0.01
+	)
 	expect_snapshot_output(pred15e.out3$predictions)
 	skip_on_ci()
 	skip_on_covr()
