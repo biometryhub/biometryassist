@@ -11,11 +11,19 @@
 
 ---
 
-      trt predicted.value std.error df groups        ci       low       up
-    1  20           9.964 0.4046641 16      a 0.8578495  9.106151 10.82185
-    2   1          12.258 0.4046641 16      b 0.8578495 11.400151 13.11585
-    3   5          16.144 0.4046641 16      c 0.8578495 15.286151 17.00185
-    4  10          17.774 0.4046641 16      c 0.8578495 16.916151 18.63185
+    Code
+      print(pred1.out)
+    Output
+      Multiple Comparisons of Means: Tukey's HSD Test
+      Significance level: 0.05 
+      HSD value: 1.637308 
+      
+      Predicted values:
+        trt predicted.value std.error df groups   ci   low    up
+      1  20            9.96       0.4 16      a 0.86  9.11 10.82
+      2   1           12.26       0.4 16      b 0.86 11.40 13.12
+      3   5           16.14       0.4 16      c 0.86 15.29 17.00
+      4  10           17.77       0.4 16      c 0.86 16.92 18.63
 
 # example 2 works
 
@@ -30,14 +38,22 @@
 
 ---
 
-      trt predicted.value std.error df groups       ci      low       up
-    1  T3        11.15250 0.3318526 77      a 0.660803 10.49170 11.81330
-    2  T5        12.45417 0.3318526 77      a 0.660803 11.79336 13.11497
-    3  T6        14.02500 0.3318526 77      b 0.660803 13.36420 14.68580
-    4  T4        15.10083 0.3318526 77     bc 0.660803 14.44003 15.76164
-    5  T2        16.11167 0.3318526 77     cd 0.660803 15.45086 16.77247
-    6  T7        17.24000 0.3318526 77     de 0.660803 16.57920 17.90080
-    7  T1        17.82917 0.3318526 77      e 0.660803 17.16836 18.48997
+    Code
+      print(pred2.out)
+    Output
+      Multiple Comparisons of Means: Tukey's HSD Test
+      Significance level: 0.05 
+      HSD value: 1.420913 
+      
+      Predicted values:
+        trt predicted.value std.error df groups   ci   low    up
+      1  T3           11.15      0.33 77      a 0.66 10.49 11.81
+      2  T5           12.45      0.33 77      a 0.66 11.79 13.11
+      3  T6           14.02      0.33 77      b 0.66 13.36 14.69
+      4  T4           15.10      0.33 77     bc 0.66 14.44 15.76
+      5  T2           16.11      0.33 77     cd 0.66 15.45 16.77
+      6  T7           17.24      0.33 77     de 0.66 16.58 17.90
+      7  T1           17.83      0.33 77      e 0.66 17.17 18.49
 
 # example 3 works
 
@@ -53,11 +69,19 @@
 
 ---
 
-        Variety predicted.value std.error df groups       ci       low       up
-    1 Parafield           1.680 0.6273483 12      a 1.366874 0.3131256 3.046874
-    2     Kaspa           2.676 0.6273483 12     ab 1.366874 1.3091256 4.042874
-    3    Yarrum           4.724 0.6273483 12      b 1.366874 3.3571256 6.090874
-    4    Excell           4.848 0.6273483 12      b 1.366874 3.4811256 6.214874
+    Code
+      print(pred3.out)
+    Output
+      Multiple Comparisons of Means: Tukey's HSD Test
+      Significance level: 0.05 
+      HSD value: 2.634022 
+      
+      Predicted values:
+          Variety predicted.value std.error df groups   ci  low   up
+      1 Parafield            1.68      0.63 12      a 1.37 0.31 3.05
+      2     Kaspa            2.68      0.63 12     ab 1.37 1.31 4.04
+      3    Yarrum            4.72      0.63 12      b 1.37 3.36 6.09
+      4    Excell            4.85      0.63 12      b 1.37 3.48 6.21
 
 # example 4 works
 
@@ -74,11 +98,19 @@
 
 ---
 
-      trt predicted.value std.error df groups      ci      low       up
-    1  S4        1707.940  61.97568  6      a 151.649 1556.291 1859.589
-    2  S2        1802.697  61.97568  6     ab 151.649 1651.048 1954.347
-    3  S1        2053.733  61.97568  6     bc 151.649 1902.083 2205.382
-    4  S3        2200.085  61.97568  6      c 151.649 2048.436 2351.734
+    Code
+      print(pred4.out)
+    Output
+      Multiple Comparisons of Means: Tukey's HSD Test
+      Significance level: 0.05 
+      HSD value: 303.4081 
+      
+      Predicted values:
+        trt predicted.value std.error df groups     ci     low      up
+      1  S4         1707.94     61.98  6      a 151.65 1556.29 1859.59
+      2  S2         1802.70     61.98  6     ab 151.65 1651.05 1954.35
+      3  S1         2053.73     61.98  6     bc 151.65 1902.08 2205.38
+      4  S3         2200.08     61.98  6      c 151.65 2048.44 2351.73
 
 # example 3 LMM works
 
@@ -88,11 +120,19 @@
 
 ---
 
-        Variety predicted.value std.error groups       ci         low       up
-    1 Parafield           1.680 0.8124417      a 1.770158 -0.09015838 3.450158
-    2     Kaspa           2.676 0.8124417     ab 1.770158  0.90584162 4.446158
-    3    Yarrum           4.724 0.8124417      b 1.770158  2.95384162 6.494158
-    4    Excell           4.848 0.8124417      b 1.770158  3.07784162 6.618158
+    Code
+      print(pred3asr.out)
+    Output
+      Multiple Comparisons of Means: Tukey's HSD Test
+      Significance level: 0.05 
+      HSD value: 2.634022 
+      
+      Predicted values:
+          Variety predicted.value std.error groups   ci   low   up
+      1 Parafield            1.68      0.81      a 1.77 -0.09 3.45
+      2     Kaspa            2.68      0.81     ab 1.77  0.91 4.45
+      3    Yarrum            4.72      0.81      b 1.77  2.95 6.49
+      4    Excell            4.85      0.81      b 1.77  3.08 6.62
 
 # example 4 LMM works
 
@@ -102,11 +142,19 @@
 
 ---
 
-      trt predicted.value std.error groups       ci      low       up
-    1  S4        1707.940  64.09245      a 144.9872 1562.953 1852.927
-    2  S2        1802.697  64.09245     ab 144.9872 1657.710 1947.685
-    3  S1        2053.733  64.09245     bc 144.9872 1908.745 2198.720
-    4  S3        2200.085  64.09245      c 144.9872 2055.098 2345.072
+    Code
+      print(pred4lmm.out)
+    Output
+      Multiple Comparisons of Means: Tukey's HSD Test
+      Significance level: 0.05 
+      HSD value: 273.2876 
+      
+      Predicted values:
+        trt predicted.value std.error groups     ci     low      up
+      1  S4         1707.94     64.09      a 144.99 1562.95 1852.93
+      2  S2         1802.70     64.09     ab 144.99 1657.71 1947.68
+      3  S1         2053.73     64.09     bc 144.99 1908.75 2198.72
+      4  S3         2200.08     64.09      c 144.99 2055.10 2345.07
 
 # example 5 works
 
@@ -118,9 +166,17 @@
 
 ---
 
-      Fungicide predicted.value std.error groups        ci      low       up
-    1        F2        4.965786 0.1045358      a 0.3326796 4.633106 5.298465
-    2        F1        5.513643 0.1045358      b 0.3326796 5.180963 5.846322
+    Code
+      print(pred5.out2)
+    Output
+      Multiple Comparisons of Means: Tukey's HSD Test
+      Significance level: 0.05 
+      HSD value: 0.2747438 
+      
+      Predicted values:
+        Fungicide predicted.value std.error groups   ci  low   up
+      1        F2            4.97       0.1      a 0.33 4.63 5.30
+      2        F1            5.51       0.1      b 0.33 5.18 5.85
 
 # example 6 works
 
@@ -137,28 +193,37 @@
 
 ---
 
-            Treatment predicted.value std.error groups        ci       low       up
-    1  Hoegrass_0.75L       0.9210446 0.2046564      a 0.4194934 0.5015512 1.340538
-    2   Wildcat_300mL       0.9356544 0.2035529      a 0.4172315 0.5184229 1.352886
-    3  Atlantis_300mL       0.9399792 0.2085695     ab 0.4275144 0.5124647 1.367494
-    4   Wildcat_350mL       0.9428674 0.2040239      a 0.4181971 0.5246704 1.361064
-    5      Topik_50mL       0.9459815 0.2029538      a 0.4160037 0.5299778 1.361985
-    6    Achieve_300g       0.9615220 0.2079803     ab 0.4263066 0.5352154 1.387829
-    7       Control_0       0.9833812 0.2074405      a 0.4252003 0.5581809 1.408581
-    8   Hoegrass_1.0L       1.0627989 0.2031876     ab 0.4164829 0.6463160 1.479282
-    9    Tristar_1.0L       1.0664075 0.2033889     ab 0.4168954 0.6495121 1.483303
-    10   Achieve_380g       1.0842737 0.2041340     ab 0.4184228 0.6658510 1.502696
-    11 Atlantis_330mL       1.1846143 0.2031301     ab 0.4163650 0.7682493 1.600979
-    12     Topik_85mL       1.2177770 0.2055438     ab 0.4213124 0.7964646 1.639089
-    13 MatavenL_2.25L       1.2266908 0.2056217     ab 0.4214722 0.8052187 1.648163
-    14  Hoegrass_1.2L       1.2970462 0.2061677     ab 0.4225913 0.8744549 1.719638
-    15     Topik_65mL       1.3653953 0.2046842     ab 0.4195505 0.9458448 1.784946
-    16  Wildcat_250mL       1.5328196 0.2041686     ab 0.4184937 1.1143259 1.951313
-    17  MatavenL_3.0L       1.5872962 0.2081109     ab 0.4265744 1.1607218 2.013871
-    18    Hussar_200g       1.6580577 0.2026617     ab 0.4154049 1.2426528 2.073463
-    19   Achieve_250g       1.6791228 0.2085737     ab 0.4275229 1.2516000 2.106646
-    20   Tristar_1.5L       1.9009952 0.2077192     ab 0.4257715 1.4752238 2.326767
-    21    Hussar_150g       2.0082820 0.2050670      b 0.4203351 1.5879469 2.428617
+    Code
+      print(pred6.out)
+    Output
+      Multiple Comparisons of Means: Tukey's HSD Test
+      Significance level: 0.05 
+      HSD value: varies by comparison (see $hsd)
+       
+      
+      Predicted values:
+              Treatment predicted.value std.error groups   ci  low   up
+      1  Hoegrass_0.75L            0.92      0.20      a 0.42 0.50 1.34
+      2   Wildcat_300mL            0.94      0.20      a 0.42 0.52 1.35
+      3  Atlantis_300mL            0.94      0.21     ab 0.43 0.51 1.37
+      4   Wildcat_350mL            0.94      0.20      a 0.42 0.52 1.36
+      5      Topik_50mL            0.95      0.20      a 0.42 0.53 1.36
+      6    Achieve_300g            0.96      0.21     ab 0.43 0.54 1.39
+      7       Control_0            0.98      0.21      a 0.43 0.56 1.41
+      8   Hoegrass_1.0L            1.06      0.20     ab 0.42 0.65 1.48
+      9    Tristar_1.0L            1.07      0.20     ab 0.42 0.65 1.48
+      10   Achieve_380g            1.08      0.20     ab 0.42 0.67 1.50
+      11 Atlantis_330mL            1.18      0.20     ab 0.42 0.77 1.60
+      12     Topik_85mL            1.22      0.21     ab 0.42 0.80 1.64
+      13 MatavenL_2.25L            1.23      0.21     ab 0.42 0.81 1.65
+      14  Hoegrass_1.2L            1.30      0.21     ab 0.42 0.87 1.72
+      15     Topik_65mL            1.37      0.20     ab 0.42 0.95 1.78
+      16  Wildcat_250mL            1.53      0.20     ab 0.42 1.11 1.95
+      17  MatavenL_3.0L            1.59      0.21     ab 0.43 1.16 2.01
+      18    Hussar_200g            1.66      0.20     ab 0.42 1.24 2.07
+      19   Achieve_250g            1.68      0.21     ab 0.43 1.25 2.11
+      20   Tristar_1.5L            1.90      0.21     ab 0.43 1.48 2.33
+      21    Hussar_150g            2.01      0.21      b 0.42 1.59 2.43
 
 # example 7 works
 
@@ -178,50 +243,39 @@
 
 ---
 
-       Herbicide    Rate predicted.value std.error groups        ci       low
-    1   Hoegrass     Low       0.9210446 0.2046564      a 0.4183220 0.5027226
-    2    Wildcat  Medium       0.9356544 0.2035529      a 0.4160664 0.5195880
-    3   Atlantis     Low       0.9399792 0.2085695     ab 0.4263206 0.5136586
-    4    Wildcat    High       0.9428674 0.2040239      a 0.4170293 0.5258382
-    5      Topik     Low       0.9459815 0.2029538      a 0.4148420 0.5311394
-    6    Achieve  Medium       0.9615220 0.2079803     ab 0.4251161 0.5364058
-    7    Control Control       0.9833812 0.2074405      a 0.4240129 0.5593683
-    8   Hoegrass  Medium       1.0627989 0.2031876     ab 0.4153199 0.6474790
-    9    Tristar     Low       1.0664075 0.2033889     ab 0.4157313 0.6506762
-    10   Achieve    High       1.0842737 0.2041340     ab 0.4172543 0.6670194
-    11  Atlantis    High       1.1846143 0.2031301     ab 0.4152023 0.7694120
-    12     Topik    High       1.2177770 0.2055438     ab 0.4201359 0.7976411
-    13  MatavenL     Low       1.2266908 0.2056217     ab 0.4202952 0.8063956
-    14  Hoegrass    High       1.2970462 0.2061677     ab 0.4214113 0.8756349
-    15     Topik  Medium       1.3653953 0.2046842     ab 0.4183790 0.9470164
-    16   Wildcat     Low       1.5328196 0.2041686     ab 0.4173251 1.1154945
-    17  MatavenL    High       1.5872962 0.2081109     ab 0.4253832 1.1619129
-    18    Hussar    High       1.6580577 0.2026617     ab 0.4142449 1.2438128
-    19   Achieve     Low       1.6791228 0.2085737     ab 0.4263291 1.2527938
-    20   Tristar    High       1.9009952 0.2077192     ab 0.4245826 1.4764127
-    21    Hussar     Low       2.0082820 0.2050670      b 0.4191614 1.5891206
-             up
-    1  1.339367
-    2  1.351721
-    3  1.366300
-    4  1.359897
-    5  1.360823
-    6  1.386638
-    7  1.407394
-    8  1.478119
-    9  1.482139
-    10 1.501528
-    11 1.599817
-    12 1.637913
-    13 1.646986
-    14 1.718457
-    15 1.783774
-    16 1.950145
-    17 2.012679
-    18 2.072303
-    19 2.105452
-    20 2.325578
-    21 2.427443
+    Code
+      print(pred7.out)
+    Output
+      Multiple Comparisons of Means: Tukey's HSD Test
+      Significance level: 0.05 
+      HSD value: varies by comparison (see $hsd)
+       
+      
+      Predicted values:
+         Herbicide    Rate predicted.value std.error groups   ci  low   up
+      1   Hoegrass     Low            0.92      0.20      a 0.42 0.50 1.34
+      2    Wildcat  Medium            0.94      0.20      a 0.42 0.52 1.35
+      3   Atlantis     Low            0.94      0.21     ab 0.43 0.51 1.37
+      4    Wildcat    High            0.94      0.20      a 0.42 0.53 1.36
+      5      Topik     Low            0.95      0.20      a 0.41 0.53 1.36
+      6    Achieve  Medium            0.96      0.21     ab 0.43 0.54 1.39
+      7    Control Control            0.98      0.21      a 0.42 0.56 1.41
+      8   Hoegrass  Medium            1.06      0.20     ab 0.42 0.65 1.48
+      9    Tristar     Low            1.07      0.20     ab 0.42 0.65 1.48
+      10   Achieve    High            1.08      0.20     ab 0.42 0.67 1.50
+      11  Atlantis    High            1.18      0.20     ab 0.42 0.77 1.60
+      12     Topik    High            1.22      0.21     ab 0.42 0.80 1.64
+      13  MatavenL     Low            1.23      0.21     ab 0.42 0.81 1.65
+      14  Hoegrass    High            1.30      0.21     ab 0.42 0.88 1.72
+      15     Topik  Medium            1.37      0.20     ab 0.42 0.95 1.78
+      16   Wildcat     Low            1.53      0.20     ab 0.42 1.12 1.95
+      17  MatavenL    High            1.59      0.21     ab 0.43 1.16 2.01
+      18    Hussar    High            1.66      0.20     ab 0.41 1.24 2.07
+      19   Achieve     Low            1.68      0.21     ab 0.43 1.25 2.11
+      20   Tristar    High            1.90      0.21     ab 0.42 1.48 2.33
+      21    Hussar     Low            2.01      0.21      b 0.42 1.59 2.43
+      
+      Aliased levels are: Achieve:Control, Atlantis:Control, Atlantis:Medium, Control:High, Control:Low, Control:Medium, Hoegrass:Control, Hussar:Control, Hussar:Medium, MatavenL:Control, MatavenL:Medium, Topik:Control, Tristar:Control, Tristar:Medium and Wildcat:Control 
 
 # exercise 1 works
 
@@ -236,19 +290,27 @@
 
 ---
 
-        Variety predicted.value std.error df groups       ci      low       up
-    1      Lang        1.973333 0.1177883 24      a 0.243103 1.730230 2.216436
-    2  Drysdale        2.130000 0.1177883 24      a 0.243103 1.886897 2.373103
-    3     Wylah        2.130000 0.1177883 24      a 0.243103 1.886897 2.373103
-    4    Baxter        2.140000 0.1177883 24      a 0.243103 1.896897 2.383103
-    5      Janz        2.193333 0.1177883 24     ab 0.243103 1.950230 2.436436
-    6    Endure        2.240000 0.1177883 24     ab 0.243103 1.996897 2.483103
-    7     Orion        2.270000 0.1177883 24     ab 0.243103 2.026897 2.513103
-    8     Zippy        2.283333 0.1177883 24     ab 0.243103 2.040230 2.526436
-    9   Fortune        2.526667 0.1177883 24     ab 0.243103 2.283564 2.769770
-    10  Caryina        2.540000 0.1177883 24     ab 0.243103 2.296897 2.783103
-    11  Pugsley        2.750000 0.1177883 24      b 0.243103 2.506897 2.993103
-    12   Arrino        2.753333 0.1177883 24      b 0.243103 2.510230 2.996436
+    Code
+      print(pred1e.out)
+    Output
+      Multiple Comparisons of Means: Tukey's HSD Test
+      Significance level: 0.05 
+      HSD value: 0.6006176 
+      
+      Predicted values:
+          Variety predicted.value std.error df groups   ci  low   up
+      1      Lang            1.97      0.12 24      a 0.24 1.73 2.22
+      2  Drysdale            2.13      0.12 24      a 0.24 1.89 2.37
+      3     Wylah            2.13      0.12 24      a 0.24 1.89 2.37
+      4    Baxter            2.14      0.12 24      a 0.24 1.90 2.38
+      5      Janz            2.19      0.12 24     ab 0.24 1.95 2.44
+      6    Endure            2.24      0.12 24     ab 0.24 2.00 2.48
+      7     Orion            2.27      0.12 24     ab 0.24 2.03 2.51
+      8     Zippy            2.28      0.12 24     ab 0.24 2.04 2.53
+      9   Fortune            2.53      0.12 24     ab 0.24 2.28 2.77
+      10  Caryina            2.54      0.12 24     ab 0.24 2.30 2.78
+      11  Pugsley            2.75      0.12 24      b 0.24 2.51 2.99
+      12   Arrino            2.75      0.12 24      b 0.24 2.51 3.00
 
 # exercise 2 works
 
@@ -290,14 +352,22 @@
 
 ---
 
-            Variety predicted.value std.error df groups        ci      low       up
-    1 CarolinaCross            2.84 0.4208269 24      a 0.8685439 1.971456 3.708544
-    2       Pharoah            2.86 0.4208269 24      a 0.8685439 1.991456 3.728544
-    3       Phantom            3.08 0.4208269 24     ab 0.8685439 2.211456 3.948544
-    4      Hercules            4.70 0.4208269 24     ab 0.8685439 3.831456 5.568544
-    5  Melitopolski            4.78 0.4208269 24      b 0.8685439 3.911456 5.648544
-    6     Orangeglo            4.96 0.4208269 24      b 0.8685439 4.091456 5.828544
-    7      Sudanese            8.88 0.4208269 24      c 0.8685439 8.011456 9.748544
+    Code
+      print(pred3e.out)
+    Output
+      Multiple Comparisons of Means: Tukey's HSD Test
+      Significance level: 0.05 
+      HSD value: 1.911107 
+      
+      Predicted values:
+              Variety predicted.value std.error df groups   ci  low   up
+      1 CarolinaCross            2.84      0.42 24      a 0.87 1.97 3.71
+      2       Pharoah            2.86      0.42 24      a 0.87 1.99 3.73
+      3       Phantom            3.08      0.42 24     ab 0.87 2.21 3.95
+      4      Hercules            4.70      0.42 24     ab 0.87 3.83 5.57
+      5  Melitopolski            4.78      0.42 24      b 0.87 3.91 5.65
+      6     Orangeglo            4.96      0.42 24      b 0.87 4.09 5.83
+      7      Sudanese            8.88      0.42 24      c 0.87 8.01 9.75
 
 # exercise 4 works
 
@@ -326,12 +396,20 @@
 
 ---
 
-      Treatment predicted.value std.error df groups       ci      low       up
-    1      Root          31.608   1.39795 18      a 2.936984 28.67102 34.54498
-    2      Seed          35.978   1.39795 18     ab 2.936984 33.04102 38.91498
-    3     Stalk          38.952   1.39795 18     bc 2.936984 36.01502 41.88898
-    4    Damage          43.518   1.39795 18     cd 2.936984 40.58102 46.45498
-    5      Silk          48.118   1.39795 18      d 2.936984 45.18102 51.05498
+    Code
+      print(pred5e.out)
+    Output
+      Multiple Comparisons of Means: Tukey's HSD Test
+      Significance level: 0.05 
+      HSD value: 5.978043 
+      
+      Predicted values:
+        Treatment predicted.value std.error df groups   ci   low    up
+      1      Root           31.61       1.4 18      a 2.94 28.67 34.54
+      2      Seed           35.98       1.4 18     ab 2.94 33.04 38.91
+      3     Stalk           38.95       1.4 18     bc 2.94 36.02 41.89
+      4    Damage           43.52       1.4 18     cd 2.94 40.58 46.45
+      5      Silk           48.12       1.4 18      d 2.94 45.18 51.05
 
 # exercise 6 works
 
@@ -348,11 +426,19 @@
 
 ---
 
-      Treatment predicted.value std.error df groups       ci      low       up
-    1        T4         16.0100  1.595889 10      a 3.555863 12.45414 19.56586
-    2        T8         17.5100  1.595889 10     ab 3.555863 13.95414 21.06586
-    3       T12         21.4025  1.595889 10     ab 3.555863 17.84664 24.95836
-    4        T0         24.3900  1.595889 10      b 3.555863 20.83414 27.94586
+    Code
+      print(pred6e.out)
+    Output
+      Multiple Comparisons of Means: Tukey's HSD Test
+      Significance level: 0.05 
+      HSD value: 6.904745 
+      
+      Predicted values:
+        Treatment predicted.value std.error df groups   ci   low    up
+      1        T4           16.01       1.6 10      a 3.56 12.45 19.57
+      2        T8           17.51       1.6 10     ab 3.56 13.95 21.07
+      3       T12           21.40       1.6 10     ab 3.56 17.85 24.96
+      4        T0           24.39       1.6 10      b 3.56 20.83 27.95
 
 # exercise 7 works
 
@@ -362,14 +448,22 @@
 
 ---
 
-            Variety predicted.value std.error groups       ci      low        up
-    1 CarolinaCross            2.84   0.68775      a 1.419446 1.420554  4.259446
-    2       Pharoah            2.86   0.68775      a 1.419446 1.440554  4.279446
-    3       Phantom            3.08   0.68775     ab 1.419446 1.660554  4.499446
-    4      Hercules            4.70   0.68775     ab 1.419446 3.280554  6.119446
-    5  Melitopolski            4.78   0.68775      b 1.419446 3.360554  6.199446
-    6     Orangeglo            4.96   0.68775      b 1.419446 3.540554  6.379446
-    7      Sudanese            8.88   0.68775      c 1.419446 7.460554 10.299446
+    Code
+      print(pred7e.out)
+    Output
+      Multiple Comparisons of Means: Tukey's HSD Test
+      Significance level: 0.05 
+      HSD value: 1.911107 
+      
+      Predicted values:
+              Variety predicted.value std.error groups   ci  low    up
+      1 CarolinaCross            2.84      0.69      a 1.42 1.42  4.26
+      2       Pharoah            2.86      0.69      a 1.42 1.44  4.28
+      3       Phantom            3.08      0.69     ab 1.42 1.66  4.50
+      4      Hercules            4.70      0.69     ab 1.42 3.28  6.12
+      5  Melitopolski            4.78      0.69      b 1.42 3.36  6.20
+      6     Orangeglo            4.96      0.69      b 1.42 3.54  6.38
+      7      Sudanese            8.88      0.69      c 1.42 7.46 10.30
 
 # exercise 8 works
 
@@ -385,12 +479,20 @@
 
 ---
 
-      Treatment predicted.value std.error groups       ci     low      up
-    1      Root          31.608  1.346334      a 2.808404 28.7996 34.4164
-    2      Seed          35.978  1.346334     ab 2.808404 33.1696 38.7864
-    3     Stalk          38.952  1.346334     bc 2.808404 36.1436 41.7604
-    4    Damage          43.518  1.346334     cd 2.808404 40.7096 46.3264
-    5      Silk          48.118  1.346334      d 2.808404 45.3096 50.9264
+    Code
+      print(pred9e.out)
+    Output
+      Multiple Comparisons of Means: Tukey's HSD Test
+      Significance level: 0.05 
+      HSD value: 5.697493 
+      
+      Predicted values:
+        Treatment predicted.value std.error groups   ci   low    up
+      1      Root           31.61      1.35      a 2.81 28.80 34.42
+      2      Seed           35.98      1.35     ab 2.81 33.17 38.79
+      3     Stalk           38.95      1.35     bc 2.81 36.14 41.76
+      4    Damage           43.52      1.35     cd 2.81 40.71 46.33
+      5      Silk           48.12      1.35      d 2.81 45.31 50.93
 
 # exercise 10 works
 
@@ -400,11 +502,19 @@
 
 ---
 
-      Treatment predicted.value std.error groups       ci      low       up
-    1        T4         16.0100  1.595889      a 3.555863 12.45414 19.56586
-    2        T8         17.5100  1.595889     ab 3.555863 13.95414 21.06586
-    3       T12         21.4025  1.595889     ab 3.555863 17.84664 24.95836
-    4        T0         24.3900  1.595889      b 3.555863 20.83414 27.94586
+    Code
+      print(pred10e.out)
+    Output
+      Multiple Comparisons of Means: Tukey's HSD Test
+      Significance level: 0.05 
+      HSD value: 6.904745 
+      
+      Predicted values:
+        Treatment predicted.value std.error groups   ci   low    up
+      1        T4           16.01       1.6      a 3.56 12.45 19.57
+      2        T8           17.51       1.6     ab 3.56 13.95 21.07
+      3       T12           21.40       1.6     ab 3.56 17.85 24.96
+      4        T0           24.39       1.6      b 3.56 20.83 27.95
 
 # exercise 11 works
 
@@ -416,18 +526,35 @@
 
 ---
 
-        Genotype predicted.value std.error groups       ci      low       up
-    1    Victory        97.67719  7.153791      a 14.34067 83.33652 112.0179
-    2 GoldenRain       104.88909  7.151431     ab 14.33594 90.55315 119.2250
-    3 Marvellous       109.35038  7.158487      b 14.35009 95.00030 123.7005
+    Code
+      print(pred11e.out1)
+    Output
+      Multiple Comparisons of Means: Tukey's HSD Test
+      Significance level: 0.05 
+      HSD value: varies by comparison (see $hsd)
+       
+      
+      Predicted values:
+          Genotype predicted.value std.error groups    ci   low     up
+      1    Victory           97.68      7.15      a 14.34 83.34 112.02
+      2 GoldenRain          104.89      7.15     ab 14.34 90.55 119.23
+      3 Marvellous          109.35      7.16      b 14.35 95.00 123.70
 
 ---
 
-      Nitrogen predicted.value std.error groups       ci       low        up
-    1        0        79.38889   7.37404      a 14.86918  64.51971  94.25807
-    2      0.2        98.88889   7.37404      b 14.86918  84.01971 113.75807
-    3      0.4       114.22222   7.37404      c 14.86918  99.35304 129.09140
-    4      0.6       123.38889   7.37404      c 14.86918 108.51971 138.25807
+    Code
+      print(pred11e.out2)
+    Output
+      Multiple Comparisons of Means: Tukey's HSD Test
+      Significance level: 0.05 
+      HSD value: 13.98858 
+      
+      Predicted values:
+        Nitrogen predicted.value std.error groups    ci    low     up
+      1        0           79.39      7.37      a 14.87  64.52  94.26
+      2      0.2           98.89      7.37      b 14.87  84.02 113.76
+      3      0.4          114.22      7.37      c 14.87  99.35 129.09
+      4      0.6          123.39      7.37      c 14.87 108.52 138.26
 
 # exercise 12 works
 
@@ -439,28 +566,26 @@
 
 ---
 
-       Variety Irrigation predicted.value std.error groups       ci      low
-    1  Thumper    Rainfed        4.613333 0.9902407      a 2.099217 2.514117
-    2  Cobbler    Rainfed        5.470000 0.9902407     ab 2.099217 3.370783
-    3    Bravo    Rainfed        5.906667 0.9902407      b 2.099217 3.807450
-    4    Hyola    Rainfed        6.193333 0.9902407     bc 2.099217 4.094117
-    5  Victory    Rainfed        6.433333 0.9902407     bc 2.099217 4.334117
-    6  Thumper  Irrigated        6.923333 0.9902407     bc 2.099217 4.824117
-    7  Victory  Irrigated        7.023333 0.9902407     bc 2.099217 4.924117
-    8    Bravo  Irrigated        7.683333 0.9902407      c 2.099217 5.584117
-    9    Hyola  Irrigated        7.703333 0.9902407      c 2.099217 5.604117
-    10 Cobbler  Irrigated        7.753333 0.9902407      c 2.099217 5.654117
-             up
-    1  6.712550
-    2  7.569217
-    3  8.005883
-    4  8.292550
-    5  8.532550
-    6  9.022550
-    7  9.122550
-    8  9.782550
-    9  9.802550
-    10 9.852550
+    Code
+      print(pred12e.out)
+    Output
+      Multiple Comparisons of Means: Tukey's HSD Test
+      Significance level: 0.05 
+      HSD value: varies by comparison (see $hsd)
+       
+      
+      Predicted values:
+         Variety Irrigation predicted.value std.error groups  ci  low   up
+      1  Thumper    Rainfed            4.61      0.99      a 2.1 2.51 6.71
+      2  Cobbler    Rainfed            5.47      0.99     ab 2.1 3.37 7.57
+      3    Bravo    Rainfed            5.91      0.99      b 2.1 3.81 8.01
+      4    Hyola    Rainfed            6.19      0.99     bc 2.1 4.09 8.29
+      5  Victory    Rainfed            6.43      0.99     bc 2.1 4.33 8.53
+      6  Thumper  Irrigated            6.92      0.99     bc 2.1 4.82 9.02
+      7  Victory  Irrigated            7.02      0.99     bc 2.1 4.92 9.12
+      8    Bravo  Irrigated            7.68      0.99      c 2.1 5.58 9.78
+      9    Hyola  Irrigated            7.70      0.99      c 2.1 5.60 9.80
+      10 Cobbler  Irrigated            7.75      0.99      c 2.1 5.65 9.85
 
 # exercise 13 works
 
@@ -472,18 +597,36 @@
 
 ---
 
-        Genotype predicted.value std.error groups       ci      low       up
-    1    Victory        97.40982  7.043177      a 14.12374 83.28608 111.5336
-    2 GoldenRain       104.30908  7.054746     ab 14.14694 90.16214 118.4560
-    3 Marvellous       110.06544  7.043846      b 14.12508 95.94036 124.1905
+    Code
+      print(pred13e.out1)
+    Output
+      Multiple Comparisons of Means: Tukey's HSD Test
+      Significance level: 0.05 
+      HSD value: varies by comparison (see $hsd)
+       
+      
+      Predicted values:
+          Genotype predicted.value std.error groups    ci   low     up
+      1    Victory           97.41      7.04      a 14.12 83.29 111.53
+      2 GoldenRain          104.31      7.05     ab 14.15 90.16 118.46
+      3 Marvellous          110.07      7.04      b 14.13 95.94 124.19
 
 ---
 
-      Nitrogen predicted.value std.error groups       ci       low        up
-    1        0        79.44186  7.111550      a 14.77660  64.66525  94.21846
-    2      0.2        98.81575  7.113019      b 14.77966  84.03609 113.59541
-    3      0.4       114.08395  7.114174      c 14.78206  99.30190 128.86601
-    4      0.6       123.37090  7.101188      c 14.75507 108.61583 138.12598
+    Code
+      print(pred13e.out2)
+    Output
+      Multiple Comparisons of Means: Tukey's HSD Test
+      Significance level: 0.05 
+      HSD value: varies by comparison (see $hsd)
+       
+      
+      Predicted values:
+        Nitrogen predicted.value std.error groups    ci    low     up
+      1        0           79.44      7.11      a 14.78  64.67  94.22
+      2      0.2           98.82      7.11      b 14.78  84.04 113.60
+      3      0.4          114.08      7.11      c 14.78  99.30 128.87
+      4      0.6          123.37      7.10      c 14.76 108.62 138.13
 
 # exercise 14 works
 
@@ -493,57 +636,66 @@
 
 ---
 
-       Genotype predicted.value  std.error   groups        ci      low       up
-    1       G36        3.676784 0.09071810        a 0.1809591 3.495825 3.857743
-    2       G28        3.786933 0.09030670       ab 0.1801384 3.606794 3.967071
-    3       G30        3.899349 0.08841320      abc 0.1763614 3.722988 4.075710
-    4       G46        3.905730 0.08852360     abcd 0.1765816 3.729148 4.082311
-    5       G23        3.923424 0.09083991    abcde 0.1812020 3.742222 4.104626
-    6       G29        3.957301 0.08841523   abcdef 0.1763654 3.780936 4.133666
-    7       G07        3.957408 0.08874995   abcdef 0.1770331 3.780374 4.134441
-    8       G21        3.977963 0.08877424  abcdefg 0.1770816 3.800881 4.155045
-    9       G45        3.978391 0.08904767  abcdefg 0.1776270 3.800764 4.156018
-    10      G33        4.016784 0.09041383 abcdefgh 0.1803521 3.836432 4.197136
-    11      G49        4.033503 0.08861164 abcdefgh 0.1767572 3.856745 4.210260
-    12      G06        4.035898 0.08880153 abcdefgh 0.1771360 3.858762 4.213034
-    13      G38        4.059177 0.08897030 abcdefgh 0.1774726 3.881705 4.236650
-    14      G27        4.060108 0.09047292 abcdefgh 0.1804700 3.879638 4.240578
-    15      G43        4.063067 0.08856317 abcdefgh 0.1766605 3.886407 4.239728
-    16      G19        4.069937 0.08866182 abcdefgh 0.1768573 3.893080 4.246795
-    17      G15        4.123921 0.08893448 abcdefgh 0.1774012 3.946520 4.301322
-    18      G31        4.129791 0.08865743 abcdefgh 0.1768486 3.952942 4.306639
-    19      G24        4.131983 0.09048655 abcdefgh 0.1804972 3.951486 4.312480
-    20      G48        4.148606 0.08882247 abcdefgh 0.1771778 3.971428 4.325784
-    21      G34        4.149680 0.09034828 abcdefgh 0.1802214 3.969459 4.329902
-    22      G05        4.149708 0.08902675 abcdefgh 0.1775852 3.972123 4.327293
-    23      G18        4.157145 0.09096454 abcdefgh 0.1814506 3.975694 4.338595
-    24      G37        4.158023 0.08857399  bcdefgh 0.1766821 3.981341 4.334705
-    25      G47        4.181125 0.08864658 abcdefgh 0.1768269 4.004298 4.357952
-    26      G08        4.181387 0.09048755 abcdefgh 0.1804992 4.000887 4.361886
-    27      G25        4.193541 0.08856336  bcdefgh 0.1766609 4.016880 4.370202
-    28      G26        4.194467 0.08886620 abcdefgh 0.1772650 4.017202 4.371732
-    29      G13        4.196891 0.08862945  bcdefgh 0.1767927 4.020098 4.373684
-    30      G35        4.207123 0.08845950  bcdefgh 0.1764537 4.030670 4.383577
-    31      G44        4.219527 0.08881942  bcdefgh 0.1771717 4.042355 4.396698
-    32      G39        4.229960 0.09229020  bcdefgh 0.1840950 4.045865 4.414055
-    33      G14        4.260570 0.09102431  bcdefgh 0.1815699 4.079000 4.442140
-    34      G41        4.269442 0.09162276  bcdefgh 0.1827636 4.086679 4.452206
-    35      G01        4.305322 0.09320833  bcdefgh 0.1859264 4.119395 4.491248
-    36      G10        4.312222 0.09066481   cdefgh 0.1808528 4.131369 4.493074
-    37      G03        4.325568 0.08855915   cdefgh 0.1766525 4.148915 4.502220
-    38      G16        4.330133 0.09138695   cdefgh 0.1822932 4.147840 4.512426
-    39      G32        4.332061 0.08854092   cdefgh 0.1766161 4.155445 4.508677
-    40      G22        4.342707 0.08908285   cdefgh 0.1776971 4.165009 4.520404
-    41      G20        4.360702 0.08887383   cdefgh 0.1772802 4.183422 4.537982
-    42      G02        4.362705 0.08846248   cdefgh 0.1764597 4.186246 4.539165
-    43      G40        4.376149 0.09166535   cdefgh 0.1828486 4.193300 4.558997
-    44      G11        4.384777 0.09056893   cdefgh 0.1806615 4.204116 4.565439
-    45      G42        4.413716 0.08844466    defgh 0.1764241 4.237292 4.590140
-    46      G09        4.421453 0.08913868     efgh 0.1778085 4.243644 4.599261
-    47      G50        4.431548 0.09115838     efgh 0.1818373 4.249711 4.613385
-    48      G17        4.433469 0.08873738      fgh 0.1770080 4.256461 4.610477
-    49      G12        4.485498 0.09056243       gh 0.1806485 4.304850 4.666147
-    50      G04        4.518075 0.08876178        h 0.1770567 4.341018 4.695132
+    Code
+      print(pred14e.out)
+    Output
+      Multiple Comparisons of Means: Tukey's HSD Test
+      Significance level: 0.05 
+      HSD value: varies by comparison (see $hsd)
+       
+      
+      Predicted values:
+         Genotype predicted.value std.error   groups   ci  low   up
+      1       G36            3.68      0.09        a 0.18 3.50 3.86
+      2       G28            3.79      0.09       ab 0.18 3.61 3.97
+      3       G30            3.90      0.09      abc 0.18 3.72 4.08
+      4       G46            3.91      0.09     abcd 0.18 3.73 4.08
+      5       G23            3.92      0.09    abcde 0.18 3.74 4.10
+      6       G29            3.96      0.09   abcdef 0.18 3.78 4.13
+      7       G07            3.96      0.09   abcdef 0.18 3.78 4.13
+      8       G21            3.98      0.09  abcdefg 0.18 3.80 4.16
+      9       G45            3.98      0.09  abcdefg 0.18 3.80 4.16
+      10      G33            4.02      0.09 abcdefgh 0.18 3.84 4.20
+      11      G49            4.03      0.09 abcdefgh 0.18 3.86 4.21
+      12      G06            4.04      0.09 abcdefgh 0.18 3.86 4.21
+      13      G38            4.06      0.09 abcdefgh 0.18 3.88 4.24
+      14      G27            4.06      0.09 abcdefgh 0.18 3.88 4.24
+      15      G43            4.06      0.09 abcdefgh 0.18 3.89 4.24
+      16      G19            4.07      0.09 abcdefgh 0.18 3.89 4.25
+      17      G15            4.12      0.09 abcdefgh 0.18 3.95 4.30
+      18      G31            4.13      0.09 abcdefgh 0.18 3.95 4.31
+      19      G24            4.13      0.09 abcdefgh 0.18 3.95 4.31
+      20      G48            4.15      0.09 abcdefgh 0.18 3.97 4.33
+      21      G34            4.15      0.09 abcdefgh 0.18 3.97 4.33
+      22      G05            4.15      0.09 abcdefgh 0.18 3.97 4.33
+      23      G18            4.16      0.09 abcdefgh 0.18 3.98 4.34
+      24      G37            4.16      0.09  bcdefgh 0.18 3.98 4.33
+      25      G47            4.18      0.09 abcdefgh 0.18 4.00 4.36
+      26      G08            4.18      0.09 abcdefgh 0.18 4.00 4.36
+      27      G25            4.19      0.09  bcdefgh 0.18 4.02 4.37
+      28      G26            4.19      0.09 abcdefgh 0.18 4.02 4.37
+      29      G13            4.20      0.09  bcdefgh 0.18 4.02 4.37
+      30      G35            4.21      0.09  bcdefgh 0.18 4.03 4.38
+      31      G44            4.22      0.09  bcdefgh 0.18 4.04 4.40
+      32      G39            4.23      0.09  bcdefgh 0.18 4.05 4.41
+      33      G14            4.26      0.09  bcdefgh 0.18 4.08 4.44
+      34      G41            4.27      0.09  bcdefgh 0.18 4.09 4.45
+      35      G01            4.31      0.09  bcdefgh 0.19 4.12 4.49
+      36      G10            4.31      0.09   cdefgh 0.18 4.13 4.49
+      37      G03            4.33      0.09   cdefgh 0.18 4.15 4.50
+      38      G16            4.33      0.09   cdefgh 0.18 4.15 4.51
+      39      G32            4.33      0.09   cdefgh 0.18 4.16 4.51
+      40      G22            4.34      0.09   cdefgh 0.18 4.17 4.52
+      41      G20            4.36      0.09   cdefgh 0.18 4.18 4.54
+      42      G02            4.36      0.09   cdefgh 0.18 4.19 4.54
+      43      G40            4.38      0.09   cdefgh 0.18 4.19 4.56
+      44      G11            4.38      0.09   cdefgh 0.18 4.20 4.57
+      45      G42            4.41      0.09    defgh 0.18 4.24 4.59
+      46      G09            4.42      0.09     efgh 0.18 4.24 4.60
+      47      G50            4.43      0.09     efgh 0.18 4.25 4.61
+      48      G17            4.43      0.09      fgh 0.18 4.26 4.61
+      49      G12            4.49      0.09       gh 0.18 4.30 4.67
+      50      G04            4.52      0.09        h 0.18 4.34 4.70
 
 # exercise 15 works
 
@@ -556,22 +708,48 @@
 
 ---
 
-      Control predicted.value std.error groups        ci      low       up
-    1      No        2.365095 0.1268532      a 0.2700716 2.095023 2.635166
-    2     Yes        3.058966 0.1718655      b 0.3659033 2.693062 3.424869
+    Code
+      print(pred15e.out1)
+    Output
+      Multiple Comparisons of Means: Tukey's HSD Test
+      Significance level: 0.05 
+      HSD value: 0.337832 
+      
+      Predicted values:
+        Control predicted.value std.error groups   ci  low   up
+      1      No            2.37      0.13      a 0.27 2.10 2.64
+      2     Yes            3.06      0.17      b 0.37 2.69 3.42
 
 ---
 
-      Rate predicted.value std.error groups        ci      low       up
-    1   12        1.994424 0.1677366      a 0.3575222 1.636902 2.351946
-    2    3        2.476227 0.1665537     ab 0.3550007 2.121226 2.831228
-    3    6        2.624632 0.1687348     bc 0.3596498 2.264983 2.984282
-    4    0        3.058966 0.1718655      c 0.3663227 2.692643 3.425289
+    Code
+      print(pred15e.out2)
+    Output
+      Multiple Comparisons of Means: Tukey's HSD Test
+      Significance level: 0.05 
+      HSD value: varies by comparison (see $hsd)
+       
+      
+      Predicted values:
+        Rate predicted.value std.error groups   ci  low   up
+      1   12            1.99      0.17      a 0.36 1.64 2.35
+      2    3            2.48      0.17     ab 0.36 2.12 2.83
+      3    6            2.62      0.17     bc 0.36 2.26 2.98
+      4    0            3.06      0.17      c 0.37 2.69 3.43
 
 ---
 
-      Season predicted.value std.error groups        ci      low       up
-    1      F        2.138819 0.1476345      a 0.3122022 1.826617 2.451021
-    2      S        2.591370 0.1520985      b 0.3216421 2.269728 2.913012
-    3      O        3.058966 0.1718655      c 0.3634434 2.695522 3.422409
+    Code
+      print(pred15e.out3)
+    Output
+      Multiple Comparisons of Means: Tukey's HSD Test
+      Significance level: 0.05 
+      HSD value: varies by comparison (see $hsd)
+       
+      
+      Predicted values:
+        Season predicted.value std.error groups   ci  low   up
+      1      F            2.14      0.15      a 0.31 1.83 2.45
+      2      S            2.59      0.15      b 0.32 2.27 2.91
+      3      O            3.06      0.17      c 0.36 2.70 3.42
 
