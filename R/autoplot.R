@@ -34,7 +34,7 @@ ggplot2::autoplot
 
 
 #' @rdname autoplot
-#' @importFrom ggplot2 autoplot ggplot aes geom_errorbar geom_text geom_point geom_line geom_col theme_bw labs theme element_text facet_wrap scale_y_continuous sec_axis
+#' @importFrom ggplot2 autoplot ggplot aes geom_errorbar geom_text geom_point geom_line geom_col theme_bw labs theme element_text facet_wrap scale_x_discrete scale_y_continuous sec_axis
 #' @importFrom rlang ensym check_dots_used
 #' @importFrom stats as.formula
 #' @export
@@ -208,19 +208,25 @@ autoplot.mct <- function(
 		}
 	} else if (include_errorbar && errorbar_type == "hsd") {
 		# A single reference bar of total length `hsd` (the minimum significant
-		# difference), drawn at the left-most x position and centred on the
-		# mid-point of the model-scale y range so it reads as a free-floating
-		# reference rather than belonging to any one mean.
+		# difference). It is given its own dedicated category to the left of the
+		# treatments - rather than sharing the first mean's position - and centred
+		# on the mid-point of the model-scale y range, so it reads as a
+		# free-floating reference rather than belonging to any one mean.
 		x_levels <- if (is.factor(pred_df[[x_var]])) {
 			levels(pred_df[[x_var]])
 		} else {
 			sort(unique(as.character(pred_df[[x_var]])))
 		}
+		# Keep only levels actually present so empty categories don't appear.
+		x_levels <- x_levels[x_levels %in% as.character(pred_df[[x_var]])]
+
+		hsd_label <- "HSD"
 		y_mid <- mean(range(pred_df[["predicted.value"]], na.rm = TRUE))
 		hsd_df <- data.frame(
-			x = factor(x_levels[1], levels = x_levels),
+			x = hsd_label,
 			ymin = y_mid - 0.5 * hsd,
-			ymax = y_mid + 0.5 * hsd
+			ymax = y_mid + 0.5 * hsd,
+			stringsAsFactors = FALSE
 		)
 		names(hsd_df)[1] <- x_var
 		plot <- plot +
@@ -233,7 +239,9 @@ autoplot.mct <- function(
 				),
 				width = 0.2,
 				inherit.aes = FALSE
-			)
+			) +
+			# Reserve the left-most slot for the HSD bar; treatments follow it.
+			ggplot2::scale_x_discrete(limits = c(hsd_label, x_levels))
 	}
 
 	if (include_lettering && "groups" %in% colnames(pred_df)) {
