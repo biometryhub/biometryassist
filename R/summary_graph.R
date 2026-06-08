@@ -32,56 +32,71 @@
 #' summary_graph(npk, "yield", c("N", "P", "K"), "lb/plot")
 #'
 summary_graph <- function(data, response, exp_var, resp_units = "") {
+	# TODO: NSE
 
-    # TODO: NSE
+	response <- rlang::ensym(response)
 
-    response <- rlang::ensym(response)
+	if (!is.data.frame(data)) {
+		stop(data, " is not a data frame.", call. = FALSE)
+	}
+	if (rlang::as_string(response) %!in% colnames(data)) {
+		stop(
+			rlang::as_string(response),
+			" does not appear to be a column of data. Please check input.",
+			call. = FALSE
+		)
+	}
+	if (!is.numeric(data[[rlang::as_string(response)]])) {
+		stop(rlang::as_string(response), " is not a numeric variable.")
+	}
+	if (!is.character(resp_units)) {
+		stop("resp_units must be provided as a string with quotes.")
+	}
 
-    if(!is.data.frame(data)) {
-        stop(data, " is not a data frame.", call. = FALSE)
-    }
-    if(rlang::as_string(response) %!in% colnames(data)) {
-        stop(rlang::as_string(response), " does not appear to be a column of data. Please check input.", call. = FALSE)
-    }
-    if(!is.numeric(data[[rlang::as_string(response)]])) {
-        stop(rlang::as_string(response), " is not a numeric variable.")
-    }
-    if(!is.character(resp_units)) {
-        stop("resp_units must be provided as a string with quotes.")
-    }
+	if (length(exp_var) == 1) {
+		exp_var <- rlang::ensyms(exp_var)
+		gg <- ggplot2::ggplot(
+			data = data,
+			ggplot2::aes(x = !!exp_var[[1]], y = {{ response }})
+		) +
+			ggplot2::geom_boxplot()
+	} else if (length(exp_var) == 2) {
+		gg <- ggplot2::ggplot(
+			data = data,
+			ggplot2::aes(
+				x = .data[[exp_var[1]]],
+				y = {{ response }},
+				colour = .data[[exp_var[2]]],
+				group = .data[[exp_var[2]]]
+			)
+		) +
+			ggplot2::stat_summary(fun = mean, geom = "point") +
+			ggplot2::stat_summary(fun = mean, geom = "line")
+	} else if (length(exp_var) == 3) {
+		gg <- ggplot2::ggplot(
+			data = data,
+			ggplot2::aes(
+				x = .data[[exp_var[1]]],
+				y = {{ response }},
+				colour = .data[[exp_var[2]]],
+				group = .data[[exp_var[2]]]
+			)
+		) +
 
+			ggplot2::stat_summary(fun = mean, geom = "point") +
+			ggplot2::stat_summary(fun = mean, geom = "line") +
+			ggplot2::facet_wrap(~ .data[[exp_var[3]]])
+	} else {
+		stop("Additional explanatory variables are not currently supported.")
+	}
 
-    if(length(exp_var)==1) {
-        exp_var <- rlang::ensyms(exp_var)
-        gg <- ggplot2::ggplot(data = data, ggplot2::aes(x = !!exp_var[[1]], y = {{ response }})) +
-            ggplot2::geom_boxplot()
-    }
-    else if(length(exp_var) == 2) {
-        gg <- ggplot2::ggplot(data = data, ggplot2::aes(x = .data[[exp_var[1]]], y = {{ response }},
-                                                        colour = .data[[exp_var[2]]], group = .data[[exp_var[2]]])) +
-            ggplot2::stat_summary(fun = mean, geom = "point") +
-            ggplot2::stat_summary(fun = mean, geom = "line")
-    }
-    else if(length(exp_var)==3) {
-        gg <- ggplot2::ggplot(data = data, ggplot2::aes(x = .data[[exp_var[1]]], y = {{ response }},
-                                                        colour = .data[[exp_var[2]]], group = .data[[exp_var[2]]])) +
+	if (resp_units != "") {
+		gg <- gg +
+			ggplot2::labs(
+				y = paste({{ response }}, " (", resp_units, ")", sep = "")
+			)
+	}
+	gg <- gg + ggplot2::geom_point(alpha = 0.3) + ggplot2::theme_bw()
 
-            ggplot2::stat_summary(fun = mean, geom = "point") +
-            ggplot2::stat_summary(fun = mean, geom = "line") +
-            ggplot2::facet_wrap(~ .data[[exp_var[3]]])
-    }
-    else {
-        stop("Additional explanatory variables are not currently supported.")
-    }
-
-    if(resp_units!="") {
-        gg <- gg + ggplot2::labs(y = paste({{ response }}, " (", resp_units, ")", sep = ""))
-
-    }
-    gg <- gg + ggplot2::geom_point(alpha = 0.3) +
-        ggplot2::theme_bw()
-
-    return(gg)
+	return(gg)
 }
-
-

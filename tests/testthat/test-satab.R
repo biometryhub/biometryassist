@@ -21,14 +21,28 @@ test_that("satab examples print expected sections", {
 })
 
 test_that("3-way factorial designs include 2-way and 3-way interactions", {
-	fac3 <- agricolae::design.ab(trt = c(2, 3, 4), r = 2, design = "crd", seed = 42)
+	fac3 <- agricolae::design.ab(
+		trt = c(2, 3, 4),
+		r = 2,
+		design = "crd",
+		seed = 42
+	)
 	res <- biometryassist:::anova_factorial_crd(fac3$book)
 
 	# Factor names are whatever agricolae outputs (typically A, B, C)
 	structural_cols <- c(
-		"plots", "plot", "r", "rep", "reps",
-		"block", "row", "col",
-		"wholeplots", "wplots", "subplots", "splots",
+		"plots",
+		"plot",
+		"r",
+		"rep",
+		"reps",
+		"block",
+		"row",
+		"col",
+		"wholeplots",
+		"wplots",
+		"subplots",
+		"splots",
 		"treatments"
 	)
 	trt_names <- names(fac3$book)[!names(fac3$book) %in% structural_cols]

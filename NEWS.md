@@ -1,4 +1,12 @@
-# biometryassist 1.4.1
+# biometryassist 1.5.0
+
+## Major changes
+
+- `multiple_comparisons()` gains two new arguments for more flexible comparisons:
+  - `adjust` selects the method used to adjust p-values for multiple comparisons. As well as the default Tukey's HSD (`adjust = "tukey"`), any method supported by `stats::p.adjust()` can now be used (e.g. `"bonferroni"`, `"holm"`, `"BH"`/`"fdr"`, `"BY"`, `"none"`). For non-Tukey methods, raw (unadjusted) p-values are calculated first to avoid double-adjustment before the chosen adjustment is applied.
+  - `by` runs comparisons independently within each level (or combination of levels) of one or more grouping variables, with no pooling or p-value adjustment across groups. `autoplot()` facets by the `by` variable(s) by default. `by` must leave at least one `classify` factor to compare, so a single-factor `classify` cannot be split with `by`.
+  The output also gains a `comparison_method` element recording the method used; `$pairwise_pvalues` reports a single p-value matrix of the adjusted p-values for the chosen method (the Tukey p-values when `adjust = "tukey"`), consistent with the letter groupings, and `$hsd` is `NULL` for non-Tukey methods.
+- Added support for `aovlist` (models fitted with `aov()` using an `Error()` strata term) and `nlme::lme()` models in `multiple_comparisons()` (#107).
 
 ## Minor changes
 

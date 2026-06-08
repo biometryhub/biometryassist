@@ -15,8 +15,10 @@
 #'
 #' @keywords internal
 n_unique <- function(x, na.rm = FALSE) {
-  if (na.rm) x <- x[!is.na(x)]
-  sum(!duplicated(x))
+	if (na.rm) {
+		x <- x[!is.na(x)]
+	}
+	sum(!duplicated(x))
 }
 
 # quiet
@@ -29,9 +31,9 @@ n_unique <- function(x, na.rm = FALSE) {
 #' @keywords internal
 #'
 quiet <- function(x) {
-    sink(tempfile())
-    on.exit(sink())
-    invisible(force(x))
+	sink(tempfile())
+	on.exit(sink())
+	invisible(force(x))
 }
 
 
@@ -42,47 +44,64 @@ quiet <- function(x) {
 
 #' @importFrom utils available.packages packageVersion compareVersion
 #' @importFrom rlang is_interactive is_installed
-.onAttach <- function(library, pkg)
-{
-    local_version <- utils::packageVersion('biometryassist')
+.onAttach <- function(library, pkg) {
+	local_version <- utils::packageVersion('biometryassist')
 
-    if(rlang::is_interactive() && !isFALSE(rlang::peek_option("biometryassist.check"))) {
-        output <- paste(paste0("    ", paste0(rep("~", times = 69), collapse = "")),
-                        paste("    |  ", pkg, " version ", local_version, "                                     |",sep=""),
-                        "    |  Authors: Sharon Nielsen, Sam Rogers, Annie Conway                |",
-                        "    |  Developed at the University of Adelaide with funding provided    |",
-                        "    |  by the Australian Grains Research and Development Corporation.   |",
-                        "    |  Package website: https://biometryhub.github.io/biometryassist    |",
-                        "    |                                                                   |",
-                        "    |  If you have used this package in your work, please cite it.      |",
-                        "    |  Type 'citation('biometryassist')' for the citation details.      |",
-                        paste0("    ", paste0(rep("~", times = 69), collapse = ""), "\n"), sep = "\n")
+	if (
+		rlang::is_interactive() &&
+			!isFALSE(rlang::peek_option("biometryassist.check"))
+	) {
+		output <- paste(
+			paste0("    ", paste0(rep("~", times = 69), collapse = "")),
+			paste(
+				"    |  ",
+				pkg,
+				" version ",
+				local_version,
+				"                                     |",
+				sep = ""
+			),
+			"    |  Authors: Sharon Nielsen, Sam Rogers, Annie Conway                |",
+			"    |  Developed at the University of Adelaide with funding provided    |",
+			"    |  by the Australian Grains Research and Development Corporation.   |",
+			"    |  Package website: https://biometryhub.github.io/biometryassist    |",
+			"    |                                                                   |",
+			"    |  If you have used this package in your work, please cite it.      |",
+			"    |  Type 'citation('biometryassist')' for the citation details.      |",
+			paste0("    ", paste0(rep("~", times = 69), collapse = ""), "\n"),
+			sep = "\n"
+		)
 
-        if(rlang::is_installed("crayon")) {
-            packageStartupMessage(crayon::green(output), appendLF=TRUE)
-        }
-        else {
-            packageStartupMessage(output, appendLF=TRUE)
-        }
+		if (rlang::is_installed("crayon")) {
+			packageStartupMessage(crayon::green(output), appendLF = TRUE)
+		} else {
+			packageStartupMessage(output, appendLF = TRUE)
+		}
 
-        # check which version is more recent
-        cran_version <- tryCatch(
-            {
-                packages <- utils::available.packages()
-                ver <- packages["biometryassist","Version"]
-            },
-            error=function(cond) {
-                NA
-            }
-        )
+		# check which version is more recent
+		cran_version <- tryCatch(
+			{
+				packages <- utils::available.packages()
+				ver <- packages["biometryassist", "Version"]
+			},
+			error = function(cond) {
+				NA
+			}
+		)
 
-        if(compare_version(cran_version, as.character(local_version)) == 1) { # current version on CRAN newer than installed
-            warning("    biometryassist version ", cran_version, " is now available.\n",
-                    "    Please update biometryassist by running\n",
-                    "    install.packages('biometryassist')", call. = FALSE)
-        }
-    }
-    invisible()
+		if (compare_version(cran_version, as.character(local_version)) == 1) {
+			# current version on CRAN newer than installed
+			warning(
+				"    biometryassist version ",
+				cran_version,
+				" is now available.\n",
+				"    Please update biometryassist by running\n",
+				"    install.packages('biometryassist')",
+				call. = FALSE
+			)
+		}
+	}
+	invisible()
 }
 
 #' Function to compare package version for mocking
@@ -92,7 +111,7 @@ quiet <- function(x) {
 #' @returns Numeric. `0` if the numbers are equal, `-1` if `b` is later and `1` if `a` is later
 #' @keywords internal
 compare_version <- function(a, b) {
-    return(utils::compareVersion(as.character(a), as.character(b)))
+	return(utils::compareVersion(as.character(a), as.character(b)))
 }
 
 #' Handle deprecated parameters
@@ -107,20 +126,37 @@ compare_version <- function(a, b) {
 #' @return Nothing, called for side effects (warnings)
 #'
 #' @keywords internal
-handle_deprecated_param <- function(old_param, new_param = NULL, custom_msg = NULL, call_env = parent.frame()) {
-    # Check if the old parameter was provided
-    if(!eval(substitute(missing(PARAM), list(PARAM = as.name(old_param))), envir = call_env)) {
-        # Different message depending on whether parameter is replaced or removed
-        msg <- sprintf("Argument `%s` has been deprecated and will be removed in a future version.", old_param)
-        if(!is.null(new_param)) {
-            warning(msg, sprintf(" Please use `%s` instead.", new_param), call. = FALSE)
-        } else {
-            if(!is.null(custom_msg)) {
-                msg <- paste(msg, custom_msg)
-            }
-            warning(msg, call. = FALSE)
-        }
-    }
+handle_deprecated_param <- function(
+	old_param,
+	new_param = NULL,
+	custom_msg = NULL,
+	call_env = parent.frame()
+) {
+	# Check if the old parameter was provided
+	if (
+		!eval(
+			substitute(missing(PARAM), list(PARAM = as.name(old_param))),
+			envir = call_env
+		)
+	) {
+		# Different message depending on whether parameter is replaced or removed
+		msg <- sprintf(
+			"Argument `%s` has been deprecated and will be removed in a future version.",
+			old_param
+		)
+		if (!is.null(new_param)) {
+			warning(
+				msg,
+				sprintf(" Please use `%s` instead.", new_param),
+				call. = FALSE
+			)
+		} else {
+			if (!is.null(custom_msg)) {
+				msg <- paste(msg, custom_msg)
+			}
+			warning(msg, call. = FALSE)
+		}
+	}
 }
 
 
@@ -136,66 +172,113 @@ handle_deprecated_param <- function(old_param, new_param = NULL, custom_msg = NU
 #'
 #' @keywords internal
 setup_colour_palette <- function(palette, n) {
-    # Handle custom colour palettes (vector of colours)
-    if(length(palette) > 1) {
-        if(length(palette) != n) {
-            stop("palette needs to be a single string to choose a predefined palette, or ",
-                 n, " custom colours.")
-        }
-        return(palette)
-    }
+	# Handle custom colour palettes (vector of colours)
+	if (length(palette) > 1) {
+		if (length(palette) != n) {
+			stop(
+				"palette needs to be a single string to choose a predefined palette, or ",
+				n,
+				" custom colours."
+			)
+		}
+		return(palette)
+	}
 
-    # Handle single string palette names
-    palette <- tolower(trimws(palette))
+	# Handle single string palette names
+	palette <- tolower(trimws(palette))
 
-    # Default Spectral palette
-    if(palette == "default") {
-        return(grDevices::colorRampPalette(scales::brewer_pal(palette = "Spectral")(11))(n))
-    }
+	# Default Spectral palette
+	if (palette == "default") {
+		return(grDevices::colorRampPalette(scales::brewer_pal(
+			palette = "Spectral"
+		)(11))(n))
+	}
 
-    if(palette == "rainbow") {
-        return(grDevices::rainbow(n))
-    }
+	if (palette == "rainbow") {
+		return(grDevices::rainbow(n))
+	}
 
-    # colourBrewer palettes
-    brewer_palettes <- c("brbg", "piyg", "prgn", "puor", "rdbu", "rdgy",
-                         "rdylbu", "rdylgn", "spectral", "set3", "paired")
-    if(palette %in% brewer_palettes) {
-        # Convert to proper case for scales::brewer_pal
-        palette_proper <- switch(palette,
-                                 "brbg" = "BrBG",
-                                 "piyg" = "PiYG",
-                                 "prgn" = "PRGn",
-                                 "puor" = "PuOr",
-                                 "rdbu" = "RdBu",
-                                 "rdgy" = "RdGy",
-                                 "rdylbu" = "RdYlBU",
-                                 "rdylgn" = "RdYlGn",
-                                 "spectral" = "Spectral",
-                                 "set3" = "Set3",
-                                 "paired" = "Paired"
-        )
-        return(grDevices::colorRampPalette(scales::brewer_pal(palette = palette_proper)(11))(n))
-    }
+	# colourBrewer palettes
+	brewer_palettes <- c(
+		"brbg",
+		"piyg",
+		"prgn",
+		"puor",
+		"rdbu",
+		"rdgy",
+		"rdylbu",
+		"rdylgn",
+		"spectral",
+		"set3",
+		"paired"
+	)
+	if (palette %in% brewer_palettes) {
+		# Convert to proper case for scales::brewer_pal
+		palette_proper <- switch(
+			palette,
+			"brbg" = "BrBG",
+			"piyg" = "PiYG",
+			"prgn" = "PRGn",
+			"puor" = "PuOr",
+			"rdbu" = "RdBu",
+			"rdgy" = "RdGy",
+			"rdylbu" = "RdYlBU",
+			"rdylgn" = "RdYlGn",
+			"spectral" = "Spectral",
+			"set3" = "Set3",
+			"paired" = "Paired"
+		)
+		return(grDevices::colorRampPalette(scales::brewer_pal(
+			palette = palette_proper
+		)(11))(n))
+	}
 
-    # colour blind friendly palettes (viridis family)
-    viridis_patterns <- c("colou?r([[:punct:]]|[[:space:]]?)blind", "cb", "viridis")
-    if(any(sapply(viridis_patterns, function(pattern) grepl(pattern, palette, ignore.case = TRUE)))) {
-        return(scales::viridis_pal(option = "viridis")(n))
-    }
+	# colour blind friendly palettes (viridis family)
+	viridis_patterns <- c(
+		"colou?r([[:punct:]]|[[:space:]]?)blind",
+		"cb",
+		"viridis"
+	)
+	if (
+		any(sapply(viridis_patterns, function(pattern) {
+			grepl(pattern, palette, ignore.case = TRUE)
+		}))
+	) {
+		return(scales::viridis_pal(option = "viridis")(n))
+	}
 
-    # Other viridis options
-    viridis_options <- c("magma", "inferno", "cividis", "plasma", "rocket", "mako", "turbo")
-    if(palette %in% viridis_options) {
-        return(scales::viridis_pal(option = palette)(n))
-    }
+	# Other viridis options
+	viridis_options <- c(
+		"magma",
+		"inferno",
+		"cividis",
+		"plasma",
+		"rocket",
+		"mako",
+		"turbo"
+	)
+	if (palette %in% viridis_options) {
+		return(scales::viridis_pal(option = palette)(n))
+	}
 
-    # If we get here, the palette name is invalid
-    valid_options <- c("default", brewer_palettes, "colour blind", "colour blind",
-                       "cb", viridis_options, "rainbow")
-    stop("Invalid value for palette. Valid options are: ",
-         paste(valid_options, collapse = ", "),
-         ", or a vector of ", n, " custom colours.", call. = FALSE)
+	# If we get here, the palette name is invalid
+	valid_options <- c(
+		"default",
+		brewer_palettes,
+		"colour blind",
+		"colour blind",
+		"cb",
+		viridis_options,
+		"rainbow"
+	)
+	stop(
+		"Invalid value for palette. Valid options are: ",
+		paste(valid_options, collapse = ", "),
+		", or a vector of ",
+		n,
+		" custom colours.",
+		call. = FALSE
+	)
 }
 
 
@@ -214,10 +297,13 @@ setup_colour_palette <- function(palette, n) {
 #'
 #' @keywords internal
 is_light_colour <- function(colour) {
-    # Convert vector of colours to RGB matrix (columns = colours)
-    rgb_vals <- grDevices::col2rgb(colour)
-    # Calculate luminance for each colour
-    luminance <- (0.299 * rgb_vals[1, ] + 0.587 * rgb_vals[2, ] + 0.114 * rgb_vals[3, ]) / 255
-    return(luminance > 0.5)
+	# Convert vector of colours to RGB matrix (columns = colours)
+	rgb_vals <- grDevices::col2rgb(colour)
+	# Calculate luminance for each colour
+	luminance <- (0.299 *
+		rgb_vals[1, ] +
+		0.587 * rgb_vals[2, ] +
+		0.114 * rgb_vals[3, ]) /
+		255
+	return(luminance > 0.5)
 }
-

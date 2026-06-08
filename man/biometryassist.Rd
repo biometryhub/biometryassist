@@ -21,6 +21,7 @@ Useful links:
 
 Authors:
 \itemize{
+  \item Sam Rogers \email{biometrytraining@adelaide.edu.au}
   \item Sharon Nielsen \email{biometrytraining@adelaide.edu.au}
   \item Annie Conway \email{biometrytraining@adelaide.edu.au}
 }

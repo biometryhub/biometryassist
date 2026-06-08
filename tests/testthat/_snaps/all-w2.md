@@ -106,7 +106,7 @@
     1  S4         1707.94     64.09      a 144.99 1562.95 1852.93
     2  S2         1802.70     64.09     ab 144.99 1657.71 1947.68
     3  S1         2053.73     64.09     bc 144.99 1908.75 2198.72
-    4  S3         2200.09     64.09      c 144.99 2055.10 2345.07
+    4  S3         2200.08     64.09      c 144.99 2055.10 2345.07
 
 # example 5 works
 
@@ -115,12 +115,6 @@
     Genotype           69   414    7.2010 0.000000e+00
     Fungicide           1     3   40.2700 7.914935e-03
     Genotype:Fungicide 69   414    0.9331 6.290102e-01
-
----
-
-      Fungicide predicted.value std.error groups   ci  low   up
-    1        F2            4.97       0.1      a 0.33 4.63 5.30
-    2        F1            5.51       0.1      b 0.33 5.18 5.85
 
 # example 6 works
 
@@ -242,8 +236,9 @@
 ---
 
     Code
-      data.frame(lapply(pred2e.out$predictions, function(y) if (is.numeric(y)) round(
-        y, 1) else y))
+      data.frame(lapply(pred2e.out$predictions, function(y) {
+        if (is.numeric(y)) round(y, 1) else y
+      }))
     Output
         Treatment predicted.value std.error df groups  ci low  up
       1        KC             2.1       0.2 18      a 0.4 1.7 2.5

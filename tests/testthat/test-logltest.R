@@ -1,82 +1,121 @@
 load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
 
 test_that("function works", {
-    skip_if_not(rlang::is_installed("asreml"))
-    quiet(library(asreml))
-    oats.logl <- logl_test(model.obj = model.asr, rand.terms = c("Blocks", "Blocks:Wplots"),
-                           resid.terms = c("ar1(Row)", "ar1(Column)"), decimals = 5, quiet = TRUE)
-    oats.logl2 <- logl_test(model.obj = model.asr, rand.terms = c("Blocks", "Blocks:Wplots"),
-                            resid.terms = c("ar1(Row)", "ar1(Column)"), decimals = 5, numeric = TRUE, quiet = TRUE)
-    oats.logl3 <- logl_test(model.obj = model.asr, rand.terms = c("Blocks", "Blocks:Wplots"),
-                            resid.terms = c("ar1(Row)", "ar1(Column)"), decimals = 1, quiet = TRUE)
+	skip_if_not(rlang::is_installed("asreml"))
+	quiet(library(asreml))
+	oats.logl <- logl_test(
+		model.obj = model.asr,
+		rand.terms = c("Blocks", "Blocks:Wplots"),
+		resid.terms = c("ar1(Row)", "ar1(Column)"),
+		decimals = 5,
+		quiet = TRUE
+	)
+	oats.logl2 <- logl_test(
+		model.obj = model.asr,
+		rand.terms = c("Blocks", "Blocks:Wplots"),
+		resid.terms = c("ar1(Row)", "ar1(Column)"),
+		decimals = 5,
+		numeric = TRUE,
+		quiet = TRUE
+	)
+	oats.logl3 <- logl_test(
+		model.obj = model.asr,
+		rand.terms = c("Blocks", "Blocks:Wplots"),
+		resid.terms = c("ar1(Row)", "ar1(Column)"),
+		decimals = 1,
+		quiet = TRUE
+	)
 
-    expect_equal(oats.logl$Term, c("Blocks", "Blocks:Wplots", "ar1(Row)", "ar1(Column)"))
-    expect_equal(oats.logl$LogLRT.pvalue, c("0.11116", "0.13142", "0.00559", "0.82883"))
-    expect_equal(oats.logl2$LogLRT.pvalue, c(0.11116, 0.13142, 0.00559, 0.82883))
-    expect_true(is.numeric(oats.logl2$LogLRT.pvalue))
-    expect_equal(oats.logl3$LogLRT.pvalue, c('0.1', '0.1', '<0.1', '0.8'))
+	expect_equal(
+		oats.logl$Term,
+		c("Blocks", "Blocks:Wplots", "ar1(Row)", "ar1(Column)")
+	)
+	expect_equal(
+		oats.logl$LogLRT.pvalue,
+		c("0.11116", "0.13142", "0.00559", "0.82883")
+	)
+	expect_equal(
+		oats.logl2$LogLRT.pvalue,
+		c(0.11116, 0.13142, 0.00559, 0.82883)
+	)
+	expect_true(is.numeric(oats.logl2$LogLRT.pvalue))
+	expect_equal(oats.logl3$LogLRT.pvalue, c('0.1', '0.1', '<0.1', '0.8'))
 })
 
 test_that("logltest gives an error on different model type", {
-    dat.aov <- aov(Petal.Length ~ Petal.Width, data = iris)
-    expect_error(logl_test(dat.aov), "Only asreml models are supported\\.")
+	dat.aov <- aov(Petal.Length ~ Petal.Width, data = iris)
+	expect_error(logl_test(dat.aov), "Only asreml models are supported\\.")
 })
 
 test_that("logltest gives an error on different model type", {
-    skip_if_not(rlang::is_installed("asreml"))
-    quiet(library(asreml))
-    expect_error(logl_test(model.asr),
-                 "At least one of rand\\.terms or resid\\.terms must be provided\\.")
+	skip_if_not(rlang::is_installed("asreml"))
+	quiet(library(asreml))
+	expect_error(
+		logl_test(model.asr),
+		"At least one of rand\\.terms or resid\\.terms must be provided\\."
+	)
 })
 
 
 test_that("logl_test works with random terms only", {
-    skip_if_not(rlang::is_installed("asreml"))
-    quiet(library(asreml))
+	skip_if_not(rlang::is_installed("asreml"))
+	quiet(library(asreml))
 
-    expect_silent({
-        result <- logl_test(model.obj = model.asr, rand.terms = c("Blocks", "Blocks:Wplots"))
-    })
+	expect_silent({
+		result <- logl_test(
+			model.obj = model.asr,
+			rand.terms = c("Blocks", "Blocks:Wplots")
+		)
+	})
 
-    expect_s3_class(result, "data.frame")
-    expect_named(result, c("Term", "LogLRT.pvalue"))
-    expect_true(all(c("Blocks", "Blocks:Wplots") %in% result$Term))
+	expect_s3_class(result, "data.frame")
+	expect_named(result, c("Term", "LogLRT.pvalue"))
+	expect_true(all(c("Blocks", "Blocks:Wplots") %in% result$Term))
 })
 
 test_that("logl_test works with residual terms only", {
-    skip_if_not(rlang::is_installed("asreml"))
-    quiet(library(asreml))
+	skip_if_not(rlang::is_installed("asreml"))
+	quiet(library(asreml))
 
-    expect_silent({
-        result <- logl_test(model.obj = model.asr, resid.terms = c("ar1(Row)", "ar1(Column)"))
-    })
+	expect_silent({
+		result <- logl_test(
+			model.obj = model.asr,
+			resid.terms = c("ar1(Row)", "ar1(Column)")
+		)
+	})
 
-    expect_s3_class(result, "data.frame")
-    expect_true(all(c("ar1(Row)", "ar1(Column)") %in% result$Term))
+	expect_s3_class(result, "data.frame")
+	expect_true(all(c("ar1(Row)", "ar1(Column)") %in% result$Term))
 })
 
 test_that("logl_test works with both random and residual terms", {
-    skip_if_not(rlang::is_installed("asreml"))
-    quiet(library(asreml))
+	skip_if_not(rlang::is_installed("asreml"))
+	quiet(library(asreml))
 
-    expect_silent({
-        result <- logl_test(
-            model.obj = model.asr,
-            rand.terms = c("Blocks", "Blocks:Wplots"),
-            resid.terms = c("ar1(Row)", "ar1(Column)")
-        )
-    })
+	expect_silent({
+		result <- logl_test(
+			model.obj = model.asr,
+			rand.terms = c("Blocks", "Blocks:Wplots"),
+			resid.terms = c("ar1(Row)", "ar1(Column)")
+		)
+	})
 
-    expect_s3_class(result, "data.frame")
-    expect_true(all(c("Blocks", "Blocks:Wplots", "ar1(Row)", "ar1(Column)") %in% result$Term))
+	expect_s3_class(result, "data.frame")
+	expect_true(all(
+		c("Blocks", "Blocks:Wplots", "ar1(Row)", "ar1(Column)") %in% result$Term
+	))
 })
 
 test_that("logl_test returns numeric p-values when numeric = TRUE", {
-    skip_if_not(rlang::is_installed("asreml"))
-    quiet(library(asreml))
+	skip_if_not(rlang::is_installed("asreml"))
+	quiet(library(asreml))
 
-    result <- logl_test(model.obj = model.asr, rand.terms = c("Blocks"), numeric = TRUE)
-    expect_type(result$LogLRT.pvalue, "double")
+	result <- logl_test(
+		model.obj = model.asr,
+		rand.terms = c("Blocks"),
+		numeric = TRUE
+	)
+	expect_type(result$LogLRT.pvalue, "double")
 })
 
 # test_that("logl_test handles small p-values with numeric = FALSE", {
@@ -89,225 +128,240 @@ test_that("logl_test returns numeric p-values when numeric = TRUE", {
 # })
 
 test_that("logl_test throws error for non-asreml model", {
-    skip_if_not(rlang::is_installed("asreml"))
-    expect_error(logl_test(model.obj = lm(Sepal.Length ~ Species, data = iris), rand.terms = "Species"),
-                 "Only asreml models are supported")
+	skip_if_not(rlang::is_installed("asreml"))
+	expect_error(
+		logl_test(
+			model.obj = lm(Sepal.Length ~ Species, data = iris),
+			rand.terms = "Species"
+		),
+		"Only asreml models are supported"
+	)
 })
 
 test_that("logl_test throws error when both term lists are NULL", {
-    skip_if_not(rlang::is_installed("asreml"))
-    quiet(library(asreml))
+	skip_if_not(rlang::is_installed("asreml"))
+	quiet(library(asreml))
 
-    expect_error(logl_test(model.obj = model.asr),
-                 "At least one of rand\\.terms or resid\\.terms must be provided\\.")
+	expect_error(
+		logl_test(model.obj = model.asr),
+		"At least one of rand\\.terms or resid\\.terms must be provided\\."
+	)
 })
 
 library(testthat)
 library(mockery)
 
 # Mock ASReml model object creator
-create_mock_asreml_model <- function(converged = TRUE, loglik = -100,
-                                     vparameters = c(1.5, 0.8),
-                                     fixed_coefs = c(10, 5, 2),
-                                     varcomp_boundary = character(0),
-                                     random_formula = ~ Block + Block:Plot,
-                                     residual_formula = ~ ar1(Row):ar1(Col)) {
+create_mock_asreml_model <- function(
+	converged = TRUE,
+	loglik = -100,
+	vparameters = c(1.5, 0.8),
+	fixed_coefs = c(10, 5, 2),
+	varcomp_boundary = character(0),
+	random_formula = ~ Block + Block:Plot,
+	residual_formula = ~ ar1(Row):ar1(Col)
+) {
+	# Create variance components summary
+	varcomp_names <- c("Block", "Block:Plot", "ar1(Row)", "ar1(Col)", "units")
+	varcomp_df <- data.frame(
+		component = c(1.2, 0.8, 0.6, 0.4, 1.0),
+		std.error = c(0.2, 0.1, 0.1, 0.1, 0.1),
+		z.ratio = c(6, 8, 6, 4, 10),
+		bound = c(rep("P", 5)),
+		stringsAsFactors = FALSE
+	)
+	rownames(varcomp_df) <- varcomp_names
 
-    # Create variance components summary
-    varcomp_names <- c("Block", "Block:Plot", "ar1(Row)", "ar1(Col)", "units")
-    varcomp_df <- data.frame(
-        component = c(1.2, 0.8, 0.6, 0.4, 1.0),
-        std.error = c(0.2, 0.1, 0.1, 0.1, 0.1),
-        z.ratio = c(6, 8, 6, 4, 10),
-        bound = c(rep("P", 5)),
-        stringsAsFactors = FALSE
-    )
-    rownames(varcomp_df) <- varcomp_names
+	# Set boundary terms
+	if (length(varcomp_boundary) > 0) {
+		varcomp_df[varcomp_boundary, "bound"] <- "B"
+	}
 
-    # Set boundary terms
-    if (length(varcomp_boundary) > 0) {
-        varcomp_df[varcomp_boundary, "bound"] <- "B"
-    }
+	model <- list(
+		converge = converged,
+		loglik = loglik,
+		vparameters = vparameters,
+		coefficients = list(fixed = fixed_coefs),
+		formulae = list(
+			random = random_formula,
+			residual = residual_formula
+		)
+	)
 
-    model <- list(
-        converge = converged,
-        loglik = loglik,
-        vparameters = vparameters,
-        coefficients = list(fixed = fixed_coefs),
-        formulae = list(
-            random = random_formula,
-            residual = residual_formula
-        )
-    )
+	class(model) <- "asreml"
+	attr(model, "summary_varcomp") <- varcomp_df
 
-    class(model) <- "asreml"
-    attr(model, "summary_varcomp") <- varcomp_df
-
-    return(model)
+	return(model)
 }
 
 test_that("logl_test validates input correctly", {
-    # Test non-asreml object
-    expect_error(
-        logl_test(list(class = "lm")),
-        "Only asreml models are supported"
-    )
+	# Test non-asreml object
+	expect_error(
+		logl_test(list(class = "lm")),
+		"Only asreml models are supported"
+	)
 
-    # Test missing terms
-    mock_model <- create_mock_asreml_model()
-    expect_error(
-        logl_test(mock_model),
-        "At least one of rand.terms or resid.terms must be provided"
-    )
+	# Test missing terms
+	mock_model <- create_mock_asreml_model()
+	expect_error(
+		logl_test(mock_model),
+		"At least one of rand.terms or resid.terms must be provided"
+	)
 })
 
 test_that("logl_test handles boundary terms correctly", {
-    # Create model with boundary terms
-    mock_model <- create_mock_asreml_model(varcomp_boundary = c("Block", "ar1(Row)"))
+	# Create model with boundary terms
+	mock_model <- create_mock_asreml_model(
+		varcomp_boundary = c("Block", "ar1(Row)")
+	)
 
-    # Mock summary function
-    mock_summary <- mock(list(varcomp = attr(mock_model, "summary_varcomp")))
+	# Mock summary function
+	mock_summary <- mock(list(varcomp = attr(mock_model, "summary_varcomp")))
 
-    # Mock asreml update function
-    mock_update <- mock(mock_model, cycle = TRUE)
+	# Mock asreml update function
+	mock_update <- mock(mock_model, cycle = TRUE)
 
-    # Mock quiet function
-    mock_quiet_fn <- mock(mock_model, cycle = TRUE)
+	# Mock quiet function
+	mock_quiet_fn <- mock(mock_model, cycle = TRUE)
 
-    # Mock format.pval
-    mock_format_pval <- mock("< 0.001", "0.023", "1.000", "0.156", cycle = TRUE)
+	# Mock format.pval
+	mock_format_pval <- mock("< 0.001", "0.023", "1.000", "0.156", cycle = TRUE)
 
-    # Use mockery to mockery::stub the functions
-    mockery::stub(logl_test, 'summary', mock_summary)
-    mockery::stub(logl_test, 'asreml::update.asreml', mock_update)
-    mockery::stub(logl_test, 'quiet', mock_quiet_fn)
-    mockery::stub(logl_test, 'format.pval', mock_format_pval)
+	# Use mockery to mockery::stub the functions
+	mockery::stub(logl_test, 'summary', mock_summary)
+	mockery::stub(logl_test, 'asreml::update.asreml', mock_update)
+	mockery::stub(logl_test, 'quiet', mock_quiet_fn)
+	mockery::stub(logl_test, 'format.pval', mock_format_pval)
 
-    result <- logl_test(mock_model,
-                        rand.terms = c("Block", "Block:Plot"),
-                        resid.terms = c("ar1(Row)", "ar1(Col)"))
+	result <- logl_test(
+		mock_model,
+		rand.terms = c("Block", "Block:Plot"),
+		resid.terms = c("ar1(Row)", "ar1(Col)")
+	)
 
-    # Check that boundary terms have p-value = 1
-    expect_false("Block" %in% result$Term)
-    expect_true("ar1(Row)" %in% result$Term)
+	# Check that boundary terms are included in the output
+	expect_true("Block" %in% result$Term)
+	expect_true("ar1(Row)" %in% result$Term)
 
-    # Check structure
-    expect_true(all(c("Term", "LogLRT.pvalue") %in% colnames(result)))
-    expect_equal(nrow(result), 3)
+	# Check structure
+	expect_true(all(c("Term", "LogLRT.pvalue") %in% colnames(result)))
+	expect_equal(nrow(result), 4)
 })
 
 test_that("logl_test processes random terms correctly", {
-    mock_model <- create_mock_asreml_model()
+	mock_model <- create_mock_asreml_model()
 
-    # Create reduced model for testing
-    reduced_model <- mock_model
-    reduced_model$loglik <- -102  # Slightly worse fit
-    reduced_model$vparameters <- c(0.8)  # One less parameter
+	# Create reduced model for testing
+	reduced_model <- mock_model
+	reduced_model$loglik <- -102 # Slightly worse fit
+	reduced_model$vparameters <- c(0.8) # One less parameter
 
-    # Mock functions
-    mock_summary <- mock(list(varcomp = attr(mock_model, "summary_varcomp")))
-    mock_update <- mock(reduced_model, cycle = TRUE)
-    mock_quiet_fn <- mock(reduced_model, cycle = TRUE)
-    mock_format_pval <- mock("0.045", "0.123", cycle = TRUE)
+	# Mock functions
+	mock_summary <- mock(list(varcomp = attr(mock_model, "summary_varcomp")))
+	mock_update <- mock(reduced_model, cycle = TRUE)
+	mock_quiet_fn <- mock(reduced_model, cycle = TRUE)
+	mock_format_pval <- mock("0.045", "0.123", cycle = TRUE)
 
-    mockery::stub(logl_test, 'summary', mock_summary)
-    mockery::stub(logl_test, 'asreml::update.asreml', mock_update)
-    mockery::stub(logl_test, 'quiet', mock_quiet_fn)
-    mockery::stub(logl_test, 'format.pval', mock_format_pval)
+	mockery::stub(logl_test, 'summary', mock_summary)
+	mockery::stub(logl_test, 'asreml::update.asreml', mock_update)
+	mockery::stub(logl_test, 'quiet', mock_quiet_fn)
+	mockery::stub(logl_test, 'format.pval', mock_format_pval)
 
-    result <- logl_test(mock_model, rand.terms = c("Block", "Block:Plot"))
+	result <- logl_test(mock_model, rand.terms = c("Block", "Block:Plot"))
 
-    # Check result structure
-    expect_equal(nrow(result), 2)
-    expect_equal(result$Term, c("Block", "Block:Plot"))
-    expect_true(all(c("Term", "LogLRT.pvalue") %in% colnames(result)))
+	# Check result structure
+	expect_equal(nrow(result), 2)
+	expect_equal(result$Term, c("Block", "Block:Plot"))
+	expect_true(all(c("Term", "LogLRT.pvalue") %in% colnames(result)))
 
-    # Verify mocks were called
-    expect_called(mock_summary, 1)
-    expect_called(mock_update, 2)  # Called for each term
+	# Verify mocks were called
+	expect_called(mock_summary, 1)
+	expect_called(mock_update, 2) # Called for each term
 })
 
 test_that("logl_test handles AR residual terms correctly", {
-    mock_model <- create_mock_asreml_model()
+	mock_model <- create_mock_asreml_model()
 
-    # Create reduced model
-    reduced_model <- mock_model
-    reduced_model$loglik <- -101.5
-    reduced_model$vparameters <- c(1.5)
+	# Create reduced model
+	reduced_model <- mock_model
+	reduced_model$loglik <- -101.5
+	reduced_model$vparameters <- c(1.5)
 
-    # Mock functions
-    mock_summary <- mock(list(varcomp = attr(mock_model, "summary_varcomp")))
-    mock_update <- mock(reduced_model, cycle = TRUE)
-    mock_quiet_fn <- mock(reduced_model, cycle = TRUE)
-    mock_format_pval <- mock("0.067", "0.234", cycle = TRUE)
+	# Mock functions
+	mock_summary <- mock(list(varcomp = attr(mock_model, "summary_varcomp")))
+	mock_update <- mock(reduced_model, cycle = TRUE)
+	mock_quiet_fn <- mock(reduced_model, cycle = TRUE)
+	mock_format_pval <- mock("0.067", "0.234", cycle = TRUE)
 
-    mockery::stub(logl_test, 'summary', mock_summary)
-    mockery::stub(logl_test, 'asreml::update.asreml', mock_update)
-    mockery::stub(logl_test, 'quiet', mock_quiet_fn)
-    mockery::stub(logl_test, 'format.pval', mock_format_pval)
+	mockery::stub(logl_test, 'summary', mock_summary)
+	mockery::stub(logl_test, 'asreml::update.asreml', mock_update)
+	mockery::stub(logl_test, 'quiet', mock_quiet_fn)
+	mockery::stub(logl_test, 'format.pval', mock_format_pval)
 
-    result <- logl_test(mock_model, resid.terms = c("ar1(Row)", "ar1(Col)"))
+	result <- logl_test(mock_model, resid.terms = c("ar1(Row)", "ar1(Col)"))
 
-    # Check result structure
-    expect_equal(nrow(result), 2)
-    expect_equal(result$Term, c("ar1(Row)", "ar1(Col)"))
+	# Check result structure
+	expect_equal(nrow(result), 2)
+	expect_equal(result$Term, c("ar1(Row)", "ar1(Col)"))
 
-    # Verify update was called with residual modifications
-    expect_called(mock_update, 2)
+	# Verify update was called with residual modifications
+	expect_called(mock_update, 2)
 })
 
 test_that("logl_test handles non-AR residual terms correctly", {
-    mock_model <- create_mock_asreml_model()
+	mock_model <- create_mock_asreml_model()
 
-    # Create reduced model
-    reduced_model <- mock_model
-    reduced_model$loglik <- -101.8
+	# Create reduced model
+	reduced_model <- mock_model
+	reduced_model$loglik <- -101.8
 
-    # Mock functions
-    mock_summary <- mock(list(varcomp = attr(mock_model, "summary_varcomp")))
-    mock_update <- mock(reduced_model, cycle = TRUE)
-    mock_quiet_fn <- mock(reduced_model, cycle = TRUE)
-    mock_format_pval <- mock("0.089", cycle = TRUE)
+	# Mock functions
+	mock_summary <- mock(list(varcomp = attr(mock_model, "summary_varcomp")))
+	mock_update <- mock(reduced_model, cycle = TRUE)
+	mock_quiet_fn <- mock(reduced_model, cycle = TRUE)
+	mock_format_pval <- mock("0.089", cycle = TRUE)
 
-    mockery::stub(logl_test, 'summary', mock_summary)
-    mockery::stub(logl_test, 'asreml::update.asreml', mock_update)
-    mockery::stub(logl_test, 'quiet', mock_quiet_fn)
-    mockery::stub(logl_test, 'format.pval', mock_format_pval)
+	mockery::stub(logl_test, 'summary', mock_summary)
+	mockery::stub(logl_test, 'asreml::update.asreml', mock_update)
+	mockery::stub(logl_test, 'quiet', mock_quiet_fn)
+	mockery::stub(logl_test, 'format.pval', mock_format_pval)
 
-    result <- logl_test(mock_model, resid.terms = c("exp(Row)"))
+	result <- logl_test(mock_model, resid.terms = c("exp(Row)"))
 
-    # Check result structure
-    expect_equal(nrow(result), 1)
-    expect_equal(result$Term, "exp(Row)")
+	# Check result structure
+	expect_equal(nrow(result), 1)
+	expect_equal(result$Term, "exp(Row)")
 })
 
 test_that("logl_test handles mixed random and residual terms", {
-    mock_model <- create_mock_asreml_model()
+	mock_model <- create_mock_asreml_model()
 
-    # Create reduced model
-    reduced_model <- mock_model
-    reduced_model$loglik <- -103
-    reduced_model$vparameters <- c(0.8)
+	# Create reduced model
+	reduced_model <- mock_model
+	reduced_model$loglik <- -103
+	reduced_model$vparameters <- c(0.8)
 
-    # Mock functions
-    mock_summary <- mock(list(varcomp = attr(mock_model, "summary_varcomp")))
-    mock_update <- mock(reduced_model, cycle = TRUE)
-    mock_quiet_fn <- mock(reduced_model, cycle = TRUE)
-    mock_format_pval <- mock("0.034", "0.167", cycle = TRUE)
+	# Mock functions
+	mock_summary <- mock(list(varcomp = attr(mock_model, "summary_varcomp")))
+	mock_update <- mock(reduced_model, cycle = TRUE)
+	mock_quiet_fn <- mock(reduced_model, cycle = TRUE)
+	mock_format_pval <- mock("0.034", "0.167", cycle = TRUE)
 
-    mockery::stub(logl_test, 'summary', mock_summary)
-    mockery::stub(logl_test, 'asreml::update.asreml', mock_update)
-    mockery::stub(logl_test, 'quiet', mock_quiet_fn)
-    mockery::stub(logl_test, 'format.pval', mock_format_pval)
+	mockery::stub(logl_test, 'summary', mock_summary)
+	mockery::stub(logl_test, 'asreml::update.asreml', mock_update)
+	mockery::stub(logl_test, 'quiet', mock_quiet_fn)
+	mockery::stub(logl_test, 'format.pval', mock_format_pval)
 
-    result <- logl_test(mock_model,
-                        rand.terms = c("Block"),
-                        resid.terms = c("ar1(Row)"))
+	result <- logl_test(
+		mock_model,
+		rand.terms = c("Block"),
+		resid.terms = c("ar1(Row)")
+	)
 
-    # Check that both types are included
-    expect_equal(nrow(result), 2)
-    expect_true("Block" %in% result$Term)
-    expect_true("ar1(Row)" %in% result$Term)
+	# Check that both types are included
+	expect_equal(nrow(result), 2)
+	expect_true("Block" %in% result$Term)
+	expect_true("ar1(Row)" %in% result$Term)
 })
 
 # test_that("logl_test respects numeric parameter", {
@@ -343,157 +397,189 @@ test_that("logl_test handles mixed random and residual terms", {
 # })
 
 test_that("logl_test handles convergence issues", {
-    # Create model that doesn't converge initially
-    mock_model <- create_mock_asreml_model(converged = FALSE)
+	# Create model that doesn't converge initially
+	mock_model <- create_mock_asreml_model(converged = FALSE)
 
-    # Create sequence of models: non-converged, then converged
-    non_converged_model <- mock_model
-    converged_model <- mock_model
-    converged_model$converge <- TRUE
-    converged_model$loglik <- -101
+	# Create sequence of models: non-converged, then converged
+	non_converged_model <- mock_model
+	converged_model <- mock_model
+	converged_model$converge <- TRUE
+	converged_model$loglik <- -101
 
-    # Mock functions
-    mock_summary <- mock(list(varcomp = attr(mock_model, "summary_varcomp")))
-    mock_update <- mock(non_converged_model, converged_model, converged_model, cycle = TRUE)
-    mock_quiet_fn <- mock(non_converged_model, converged_model, converged_model, cycle = TRUE)
-    mock_format_pval <- mock("0.078")
+	# Mock functions
+	mock_summary <- mock(list(varcomp = attr(mock_model, "summary_varcomp")))
+	mock_update <- mock(
+		non_converged_model,
+		converged_model,
+		converged_model,
+		cycle = TRUE
+	)
+	mock_quiet_fn <- mock(
+		non_converged_model,
+		converged_model,
+		converged_model,
+		cycle = TRUE
+	)
+	mock_format_pval <- mock("0.078")
 
-    mockery::stub(logl_test, 'summary', mock_summary)
-    mockery::stub(logl_test, 'asreml::update.asreml', mock_update)
-    mockery::stub(logl_test, 'quiet', mock_quiet_fn)
-    mockery::stub(logl_test, 'format.pval', mock_format_pval)
+	mockery::stub(logl_test, 'summary', mock_summary)
+	mockery::stub(logl_test, 'asreml::update.asreml', mock_update)
+	mockery::stub(logl_test, 'quiet', mock_quiet_fn)
+	mockery::stub(logl_test, 'format.pval', mock_format_pval)
 
-    result <- logl_test(mock_model, rand.terms = c("Block"))
+	result <- logl_test(mock_model, rand.terms = c("Block"))
 
-    # Should still return results even with initial convergence issues
-    expect_equal(nrow(result), 1)
-    expect_equal(result$Term, "Block")
+	# Should still return results even with initial convergence issues
+	expect_equal(nrow(result), 1)
+	expect_equal(result$Term, "Block")
 
-    # Verify multiple update calls due to convergence issues
-    expect_called(mock_update, 2)
+	# Verify multiple update calls due to convergence issues
+	expect_called(mock_update, 2)
 })
 
 test_that("logl_test preserves term order", {
-    mock_model <- create_mock_asreml_model()
+	mock_model <- create_mock_asreml_model()
 
-    # Create reduced model
-    reduced_model <- mock_model
-    reduced_model$loglik <- -102
+	# Create reduced model
+	reduced_model <- mock_model
+	reduced_model$loglik <- -102
 
-    # Mock functions
-    mock_summary <- mock(list(varcomp = attr(mock_model, "summary_varcomp")))
-    mock_update <- mock(reduced_model, cycle = TRUE)
-    mock_quiet_fn <- mock(reduced_model, cycle = TRUE)
-    mock_format_pval <- mock("0.045", "0.123", "0.067", "0.234", cycle = TRUE)
+	# Mock functions
+	mock_summary <- mock(list(varcomp = attr(mock_model, "summary_varcomp")))
+	mock_update <- mock(reduced_model, cycle = TRUE)
+	mock_quiet_fn <- mock(reduced_model, cycle = TRUE)
+	mock_format_pval <- mock("0.045", "0.123", "0.067", "0.234", cycle = TRUE)
 
-    mockery::stub(logl_test, 'summary', mock_summary)
-    mockery::stub(logl_test, 'asreml::update.asreml', mock_update)
-    mockery::stub(logl_test, 'quiet', mock_quiet_fn)
-    mockery::stub(logl_test, 'format.pval', mock_format_pval)
+	mockery::stub(logl_test, 'summary', mock_summary)
+	mockery::stub(logl_test, 'asreml::update.asreml', mock_update)
+	mockery::stub(logl_test, 'quiet', mock_quiet_fn)
+	mockery::stub(logl_test, 'format.pval', mock_format_pval)
 
-    result <- logl_test(mock_model,
-                        rand.terms = c("Block:Plot", "Block"),
-                        resid.terms = c("ar1(Col)", "ar1(Row)"))
+	result <- logl_test(
+		mock_model,
+		rand.terms = c("Block:Plot", "Block"),
+		resid.terms = c("ar1(Col)", "ar1(Row)")
+	)
 
-    # Check that order is preserved
-    expected_order <- c("Block:Plot", "Block", "ar1(Col)", "ar1(Row)")
-    expect_equal(result$Term, expected_order)
+	# Check that order is preserved
+	expected_order <- c("Block:Plot", "Block", "ar1(Col)", "ar1(Row)")
+	expect_equal(result$Term, expected_order)
 })
 
 test_that("logl_test handles decimals parameter", {
-    mock_model <- create_mock_asreml_model()
+	mock_model <- create_mock_asreml_model()
 
-    # Create reduced model
-    reduced_model <- mock_model
-    reduced_model$loglik <- -101
+	# Create reduced model
+	reduced_model <- mock_model
+	reduced_model$loglik <- -101
 
-    # Mock functions
-    mock_summary <- mock(list(varcomp = attr(mock_model, "summary_varcomp")))
-    mock_update <- mock(reduced_model)
-    mock_quiet_fn <- mock(reduced_model)
-    mock_format_pval <- mock("0.04567")  # Will be formatted to 5 decimals
+	# Mock functions
+	mock_summary <- mock(list(varcomp = attr(mock_model, "summary_varcomp")))
+	mock_update <- mock(reduced_model)
+	mock_quiet_fn <- mock(reduced_model)
+	mock_format_pval <- mock("0.04567") # Will be formatted to 5 decimals
 
-    mockery::stub(logl_test, 'summary', mock_summary)
-    mockery::stub(logl_test, 'asreml::update.asreml', mock_update)
-    mockery::stub(logl_test, 'quiet', mock_quiet_fn)
-    mockery::stub(logl_test, 'format.pval', mock_format_pval)
+	mockery::stub(logl_test, 'summary', mock_summary)
+	mockery::stub(logl_test, 'asreml::update.asreml', mock_update)
+	mockery::stub(logl_test, 'quiet', mock_quiet_fn)
+	mockery::stub(logl_test, 'format.pval', mock_format_pval)
 
-    result <- logl_test(mock_model,
-                        rand.terms = c("Block"),
-                        decimals = 5)
+	result <- logl_test(mock_model, rand.terms = c("Block"), decimals = 5)
 
-    # Check that format.pval was called (indicating decimals was processed)
-    expect_called(mock_format_pval, 1)
+	# Check that format.pval was called (indicating decimals was processed)
+	expect_called(mock_format_pval, 1)
 })
 
 test_that("logl_test integration test", {
-    mock_model <- create_mock_asreml_model(
-        varcomp_boundary = c("Block"),  # One boundary term
-        loglik = -150
-    )
+	mock_model <- create_mock_asreml_model(
+		varcomp_boundary = c("Block"), # One boundary term
+		loglik = -150
+	)
 
-    # Create reduced model
-    reduced_model <- mock_model
-    reduced_model$loglik <- -152
-    reduced_model$vparameters <- c(0.8)
+	# Create reduced model
+	reduced_model <- mock_model
+	reduced_model$loglik <- -152
+	reduced_model$vparameters <- c(0.8)
 
-    # Mock functions
-    mock_summary <- mock(list(varcomp = attr(mock_model, "summary_varcomp")))
-    mock_update <- mock(mock_model, reduced_model, reduced_model, reduced_model, cycle = TRUE)
-    mock_quiet_fn <- mock(mock_model, reduced_model, reduced_model, reduced_model, cycle = TRUE)
-    mock_format_pval <- mock("1.0000", "0.0456", "0.1234", "0.0789", cycle = TRUE)
+	# Mock functions
+	mock_summary <- mock(list(varcomp = attr(mock_model, "summary_varcomp")))
+	mock_update <- mock(
+		mock_model,
+		reduced_model,
+		reduced_model,
+		reduced_model,
+		cycle = TRUE
+	)
+	mock_quiet_fn <- mock(
+		mock_model,
+		reduced_model,
+		reduced_model,
+		reduced_model,
+		cycle = TRUE
+	)
+	mock_format_pval <- mock(
+		"1.0000",
+		"0.0456",
+		"0.1234",
+		"0.0789",
+		cycle = TRUE
+	)
 
-    mockery::stub(logl_test, 'summary', mock_summary)
-    mockery::stub(logl_test, 'asreml::update.asreml', mock_update)
-    mockery::stub(logl_test, 'quiet', mock_quiet_fn)
-    mockery::stub(logl_test, 'format.pval', mock_format_pval)
+	mockery::stub(logl_test, 'summary', mock_summary)
+	mockery::stub(logl_test, 'asreml::update.asreml', mock_update)
+	mockery::stub(logl_test, 'quiet', mock_quiet_fn)
+	mockery::stub(logl_test, 'format.pval', mock_format_pval)
 
-    result <- logl_test(mock_model,
-                        rand.terms = c("Block", "Block:Plot"),
-                        resid.terms = c("ar1(Row)", "ar1(Col)"),
-                        decimals = 4,
-                        numeric = FALSE,
-                        quiet = TRUE)
+	result <- logl_test(
+		mock_model,
+		rand.terms = c("Block", "Block:Plot"),
+		resid.terms = c("ar1(Row)", "ar1(Col)"),
+		decimals = 4,
+		numeric = FALSE,
+		quiet = TRUE
+	)
 
-    # Check comprehensive results
-    expect_equal(nrow(result), 3)
-    expect_equal(result$Term, c("Block:Plot", "ar1(Row)", "ar1(Col)"))
-    expect_true(all(c("Term", "LogLRT.pvalue") %in% colnames(result)))
+	# Check comprehensive results — boundary term "Block" is now included with p=1
+	expect_equal(nrow(result), 4)
+	expect_equal(result$Term, c("Block", "Block:Plot", "ar1(Row)", "ar1(Col)"))
+	expect_true(all(c("Term", "LogLRT.pvalue") %in% colnames(result)))
 
-    # All should have character p-values (numeric = FALSE)
-    expect_true(is.character(result$LogLRT.pvalue))
+	# All should have character p-values (numeric = FALSE)
+	expect_true(is.character(result$LogLRT.pvalue))
 })
 
 test_that("logl_test handles zero p-values with numeric = TRUE", {
-    mock_model <- create_mock_asreml_model()
+	mock_model <- create_mock_asreml_model()
 
-    # Create reduced model with identical loglik to force zero p-value
-    reduced_model <- mock_model
-    reduced_model$loglik <- mock_model$loglik  # Same loglik = zero LRT statistic
-    reduced_model$vparameters <- mock_model$vparameters  # Same parameters
-    reduced_model$coefficients <- mock_model$coefficients  # Same coefficients
+	# Create reduced model with identical loglik to force zero p-value
+	reduced_model <- mock_model
+	reduced_model$loglik <- mock_model$loglik # Same loglik = zero LRT statistic
+	reduced_model$vparameters <- mock_model$vparameters # Same parameters
+	reduced_model$coefficients <- mock_model$coefficients # Same coefficients
 
-    # Mock functions
-    mock_summary <- mock(list(varcomp = attr(mock_model, "summary_varcomp")))
-    mock_update <- mock(reduced_model, cycle = TRUE)
-    mock_quiet_fn <- mock(reduced_model, cycle = TRUE)
+	# Mock functions
+	mock_summary <- mock(list(varcomp = attr(mock_model, "summary_varcomp")))
+	mock_update <- mock(reduced_model, cycle = TRUE)
+	mock_quiet_fn <- mock(reduced_model, cycle = TRUE)
 
-    # Mock pchisq to return 1 (which gives p-value of 0)
-    mock_pchisq <- mock(1, cycle = TRUE)
+	# Mock pchisq to return 1 (which gives p-value of 0)
+	mock_pchisq <- mock(1, cycle = TRUE)
 
-    mockery::stub(logl_test, 'summary', mock_summary)
-    mockery::stub(logl_test, 'asreml::update.asreml', mock_update)
-    mockery::stub(logl_test, 'quiet', mock_quiet_fn)
-    mockery::stub(logl_test, 'stats::pchisq', mock_pchisq)
+	mockery::stub(logl_test, 'summary', mock_summary)
+	mockery::stub(logl_test, 'asreml::update.asreml', mock_update)
+	mockery::stub(logl_test, 'quiet', mock_quiet_fn)
+	mockery::stub(logl_test, 'stats::pchisq', mock_pchisq)
 
-    result <- logl_test(mock_model,
-                        rand.terms = c("Block"),
-                        decimals = 5,
-                        numeric = TRUE)
+	result <- logl_test(
+		mock_model,
+		rand.terms = c("Block"),
+		decimals = 5,
+		numeric = TRUE
+	)
 
-    # Check that zero p-values were replaced
-    expected_min_pval <- max(as.numeric("1e-5"), .Machine$double.eps)
-    expect_equal(result$LogLRT.pvalue, expected_min_pval)
-    expect_true(is.numeric(result$LogLRT.pvalue))
-    expect_true(result$LogLRT.pvalue > 0)
+	# Check that zero p-values were replaced
+	expected_min_pval <- max(as.numeric("1e-5"), .Machine$double.eps)
+	expect_equal(result$LogLRT.pvalue, expected_min_pval)
+	expect_true(is.numeric(result$LogLRT.pvalue))
+	expect_true(result$LogLRT.pvalue > 0)
 })

@@ -15,6 +15,8 @@ multiple_comparisons(
   decimals = 2,
   descending = FALSE,
   groups = TRUE,
+  adjust = "tukey",
+  by = NULL,
   plot = FALSE,
   label_height = 0.1,
   rotation = 0,
@@ -41,11 +43,15 @@ multiple_comparisons(
 
 \item{power}{Numeric power applied to response variable with power transformation. Default is \code{NULL}. See Details for more information.}
 
-\item{decimals}{Controls rounding of decimal places in output. Default is 2 decimal places.}
+\item{decimals}{Controls rounding of decimal places in printed output and saved CSV files. Default is 2 decimal places. Full precision values are stored internally.}
 
 \item{descending}{Logical (default \code{FALSE}). Order of the output sorted by the predicted value. If \code{TRUE}, largest will be first, through to smallest last.}
 
 \item{groups}{Logical (default \code{TRUE}). If \code{TRUE}, the significance letter groupings will be calculated and displayed. This can get overwhelming for large numbers of comparisons, so can be turned off by setting to \code{FALSE}.}
+
+\item{adjust}{The method used to adjust p-values for multiple comparisons. Either \code{"tukey"} (default, Tukey's HSD) or any method accepted by \code{\link[stats:p.adjust]{stats::p.adjust()}} (\code{"bonferroni"}, \code{"holm"}, \code{"hochberg"}, \code{"hommel"}, \code{"BH"} (or \code{"fdr"}), \code{"BY"}, or \code{"none"}). See Details.}
+
+\item{by}{A character vector of column name(s) in the predictions over which to split comparisons. Comparisons are run independently within each level (or combination of levels) of the \code{by} variable(s); no p-values are pooled or adjusted across groups. Default \code{NULL}. See Details.}
 
 \item{plot}{Automatically produce a plot of the output of the multiple comparison test? Default is \code{FALSE}. This is maintained for backwards compatibility, but the preferred method now is to use \verb{autoplot(<multiple_comparisons output>)}. See \code{\link[=autoplot.mct]{autoplot.mct()}} for more details.}
 
@@ -63,21 +69,26 @@ multiple_comparisons(
 
 \item{pred}{Deprecated. Use \code{classify} instead.}
 
-\item{...}{Other arguments passed through to \code{\link[=get_predictions]{get_predictions()}}.}
+\item{...}{Other arguments passed internally to model-specific prediction methods.}
 }
 \value{
 An object of class \code{mct} (a list with class attributes) containing:
 \item{predictions}{A data frame with predicted means, standard errors,
 confidence interval upper and lower bounds, and significant group
 allocations}
-\item{pairwise_pvalues}{A symmetric matrix of p-values for all pairwise
-comparisons using Tukey's HSD test}
-\item{hsd}{The Honest Significant Difference value(s) used in the comparisons.
-Either a single numeric value (if constant across comparisons) or a matrix
-(if varies by comparison)}
+\item{pairwise_pvalues}{A symmetric matrix of adjusted p-values for all
+pairwise comparisons (Tukey's HSD by default, otherwise adjusted by the
+\code{adjust} method). When \code{by} is supplied, a named list of such matrices,
+one per subgroup}
+\item{hsd}{The Honest Significant Difference value(s) used in the comparisons
+when \code{adjust = "tukey"}. Either a single numeric value (if constant across
+comparisons) or a matrix (if it varies by comparison). \code{NULL} when \code{adjust}
+is not \code{"tukey"}}
+\item{sig_level}{The significance level used (default 0.05)}
+\item{comparison_method}{The p-value adjustment method used (the value of
+\code{adjust})}
 \item{aliased}{Character vector of aliased treatment levels (only present if
 some predictions are aliased)}
-\item{sig_level}{The significance level used (default 0.05)}
 }
 \description{
 A function for comparing and ranking predicted means with Tukey's Honest Significant Difference (HSD) Test.
@@ -101,6 +112,36 @@ transformation, add 0.1 in the \code{offset} argument.
 The power argument allows the specification of arbitrary powers to be
 back transformed, if they have been used to attempt to improve normality of
 residuals.
+}
+
+\subsection{P-value adjustment (\code{adjust})}{
+
+By default (\code{adjust = "tukey"}) the function uses Tukey's HSD, which is exact
+for the complete set of all pairwise comparisons. Alternatively, \code{adjust} may
+be any method accepted by \code{\link[stats:p.adjust]{stats::p.adjust()}}. In that case a matrix of \emph{raw}
+two-sided t-test p-values is computed first and the chosen adjustment is
+applied to the lower-triangle vector of those raw p-values, avoiding the
+double-adjustment that would occur if Tukey-adjusted p-values were passed to
+\code{p.adjust()}. Bonferroni and Holm control the family-wise error rate and are
+valid under arbitrary dependence; BH/BY (FDR) are valid under positive
+dependence, which pairwise comparisons satisfy. The returned
+\verb{$pairwise_pvalues} always holds the adjusted p-values for the chosen method
+(the Tukey p-values when \code{adjust = "tukey"}). When \code{adjust} is not \code{"tukey"},
+\verb{$hsd} is \code{NULL}, as an HSD value is only meaningful for Tukey's test.
+}
+
+\subsection{Grouped comparisons (\code{by})}{
+
+When \code{by} is supplied, the predictions are split into subgroups defined by
+the level(s) of the \code{by} variable(s) and the comparison procedure is run
+independently within each subgroup. Each subgroup is treated as a separate
+family of comparisons: there is no pooling and no cross-group p-value
+adjustment, and letter groupings restart within each subgroup. When \code{by} is
+used, \verb{$pairwise_pvalues} (and \verb{$hsd} where applicable) are returned as named
+lists with one element per subgroup, and \code{autoplot()} facets the plot by the
+\code{by} variable(s) by default. \code{by} must leave at least one \code{classify} factor
+to compare within each subgroup, so a single-factor \code{classify} cannot be
+split with \code{by}.
 }
 
 \subsection{Confidence Intervals & Comparison Intervals}{
