@@ -52,15 +52,7 @@ autoplot(object, ...)
 
 \item{label_rotation}{Enables rotation of the treatment group labels independently of the x axis labels within the plot.}
 
-\item{type}{A string specifying the type of plot to display. One of \code{"point"} (the default; point estimates), \code{"line"} (point estimates joined by a line), or \code{"column"} (also \code{"col"} or \code{"bar"}; a column graph). Error bars are added according to \code{errorbar_type} unless \code{include_errorbar = FALSE}.}
-
-\item{errorbar_type}{A string (default \code{"ci"}) specifying what the error bars represent. \code{"ci"} draws an interval around each mean (the interval type chosen via \code{int.type} in \code{\link[=multiple_comparisons]{multiple_comparisons()}}). \code{"hsd"} draws a single Tukey's Honest Significant Difference reference bar instead of per-mean intervals. An HSD bar is only meaningful on the model (transformed) scale, so requesting \code{"hsd"} plots the means on that scale.}
-
-\item{include_errorbar}{Logical (default \code{TRUE}). Whether to draw error bars. \code{FALSE} omits them entirely (the \code{errorbar_type} is then ignored).}
-
-\item{include_lettering}{Logical (default \code{TRUE}). Whether to draw the significance-group lettering above the means.}
-
-\item{trans_scale}{Logical (default \code{FALSE}). When the means were back-transformed in \code{\link[=multiple_comparisons]{multiple_comparisons()}}, \code{FALSE} plots them on the original (back-transformed) scale, while \code{TRUE} plots them on the model (transformed) scale and adds a back-transformed secondary axis. Has no effect when no transformation was used.}
+\item{type}{A string specifying the type of plot to display. The default of 'point' will display a point estimate with error bars. The alternative, 'column' (or 'col'), will display a column graph with error bars.}
 
 \item{errorbar_type}{A character (default is "ci") that indicates what the errorbars in the plot represent. Current options are 95\% confidence interval ("ci") or Tukeys (average) HSD value ("hsd")}
 
