@@ -43,7 +43,7 @@ multiple_comparisons(
 
 \item{power}{Numeric power applied to response variable with power transformation. Default is \code{NULL}. See Details for more information.}
 
-\item{decimals}{Controls rounding of decimal places in printed output and saved CSV files. Default is 2 decimal places. Full precision values are stored internally.}
+\item{decimals}{Deprecated. Rounding is now controlled via the \code{decimals} argument of \code{\link[=print.mct]{print.mct()}}.}
 
 \item{descending}{Logical (default \code{FALSE}). Order of the output sorted by the predicted value. If \code{TRUE}, largest will be first, through to smallest last.}
 
@@ -249,9 +249,9 @@ wald(model.asr) # Nitrogen main effect significant
 
 #Determine ranking and groups according to Tukey's Test
 pred.out <- multiple_comparisons(model.obj = model.asr, classify = "Nitrogen",
-                    descending = TRUE, decimals = 5)
+                    descending = TRUE)
 
-pred.out
+print(pred.out, decimals = 5)
 
 # Example using a box-cox transformation
 set.seed(42) # See the seed for reproducibility

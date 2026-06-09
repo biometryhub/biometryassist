@@ -508,6 +508,137 @@ test_that("autoplot facets by the `by` variable", {
 	expect_false("Trt" %in% facet_vars) # Trt is the x-axis, not a facet
 })
 
+test_that("autoplot.mct type, errorbar and lettering options behave", {
+	has_geom <- function(p, cls) {
+		any(vapply(p$layers, function(l) inherits(l$geom, cls), logical(1)))
+	}
+
+	dat.aov <- aov(Petal.Width ~ Species, data = iris)
+	out <- multiple_comparisons(dat.aov, classify = "Species")
+
+	# type = "line" adds a line layer; "bar" is an alias for a column graph
+	expect_true(has_geom(autoplot(out, type = "line"), "GeomLine"))
+	expect_true(has_geom(autoplot(out, type = "bar"), "GeomCol"))
+
+	# Toggles remove the relevant layers
+	expect_false(has_geom(
+		autoplot(out, include_errorbar = FALSE),
+		"GeomErrorbar"
+	))
+	expect_false(has_geom(autoplot(out, include_lettering = FALSE), "GeomText"))
+
+	# Invalid type errors cleanly rather than silently producing an empty plot
+	expect_error(autoplot(out, type = "wiggle"), "should be one of")
+})
+
+test_that("autoplot.mct HSD reference bar works without a transformation", {
+	# Regression: requesting an HSD bar on an untransformed model previously
+	# errored via a forced back-transformation path.
+	dat.aov <- aov(Petal.Width ~ Species, data = iris)
+	out <- multiple_comparisons(dat.aov, classify = "Species")
+
+	p <- autoplot(out, errorbar_type = "hsd")
+	expect_s3_class(p, "ggplot")
+	expect_silent(ggplot2::ggplot_build(p))
+
+	# The HSD bar is a single reference bar, so its layer carries one row of data
+	eb <- Filter(function(l) inherits(l$geom, "GeomErrorbar"), p$layers)
+	expect_length(eb, 1)
+	expect_equal(nrow(eb[[1]]$data), 1)
+})
+
+test_that("autoplot.mct errors for an HSD bar when no single HSD is available", {
+	dat.aov <- aov(Petal.Width ~ Species, data = iris)
+	# Non-Tukey adjustment => $hsd is NULL
+	out <- multiple_comparisons(
+		dat.aov,
+		classify = "Species",
+		adjust = "bonferroni"
+	)
+	expect_error(
+		autoplot(out, errorbar_type = "hsd"),
+		"Honest Significant"
+	)
+})
+
+test_that("autoplot.mct adds a back-transformed secondary axis on the model scale", {
+	has_sec_axis <- function(p) {
+		any(vapply(
+			p$scales$scales,
+			function(s) inherits(s$secondary.axis, "AxisSecondary"),
+			logical(1)
+		))
+	}
+
+	m_log <- aov(log(Petal.Width) ~ Species, data = iris)
+	out_log <- multiple_comparisons(
+		m_log,
+		classify = "Species",
+		trans = "log",
+		offset = 0
+	)
+
+	# Default plots on the (interpretable) back-transformed scale: no second axis
+	expect_false(has_sec_axis(autoplot(out_log)))
+	# Model scale shows the back-transformed secondary axis
+	expect_true(has_sec_axis(autoplot(out_log, trans_scale = TRUE)))
+	# HSD forces the model scale, so it also gets the secondary axis
+	expect_true(has_sec_axis(autoplot(out_log, errorbar_type = "hsd")))
+
+	# The transform metadata is recorded on the object for the axis
+	expect_equal(attr(out_log, "trans"), "log")
+	expect_equal(attr(out_log, "offset"), 0)
+})
+
+test_that("back_transform is the inverse used to build PredictedValue", {
+	x <- c(0.5, 1, 1.5, 2)
+	expect_equal(biometryassist:::back_transform(x, "log", 0), exp(x))
+	expect_equal(biometryassist:::back_transform(x, "sqrt", 0), x^2)
+	expect_equal(biometryassist:::back_transform(x, "power", 0, 2), x^(1 / 2))
+	expect_equal(biometryassist:::back_transform(x, "inverse"), 1 / x)
+	expect_error(biometryassist:::back_transform(x, "nonsense"), "Invalid trans")
+})
+
+test_that("autoplot.mct new options render as expected", {
+	dat.aov <- aov(Petal.Width ~ Species, data = iris)
+	out <- multiple_comparisons(dat.aov, classify = "Species")
+
+	expect_local_doppelganger("mct line plot", autoplot(out, type = "line"))
+	expect_local_doppelganger(
+		"mct hsd bar",
+		autoplot(out, errorbar_type = "hsd")
+	)
+	expect_local_doppelganger(
+		"mct no errorbar",
+		autoplot(out, include_errorbar = FALSE)
+	)
+	expect_local_doppelganger(
+		"mct no lettering",
+		autoplot(out, include_lettering = FALSE)
+	)
+})
+
+test_that("autoplot.mct transformed-scale options render as expected", {
+	dat.aov.log <- aov(log(Petal.Width) ~ Species, data = iris)
+	output.log <- multiple_comparisons(
+		dat.aov.log,
+		classify = "Species",
+		trans = "log",
+		offset = 0
+	)
+
+	# Model scale with the back-transformed secondary axis
+	expect_local_doppelganger(
+		"mct log transformed scale",
+		autoplot(output.log, trans_scale = TRUE)
+	)
+	# HSD bar forces the model scale and adds the secondary axis
+	expect_local_doppelganger(
+		"mct log hsd bar",
+		autoplot(output.log, errorbar_type = "hsd")
+	)
+})
+
 test_that("calculate_raw_pvalue_matrix matches a direct t-test", {
 	pp <- data.frame(
 		predicted.value = c(10, 11, 15),
@@ -587,7 +718,9 @@ test_that("mct produces output", {
 			c(0.25, 1.33, 2.03),
 			tolerance = 5e-2
 		)
-		vdiffr::expect_doppelganger("mct output", autoplot(output))
+		ap <- autoplot(output)
+		expect_autoplot_data(ap, output)
+		expect_local_doppelganger("mct output", ap)
 	})
 })
 
@@ -682,7 +815,9 @@ test_that("mct transformation: log", {
 		c(0.25, 1.41, 2.17),
 		tolerance = 5e-2
 	)
-	vdiffr::expect_doppelganger("mct log output", autoplot(output.log))
+	ap <- autoplot(output.log)
+	expect_autoplot_data(ap, output.log)
+	expect_local_doppelganger("mct log output", ap)
 })
 
 test_that("mct transformation: sqrt", {
@@ -724,7 +859,9 @@ test_that("mct transformation: sqrt", {
 		c(0.27, 1.38, 2.09),
 		tolerance = 5e-2
 	)
-	vdiffr::expect_doppelganger("mct sqrt output", autoplot(output.sqrt))
+	ap <- autoplot(output.sqrt)
+	expect_autoplot_data(ap, output.sqrt)
+	expect_local_doppelganger("mct sqrt output", ap)
 })
 
 test_that("mct transformation: logit", {
@@ -766,7 +903,9 @@ test_that("mct transformation: logit", {
 		c(0.01, 0.01, 0.05),
 		tolerance = 5e-2
 	)
-	vdiffr::expect_doppelganger("mct logit output", autoplot(output.logit))
+	ap <- autoplot(output.logit)
+	expect_autoplot_data(ap, output.logit)
+	expect_local_doppelganger("mct logit output", ap)
 })
 
 test_that("mct transformation: inverse", {
@@ -808,7 +947,9 @@ test_that("mct transformation: inverse", {
 		c(1.20, 0.90, 0.20),
 		tolerance = 5e-2
 	)
-	vdiffr::expect_doppelganger("mct inverse output", autoplot(output.inverse))
+	ap <- autoplot(output.inverse)
+	expect_autoplot_data(ap, output.inverse)
+	expect_local_doppelganger("mct inverse output", ap)
 })
 
 test_that("mct transformation: power", {
@@ -855,7 +996,9 @@ test_that("mct transformation: power", {
 		c(0.49, 1.42, 2.10),
 		tolerance = 5e-2
 	)
-	vdiffr::expect_doppelganger("mct power output", autoplot(output.power))
+	ap <- autoplot(output.power)
+	expect_autoplot_data(ap, output.power)
+	expect_local_doppelganger("mct power output", ap)
 })
 
 test_that("mct transformation: arcsin", {
@@ -1071,12 +1214,16 @@ test_that("apply_transformation arcsin warning and bounds", {
 })
 
 test_that("apply_transformation arcsin warns when back-transformation is outside [0,1]", {
-	# This branch is numerically very hard to reach with real sin() output because sin(x)^2
-	# should be in [0,1]. Here we temporarily override `sin()` and `sqrt()` in the
-	# apply_transformation() function environment to force an out-of-bounds value.
+	# This branch is numerically very hard to reach because back_transform()'s
+	# arcsin (sin(x)^2) is always in [0,1]. Here we temporarily override
+	# `back_transform()` (which now computes PredictedValue) and `sqrt()` (used
+	# for ApproxSE) in the apply_transformation() function environment to force an
+	# out-of-bounds value and exercise the bounds-check warning.
 	fn2 <- biometryassist:::apply_transformation
 	fn2_env <- new.env(parent = environment(fn2))
-	fn2_env$sin <- function(x) rep(2, length(x))
+	fn2_env$back_transform <- function(x, trans, offset = 0, power = NULL) {
+		rep(2, length(x))
+	}
 	fn2_env$sqrt <- function(x) rep(0, length(x))
 	environment(fn2) <- fn2_env
 
@@ -1136,8 +1283,21 @@ test_that("ordering output works", {
 		tolerance = 5e-2
 	)
 
-	vdiffr::expect_doppelganger("mct ascending order", autoplot(output1))
-	vdiffr::expect_doppelganger("mct descending output", autoplot(output2))
+	# Plot content (runs on every platform, incl. CI): the autoplot draws the
+	# right means, interval bounds and letters. expect_autoplot_data() compares
+	# as sets, so we additionally assert the ascending/descending ordering that
+	# this test is specifically about.
+	asc <- autoplot(output1)
+	desc <- autoplot(output2)
+	expect_autoplot_data(asc, output1)
+	expect_autoplot_data(desc, output2)
+	# Ordering: ascending rises left-to-right, descending falls.
+	expect_false(is.unsorted(layer_data_for(asc, "GeomPoint")$y))
+	expect_false(is.unsorted(rev(layer_data_for(desc, "GeomPoint")$y)))
+
+	# Pixel-exact visual regression: local only (see expect_local_doppelganger).
+	expect_local_doppelganger("mct ascending order", asc)
+	expect_local_doppelganger("mct descending output", desc)
 })
 
 test_that("different interval types work", {
@@ -1156,8 +1316,12 @@ test_that("different interval types work", {
 	expect_equal(output2$predictions$low, c(0.19, 1.27, 1.97), tolerance = 5e-2)
 	expect_equal(output2$predictions$up, c(0.31, 1.39, 2.09), tolerance = 5e-2)
 
-	vdiffr::expect_doppelganger("mct output 1se", autoplot(output1))
-	vdiffr::expect_doppelganger("mct output 2se", autoplot(output2))
+	ap1 <- autoplot(output1)
+	ap2 <- autoplot(output2)
+	expect_autoplot_data(ap1, output1)
+	expect_autoplot_data(ap2, output2)
+	expect_local_doppelganger("mct output 1se", ap1)
+	expect_local_doppelganger("mct output 2se", ap2)
 })
 
 test_that("Testing asreml predictions", {
@@ -1178,7 +1342,9 @@ test_that("Testing asreml predictions", {
 		tolerance = 5e-2
 	)
 	expect_snapshot_output(output)
-	vdiffr::expect_doppelganger("asreml predictions", autoplot(output))
+	ap <- autoplot(output)
+	expect_autoplot_data(ap, output)
+	expect_local_doppelganger("asreml predictions", ap)
 })
 
 test_that("save produces output", {
@@ -1223,7 +1389,9 @@ test_that("Interaction terms work", {
 		tolerance = 5e-2
 	)
 
-	vdiffr::expect_doppelganger("Interactions work", autoplot(output))
+	ap <- autoplot(output)
+	expect_autoplot_data(ap, output)
+	expect_local_doppelganger("Interactions work", ap)
 })
 
 test_that("order argument is deprecated", {
@@ -1268,7 +1436,9 @@ test_that("dashes are handled", {
 	)
 
 	# skip_if(interactive())
-	vdiffr::expect_doppelganger("mct dashes output", autoplot(output2))
+	ap <- autoplot(output2)
+	expect_autoplot_data(ap, output2)
+	expect_local_doppelganger("mct dashes output", ap)
 })
 
 test_that("mct removes aliased treatments in aov", {
@@ -1281,7 +1451,9 @@ test_that("mct removes aliased treatments in aov", {
 	)
 	expect_snapshot_output(output1$predictions$predicted.value)
 	# skip_if(interactive())
-	vdiffr::expect_doppelganger("aov aliased output", autoplot(output1))
+	ap <- autoplot(output1)
+	expect_autoplot_data(ap, output1)
+	expect_local_doppelganger("aov aliased output", ap)
 })
 
 
@@ -1413,7 +1585,9 @@ test_that("lme4 model works", {
 		c(79.39, 98.89, 114.22, 123.39),
 		tolerance = 5e-2
 	)
-	vdiffr::expect_doppelganger("lme4 output", autoplot(output))
+	ap <- autoplot(output)
+	expect_autoplot_data(ap, output)
+	expect_local_doppelganger("lme4 output", ap)
 })
 
 test_that("3 way interaction works", {
@@ -1435,9 +1609,11 @@ test_that("3 way interaction works", {
 	expect_snapshot_output(output$predictions$predicted.value)
 	expect_equal(output$predictions$std.error, rep(0.63, 27), tolerance = 5e-2)
 	# skip_if(interactive())
-	vdiffr::expect_doppelganger(
+	ap <- autoplot(output)
+	expect_autoplot_data(ap, output)
+	expect_local_doppelganger(
 		"3 way interaction",
-		autoplot(output),
+		ap,
 		variant = ggplot2_variant()
 	)
 })
@@ -1479,7 +1655,7 @@ test_that("plots are produced when requested", {
 		expect_equal(output$predictions$std.error, rep(0.63, 27), tolerance = 5e-2)
 
 		skip_if(interactive())
-		vdiffr::expect_doppelganger(
+		expect_local_doppelganger(
 			"3 way interaction internal",
 			function() {
 				invisible(multiple_comparisons(
@@ -1522,7 +1698,9 @@ test_that("nlme model produces an error", {
 		c(79.39, 98.89, 114.22, 123.39),
 		tolerance = 5e-2
 	)
-	vdiffr::expect_doppelganger("nlme output", autoplot(output))
+	ap <- autoplot(output)
+	expect_autoplot_data(ap, output)
+	expect_local_doppelganger("nlme output", ap)
 })
 
 test_that("invalid model types give a clear error", {
@@ -1565,7 +1743,9 @@ test_that("Setting groups to FALSE disables letter groups", {
 	)
 	expect_false("groups" %in% colnames(output$predictions))
 
-	vdiffr::expect_doppelganger("No letter groups", autoplot(output))
+	ap <- autoplot(output)
+	expect_autoplot_data(ap, output)
+	expect_local_doppelganger("No letter groups", ap)
 })
 
 test_that("Check for letters as an alias of groups", {
@@ -1602,27 +1782,29 @@ test_that("autoplot supports legacy mct data.frame objects", {
 
 test_that("autoplot can rotate axis and labels independently", {
 	output <- multiple_comparisons(dat.aov, classify = "Species")
-	vdiffr::expect_doppelganger(
+	# The plotted data is identical regardless of rotation; check it once.
+	expect_autoplot_data(autoplot(output), output)
+	expect_local_doppelganger(
 		"label rotation",
 		autoplot(output, label_rotation = 90)
 	)
-	vdiffr::expect_doppelganger(
+	expect_local_doppelganger(
 		"axis rotation",
 		autoplot(output, axis_rotation = 90)
 	)
-	vdiffr::expect_doppelganger(
+	expect_local_doppelganger(
 		"axis rotation -90",
 		autoplot(output, axis_rotation = -90)
 	)
-	vdiffr::expect_doppelganger(
+	expect_local_doppelganger(
 		"axis and label rotation",
 		autoplot(output, axis_rotation = 45, label_rotation = 90)
 	)
-	vdiffr::expect_doppelganger(
+	expect_local_doppelganger(
 		"rotation and axis rotation",
 		autoplot(output, rotation = 45, axis_rotation = 90)
 	)
-	vdiffr::expect_doppelganger(
+	expect_local_doppelganger(
 		"rotation and label rotation",
 		autoplot(output, rotation = 45, label_rotation = 90)
 	)
@@ -1635,7 +1817,7 @@ test_that("Autoplot can output column graphs", {
 	expect_in("GeomCol", class(p1$layers[[1]]$geom))
 	expect_in("GeomCol", class(p2$layers[[1]]$geom))
 	expect_true(equivalent_ggplot2(p1, p2))
-	vdiffr::expect_doppelganger("autoplot column", p1)
+	expect_local_doppelganger("autoplot column", p1)
 })
 
 test_that("A warning is printed if a transformation is detected with no trans argument provided", {
@@ -1735,7 +1917,8 @@ test_that("Full precision values are stored in predictions", {
 			".*\\.",
 			"",
 			as.character(output$predictions$predicted.value)
-		)) > 2
+		)) >
+			2
 	))
 })
 

@@ -38,21 +38,22 @@
 <polyline points='162.60,545.11 162.60,22.78 ' style='stroke-width: 1.07; stroke: #EBEBEB; stroke-linecap: butt;' />
 <polyline points='374.88,545.11 374.88,22.78 ' style='stroke-width: 1.07; stroke: #EBEBEB; stroke-linecap: butt;' />
 <polyline points='587.16,545.11 587.16,22.78 ' style='stroke-width: 1.07; stroke: #EBEBEB; stroke-linecap: butt;' />
-<circle cx='162.60' cy='63.63' r='2.49' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
+<circle cx='162.60' cy='507.12' r='2.49' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
 <circle cx='374.88' cy='238.03' r='2.49' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
-<circle cx='587.16' cy='507.12' r='2.49' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
-<polyline points='141.38,49.38 183.83,49.38 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
-<polyline points='162.60,49.38 162.60,77.88 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
-<polyline points='141.38,77.88 183.83,77.88 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
+<circle cx='587.16' cy='63.63' r='2.49' style='stroke-width: 0.71; stroke: none; fill: #000000;' />
+<polyline points='162.60,507.12 374.88,238.03 587.16,63.63 ' style='stroke-width: 0.85; stroke-linecap: butt;' />
+<polyline points='141.38,492.87 183.83,492.87 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
+<polyline points='162.60,492.87 162.60,521.37 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
+<polyline points='141.38,521.37 183.83,521.37 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
 <polyline points='353.65,223.78 396.11,223.78 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
 <polyline points='374.88,223.78 374.88,252.28 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
 <polyline points='353.65,252.28 396.11,252.28 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
-<polyline points='565.93,492.87 608.38,492.87 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
-<polyline points='587.16,492.87 587.16,521.37 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
-<polyline points='565.93,521.37 608.38,521.37 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
-<text x='162.60' y='50.44' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='6.33px' lengthAdjust='spacingAndGlyphs'>a</text>
+<polyline points='565.93,49.38 608.38,49.38 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
+<polyline points='587.16,49.38 587.16,77.88 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
+<polyline points='565.93,77.88 608.38,77.88 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
+<text x='162.60' y='493.94' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='6.33px' lengthAdjust='spacingAndGlyphs'>a</text>
 <text x='374.88' y='224.85' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='6.33px' lengthAdjust='spacingAndGlyphs'>b</text>
-<text x='587.16' y='493.94' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='5.70px' lengthAdjust='spacingAndGlyphs'>c</text>
+<text x='587.16' y='50.44' text-anchor='middle' style='font-size: 11.38px; font-family: sans;' textLength='5.70px' lengthAdjust='spacingAndGlyphs'>c</text>
 <rect x='35.24' y='22.78' width='679.28' height='522.33' style='stroke-width: 1.07; stroke: #333333;' />
 </g>
 <g clip-path='url(#cpMC4wMHw3MjAuMDB8MC4wMHw1NzYuMDA=)'>
@@ -67,10 +68,10 @@
 <polyline points='162.60,547.85 162.60,545.11 ' style='stroke-width: 1.07; stroke: #333333; stroke-linecap: butt;' />
 <polyline points='374.88,547.85 374.88,545.11 ' style='stroke-width: 1.07; stroke: #333333; stroke-linecap: butt;' />
 <polyline points='587.16,547.85 587.16,545.11 ' style='stroke-width: 1.07; stroke: #333333; stroke-linecap: butt;' />
-<text x='162.60' y='557.01' text-anchor='middle' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='32.28px' lengthAdjust='spacingAndGlyphs'>virginica</text>
+<text x='162.60' y='557.01' text-anchor='middle' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='25.94px' lengthAdjust='spacingAndGlyphs'>setosa</text>
 <text x='374.88' y='557.01' text-anchor='middle' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='37.66px' lengthAdjust='spacingAndGlyphs'>versicolor</text>
-<text x='587.16' y='557.01' text-anchor='middle' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='25.94px' lengthAdjust='spacingAndGlyphs'>setosa</text>
+<text x='587.16' y='557.01' text-anchor='middle' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='32.28px' lengthAdjust='spacingAndGlyphs'>virginica</text>
 <text transform='translate(13.05,283.95) rotate(-90)' text-anchor='middle' style='font-size: 11.00px; font-family: sans;' textLength='105.78px' lengthAdjust='spacingAndGlyphs'>Predicted Petal.Width</text>
-<text x='35.24' y='14.56' style='font-size: 13.20px; font-family: sans;' textLength='132.84px' lengthAdjust='spacingAndGlyphs'>mct descending output</text>
+<text x='35.24' y='14.56' style='font-size: 13.20px; font-family: sans;' textLength='70.43px' lengthAdjust='spacingAndGlyphs'>mct line plot</text>
 </g>
 </svg>

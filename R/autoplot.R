@@ -34,7 +34,7 @@ ggplot2::autoplot
 
 
 #' @rdname autoplot
-#' @importFrom ggplot2 autoplot ggplot aes geom_errorbar geom_text geom_point theme_bw labs theme element_text facet_wrap
+#' @importFrom ggplot2 autoplot ggplot aes geom_errorbar geom_text geom_point geom_line geom_col theme_bw labs theme element_text facet_wrap scale_x_discrete scale_y_continuous sec_axis
 #' @importFrom rlang ensym check_dots_used
 #' @importFrom stats as.formula
 #' @export
@@ -42,6 +42,12 @@ ggplot2::autoplot
 #' dat.aov <- aov(Petal.Width ~ Species, data = iris)
 #' output <- multiple_comparisons(dat.aov, classify = "Species")
 #' autoplot(output, label_height = 0.5)
+#'
+#' # Join the means with a line
+#' autoplot(output, type = "line", label_height = 0.5)
+#'
+#' # Show a single Tukey's HSD reference bar instead of per-mean intervals
+#' autoplot(output, errorbar_type = "hsd")
 autoplot.mct <- function(
 	object,
 	size = 4,
@@ -50,11 +56,21 @@ autoplot.mct <- function(
 	axis_rotation = rotation,
 	label_rotation = rotation,
 	type = "point",
+	errorbar_type = "ci",
+	include_errorbar = TRUE,
+	include_lettering = TRUE,
+	trans_scale = FALSE,
 	...
 ) {
 	stopifnot(inherits(object, "mct"))
 
 	rlang::check_dots_used()
+
+	type <- match.arg(
+		tolower(type),
+		c("point", "line", "col", "column", "bar")
+	)
+	errorbar_type <- match.arg(tolower(errorbar_type), c("ci", "hsd"))
 
 	# Extract the predictions data frame from the mct object
 	# For new structure: object is a list with $predictions
@@ -87,11 +103,38 @@ autoplot.mct <- function(
 	# Get ylab as attribute (works for both old and new structure)
 	ylab <- attributes(object)$ylab
 
-	yval <- ifelse(
-		"PredictedValue" %in% colnames(pred_df),
-		"PredictedValue",
+	# Was a back-transformation applied in multiple_comparisons()?
+	has_backtrans <- "PredictedValue" %in% colnames(pred_df)
+
+	# An HSD bar is a constant width only on the model (transformed) scale, so
+	# requesting one forces plotting on that scale. Otherwise `trans_scale`
+	# decides: FALSE shows the interpretable back-transformed means (when
+	# available), TRUE shows the model-scale means.
+	use_hsd <- errorbar_type == "hsd" && include_errorbar
+	model_scale <- trans_scale || use_hsd
+
+	# Validate HSD availability up-front: a single, constant HSD value is only
+	# produced for Tukey's comparisons without a `by` split.
+	hsd <- if (is.list(object) && "hsd" %in% names(object)) {
+		object$hsd
+	} else {
+		attributes(object)$HSD
+	}
+	if (use_hsd && (is.null(hsd) || !is.numeric(hsd) || length(hsd) != 1)) {
+		stop(
+			"`errorbar_type = \"hsd\"` requires a single Honest Significant ",
+			"Difference value, which is only available for Tukey's comparisons ",
+			"with a constant critical value (no `by` grouping). Use ",
+			"`errorbar_type = \"ci\"` instead.",
+			call. = FALSE
+		)
+	}
+
+	yval <- if (has_backtrans && !model_scale) {
+		"PredictedValue"
+	} else {
 		"predicted.value"
-	)
+	}
 	yval <- rlang::ensym(yval)
 
 	# Calculate hjust based on axis rotation
@@ -115,38 +158,106 @@ autoplot.mct <- function(
 		) +
 		ggplot2::labs(x = "", y = paste0("Predicted ", ylab))
 
-	if (tolower(type) == "point") {
+	if (type %in% c("point", "line")) {
 		plot <- plot +
 			ggplot2::geom_point(
 				ggplot2::aes(y = {{ yval }}),
 				colour = "black",
 				shape = 16,
 				size = 2
-			) +
-			ggplot2::geom_errorbar(
-				aes(ymin = .data[["low"]], ymax = .data[["up"]]),
-				width = 0.2
 			)
-	} else if (tolower(type) %in% c("col", "column")) {
+		if (type == "line") {
+			plot <- plot +
+				ggplot2::geom_line(
+					ggplot2::aes(y = {{ yval }}, group = 1),
+					colour = "black",
+					linewidth = 0.4
+				)
+		}
+	} else if (type %in% c("col", "column", "bar")) {
 		plot <- plot +
 			ggplot2::geom_col(
 				ggplot2::aes(y = {{ yval }}),
 				colour = "black",
 				fill = "cornflowerblue",
 				alpha = 0.75
-			) +
-			ggplot2::geom_errorbar(
-				aes(ymin = .data[["low"]], ymax = .data[["up"]]),
-				width = 0.2
 			)
 	}
 
-	if ("groups" %in% colnames(pred_df)) {
-		# Calculate outside of aes()
-		y_pos <- ifelse(pred_df$up > pred_df$low, pred_df$up, pred_df$low)
+	if (include_errorbar && errorbar_type == "ci") {
+		if (model_scale) {
+			# CI on the model scale: predicted.value +/- ci. Uses the `ci` column
+			# so the interval respects the `int.type` chosen in
+			# multiple_comparisons() (rather than assuming +/- 2 SE).
+			plot <- plot +
+				ggplot2::geom_errorbar(
+					ggplot2::aes(
+						ymin = .data[["predicted.value"]] - .data[["ci"]],
+						ymax = .data[["predicted.value"]] + .data[["ci"]]
+					),
+					width = 0.2
+				)
+		} else {
+			# Back-transformed (or untransformed) scale: low/up are already on the
+			# correct scale.
+			plot <- plot +
+				ggplot2::geom_errorbar(
+					ggplot2::aes(ymin = .data[["low"]], ymax = .data[["up"]]),
+					width = 0.2
+				)
+		}
+	} else if (include_errorbar && errorbar_type == "hsd") {
+		# A single reference bar of total length `hsd` (the minimum significant
+		# difference). It is given its own dedicated category to the left of the
+		# treatments - rather than sharing the first mean's position - and centred
+		# on the mid-point of the model-scale y range, so it reads as a
+		# free-floating reference rather than belonging to any one mean.
+		x_levels <- if (is.factor(pred_df[[x_var]])) {
+			levels(pred_df[[x_var]])
+		} else {
+			sort(unique(as.character(pred_df[[x_var]])))
+		}
+		# Keep only levels actually present so empty categories don't appear.
+		x_levels <- x_levels[x_levels %in% as.character(pred_df[[x_var]])]
+
+		hsd_label <- "HSD"
+		y_mid <- mean(range(pred_df[["predicted.value"]], na.rm = TRUE))
+		hsd_df <- data.frame(
+			x = hsd_label,
+			ymin = y_mid - 0.5 * hsd,
+			ymax = y_mid + 0.5 * hsd,
+			stringsAsFactors = FALSE
+		)
+		names(hsd_df)[1] <- x_var
+		plot <- plot +
+			ggplot2::geom_errorbar(
+				data = hsd_df,
+				mapping = ggplot2::aes(
+					x = .data[[x_var]],
+					ymin = .data[["ymin"]],
+					ymax = .data[["ymax"]]
+				),
+				width = 0.2,
+				inherit.aes = FALSE
+			) +
+			# Reserve the left-most slot for the HSD bar; treatments follow it.
+			ggplot2::scale_x_discrete(limits = c(hsd_label, x_levels))
+	}
+
+	if (include_lettering && "groups" %in% colnames(pred_df)) {
+		# Position labels relative to the bounds of the scale actually being
+		# plotted, so they sit just above the means whichever scale is in use.
+		if (model_scale) {
+			upper <- pred_df[["predicted.value"]] + pred_df[["ci"]]
+			lower <- pred_df[["predicted.value"]] - pred_df[["ci"]]
+		} else {
+			upper <- pred_df[["up"]]
+			lower <- pred_df[["low"]]
+		}
+		y_pos <- ifelse(upper > lower, upper, lower)
 		nudge_val <- ifelse(
 			abs(label_height) <= 1,
-			abs(pred_df$up - pred_df$low) * label_height,
+			abs(upper - lower) * label_height,
 			label_height
 		)
 
@@ -167,6 +278,23 @@ autoplot.mct <- function(
 				paste(facet_cols, collapse = " + ")
 			)))
 	}
+
+	# When plotting on the model scale and a back-transformation is available,
+	# add an exact (nonlinear) back-transformed secondary axis. `back_transform()`
+	# is the same helper multiple_comparisons() uses to build PredictedValue.
+	trans <- attributes(object)$trans
+	if (model_scale && !is.null(trans)) {
+		offset <- attributes(object)$offset
+		power <- attributes(object)$power
+		plot <- plot +
+			ggplot2::scale_y_continuous(
+				sec.axis = ggplot2::sec_axis(
+					transform = function(z) back_transform(z, trans, offset, power),
+					name = paste0("Predicted ", ylab, " (back-transformed)")
+				)
+			)
+	}
+
 	return(plot)
 }
 

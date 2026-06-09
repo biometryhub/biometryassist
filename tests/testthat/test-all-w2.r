@@ -1,3 +1,17 @@
+# Regression guard for the worked examples and exercises taught in the training
+# workshops. The goal is to catch anything that would break the course: an
+# example that no longer runs, results students would see changing, or a figure
+# changing. Accordingly each test checks, in order:
+#   1. the example runs and returns the expected object,
+#   2. the numbers students see (at display precision, so they are OS-stable),
+#   3. the printed output (via print.mct(), which rounds),
+#   4. the plot *content* - that autoplot() maps the right values - via
+#      expect_autoplot_data(), which runs on every platform (including CI), and
+#   5. the plot *rendering* via vdiffr (expect_local_doppelganger()), which is
+#      pixel-exact and so runs locally only (skipped on CI; see
+#      helper-expectations.R).
+# All workshop tests are skipped on CRAN.
+
 # Load pre-computed models once for reuse across tests
 suppressWarnings(load(test_path("data", "w2_models.Rdata"), envir = .GlobalEnv))
 
@@ -5,86 +19,97 @@ test_that("example 1 works", {
 	skip_on_cran()
 	withr::local_options(scipen = 100)
 	expect_snapshot_output(anova(example1.aov))
-	pred1.out <- multiple_comparisons(example1.aov, classify = "trt")
+	expect_no_error(
+		pred1.out <- multiple_comparisons(example1.aov, classify = "trt")
+	)
+	expect_s3_class(pred1.out, "mct")
 	expect_equal(
 		pred1.out$predictions$predicted.value,
-		c(9.96, 12.26, 16.14, 17.77)
+		c(9.96, 12.26, 16.14, 17.77),
+		tolerance = 0.01
 	)
-	expect_snapshot_output(pred1.out$predictions)
-	skip_on_ci()
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
-	vdiffr::expect_doppelganger(
-		title = "example1resplot",
+	expect_snapshot(print(pred1.out))
+
+	ap <- autoplot(pred1.out)
+	expect_autoplot_data(ap, pred1.out)
+	expect_local_doppelganger(
+		"example1resplot",
 		resplot(example1.aov),
 		variant = ggplot2_variant()
 	)
-	vdiffr::expect_doppelganger(title = "example1autoplot", autoplot(pred1.out))
+	expect_local_doppelganger("example1autoplot", ap)
 })
 
 test_that("example 2 works", {
 	skip_on_cran()
 	expect_snapshot_output(anova(example2.aov))
-	pred2.out <- multiple_comparisons(
-		example2.aov,
-		classify = "trt",
-		decimals = 4
+	expect_no_error(
+		pred2.out <- multiple_comparisons(example2.aov, classify = "trt")
 	)
+	expect_s3_class(pred2.out, "mct")
 	expect_equal(
 		pred2.out$predictions$predicted.value,
 		c(11.15, 12.45, 14.02, 15.1, 16.11, 17.24, 17.83),
-		tolerance = 0.001
+		tolerance = 0.01
 	)
-	expect_snapshot_output(pred2.out$predictions)
-	skip_on_ci()
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
-	vdiffr::expect_doppelganger(
-		title = "example2resplot",
+	expect_snapshot(print(pred2.out))
+
+	ap <- autoplot(pred2.out)
+	expect_autoplot_data(ap, pred2.out)
+	expect_local_doppelganger(
+		"example2resplot",
 		resplot(example2.aov),
 		variant = ggplot2_variant()
 	)
-	vdiffr::expect_doppelganger(title = "example2autoplot", autoplot(pred2.out))
+	expect_local_doppelganger("example2autoplot", ap)
 })
 
 test_that("example 3 works", {
 	skip_on_cran()
 	expect_snapshot_output(anova(example3.aov))
-	pred3.out <- multiple_comparisons(example3.aov, classify = "Variety")
+	expect_no_error(
+		pred3.out <- multiple_comparisons(example3.aov, classify = "Variety")
+	)
+	expect_s3_class(pred3.out, "mct")
 	expect_equal(
 		pred3.out$predictions$predicted.value,
-		c(1.68, 2.68, 4.72, 4.85)
+		c(1.68, 2.68, 4.72, 4.85),
+		tolerance = 0.01
 	)
-	expect_snapshot_output(pred3.out$predictions)
-	skip_on_ci()
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
-	vdiffr::expect_doppelganger(
-		title = "example3resplot",
+	expect_snapshot(print(pred3.out))
+
+	ap <- autoplot(pred3.out)
+	expect_autoplot_data(ap, pred3.out)
+	expect_local_doppelganger(
+		"example3resplot",
 		resplot(example3.aov),
 		variant = ggplot2_variant()
 	)
-	vdiffr::expect_doppelganger(title = "example3autoplot", autoplot(pred3.out))
+	expect_local_doppelganger("example3autoplot", ap)
 })
 
 test_that("example 4 works", {
 	skip_on_cran()
 	expect_snapshot_output(anova(example4.aov))
-	pred4.out <- multiple_comparisons(example4.aov, classify = "trt")
+	expect_no_error(
+		pred4.out <- multiple_comparisons(example4.aov, classify = "trt")
+	)
+	expect_s3_class(pred4.out, "mct")
 	expect_equal(
 		pred4.out$predictions$predicted.value,
-		c(1707.94, 1802.7, 2053.73, 2200.08)
+		c(1707.94, 1802.7, 2053.73, 2200.08),
+		tolerance = 0.01
 	)
-	expect_snapshot_output(pred4.out$predictions)
-	skip_on_ci()
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
-	vdiffr::expect_doppelganger(
-		title = "example4resplot",
+	expect_snapshot(print(pred4.out))
+
+	ap <- autoplot(pred4.out)
+	expect_autoplot_data(ap, pred4.out)
+	expect_local_doppelganger(
+		"example4resplot",
 		resplot(example4.aov),
 		variant = ggplot2_variant()
 	)
-	vdiffr::expect_doppelganger(title = "example4autoplot", autoplot(pred4.out))
+	expect_local_doppelganger("example4autoplot", ap)
 })
 
 test_that("example 3 LMM works", {
@@ -93,24 +118,25 @@ test_that("example 3 LMM works", {
 	expect_snapshot_output(print.data.frame(
 		asreml::wald(example3.asr, denDF = "default")$Wald
 	))
-	pred3asr.out <- multiple_comparisons(example3.asr, classify = "Variety")
+	expect_no_error(
+		pred3asr.out <- multiple_comparisons(example3.asr, classify = "Variety")
+	)
+	expect_s3_class(pred3asr.out, "mct")
 	expect_equal(
 		pred3asr.out$predictions$predicted.value,
-		c(1.68, 2.68, 4.72, 4.85)
+		c(1.68, 2.68, 4.72, 4.85),
+		tolerance = 0.01
 	)
-	expect_snapshot_output(pred3asr.out$predictions)
-	skip_on_ci()
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
-	vdiffr::expect_doppelganger(
-		title = "example3lmmresplot",
+	expect_snapshot(print(pred3asr.out))
+
+	ap <- autoplot(pred3asr.out)
+	expect_autoplot_data(ap, pred3asr.out)
+	expect_local_doppelganger(
+		"example3lmmresplot",
 		resplot(example3.asr),
 		variant = ggplot2_variant()
 	)
-	vdiffr::expect_doppelganger(
-		title = "example3lmmautoplot",
-		autoplot(pred3asr.out)
-	)
+	expect_local_doppelganger("example3lmmautoplot", ap)
 })
 
 test_that("example 4 LMM works", {
@@ -120,25 +146,25 @@ test_that("example 4 LMM works", {
 	expect_snapshot_output(print.data.frame(
 		asreml::wald(example4.asr, denDF = "default")$Wald
 	))
-	pred4lmm.out <- multiple_comparisons(example4.asr, classify = "trt")
+	expect_no_error(
+		pred4lmm.out <- multiple_comparisons(example4.asr, classify = "trt")
+	)
+	expect_s3_class(pred4lmm.out, "mct")
 	expect_equal(
 		pred4lmm.out$predictions$predicted.value,
 		c(1707.94, 1802.7, 2053.73, 2200.08),
 		tolerance = 0.01
 	)
-	expect_snapshot_output(pred4lmm.out$predictions)
-	skip_on_ci()
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
-	vdiffr::expect_doppelganger(
-		title = "example4lmmresplot",
+	expect_snapshot(print(pred4lmm.out))
+
+	ap <- autoplot(pred4lmm.out)
+	expect_autoplot_data(ap, pred4lmm.out)
+	expect_local_doppelganger(
+		"example4lmmresplot",
 		resplot(example4.asr),
 		variant = ggplot2_variant()
 	)
-	vdiffr::expect_doppelganger(
-		title = "example4lmmautoplot",
-		autoplot(pred4lmm.out)
-	)
+	expect_local_doppelganger("example4lmmautoplot", ap)
 })
 
 test_that("example 5 works", {
@@ -147,6 +173,8 @@ test_that("example 5 works", {
 	expect_snapshot_output(print.data.frame(
 		asreml::wald(example5.asr, denDF = "default")$Wald
 	))
+	# Exception: example 5's letter-grouping message is not reproducible on
+	# Linux, so the remainder of this example is verified locally only.
 	skip_on_ci()
 	skip_on_covr()
 	skip_if(packageVersion("grid") < "4.2.1")
@@ -199,20 +227,20 @@ test_that("example 5 works", {
 	expect_true(all(grepl("^[a-z]+$", pred5.out1$predictions$groups)))
 
 	pred5.out2 <- multiple_comparisons(example5.asr, classify = "Fungicide")
-	expect_snapshot_output(pred5.out2$predictions)
-	vdiffr::expect_doppelganger(
-		title = "example5lmmresplot",
+	expect_s3_class(pred5.out2, "mct")
+	expect_snapshot(print(pred5.out2))
+
+	ap1 <- autoplot(pred5.out1)
+	ap2 <- autoplot(pred5.out2)
+	expect_autoplot_data(ap1, pred5.out1)
+	expect_autoplot_data(ap2, pred5.out2)
+	expect_local_doppelganger(
+		"example5lmmresplot",
 		resplot(example5.asr),
 		variant = ggplot2_variant()
 	)
-	vdiffr::expect_doppelganger(
-		title = "example5lmmautoplot1",
-		autoplot(pred5.out1)
-	)
-	vdiffr::expect_doppelganger(
-		title = "example5lmmautoplot2",
-		autoplot(pred5.out2)
-	)
+	expect_local_doppelganger("example5lmmautoplot1", ap1)
+	expect_local_doppelganger("example5lmmautoplot2", ap2)
 })
 
 test_that("example 6 works", {
@@ -242,24 +270,22 @@ test_that("example 6 works", {
 		pred6.out <- multiple_comparisons(example6.asr, classify = "Treatment"),
 		"Some treatments sharing the same letter group have non-overlapping confidence intervals"
 	)
-	expect_snapshot_output(pred6.out$predictions)
-	skip_on_ci()
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
-	vdiffr::expect_doppelganger(
-		title = "example6lmmresplot",
+	expect_s3_class(pred6.out, "mct")
+	expect_snapshot(print(pred6.out))
+
+	ap <- autoplot(pred6.out)
+	expect_autoplot_data(ap, pred6.out)
+	expect_local_doppelganger(
+		"example6lmmresplot",
 		resplot(example6.asr),
 		variant = ggplot2_variant()
 	)
-	vdiffr::expect_doppelganger(
-		title = "example6variogram",
+	expect_local_doppelganger(
+		"example6variogram",
 		vg6,
 		variant = ggplot2_variant()
 	)
-	vdiffr::expect_doppelganger(
-		title = "example6lmmautoplot2",
-		autoplot(pred6.out)
-	)
+	expect_local_doppelganger("example6lmmautoplot2", ap)
 })
 
 test_that("example 7 works", {
@@ -290,24 +316,22 @@ test_that("example 7 works", {
 		),
 		"Some treatments sharing the same letter group have non-overlapping confidence intervals"
 	)
-	expect_snapshot_output(pred7.out$predictions)
-	skip_on_ci()
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
-	vdiffr::expect_doppelganger(
-		title = "example7lmmresplot",
+	expect_s3_class(pred7.out, "mct")
+	expect_snapshot(print(pred7.out))
+
+	ap <- autoplot(pred7.out)
+	expect_autoplot_data(ap, pred7.out)
+	expect_local_doppelganger(
+		"example7lmmresplot",
 		resplot(example7.asr),
 		variant = ggplot2_variant()
 	)
-	vdiffr::expect_doppelganger(
-		title = "example7variogram",
+	expect_local_doppelganger(
+		"example7variogram",
 		vg7,
 		variant = ggplot2_variant()
 	)
-	vdiffr::expect_doppelganger(
-		title = "example7lmmautoplot",
-		autoplot(pred7.out)
-	)
+	expect_local_doppelganger("example7lmmautoplot", ap)
 })
 
 
@@ -321,11 +345,11 @@ test_that("exercise 1 works", {
 	expect_message(
 		pred1e.out <- multiple_comparisons(
 			exercise1.aov,
-			classify = "Variety",
-			decimals = 5
+			classify = "Variety"
 		),
 		"Some treatments sharing the same letter group have non-overlapping confidence intervals"
 	)
+	expect_s3_class(pred1e.out, "mct")
 	expect_equal(
 		pred1e.out$predictions$predicted.value,
 		c(
@@ -341,7 +365,8 @@ test_that("exercise 1 works", {
 			2.54000,
 			2.75000,
 			2.75333
-		)
+		),
+		tolerance = 0.01
 	)
 	pred1e.out$predictions <- pred1e.out$predictions[
 		order(
@@ -349,26 +374,25 @@ test_that("exercise 1 works", {
 			as.character(pred1e.out$predictions$Variety)
 		),
 	]
-	expect_snapshot_output(pred1e.out$predictions)
-	skip_on_ci()
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
-	vdiffr::expect_doppelganger(
-		title = "exercise1resplot",
+	expect_snapshot(print(pred1e.out))
+
+	ap <- autoplot(pred1e.out)
+	expect_autoplot_data(ap, pred1e.out)
+	expect_local_doppelganger(
+		"exercise1resplot",
 		resplot(exercise1.aov),
 		variant = ggplot2_variant()
 	)
-	skip_on_os("linux")
-	vdiffr::expect_doppelganger(
-		title = "exercise1autoplot",
-		autoplot(pred1e.out)
-	)
+	expect_local_doppelganger("exercise1autoplot", ap)
 })
 
 test_that("exercise 2 works", {
 	skip_on_cran()
 	expect_snapshot_output(anova(exercise2.aov))
-	pred2e.out <- multiple_comparisons(exercise2.aov, classify = "Treatment")
+	expect_no_error(
+		pred2e.out <- multiple_comparisons(exercise2.aov, classify = "Treatment")
+	)
+	expect_s3_class(pred2e.out, "mct")
 	pred2e.out$predictions$predicted.value <- round(
 		pred2e.out$predictions$predicted.value,
 		1
@@ -380,18 +404,15 @@ test_that("exercise 2 works", {
 	expect_snapshot(data.frame(lapply(pred2e.out$predictions, function(y) {
 		if (is.numeric(y)) round(y, 1) else y
 	})))
-	skip_on_ci()
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
-	vdiffr::expect_doppelganger(
-		title = "exercise2resplot",
+
+	ap <- autoplot(pred2e.out, rotation = 90)
+	expect_autoplot_data(ap, pred2e.out)
+	expect_local_doppelganger(
+		"exercise2resplot",
 		resplot(exercise2.aov),
 		variant = ggplot2_variant()
 	)
-	vdiffr::expect_doppelganger(
-		title = "exercise2autoplot",
-		autoplot(pred2e.out, rotation = 90)
-	)
+	expect_local_doppelganger("exercise2autoplot", ap)
 })
 
 test_that("exercise 3 works", {
@@ -401,23 +422,22 @@ test_that("exercise 3 works", {
 		pred3e.out <- multiple_comparisons(exercise3.aov, classify = "Variety"),
 		"Some treatments sharing the same letter group have non-overlapping confidence intervals"
 	)
+	expect_s3_class(pred3e.out, "mct")
 	expect_equal(
 		pred3e.out$predictions$predicted.value,
-		c(2.84, 2.86, 3.08, 4.7, 4.78, 4.96, 8.88)
+		c(2.84, 2.86, 3.08, 4.7, 4.78, 4.96, 8.88),
+		tolerance = 0.01
 	)
-	expect_snapshot_output(pred3e.out$predictions)
-	skip_on_ci()
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
-	vdiffr::expect_doppelganger(
-		title = "exercise3resplot",
+	expect_snapshot(print(pred3e.out))
+
+	ap <- autoplot(pred3e.out)
+	expect_autoplot_data(ap, pred3e.out)
+	expect_local_doppelganger(
+		"exercise3resplot",
 		resplot(exercise3.aov),
 		variant = ggplot2_variant()
 	)
-	vdiffr::expect_doppelganger(
-		title = "exercise3autoplot",
-		autoplot(pred3e.out)
-	)
+	expect_local_doppelganger("exercise3autoplot", ap)
 })
 
 test_that("exercise 4 works", {
@@ -427,11 +447,8 @@ test_that("exercise 4 works", {
 		anova(exercise4.aov)$`Mean Sq`,
 		c(0.64812028, 0.17470687, 0.13221151)
 	)
-	skip_on_ci()
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
-	vdiffr::expect_doppelganger(
-		title = "exercise4resplot",
+	expect_local_doppelganger(
+		"exercise4resplot",
 		resplot(exercise4.aov),
 		variant = ggplot2_variant()
 	)
@@ -440,47 +457,49 @@ test_that("exercise 4 works", {
 test_that("exercise 5 works", {
 	skip_on_cran()
 	expect_snapshot_output(anova(exercise5.aov))
-	pred5e.out <- multiple_comparisons(exercise5.aov, classify = "Treatment")
+	expect_no_error(
+		pred5e.out <- multiple_comparisons(exercise5.aov, classify = "Treatment")
+	)
+	expect_s3_class(pred5e.out, "mct")
 	expect_equal(
 		pred5e.out$predictions$predicted.value,
-		c(31.61, 35.98, 38.95, 43.52, 48.12)
+		c(31.61, 35.98, 38.95, 43.52, 48.12),
+		tolerance = 0.01
 	)
-	expect_snapshot_output(pred5e.out$predictions)
-	skip_on_ci()
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
-	vdiffr::expect_doppelganger(
-		title = "exercise5resplot",
+	expect_snapshot(print(pred5e.out))
+
+	ap <- autoplot(pred5e.out)
+	expect_autoplot_data(ap, pred5e.out)
+	expect_local_doppelganger(
+		"exercise5resplot",
 		resplot(exercise5.aov),
 		variant = ggplot2_variant()
 	)
-	vdiffr::expect_doppelganger(
-		title = "exercise5autoplot",
-		autoplot(pred5e.out)
-	)
+	expect_local_doppelganger("exercise5autoplot", ap)
 })
 
 test_that("exercise 6 works", {
 	skip_on_cran()
 	expect_snapshot_output(anova(exercise6.aov))
-	pred6e.out <- multiple_comparisons(exercise6.aov, classify = "Treatment")
+	expect_no_error(
+		pred6e.out <- multiple_comparisons(exercise6.aov, classify = "Treatment")
+	)
+	expect_s3_class(pred6e.out, "mct")
 	expect_equal(
 		pred6e.out$predictions$predicted.value,
-		c(16.01, 17.51, 21.40, 24.39)
+		c(16.01, 17.51, 21.40, 24.39),
+		tolerance = 0.01
 	)
-	expect_snapshot_output(pred6e.out$predictions)
-	skip_on_ci()
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
-	vdiffr::expect_doppelganger(
-		title = "exercise6resplot",
+	expect_snapshot(print(pred6e.out))
+
+	ap <- autoplot(pred6e.out)
+	expect_autoplot_data(ap, pred6e.out)
+	expect_local_doppelganger(
+		"exercise6resplot",
 		resplot(exercise6.aov),
 		variant = ggplot2_variant()
 	)
-	vdiffr::expect_doppelganger(
-		title = "exercise6autoplot",
-		autoplot(pred6e.out)
-	)
+	expect_local_doppelganger("exercise6autoplot", ap)
 })
 
 test_that("exercise 7 works", {
@@ -489,24 +508,25 @@ test_that("exercise 7 works", {
 	expect_snapshot_output(print.data.frame(
 		asreml::wald(exercise7.asr, denDF = "default")$Wald
 	))
-	pred7e.out <- multiple_comparisons(exercise7.asr, classify = "Variety")
+	expect_no_error(
+		pred7e.out <- multiple_comparisons(exercise7.asr, classify = "Variety")
+	)
+	expect_s3_class(pred7e.out, "mct")
 	expect_equal(
 		pred7e.out$predictions$predicted.value,
-		c(2.84, 2.86, 3.08, 4.70, 4.78, 4.96, 8.88)
+		c(2.84, 2.86, 3.08, 4.70, 4.78, 4.96, 8.88),
+		tolerance = 0.01
 	)
-	expect_snapshot_output(pred7e.out$predictions)
-	skip_on_ci()
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
-	vdiffr::expect_doppelganger(
-		title = "exercise7resplot",
+	expect_snapshot(print(pred7e.out))
+
+	ap <- autoplot(pred7e.out)
+	expect_autoplot_data(ap, pred7e.out)
+	expect_local_doppelganger(
+		"exercise7resplot",
 		resplot(exercise7.asr),
 		variant = ggplot2_variant()
 	)
-	vdiffr::expect_doppelganger(
-		title = "exercise7autoplot",
-		autoplot(pred7e.out)
-	)
+	expect_local_doppelganger("exercise7autoplot", ap)
 })
 
 test_that("exercise 8 works", {
@@ -520,11 +540,8 @@ test_that("exercise 8 works", {
 	expect_snapshot_output(print.data.frame(
 		asreml::wald(exercise8.asr, denDF = "default")$Wald
 	))
-	skip_on_ci()
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
-	vdiffr::expect_doppelganger(
-		title = "exercise8resplot",
+	expect_local_doppelganger(
+		"exercise8resplot",
 		resplot(exercise8.asr),
 		variant = ggplot2_variant()
 	)
@@ -536,24 +553,25 @@ test_that("exercise 9 works", {
 	expect_snapshot_output(print.data.frame(
 		asreml::wald(exercise9.asr, denDF = "default")$Wald
 	))
-	pred9e.out <- multiple_comparisons(exercise9.asr, classify = "Treatment")
+	expect_no_error(
+		pred9e.out <- multiple_comparisons(exercise9.asr, classify = "Treatment")
+	)
+	expect_s3_class(pred9e.out, "mct")
 	expect_equal(
 		pred9e.out$predictions$predicted.value,
-		c(31.61, 35.98, 38.95, 43.52, 48.12)
+		c(31.61, 35.98, 38.95, 43.52, 48.12),
+		tolerance = 0.01
 	)
-	expect_snapshot_output(pred9e.out$predictions)
-	skip_on_ci()
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
-	vdiffr::expect_doppelganger(
-		title = "exercise9resplot",
+	expect_snapshot(print(pred9e.out))
+
+	ap <- autoplot(pred9e.out)
+	expect_autoplot_data(ap, pred9e.out)
+	expect_local_doppelganger(
+		"exercise9resplot",
 		resplot(exercise9.asr),
 		variant = ggplot2_variant()
 	)
-	vdiffr::expect_doppelganger(
-		title = "exercise9autoplot",
-		autoplot(pred9e.out)
-	)
+	expect_local_doppelganger("exercise9autoplot", ap)
 })
 
 test_that("exercise 10 works", {
@@ -562,24 +580,25 @@ test_that("exercise 10 works", {
 	expect_snapshot_output(print.data.frame(
 		asreml::wald(exercise10.asr, denDF = "default")$Wald
 	))
-	pred10e.out <- multiple_comparisons(exercise10.asr, classify = "Treatment")
+	expect_no_error(
+		pred10e.out <- multiple_comparisons(exercise10.asr, classify = "Treatment")
+	)
+	expect_s3_class(pred10e.out, "mct")
 	expect_equal(
 		pred10e.out$predictions$predicted.value,
-		c(16.01, 17.51, 21.40, 24.39)
+		c(16.01, 17.51, 21.40, 24.39),
+		tolerance = 0.01
 	)
-	expect_snapshot_output(pred10e.out$predictions)
-	skip_on_ci()
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
-	vdiffr::expect_doppelganger(
-		title = "exercise10resplot",
+	expect_snapshot(print(pred10e.out))
+
+	ap <- autoplot(pred10e.out)
+	expect_autoplot_data(ap, pred10e.out)
+	expect_local_doppelganger(
+		"exercise10resplot",
 		resplot(exercise10.asr),
 		variant = ggplot2_variant()
 	)
-	vdiffr::expect_doppelganger(
-		title = "exercise10autoplot",
-		autoplot(pred10e.out)
-	)
+	expect_local_doppelganger("exercise10autoplot", ap)
 })
 
 test_that("exercise 11 works", {
@@ -588,34 +607,38 @@ test_that("exercise 11 works", {
 	expect_snapshot_output(print.data.frame(
 		asreml::wald(exercise11.asr, denDF = "default")$Wald
 	))
-	pred11e.out1 <- multiple_comparisons(exercise11.asr, classify = "Genotype")
+	expect_no_error(
+		pred11e.out1 <- multiple_comparisons(exercise11.asr, classify = "Genotype")
+	)
+	expect_s3_class(pred11e.out1, "mct")
 	expect_equal(
 		pred11e.out1$predictions$predicted.value,
-		c(97.68, 104.89, 109.35)
+		c(97.68, 104.89, 109.35),
+		tolerance = 0.01
 	)
-	pred11e.out2 <- multiple_comparisons(exercise11.asr, classify = "Nitrogen")
+	expect_no_error(
+		pred11e.out2 <- multiple_comparisons(exercise11.asr, classify = "Nitrogen")
+	)
+	expect_s3_class(pred11e.out2, "mct")
 	expect_equal(
 		pred11e.out2$predictions$predicted.value,
-		c(79.39, 98.89, 114.22, 123.39)
+		c(79.39, 98.89, 114.22, 123.39),
+		tolerance = 0.01
 	)
-	expect_snapshot_output(pred11e.out1$predictions)
-	expect_snapshot_output(pred11e.out2$predictions)
-	skip_on_ci()
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
-	vdiffr::expect_doppelganger(
-		title = "exercise11resplot",
+	expect_snapshot(print(pred11e.out1))
+	expect_snapshot(print(pred11e.out2))
+
+	ap1 <- autoplot(pred11e.out1)
+	ap2 <- autoplot(pred11e.out2)
+	expect_autoplot_data(ap1, pred11e.out1)
+	expect_autoplot_data(ap2, pred11e.out2)
+	expect_local_doppelganger(
+		"exercise11resplot",
 		resplot(exercise11.asr),
 		variant = ggplot2_variant()
 	)
-	vdiffr::expect_doppelganger(
-		title = "exercise11autoplot1",
-		autoplot(pred11e.out1)
-	)
-	vdiffr::expect_doppelganger(
-		title = "exercise11autoplot2",
-		autoplot(pred11e.out2)
-	)
+	expect_local_doppelganger("exercise11autoplot1", ap1)
+	expect_local_doppelganger("exercise11autoplot2", ap2)
 })
 
 test_that("exercise 12 works", {
@@ -624,27 +647,28 @@ test_that("exercise 12 works", {
 	expect_snapshot_output(print.data.frame(
 		asreml::wald(exercise12.asr, denDF = "default")$Wald
 	))
-	pred12e.out <- multiple_comparisons(
-		exercise12.asr,
-		classify = "Variety:Irrigation"
+	expect_no_error(
+		pred12e.out <- multiple_comparisons(
+			exercise12.asr,
+			classify = "Variety:Irrigation"
+		)
 	)
+	expect_s3_class(pred12e.out, "mct")
 	expect_equal(
 		pred12e.out$predictions$predicted.value,
-		c(4.61, 5.47, 5.91, 6.19, 6.43, 6.92, 7.02, 7.68, 7.7, 7.75)
+		c(4.61, 5.47, 5.91, 6.19, 6.43, 6.92, 7.02, 7.68, 7.7, 7.75),
+		tolerance = 0.01
 	)
-	expect_snapshot_output(pred12e.out$predictions)
-	skip_on_ci()
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
-	vdiffr::expect_doppelganger(
-		title = "exercise12resplot",
+	expect_snapshot(print(pred12e.out))
+
+	ap <- autoplot(pred12e.out)
+	expect_autoplot_data(ap, pred12e.out)
+	expect_local_doppelganger(
+		"exercise12resplot",
 		resplot(exercise12.asr),
 		variant = ggplot2_variant()
 	)
-	vdiffr::expect_doppelganger(
-		title = "exercise12autoplot",
-		autoplot(pred12e.out)
-	)
+	expect_local_doppelganger("exercise12autoplot", ap)
 })
 
 test_that("exercise 13 works", {
@@ -662,37 +686,40 @@ test_that("exercise 13 works", {
 		quiet = TRUE
 	)
 	expect_equal(logl.tab$LogLRT.pvalue, "0.221")
-	pred13e.out1 <- multiple_comparisons(exercise13.asr, classify = "Genotype")
+	expect_no_error(
+		pred13e.out1 <- multiple_comparisons(exercise13.asr, classify = "Genotype")
+	)
+	expect_s3_class(pred13e.out1, "mct")
 	expect_equal(
 		pred13e.out1$predictions$predicted.value,
-		c(97.41, 104.31, 110.07)
+		c(97.41, 104.31, 110.07),
+		tolerance = 0.01
 	)
-	expect_snapshot_output(pred13e.out1$predictions)
-	pred13e.out2 <- multiple_comparisons(exercise13.asr, classify = "Nitrogen")
+	expect_snapshot(print(pred13e.out1))
+	expect_no_error(
+		pred13e.out2 <- multiple_comparisons(exercise13.asr, classify = "Nitrogen")
+	)
+	expect_s3_class(pred13e.out2, "mct")
 	expect_equal(
 		pred13e.out2$predictions$predicted.value,
-		c(79.44, 98.82, 114.08, 123.37)
+		c(79.44, 98.82, 114.08, 123.37),
+		tolerance = 0.01
 	)
-	expect_snapshot_output(pred13e.out2$predictions)
-	skip_on_ci()
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
-	vdiffr::expect_doppelganger(
-		title = "exercise13resplot",
+	expect_snapshot(print(pred13e.out2))
+
+	ap1 <- autoplot(pred13e.out1)
+	ap2 <- autoplot(pred13e.out2)
+	expect_autoplot_data(ap1, pred13e.out1)
+	expect_autoplot_data(ap2, pred13e.out2)
+	expect_local_doppelganger(
+		"exercise13resplot",
 		resplot(exercise13.asr),
 		variant = ggplot2_variant()
 	)
-	vdiffr::expect_doppelganger(
-		title = "exercise13autoplot1",
-		autoplot(pred13e.out1)
-	)
-	vdiffr::expect_doppelganger(
-		title = "exercise13autoplot2",
-		autoplot(pred13e.out2)
-	)
-	# skip_on_os(c("windows", "mac"))
-	vdiffr::expect_doppelganger(
-		title = "exercise13variogram",
+	expect_local_doppelganger("exercise13autoplot1", ap1)
+	expect_local_doppelganger("exercise13autoplot2", ap2)
+	expect_local_doppelganger(
+		"exercise13variogram",
 		variogram(exercise13.asr),
 		variant = ggplot2_variant()
 	)
@@ -719,6 +746,7 @@ test_that("exercise 14 works", {
 		),
 		"Some treatments sharing the same letter group have non-overlapping confidence intervals"
 	)
+	expect_s3_class(pred14e.out, "mct")
 	expect_equal(
 		pred14e.out$predictions$predicted.value,
 		c(
@@ -772,24 +800,21 @@ test_that("exercise 14 works", {
 			4.43,
 			4.49,
 			4.52
-		)
+		),
+		tolerance = 0.01
 	)
-	expect_snapshot_output(pred14e.out$predictions)
-	skip_on_ci()
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
-	vdiffr::expect_doppelganger(
-		title = "exercise14resplot",
+	expect_snapshot(print(pred14e.out))
+
+	ap <- autoplot(pred14e.out)
+	expect_autoplot_data(ap, pred14e.out)
+	expect_local_doppelganger(
+		"exercise14resplot",
 		resplot(exercise14.asr),
 		variant = ggplot2_variant()
 	)
-	vdiffr::expect_doppelganger(
-		title = "exercise14autoplot",
-		autoplot(pred14e.out)
-	)
-	# skip_on_os(c("windows", "mac"))
-	vdiffr::expect_doppelganger(
-		title = "exercise14variogram",
+	expect_local_doppelganger("exercise14autoplot", ap)
+	expect_local_doppelganger(
+		"exercise14variogram",
 		variogram(exercise14.asr),
 		variant = ggplot2_variant()
 	)
@@ -809,54 +834,65 @@ test_that("exercise 15 works", {
 		quiet = TRUE
 	)
 	expect_equal(logl.tab$LogLRT.pvalue, "0.156")
-	pred15e.out1 <- multiple_comparisons(
-		exercise15.asr,
-		classify = "Control",
-		present = c("Control", "Rate", "Season")
+	expect_no_error(
+		pred15e.out1 <- multiple_comparisons(
+			exercise15.asr,
+			classify = "Control",
+			present = c("Control", "Rate", "Season")
+		)
 	)
-	expect_equal(pred15e.out1$predictions$predicted.value, c(2.37, 3.06))
-	expect_snapshot_output(pred15e.out1$predictions)
-	pred15e.out2 <- multiple_comparisons(
-		exercise15.asr,
-		classify = "Rate",
-		present = c("Control", "Rate", "Season")
+	expect_s3_class(pred15e.out1, "mct")
+	expect_equal(
+		pred15e.out1$predictions$predicted.value,
+		c(2.37, 3.06),
+		tolerance = 0.01
 	)
+	expect_snapshot(print(pred15e.out1))
+	expect_no_error(
+		pred15e.out2 <- multiple_comparisons(
+			exercise15.asr,
+			classify = "Rate",
+			present = c("Control", "Rate", "Season")
+		)
+	)
+	expect_s3_class(pred15e.out2, "mct")
 	expect_equal(
 		pred15e.out2$predictions$predicted.value,
-		c(1.99, 2.48, 2.62, 3.06)
+		c(1.99, 2.48, 2.62, 3.06),
+		tolerance = 0.01
 	)
-	expect_snapshot_output(pred15e.out2$predictions)
-	pred15e.out3 <- multiple_comparisons(
-		exercise15.asr,
-		classify = "Season",
-		present = c("Control", "Rate", "Season")
+	expect_snapshot(print(pred15e.out2))
+	expect_no_error(
+		pred15e.out3 <- multiple_comparisons(
+			exercise15.asr,
+			classify = "Season",
+			present = c("Control", "Rate", "Season")
+		)
 	)
-	expect_equal(pred15e.out3$predictions$predicted.value, c(2.14, 2.59, 3.06))
-	expect_snapshot_output(pred15e.out3$predictions)
-	skip_on_ci()
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
+	expect_s3_class(pred15e.out3, "mct")
+	expect_equal(
+		pred15e.out3$predictions$predicted.value,
+		c(2.14, 2.59, 3.06),
+		tolerance = 0.01
+	)
+	expect_snapshot(print(pred15e.out3))
 
-	vdiffr::expect_doppelganger(
-		title = "exercise15resplot",
+	ap1 <- autoplot(pred15e.out1)
+	ap2 <- autoplot(pred15e.out2)
+	ap3 <- autoplot(pred15e.out3)
+	expect_autoplot_data(ap1, pred15e.out1)
+	expect_autoplot_data(ap2, pred15e.out2)
+	expect_autoplot_data(ap3, pred15e.out3)
+	expect_local_doppelganger(
+		"exercise15resplot",
 		resplot(exercise15.asr),
 		variant = ggplot2_variant()
 	)
-	vdiffr::expect_doppelganger(
-		title = "exercise15autoplot1",
-		autoplot(pred15e.out1)
-	)
-	vdiffr::expect_doppelganger(
-		title = "exercise15autoplot2",
-		autoplot(pred15e.out2)
-	)
-	vdiffr::expect_doppelganger(
-		title = "exercise15autoplot3",
-		autoplot(pred15e.out3)
-	)
-	# skip_on_os(c("windows", "mac"))
-	vdiffr::expect_doppelganger(
-		title = "exercise15variogram",
+	expect_local_doppelganger("exercise15autoplot1", ap1)
+	expect_local_doppelganger("exercise15autoplot2", ap2)
+	expect_local_doppelganger("exercise15autoplot3", ap3)
+	expect_local_doppelganger(
+		"exercise15variogram",
 		variogram(exercise15.asr),
 		variant = ggplot2_variant()
 	)

@@ -11,6 +11,7 @@
 ## Minor changes
 
 - Added the ability to add buffers or double buffers around blocks. (#169)
+- `autoplot()` for `multiple_comparisons()` output gains several new options (thanks to Michael Mumford, #161): `type = "line"` joins the means with a line; `include_errorbar` and `include_lettering` toggle the error bars and significance letters; `errorbar_type = "hsd"` draws a single Tukey's HSD reference bar instead of per-mean intervals; and `trans_scale = TRUE` plots back-transformed means on the model (transformed) scale with an exact back-transformed secondary axis.
 
 ## Bug Fixes
 
