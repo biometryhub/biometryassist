@@ -36,4 +36,5 @@ inst/build_manifest.R
 inst/manifest.json
 CLAUDE\.md
 .env
-.\.md
+context.md
+pairwise_comparisons_phase1_plan.md
