@@ -6,11 +6,11 @@
 #' @param rotation Rotate the x axis labels and the treatment group labels within the plot. Allows for easier reading of long axis or treatment labels. Number between 0 and 360 (inclusive) - default 0
 #' @param axis_rotation Enables rotation of the x axis independently of the group labels within the plot.
 #' @param label_rotation Enables rotation of the treatment group labels independently of the x axis labels within the plot.
-#' @param type A string specifying the type of plot to display. One of `"point"` (the default; point estimates), `"line"` (point estimates joined by a line), or `"column"` (also `"col"` or `"bar"`; a column graph). Error bars are added according to `errorbar_type` unless `include_errorbar = FALSE`.
-#' @param errorbar_type A string (default `"ci"`) specifying what the error bars represent. `"ci"` draws an interval around each mean (the interval type chosen via `int.type` in [multiple_comparisons()]). `"hsd"` draws a single Tukey's Honest Significant Difference reference bar instead of per-mean intervals. An HSD bar is only meaningful on the model (transformed) scale, so requesting `"hsd"` plots the means on that scale.
-#' @param include_errorbar Logical (default `TRUE`). Whether to draw error bars. `FALSE` omits them entirely (the `errorbar_type` is then ignored).
-#' @param include_lettering Logical (default `TRUE`). Whether to draw the significance-group lettering above the means.
-#' @param trans_scale Logical (default `FALSE`). When the means were back-transformed in [multiple_comparisons()], `FALSE` plots them on the original (back-transformed) scale, while `TRUE` plots them on the model (transformed) scale and adds a back-transformed secondary axis. Has no effect when no transformation was used.
+#' @param type A string specifying the type of plot to display. The default of 'point' will display a point estimate with error bars. The alternative, 'column' (or 'col'), will display a column graph with error bars.
+#' @param include_errorbar Logical (default 'TRUE') indicating whether to include errorbars when plotting the predicted values from a multiple comparisons test
+#' @param include_lettering Logical (default 'TRUE') indicating whether to include group lettering when plotting the predicted values from a multiple comparisons test
+#' @param errorbar_type A character (default is "ci") that indicates what the errorbars in the plot represent. Current options are 95% confidence interval ("ci") or Tukeys (average) HSD value ("hsd")
+#' @param trans_scale Logical (default 'FALSE') that indicates whether the predicted values should be displayed on the transformed scale.
 #' @param margin Logical (default `FALSE`). A value of `FALSE` will expand the plot to the edges of the plotting area i.e. remove white space between plot and axes.
 #' @param palette A string specifying the colour scheme to use for plotting or a vector of custom colours to use as the palette. Default is equivalent to "Spectral". Colour blind friendly palettes can also be provided via options `"colour blind"` (or `"colour blind"`, both equivalent to `"viridis"`), `"magma"`, `"inferno"`, `"plasma"`, `"cividis"`, `"rocket"`, `"mako"` or `"turbo"`. Other palettes from [scales::brewer_pal()] are also possible.
 #' @param row A variable to plot a column from `object` as rows.

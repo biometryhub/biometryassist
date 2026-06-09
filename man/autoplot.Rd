@@ -62,6 +62,14 @@ autoplot(object, ...)
 
 \item{trans_scale}{Logical (default \code{FALSE}). When the means were back-transformed in \code{\link[=multiple_comparisons]{multiple_comparisons()}}, \code{FALSE} plots them on the original (back-transformed) scale, while \code{TRUE} plots them on the model (transformed) scale and adds a back-transformed secondary axis. Has no effect when no transformation was used.}
 
+\item{errorbar_type}{A character (default is "ci") that indicates what the errorbars in the plot represent. Current options are 95\% confidence interval ("ci") or Tukeys (average) HSD value ("hsd")}
+
+\item{include_errorbar}{Logical (default 'TRUE') indicating whether to include errorbars when plotting the predicted values from a multiple comparisons test}
+
+\item{include_lettering}{Logical (default 'TRUE') indicating whether to include group lettering when plotting the predicted values from a multiple comparisons test}
+
+\item{trans_scale}{Logical (default 'FALSE') that indicates whether the predicted values should be displayed on the transformed scale.}
+
 \item{margin}{Logical (default \code{FALSE}). A value of \code{FALSE} will expand the plot to the edges of the plotting area i.e. remove white space between plot and axes.}
 
 \item{palette}{A string specifying the colour scheme to use for plotting or a vector of custom colours to use as the palette. Default is equivalent to "Spectral". Colour blind friendly palettes can also be provided via options \code{"colour blind"} (or \code{"colour blind"}, both equivalent to \code{"viridis"}), \code{"magma"}, \code{"inferno"}, \code{"plasma"}, \code{"cividis"}, \code{"rocket"}, \code{"mako"} or \code{"turbo"}. Other palettes from \code{\link[scales:brewer_pal]{scales::brewer_pal()}} are also possible.}
