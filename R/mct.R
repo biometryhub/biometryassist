@@ -262,7 +262,11 @@ multiple_comparisons <- function(
 	# Handle deprecated parameters
 	handle_deprecated_param("pred", "classify", classify)
 	handle_deprecated_param("order", "descending", descending)
-	handle_deprecated_param("decimals", NULL, "Rounding is now controlled via the `decimals` argument of `print.mct()`.")
+	handle_deprecated_param(
+		"decimals",
+		NULL,
+		"Rounding is now controlled via the `decimals` argument of `print.mct()`."
+	)
 
 	vars <- validate_inputs(sig, classify, model.obj, trans)
 
@@ -317,7 +321,7 @@ multiple_comparisons <- function(
 	aliased <- result$aliased_names
 
 	# Process treatment names
-	pp <- process_treatment_names(pp, classify, vars)
+	pp <- process_treatment_names(pp, vars)
 
 	# Validate `by` columns
 	if (!is.null(by)) {
@@ -491,8 +495,6 @@ multiple_comparisons <- function(
 
 	return(output)
 }
-
-
 
 
 #' Print output of multiple_comparisons
@@ -974,13 +976,9 @@ validate_inputs <- function(sig, classify, model.obj, trans) {
 
 
 #' @noRd
-process_treatment_names <- function(pp, classify, vars) {
-	# Create Names column
-	if (grepl(":", classify)) {
-		pp$Names <- apply(pp[, vars], 1, paste, collapse = "_")
-	} else {
-		pp$Names <- pp[[classify]]
-	}
+process_treatment_names <- function(pp, vars) {
+	# Create Names column (interaction factors joined with "_")
+	pp$Names <- make_treatment_labels(pp, vars, sep = "_")
 
 	# Check and replace dashes in treatment names
 	if (any(grepl("-", pp$Names) | any(grepl("-", pp[, 1])))) {

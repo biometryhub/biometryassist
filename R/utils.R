@@ -307,3 +307,28 @@ is_light_colour <- function(colour) {
 		255
 	return(luminance > 0.5)
 }
+
+
+#' Build per-row treatment labels from one or more factor columns
+#'
+#' Shared by [multiple_comparisons()] and [pairwise_comparisons()] to turn the
+#' classify factor column(s) of a predictions data frame into a single label per
+#' row. A single factor is returned as-is (preserving its type); multiple
+#' factors (an interaction) are joined with `sep`. The caller chooses the
+#' separator (`multiple_comparisons()` uses `"_"`, `pairwise_comparisons()` uses
+#' `":"`) and any further processing (e.g. coercion to character).
+#'
+#' @param pp A predictions data frame.
+#' @param vars Character vector of factor column name(s) to combine.
+#' @param sep Separator used to join the columns when `vars` has length > 1.
+#'
+#' @return A vector of labels, one per row of `pp`.
+#'
+#' @keywords internal
+make_treatment_labels <- function(pp, vars, sep) {
+	if (length(vars) == 1) {
+		pp[[vars]]
+	} else {
+		apply(pp[, vars, drop = FALSE], 1, paste, collapse = sep)
+	}
+}

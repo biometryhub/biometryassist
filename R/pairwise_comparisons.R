@@ -158,8 +158,13 @@ pairwise_comparisons <- function(
 		within_vars <- vars
 	}
 
-	# Within-group label for every prediction row
-	within_label <- build_pairwise_labels(pp, within_vars)
+	# Within-group label for every prediction row (interaction factors joined
+	# with ":"); shared label builder with multiple_comparisons().
+	within_label <- as.character(make_treatment_labels(
+		pp,
+		within_vars,
+		sep = ":"
+	))
 
 	# Split rows into by-groups (or a single "All" group)
 	if (!is.null(by)) {
@@ -216,20 +221,6 @@ pairwise_comparisons <- function(
 	attr(out, "ylab") <- ylab
 
 	return(out)
-}
-
-
-#' Build `:`-joined labels for prediction rows
-#'
-#' @param pp The predictions data frame.
-#' @param vars Character vector of factor column names to join.
-#' @noRd
-build_pairwise_labels <- function(pp, vars) {
-	if (length(vars) == 1) {
-		as.character(pp[[vars]])
-	} else {
-		apply(pp[, vars, drop = FALSE], 1, paste, collapse = ":")
-	}
 }
 
 
