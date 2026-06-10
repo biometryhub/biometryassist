@@ -4,7 +4,7 @@
 
 - `multiple_comparisons()` gains an `adjust` argument to choose the p-value adjustment method (any `stats::p.adjust()` method, in addition to the default Tukey's HSD), and a `by` argument to run comparisons independently within groups.
 - Added support for `aovlist` and `nlme::lme()` models in `multiple_comparisons()` (#107).
-- New function `pairwise_comparisons()` to test selected pairwise differences between predicted means, returning a tidy table of estimates and multiplicity-adjusted p-values (one row per comparison). `autoplot()` produces a forest plot for `pairwise_comparisons()` objects.
+- New function `pairwise_comparisons()` to test selected pairwise differences (or general linear contrasts) between predicted means, returning a tidy table of estimates, predicted means and multiplicity-adjusted p-values, with a forest plot via `autoplot()`.
 - New function `reference_comparisons()` to compare every level against a single reference (control) level, using an exact Dunnett test by default. It returns a means-centric table (each level's mean, the reference mean and the adjusted difference) and a means plot via `autoplot()`.
 
 
@@ -12,7 +12,6 @@
 
 - Added the ability to add buffers or double buffers around blocks. (#169)
 - `autoplot()` for `multiple_comparisons()` output gains several new options (thanks to Michael Mumford, #161): `type = "line"` joins the means with a line; `include_errorbar` and `include_lettering` toggle the error bars and significance letters; `errorbar_type = "hsd"` draws a single Tukey's HSD reference bar instead of per-mean intervals; and `trans_scale = TRUE` plots back-transformed means on the model (transformed) scale with an exact back-transformed secondary axis.
-- `pairwise_comparisons()` now reports each level's predicted mean alongside the difference (`include_means`, on by default).
 - Added a vignette, "Choosing and interpreting multiple comparisons", introducing `pairwise_comparisons()` and `reference_comparisons()` alongside `multiple_comparisons()` and giving guidance on choosing a multiplicity adjustment.
 
 ## Bug Fixes
