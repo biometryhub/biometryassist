@@ -395,6 +395,147 @@ autoplot.pairwise_comparisons <- function(
 }
 
 
+#' @rdname reference_comparisons
+#'
+#' @param object A `reference_comparisons` object.
+#' @param axis_rotation Rotation (degrees) of the x-axis (mean) labels.
+#' @param label_rotation Rotation (degrees) of the y-axis (level) labels.
+#'
+#' @returns `autoplot.reference_comparisons()` returns a `ggplot2` object: a
+#'   means plot with one point per level at its predicted mean, a dashed
+#'   reference line at the reference mean (marked with a diamond), and an
+#'   interval around each mean showing the (adjusted) confidence interval for the
+#'   difference from the reference — so the interval clears the reference line
+#'   exactly when the comparison is significant (with `adjust = "dunnett"`).
+#'   Faceted by the `by` variable(s) when present. Significant comparisons are
+#'   flagged with an asterisk (`*`), prefixed to the y-axis label when unfaceted
+#'   or beside the interval when faceted.
+#'
+#' @importFrom ggplot2 autoplot ggplot aes geom_vline geom_linerange geom_point geom_text scale_y_discrete theme_bw labs theme element_text facet_wrap
+#' @importFrom rlang check_dots_used
+#' @importFrom stats as.formula setNames
+#' @export
+#' @examples
+#'
+#' # Means plot of each level vs the reference (significant ones marked with *)
+#' rc <- reference_comparisons(dat.aov, classify = "feed", reference = "casein")
+#' autoplot(rc)
+autoplot.reference_comparisons <- function(
+	object,
+	...,
+	axis_rotation = 0,
+	label_rotation = 0
+) {
+	stopifnot(inherits(object, "reference_comparisons"))
+	rlang::check_dots_used()
+
+	df <- as.data.frame(object)
+	ylab <- attributes(object)$ylab
+	sig <- attributes(object)$sig_level
+	by <- attributes(object)$by
+	reference <- attributes(object)$reference
+
+	# Significant at the adjusted level (flagged with an asterisk below).
+	df$significant <- df$p.value < sig
+
+	# The CI for the difference, re-centred on each level's mean. It clears the
+	# reference line (the reference mean) exactly when the difference excludes
+	# zero, i.e. when the comparison is significant (exact under Dunnett).
+	df$mean <- df$level1.mean
+	df$xmin <- df$level2.mean + df$conf.low
+	df$xmax <- df$level2.mean + df$conf.high
+
+	# Reference marker / line: one reference mean per by-group.
+	if (is.null(by)) {
+		ref_df <- data.frame(mean = df$level2.mean[1])
+	} else {
+		ref_df <- unique(df[, c(by, "level2.mean"), drop = FALSE])
+		names(ref_df)[names(ref_df) == "level2.mean"] <- "mean"
+	}
+
+	# y categories: the reference at the bottom, then the compared levels in
+	# table order above it.
+	others <- unique(as.character(df$level1))
+	y_levels <- c(reference, rev(others))
+	df$ylevel <- factor(as.character(df$level1), levels = y_levels)
+	ref_df$ylevel <- factor(reference, levels = y_levels)
+
+	plot <- ggplot2::ggplot() +
+		ggplot2::geom_vline(
+			data = ref_df,
+			ggplot2::aes(xintercept = .data[["mean"]]),
+			linetype = "dashed",
+			colour = "grey40"
+		) +
+		ggplot2::geom_linerange(
+			data = df,
+			ggplot2::aes(
+				y = .data[["ylevel"]],
+				xmin = .data[["xmin"]],
+				xmax = .data[["xmax"]]
+			)
+		) +
+		ggplot2::geom_point(
+			data = df,
+			ggplot2::aes(x = .data[["mean"]], y = .data[["ylevel"]]),
+			colour = "black",
+			size = 2
+		) +
+		ggplot2::geom_point(
+			data = ref_df,
+			ggplot2::aes(x = .data[["mean"]], y = .data[["ylevel"]]),
+			shape = 18,
+			size = 3.5,
+			colour = "grey30"
+		) +
+		ggplot2::theme_bw() +
+		ggplot2::labs(x = paste0("Predicted ", ylab), y = "") +
+		ggplot2::theme(
+			axis.text.x = ggplot2::element_text(angle = axis_rotation, ...),
+			axis.text.y = ggplot2::element_text(angle = label_rotation)
+		)
+
+	if (is.null(by)) {
+		# Unfaceted: prefix a "*" to the labels of significant levels (keeping
+		# labels right-justified against the axis). The reference carries no test.
+		sig_lookup <- stats::setNames(df$significant, as.character(df$level1))
+		labels <- vapply(
+			y_levels,
+			function(l) {
+				if (!is.na(sig_lookup[l]) && isTRUE(unname(sig_lookup[l]))) {
+					paste0("* ", l)
+				} else {
+					l
+				}
+			},
+			character(1)
+		)
+		plot <- plot +
+			ggplot2::scale_y_discrete(labels = stats::setNames(labels, y_levels))
+	} else {
+		# Faceted: mark significance beside each significant interval.
+		plot <- plot +
+			ggplot2::geom_text(
+				data = df[df$significant, , drop = FALSE],
+				ggplot2::aes(
+					x = .data[["xmax"]],
+					y = .data[["ylevel"]],
+					label = "*"
+				),
+				hjust = -0.4,
+				vjust = 0.75,
+				size = 6
+			) +
+			ggplot2::facet_wrap(stats::as.formula(paste(
+				"~",
+				paste(by, collapse = " + ")
+			)))
+	}
+
+	return(plot)
+}
+
+
 #' @rdname autoplot
 #'
 #' @importFrom grDevices colorRampPalette

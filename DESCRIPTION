@@ -59,6 +59,7 @@ Suggests:
     knitr,
     Matrix,
     mockery,
+    mvtnorm,
     openxlsx2,
     quarto,
     rmarkdown,

@@ -37,4 +37,4 @@ inst/manifest.json
 CLAUDE\.md
 .env
 context.md
-pairwise_comparisons_phase1_plan.md
+comparisons_implementation_plan.md

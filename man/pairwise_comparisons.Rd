@@ -15,6 +15,7 @@ pairwise_comparisons(
   adjust = "holm",
   by = NULL,
   sig = 0.05,
+  include_means = TRUE,
   descending = NULL,
   ...
 )
@@ -58,6 +59,12 @@ pooling across groups. Default \code{NULL}. See Details.}
 \item{sig}{The significance level for the confidence intervals, numeric
 between 0 and 1. Default is 0.05.}
 
+\item{include_means}{Logical; if \code{TRUE} (default) the predicted mean of each
+side of the comparison is included as \code{level1.mean} and \code{level2.mean}
+columns, immediately after \code{estimate} (of which they are the decomposition:
+\code{estimate = level1.mean - level2.mean}). Set \code{FALSE} for the differences
+only.}
+
 \item{descending}{Tri-state control of row ordering within each by-group.
 \code{NULL} (default) keeps the input order of \code{pairs}; \code{FALSE} sorts ascending
 by estimate; \code{TRUE} sorts descending by estimate.}
@@ -79,9 +86,10 @@ the interval when faceted by \code{by}.
 
 A \code{data.frame} of class \code{pairwise_comparisons} with one row per
 (group × comparison) and columns: any \code{by} column(s), \code{level1}, \code{level2},
-\code{comparison}, \code{estimate}, \code{std.error}, \code{statistic}, \code{df}, \code{p.value}
-(adjusted), \code{conf.low} and \code{conf.high}. Stored at full precision; rounding
-for display is controlled by \code{\link[=print.pairwise_comparisons]{print.pairwise_comparisons()}}.
+\code{comparison}, \code{estimate}, (optionally \code{level1.mean} and \code{level2.mean}),
+\code{std.error}, \code{statistic}, \code{df}, \code{p.value} (adjusted), \code{conf.low} and
+\code{conf.high}. Stored at full precision; rounding for display is controlled
+by \code{\link[=print.pairwise_comparisons]{print.pairwise_comparisons()}}.
 
 \code{print.pairwise_comparisons()} invisibly returns \code{x}.
 }

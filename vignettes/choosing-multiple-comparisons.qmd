@@ -24,8 +24,8 @@ library(biometryassist)
 ## Introduction
 
 After fitting a model, a common next step is to compare predicted treatment
-means. `biometryassist` provides two complementary functions for this, and which
-one you want depends on *what you are comparing*:
+means. `biometryassist` provides three complementary functions for this, and
+which one you want depends on *what you are comparing*:
 
 - **`multiple_comparisons()`** is **means-centric**. It returns one row per
   treatment level (mean, standard error, confidence interval) and summarises the
@@ -35,13 +35,17 @@ one you want depends on *what you are comparing*:
   table with one row per requested comparison (estimate, standard error,
   statistic, degrees of freedom and an adjusted p-value), and is the honest
   representation when you only care about *some* of the comparisons.
+- **`reference_comparisons()`** is means-centric, for the specific question
+  "how does each treatment compare to a single control?". It returns each
+  level's mean, the reference mean and the adjusted difference, using an exact
+  Dunnett test by default.
 
-This vignette introduces `pairwise_comparisons()`, shows it alongside
-`multiple_comparisons()`, and then discusses how to choose a multiplicity
-adjustment and which function fits your question. All examples use built-in
-data and `aov()` so they can be run without any specialised modelling packages,
-but both functions work across the supported model types (`aov`, `lm`,
-`aovlist`, `asreml`, `lme4`, `nlme`).
+This vignette introduces `pairwise_comparisons()` and `reference_comparisons()`,
+shows them alongside `multiple_comparisons()`, and then discusses how to choose a
+multiplicity adjustment and which function fits your question. All examples use
+built-in data and `aov()` so they can be run without any specialised modelling
+packages, but all three functions work across the supported model types (`aov`,
+`lm`, `aovlist`, `asreml`, `lme4`, `nlme`).
 
 ## A quick tour of `pairwise_comparisons()`
 
@@ -59,7 +63,9 @@ pairwise_comparisons(model, classify = "Species")
 ```
 
 Each row is a difference: `estimate` is `mean(level1) - mean(level2)`, with
-`level1`/`level2` making the direction explicit. If you only care about a
+`level1`/`level2` making the direction explicit, and the `level1.mean` /
+`level2.mean` columns reporting the two predicted means it is computed from. If
+you only care about a
 specific set of comparisons, pass them via `pairs` (the multiplicity adjustment
 is then applied over just that set):
 
@@ -118,6 +124,12 @@ trustworthy" criterion, appropriate for a small set of planned comparisons.
   distribution of all pairwise differences, it is more powerful than Bonferroni
   or Holm *for that complete set* — which is why it is the default in
   `multiple_comparisons()`.
+- **Dunnett's test** [Dunnett, 1955] is the exact FWER procedure for the
+  specific family of comparing every treatment against a *single control*. Like
+  Tukey for all pairs, it exploits the known joint distribution of those
+  comparisons (the correlation induced by the shared control), so it is more
+  powerful than a generic adjustment for that family. It is the default in
+  `reference_comparisons()`.
 
 **False discovery rate (FDR)** is the expected *proportion* of false rejections
 among the rejected comparisons. It is less stringent than FWER and earns its
@@ -150,6 +162,40 @@ differences, **testing all pairs in `pairwise_comparisons()` with a given
 `adjust` reproduces the adjusted p-values of `multiple_comparisons()` with the
 same `adjust`** — only the presentation differs (a table of differences versus
 means and letters). The one exception is Tukey, for the reasons above.
+
+## Comparing each treatment to a control
+
+When the question is specifically "how does each treatment compare to a single
+control?", `reference_comparisons()` is the natural tool. It is means-centric
+like `multiple_comparisons()`, but only the comparisons against the chosen
+reference are made — and because every comparison shares that reference,
+significance attaches cleanly to each treatment's mean (which a letter display
+cannot do for an incomplete set).
+
+Using the `chickwts` data (chick weights by feed type), comparing every feed to
+the `casein` control:
+
+```{r}
+model_cw <- aov(weight ~ feed, data = chickwts)
+reference_comparisons(model_cw, classify = "feed", reference = "casein")
+```
+
+Each row gives a feed's mean (`level1.mean`), the control mean (`level2.mean`)
+and their difference, with the adjustment defaulting to the exact **Dunnett**
+test. The `autoplot()` method draws each feed's mean, a dashed line at the
+control mean (marked with a diamond), and an interval for the difference from the
+control, so the interval clears the control line exactly when the comparison is
+significant; significant feeds are also flagged with an asterisk:
+
+```{r, fig.height = 3.5}
+autoplot(reference_comparisons(model_cw, classify = "feed", reference = "casein"))
+```
+
+As with the other functions, `by` runs the comparisons independently within
+subgroups — for example comparing each treatment to the control *within each
+site or year*. (Dunnett needs a single residual degrees-of-freedom; for models
+that report comparison-specific df, `reference_comparisons()` falls back to Holm
+with a message.)
 
 ## The `adjust` and `by` arguments of `multiple_comparisons()`
 
@@ -204,6 +250,8 @@ whether the drawn interval happens to cross zero.
 - **A specific or planned subset of comparisons?** Use
   `pairwise_comparisons()` (Holm by default), which represents the chosen set
   honestly as a table of differences.
+- **Each treatment against a single control?** Use `reference_comparisons()`
+  (exact Dunnett by default), which keeps the analysis means-centric.
 - **Many, exploratory comparisons where a controlled proportion of false
   positives is acceptable?** Use an FDR method (`adjust = "BH"`).
 - **Comparisons within subgroups of a factorial?** Use `by` in either function.
@@ -216,6 +264,9 @@ whether the drawn interval happens to cross zero.
   <doi:10.1111/j.2517-6161.1995.tb02031.x>
 - Bretz, F., Hothorn, T., & Westfall, P. (2010). *Multiple Comparisons Using R*.
   Boca Raton: Chapman & Hall/CRC.
+- Dunnett, C. W. (1955). A multiple comparison procedure for comparing several
+  treatments with a control. *Journal of the American Statistical Association*,
+  50(272), 1096–1121. <doi:10.1080/01621459.1955.10501294>
 - Holm, S. (1979). A simple sequentially rejective multiple test procedure.
   *Scandinavian Journal of Statistics*, 6(2), 65–70.
 - Hothorn, T., Bretz, F., & Westfall, P. (2008). Simultaneous inference in

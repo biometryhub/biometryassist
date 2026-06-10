@@ -4,9 +4,15 @@
 - **Phase 1 — `pairwise_comparisons()`: IMPLEMENTED** on the `feature/pairwise-comparisons`
   branch (off `dev`). Difference-centric tidy table + forest-plot `autoplot`. Ships in the next
   release (currently the `1.5.0` section of `NEWS.md`).
-- **Phase 2 — general `contrasts =` + new `reference_comparisons()` + full vcov plumbing +
-  `include_means`: DESIGNED (this document), not yet implemented.** Target: a later release (likely
-  `v2.0.0`, alongside the `design()` backend swap).
+- **Phase 2a — `reference_comparisons()` (exact Dunnett) + `include_means`: IMPLEMENTED** on
+  `feature/pairwise-comparisons`. The Dunnett correlation is reconstructed from the SED matrix and
+  per-mean SEs (`V_ij = (V_ii + V_jj - SED_ij^2)/2`) inside a shared block engine, validated to
+  machine precision against `emmeans` `trt.vs.ctrl` (`adjust = "mvt"`). The planned `get_predictions()`
+  vcov plumbing (§5.1) was **not needed** — reconstruction is exact and engine-agnostic, and was the
+  only path testable without a licensed asreml. Direct `V` (asreml `vcov = TRUE`, emmeans) remains a
+  possible later numerical-robustness optimisation.
+- **Phase 2b — general `contrasts =` argument: DESIGNED (this document), not yet implemented.**
+  Target: a later release (likely `v2.0.0`, alongside the `design()` backend swap).
 
 This document captures (1) the conceptual discussion and decisions behind the comparison functions,
 and (2) the implementation plans for both phases. It is a planning artefact, not package code, and is

@@ -25,6 +25,31 @@ test_that("pairwise_comparisons returns a tidy data frame with expected columns"
 	expect_equal(attr(out, "classify"), "Species")
 })
 
+test_that("include_means adds level1.mean/level2.mean after estimate, off when FALSE", {
+	dat.aov <- aov(Petal.Width ~ Species, data = iris)
+
+	with_means <- pairwise_comparisons(dat.aov, classify = "Species")
+	expect_true(all(c("level1.mean", "level2.mean") %in% names(with_means)))
+	# estimate is the decomposition of the two means
+	expect_equal(
+		with_means$estimate,
+		with_means$level1.mean - with_means$level2.mean
+	)
+	# means columns sit immediately after estimate
+	nm <- names(with_means)
+	expect_equal(
+		nm[which(nm == "estimate") + 1:2],
+		c("level1.mean", "level2.mean")
+	)
+
+	without <- pairwise_comparisons(
+		dat.aov,
+		classify = "Species",
+		include_means = FALSE
+	)
+	expect_false(any(c("level1.mean", "level2.mean") %in% names(without)))
+})
+
 test_that("estimates, SEs and p-values match an independent emmeans contrast", {
 	dat.aov <- aov(Petal.Width ~ Species, data = iris)
 	out <- pairwise_comparisons(dat.aov, classify = "Species", adjust = "none")

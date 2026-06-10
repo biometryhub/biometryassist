@@ -35,6 +35,11 @@
 #'   pooling across groups. Default `NULL`. See Details.
 #' @param sig The significance level for the confidence intervals, numeric
 #'   between 0 and 1. Default is 0.05.
+#' @param include_means Logical; if `TRUE` (default) the predicted mean of each
+#'   side of the comparison is included as `level1.mean` and `level2.mean`
+#'   columns, immediately after `estimate` (of which they are the decomposition:
+#'   `estimate = level1.mean - level2.mean`). Set `FALSE` for the differences
+#'   only.
 #' @param descending Tri-state control of row ordering within each by-group.
 #'   `NULL` (default) keeps the input order of `pairs`; `FALSE` sorts ascending
 #'   by estimate; `TRUE` sorts descending by estimate.
@@ -83,9 +88,10 @@
 #'
 #' @returns A `data.frame` of class `pairwise_comparisons` with one row per
 #'   (group × comparison) and columns: any `by` column(s), `level1`, `level2`,
-#'   `comparison`, `estimate`, `std.error`, `statistic`, `df`, `p.value`
-#'   (adjusted), `conf.low` and `conf.high`. Stored at full precision; rounding
-#'   for display is controlled by [print.pairwise_comparisons()].
+#'   `comparison`, `estimate`, (optionally `level1.mean` and `level2.mean`),
+#'   `std.error`, `statistic`, `df`, `p.value` (adjusted), `conf.low` and
+#'   `conf.high`. Stored at full precision; rounding for display is controlled
+#'   by [print.pairwise_comparisons()].
 #'
 #' @seealso [multiple_comparisons()] for means-and-letters output. For guidance
 #'   on choosing between the two and on multiplicity adjustments, see
@@ -113,6 +119,7 @@ pairwise_comparisons <- function(
 	adjust = "holm",
 	by = NULL,
 	sig = 0.05,
+	include_means = TRUE,
 	descending = NULL,
 	...
 ) {
@@ -215,7 +222,8 @@ pairwise_comparisons <- function(
 			adjust,
 			sig,
 			by,
-			descending
+			descending,
+			include_means
 		)
 	}
 
@@ -341,7 +349,7 @@ parse_pairs <- function(pairs, labels) {
 #' @param group_labels Within-group labels for `idx` (same order as `idx`).
 #' @param pp,sed,ndf Predictions, SED matrix, degrees of freedom from
 #'   `get_predictions()`.
-#' @param adjust,sig,by,descending As in [pairwise_comparisons()].
+#' @param adjust,sig,by,descending,include_means As in [pairwise_comparisons()].
 #' @noRd
 build_pairwise_block <- function(
 	group_pairs,
@@ -353,7 +361,8 @@ build_pairwise_block <- function(
 	adjust,
 	sig,
 	by,
-	descending
+	descending,
+	include_means = TRUE
 ) {
 	# Map within-group labels to their global row index
 	lab2idx <- stats::setNames(idx, group_labels)
@@ -375,10 +384,18 @@ build_pairwise_block <- function(
 	}
 
 	tstat <- est / se
-	p_raw <- 2 * stats::pt(-abs(tstat), df = df_ij)
-	p_adj <- stats::p.adjust(p_raw, method = adjust)
 
-	crit <- stats::qt(1 - sig / 2, df_ij)
+	if (adjust == "dunnett") {
+		# Exact simultaneous all-vs-reference inference (the CIs are then the
+		# simultaneous Dunnett intervals, which agree with the adjusted test).
+		dn <- dunnett_adjust(i_idx, j_idx, se, df_ij, tstat, pp, sed, sig)
+		p_adj <- dn$p.value
+		crit <- dn$crit
+	} else {
+		p_raw <- 2 * stats::pt(-abs(tstat), df = df_ij)
+		p_adj <- stats::p.adjust(p_raw, method = adjust)
+		crit <- stats::qt(1 - sig / 2, df_ij)
+	}
 
 	block <- data.frame(
 		level1 = vapply(group_pairs, `[`, character(1), 1),
@@ -388,6 +405,10 @@ build_pairwise_block <- function(
 	)
 	block$comparison <- paste(block$level1, "-", block$level2)
 	block$estimate <- est
+	if (include_means) {
+		block$level1.mean <- pv[i_idx]
+		block$level2.mean <- pv[j_idx]
+	}
 	block$std.error <- se
 	block$statistic <- tstat
 	block$df <- df_ij
@@ -415,6 +436,101 @@ build_pairwise_block <- function(
 }
 
 
+#' Exact two-sided Dunnett adjustment for a block of all-vs-reference contrasts
+#'
+#' Reconstructs the variance-covariance matrix `V` of the predicted means from
+#' the per-mean SEs (diagonal, `V_ii = std.error_i^2`) and the SED matrix
+#' (off-diagonal, `V_ij = (V_ii + V_jj - SED_ij^2) / 2`), forms the correlation
+#' matrix of the contrasts, and uses the multivariate-t distribution
+#' (`mvtnorm`) for exact simultaneous two-sided adjusted p-values and a single
+#' simultaneous critical value for the confidence intervals. Validated to
+#' machine precision against `emmeans` `trt.vs.ctrl` with `adjust = "mvt"`.
+#'
+#' Assumes a single (effectively integer) degrees-of-freedom across the block;
+#' callers must fall back to another method when df vary by comparison.
+#'
+#' @param i_idx,j_idx Global prediction-row indices for each contrast's level1
+#'   and level2.
+#' @param se,df_ij,tstat Per-contrast SED, degrees of freedom and t-statistic.
+#' @param pp,sed Predictions data frame and SED matrix from `get_predictions()`.
+#' @param sig Significance level.
+#' @noRd
+dunnett_adjust <- function(i_idx, j_idx, se, df_ij, tstat, pp, sed, sig) {
+	if (!requireNamespace("mvtnorm", quietly = TRUE)) {
+		stop(
+			"Package 'mvtnorm' is required for adjust = \"dunnett\". Install it ",
+			"with install.packages(\"mvtnorm\"), or choose another `adjust` method.",
+			call. = FALSE
+		)
+	}
+
+	m <- length(tstat)
+	df0 <- as.integer(round(df_ij[1]))
+
+	# Single comparison: no multiplicity, exact t
+	if (m == 1) {
+		return(list(
+			p.value = 2 * stats::pt(-abs(tstat), df0),
+			crit = stats::qt(1 - sig / 2, df0)
+		))
+	}
+
+	# Reconstruct V over the involved means
+	u <- sort(unique(c(i_idx, j_idx)))
+	vd <- pp$std.error[u]^2
+	V <- diag(vd, nrow = length(u))
+	for (a in seq_len(length(u) - 1)) {
+		for (b in (a + 1):length(u)) {
+			vab <- (vd[a] + vd[b] - as.numeric(sed[u[a], u[b]])^2) / 2
+			V[a, b] <- V[b, a] <- vab
+		}
+	}
+	key <- function(g) match(g, u)
+
+	# Correlation matrix of the (level1 - level2) contrasts
+	R <- matrix(1, m, m)
+	for (k in seq_len(m)) {
+		ik <- key(i_idx[k])
+		jk <- key(j_idx[k])
+		for (l in seq_len(m)) {
+			il <- key(i_idx[l])
+			jl <- key(j_idx[l])
+			cov_kl <- V[ik, il] - V[ik, jl] - V[jk, il] + V[jk, jl]
+			R[k, l] <- cov_kl / (se[k] * se[l])
+		}
+	}
+	R <- (R + t(R)) / 2
+	diag(R) <- 1
+
+	# Exact two-sided adjusted p: P(max|T| >= |t_k|)
+	p <- vapply(
+		seq_len(m),
+		function(k) {
+			cc <- abs(tstat[k])
+			1 -
+				as.numeric(mvtnorm::pmvt(
+					lower = rep(-cc, m),
+					upper = rep(cc, m),
+					df = df0,
+					corr = R
+				))
+		},
+		numeric(1)
+	)
+	p <- pmin(pmax(p, 0), 1)
+
+	# Simultaneous two-sided critical value for the confidence intervals
+	cstar <- mvtnorm::qmvt(
+		1 - sig,
+		tail = "both.tails",
+		df = df0,
+		corr = R
+	)$quantile
+
+	list(p.value = p, crit = rep_len(cstar, m))
+}
+
+
 #' @rdname pairwise_comparisons
 #'
 #' @param x A `pairwise_comparisons` object.
@@ -433,7 +549,16 @@ print.pairwise_comparisons <- function(x, decimals = 2, ...) {
 
 	out <- as.data.frame(x)
 	round_cols <- intersect(
-		c("estimate", "std.error", "statistic", "df", "conf.low", "conf.high"),
+		c(
+			"estimate",
+			"level1.mean",
+			"level2.mean",
+			"std.error",
+			"statistic",
+			"df",
+			"conf.low",
+			"conf.high"
+		),
 		names(out)
 	)
 	out[round_cols] <- lapply(out[round_cols], round, decimals)
