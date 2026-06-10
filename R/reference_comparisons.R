@@ -13,7 +13,7 @@
 #' compares each level to a single control and presents the result around the
 #' means. It works for every model supported by [multiple_comparisons()].
 #'
-#' @param model.obj An ASReml-R, `aov`, `lm`, `lme` ([nlme::lme()]) or `lmerMod`
+#' @param model.obj An `asreml`, `aov`, `lm`, `lme` ([nlme::lme()]) or `lmerMod`
 #'   ([lme4::lmer()]) model object.
 #' @param classify Name of the predictor variable(s) to compare, as a string.
 #'   Interactions are specified with `:` (e.g. `"Trt:Site"`).

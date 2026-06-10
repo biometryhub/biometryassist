@@ -357,7 +357,7 @@ autoplot.pairwise_comparisons <- function(
 		) +
 		ggplot2::geom_point(colour = "black", size = 2) +
 		ggplot2::theme_bw() +
-		ggplot2::labs(x = paste0("Estimated difference (", ylab, ")"), y = "") +
+		ggplot2::labs(x = paste0("Estimated difference in ", ylab), y = "") +
 		ggplot2::theme(
 			axis.text.x = ggplot2::element_text(angle = axis_rotation, ...),
 			axis.text.y = ggplot2::element_text(angle = label_rotation)
@@ -420,7 +420,7 @@ autoplot.pairwise_comparisons <- function(
 #'
 #' # Means plot of each level vs the reference (significant ones marked with *)
 #' dat.aov <- aov(Petal.Width ~ Species, data = iris)
-#' rc <- reference_comparisons(dat.aov, classify = "feed", reference = "casein")
+#' rc <- reference_comparisons(dat.aov, classify = "Species", reference = "setosa")
 #' autoplot(rc)
 autoplot.reference_comparisons <- function(
 	object,

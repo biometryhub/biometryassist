@@ -32,7 +32,7 @@ reference_comparisons(
 
 \item{label_rotation}{Rotation (degrees) of the y-axis (level) labels.}
 
-\item{model.obj}{An ASReml-R, \code{aov}, \code{lm}, \code{lme} (\code{\link[nlme:lme]{nlme::lme()}}) or \code{lmerMod}
+\item{model.obj}{An \code{asreml}, \code{aov}, \code{lm}, \code{lme} (\code{\link[nlme:lme]{nlme::lme()}}) or \code{lmerMod}
 (\code{\link[lme4:lmer]{lme4::lmer()}}) model object.}
 
 \item{classify}{Name of the predictor variable(s) to compare, as a string.
@@ -151,7 +151,8 @@ issued if the response appears to be transformed in the model formula.
 \examples{
 
 # Means plot of each level vs the reference (significant ones marked with *)
-rc <- reference_comparisons(dat.aov, classify = "feed", reference = "casein")
+dat.aov <- aov(Petal.Width ~ Species, data = iris)
+rc <- reference_comparisons(dat.aov, classify = "Species", reference = "setosa")
 autoplot(rc)
 dat.aov <- aov(weight ~ feed, data = chickwts)
 

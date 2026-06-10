@@ -172,6 +172,7 @@ interval may exclude zero while the adjusted p-value is \verb{>= sig}.
 \examples{
 
 # Forest plot of pairwise differences (significant comparisons marked with *)
+dat.aov <- aov(Petal.Width ~ Species, data = iris)
 pc <- pairwise_comparisons(dat.aov, classify = "Species")
 autoplot(pc)
 dat.aov <- aov(Petal.Width ~ Species, data = iris)
