@@ -320,6 +320,7 @@ autoplot.mct <- function(
 #' @examples
 #'
 #' # Forest plot of pairwise differences (significant comparisons marked with *)
+#' dat.aov <- aov(Petal.Width ~ Species, data = iris)
 #' pc <- pairwise_comparisons(dat.aov, classify = "Species")
 #' autoplot(pc)
 autoplot.pairwise_comparisons <- function(
@@ -418,6 +419,7 @@ autoplot.pairwise_comparisons <- function(
 #' @examples
 #'
 #' # Means plot of each level vs the reference (significant ones marked with *)
+#' dat.aov <- aov(Petal.Width ~ Species, data = iris)
 #' rc <- reference_comparisons(dat.aov, classify = "feed", reference = "casein")
 #' autoplot(rc)
 autoplot.reference_comparisons <- function(
