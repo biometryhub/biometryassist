@@ -24,6 +24,15 @@
 #'   separated by `-`, e.g. `"A:X-B:Y"`), or a list of length-2 character
 #'   vectors (e.g. `list(c("A:X", "B:Y"))`). The list form is required if any
 #'   factor level itself contains a `-`. See Details.
+#' @param contrasts An optional named list of general linear contrasts to test
+#'   *instead of* `pairs`. Each element is a named numeric vector of coefficients
+#'   keyed by level label (e.g.
+#'   `list("A vs B & C" = c(A = 1, B = -0.5, C = -0.5))`), and the list names
+#'   become the `comparison` labels. The estimate is the corresponding linear
+#'   combination of the predicted means, with variance from the reconstructed
+#'   prediction covariance. Mutually exclusive with `pairs`; coefficients should
+#'   sum to zero (a warning is issued otherwise). `include_means` does not apply
+#'   to this form.
 #' @param adjust The method used to adjust p-values for multiplicity over the
 #'   chosen set, passed to [stats::p.adjust()]. Default is `"holm"`. Any
 #'   [stats::p.adjust.methods] value is accepted. `"tukey"` is **not** valid
@@ -91,7 +100,9 @@
 #'   `comparison`, `estimate`, (optionally `level1.mean` and `level2.mean`),
 #'   `std.error`, `statistic`, `df`, `p.value` (adjusted), `conf.low` and
 #'   `conf.high`. Stored at full precision; rounding for display is controlled
-#'   by [print.pairwise_comparisons()].
+#'   by [print.pairwise_comparisons()]. For the `contrasts` form, the
+#'   `level1`/`level2` and mean columns are omitted and `comparison` holds the
+#'   contrast name.
 #'
 #' @seealso [multiple_comparisons()] for means-and-letters output. For guidance
 #'   on choosing between the two and on multiplicity adjustments, see
@@ -112,10 +123,20 @@
 #'     classify = "Species",
 #'     pairs = c("setosa-versicolor", "setosa-virginica")
 #' )
+#'
+#' # A general (non-pairwise) contrast: setosa vs the average of the others
+#' pairwise_comparisons(
+#'     dat.aov,
+#'     classify = "Species",
+#'     contrasts = list(
+#'         "setosa vs rest" = c(setosa = 1, versicolor = -0.5, virginica = -0.5)
+#'     )
+#' )
 pairwise_comparisons <- function(
 	model.obj,
 	classify,
 	pairs = NULL,
+	contrasts = NULL,
 	adjust = "holm",
 	by = NULL,
 	sig = 0.05,
@@ -123,6 +144,11 @@ pairwise_comparisons <- function(
 	descending = NULL,
 	...
 ) {
+	# `pairs` and `contrasts` are two ways to specify the same engine
+	if (!is.null(pairs) && !is.null(contrasts)) {
+		stop("Supply only one of `pairs` or `contrasts`, not both.", call. = FALSE)
+	}
+
 	# Validate the adjustment method
 	if (!is.character(adjust) || length(adjust) != 1) {
 		stop("`adjust` must be a single character string.", call. = FALSE)
@@ -208,23 +234,39 @@ pairwise_comparisons <- function(
 			next
 		}
 		group_labels <- within_label[idx]
-		group_pairs <- parse_pairs(pairs, group_labels)
-		if (length(group_pairs) == 0) {
-			next
+		if (!is.null(contrasts)) {
+			group_contrasts <- parse_contrasts(contrasts, group_labels)
+			blocks[[length(blocks) + 1]] <- build_contrast_block(
+				group_contrasts,
+				idx,
+				group_labels,
+				pp,
+				sed,
+				ndf,
+				adjust,
+				sig,
+				by,
+				descending
+			)
+		} else {
+			group_pairs <- parse_pairs(pairs, group_labels)
+			if (length(group_pairs) == 0) {
+				next
+			}
+			blocks[[length(blocks) + 1]] <- build_pairwise_block(
+				group_pairs,
+				idx,
+				group_labels,
+				pp,
+				sed,
+				ndf,
+				adjust,
+				sig,
+				by,
+				descending,
+				include_means
+			)
 		}
-		blocks[[length(blocks) + 1]] <- build_pairwise_block(
-			group_pairs,
-			idx,
-			group_labels,
-			pp,
-			sed,
-			ndf,
-			adjust,
-			sig,
-			by,
-			descending,
-			include_means
-		)
 	}
 
 	if (length(blocks) == 0) {
@@ -477,14 +519,7 @@ dunnett_adjust <- function(i_idx, j_idx, se, df_ij, tstat, pp, sed, sig) {
 
 	# Reconstruct V over the involved means
 	u <- sort(unique(c(i_idx, j_idx)))
-	vd <- pp$std.error[u]^2
-	V <- diag(vd, nrow = length(u))
-	for (a in seq_len(length(u) - 1)) {
-		for (b in (a + 1):length(u)) {
-			vab <- (vd[a] + vd[b] - as.numeric(sed[u[a], u[b]])^2) / 2
-			V[a, b] <- V[b, a] <- vab
-		}
-	}
+	V <- reconstruct_vcov(u, pp, sed)
 	key <- function(g) match(g, u)
 
 	# Correlation matrix of the (level1 - level2) contrasts
@@ -528,6 +563,179 @@ dunnett_adjust <- function(i_idx, j_idx, se, df_ij, tstat, pp, sed, sig) {
 	)$quantile
 
 	list(p.value = p, crit = rep_len(cstar, m))
+}
+
+
+#' Reconstruct the variance-covariance matrix of predicted means
+#'
+#' From the per-mean SEs (diagonal, `V_ii = std.error_i^2`) and the SED matrix
+#' (off-diagonal, `V_ij = (V_ii + V_jj - SED_ij^2) / 2`). Exact: the SEs and SEDs
+#' are derived from the same fitted-model prediction covariance.
+#'
+#' @param u Integer vector of (global) prediction-row indices to include.
+#' @param pp,sed Predictions data frame and SED matrix from `get_predictions()`.
+#' @return A `length(u)` x `length(u)` covariance matrix, ordered as `u`.
+#' @noRd
+reconstruct_vcov <- function(u, pp, sed) {
+	vd <- pp$std.error[u]^2
+	V <- diag(vd, nrow = length(u))
+	if (length(u) > 1) {
+		for (a in seq_len(length(u) - 1)) {
+			for (b in (a + 1):length(u)) {
+				vab <- (vd[a] + vd[b] - as.numeric(sed[u[a], u[b]])^2) / 2
+				V[a, b] <- V[b, a] <- vab
+			}
+		}
+	}
+	V
+}
+
+
+#' Normalise and validate the `contrasts` argument
+#'
+#' @param contrasts A named list of named numeric coefficient vectors.
+#' @param labels Character vector of valid (within-group) level labels.
+#' @noRd
+parse_contrasts <- function(contrasts, labels) {
+	if (
+		!is.list(contrasts) ||
+			length(contrasts) == 0 ||
+			is.null(names(contrasts)) ||
+			any(!nzchar(names(contrasts)))
+	) {
+		stop(
+			"`contrasts` must be a non-empty named list of named numeric ",
+			"coefficient vectors, e.g. ",
+			"list(\"A vs B&C\" = c(A = 1, B = -0.5, C = -0.5)).",
+			call. = FALSE
+		)
+	}
+	lapply(contrasts, function(co) {
+		if (!is.numeric(co) || is.null(names(co)) || any(!nzchar(names(co)))) {
+			stop(
+				"Each contrast must be a named numeric vector whose names are level ",
+				"labels.",
+				call. = FALSE
+			)
+		}
+		unknown <- setdiff(names(co), labels)
+		if (length(unknown) > 0) {
+			stop(
+				"Unknown level(s) in `contrasts`: ",
+				paste(unknown, collapse = ", "),
+				".\nAvailable levels: ",
+				paste(labels, collapse = ", "),
+				".",
+				call. = FALSE
+			)
+		}
+		if (abs(sum(co)) > 1e-8) {
+			warning(
+				"Coefficients of a contrast do not sum to zero (sum = ",
+				signif(sum(co), 3),
+				"); it is evaluated as a general linear combination.",
+				call. = FALSE
+			)
+		}
+		co
+	})
+}
+
+
+#' Compute one by-group block of general linear contrasts
+#'
+#' Each contrast is a named numeric coefficient vector over levels. The estimate
+#' is `c' tau`, its variance `c' V c` (with `V` reconstructed from the SED matrix
+#' and per-mean SEs via `reconstruct_vcov()`), and the test a two-sided t with
+#' multiplicity-adjusted p-values over the group's family.
+#'
+#' @param group_contrasts List of named numeric coefficient vectors.
+#' @param idx Global row indices of this group in `pp`.
+#' @param group_labels Within-group labels for `idx`.
+#' @param pp,sed,ndf,adjust,sig,by,descending As in [pairwise_comparisons()].
+#' @noRd
+build_contrast_block <- function(
+	group_contrasts,
+	idx,
+	group_labels,
+	pp,
+	sed,
+	ndf,
+	adjust,
+	sig,
+	by,
+	descending
+) {
+	lab2idx <- stats::setNames(idx, group_labels)
+	pv <- pp$predicted.value
+	n <- length(group_contrasts)
+
+	est <- numeric(n)
+	se <- numeric(n)
+	df_c <- numeric(n)
+
+	for (k in seq_len(n)) {
+		co <- group_contrasts[[k]]
+		gi <- as.integer(lab2idx[names(co)])
+		w <- as.numeric(co)
+		est[k] <- sum(w * pv[gi])
+
+		u <- sort(unique(gi))
+		V <- reconstruct_vcov(u, pp, sed)
+		wal <- numeric(length(u))
+		pos <- match(gi, u)
+		for (q in seq_along(gi)) {
+			wal[pos[q]] <- wal[pos[q]] + w[q]
+		}
+		se[k] <- sqrt(as.numeric(t(wal) %*% V %*% wal))
+
+		if (is.matrix(ndf)) {
+			# A multi-level contrast has no single df; take the (conservative)
+			# minimum of the pairwise df among the involved levels.
+			if (length(u) >= 2) {
+				prs <- utils::combn(u, 2)
+				df_c[k] <- min(ndf[cbind(prs[1, ], prs[2, ])], na.rm = TRUE)
+			} else {
+				df_c[k] <- NA_real_
+			}
+		} else {
+			df_c[k] <- ndf
+		}
+	}
+
+	tstat <- est / se
+	p_raw <- 2 * stats::pt(-abs(tstat), df = df_c)
+	p_adj <- stats::p.adjust(p_raw, method = adjust)
+	crit <- stats::qt(1 - sig / 2, df_c)
+
+	block <- data.frame(
+		comparison = names(group_contrasts),
+		estimate = est,
+		std.error = se,
+		statistic = tstat,
+		df = df_c,
+		p.value = p_adj,
+		conf.low = est - crit * se,
+		conf.high = est + crit * se,
+		stringsAsFactors = FALSE,
+		check.names = FALSE
+	)
+
+	if (!is.null(by)) {
+		by_df <- pp[rep(idx[1], nrow(block)), by, drop = FALSE]
+		rownames(by_df) <- NULL
+		block <- cbind(by_df, block)
+	}
+
+	if (!is.null(descending)) {
+		block <- block[
+			order(block$estimate, decreasing = descending),
+			,
+			drop = FALSE
+		]
+	}
+
+	block
 }
 
 

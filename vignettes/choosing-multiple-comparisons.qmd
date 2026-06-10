@@ -84,6 +84,26 @@ and an asterisk marking comparisons that are significant at the (adjusted) level
 autoplot(pairwise_comparisons(model, classify = "Species"))
 ```
 
+### General contrasts
+
+Sometimes the comparison of interest isn't a single pair. The `contrasts`
+argument tests any linear contrast — for example, *setosa* versus the average of
+the other two species:
+
+```{r}
+pairwise_comparisons(
+  model,
+  classify = "Species",
+  contrasts = list(
+    "setosa vs rest" = c(setosa = 1, versicolor = -0.5, virginica = -0.5)
+  )
+)
+```
+
+Each contrast is a named vector of coefficients (which should sum to zero) and
+the list name becomes the row label. A two-level contrast such as
+`c(A = 1, B = -1)` is exactly the pairwise difference `"A-B"`.
+
 ### The same model, two views
 
 Contrast that with `multiple_comparisons()` on the same model, which reports the

@@ -12,6 +12,7 @@ pairwise_comparisons(
   model.obj,
   classify,
   pairs = NULL,
+  contrasts = NULL,
   adjust = "holm",
   by = NULL,
   sig = 0.05,
@@ -44,6 +45,16 @@ labels (levels of an interaction joined by \code{:}, the two sides of a pair
 separated by \code{-}, e.g. \code{"A:X-B:Y"}), or a list of length-2 character
 vectors (e.g. \code{list(c("A:X", "B:Y"))}). The list form is required if any
 factor level itself contains a \code{-}. See Details.}
+
+\item{contrasts}{An optional named list of general linear contrasts to test
+\emph{instead of} \code{pairs}. Each element is a named numeric vector of coefficients
+keyed by level label (e.g.
+\code{list("A vs B & C" = c(A = 1, B = -0.5, C = -0.5))}), and the list names
+become the \code{comparison} labels. The estimate is the corresponding linear
+combination of the predicted means, with variance from the reconstructed
+prediction covariance. Mutually exclusive with \code{pairs}; coefficients should
+sum to zero (a warning is issued otherwise). \code{include_means} does not apply
+to this form.}
 
 \item{adjust}{The method used to adjust p-values for multiplicity over the
 chosen set, passed to \code{\link[stats:p.adjust]{stats::p.adjust()}}. Default is \code{"holm"}. Any
@@ -89,7 +100,9 @@ A \code{data.frame} of class \code{pairwise_comparisons} with one row per
 \code{comparison}, \code{estimate}, (optionally \code{level1.mean} and \code{level2.mean}),
 \code{std.error}, \code{statistic}, \code{df}, \code{p.value} (adjusted), \code{conf.low} and
 \code{conf.high}. Stored at full precision; rounding for display is controlled
-by \code{\link[=print.pairwise_comparisons]{print.pairwise_comparisons()}}.
+by \code{\link[=print.pairwise_comparisons]{print.pairwise_comparisons()}}. For the \code{contrasts} form, the
+\code{level1}/\code{level2} and mean columns are omitted and \code{comparison} holds the
+contrast name.
 
 \code{print.pairwise_comparisons()} invisibly returns \code{x}.
 }
@@ -171,6 +184,15 @@ pairwise_comparisons(
     dat.aov,
     classify = "Species",
     pairs = c("setosa-versicolor", "setosa-virginica")
+)
+
+# A general (non-pairwise) contrast: setosa vs the average of the others
+pairwise_comparisons(
+    dat.aov,
+    classify = "Species",
+    contrasts = list(
+        "setosa vs rest" = c(setosa = 1, versicolor = -0.5, virginica = -0.5)
+    )
 )
 }
 \seealso{

@@ -327,3 +327,105 @@ test_that("autoplot forest plot matches its snapshot", {
 		variant = ggplot2_variant()
 	)
 })
+
+test_that("a general contrast matches an independent emmeans contrast", {
+	skip_if_not_installed("emmeans")
+	m <- aov(Petal.Width ~ Species, data = iris)
+
+	out <- pairwise_comparisons(
+		m,
+		classify = "Species",
+		contrasts = list(
+			"setosa vs rest" = c(setosa = 1, versicolor = -0.5, virginica = -0.5)
+		),
+		adjust = "none"
+	)
+	ref <- as.data.frame(emmeans::contrast(
+		emmeans::emmeans(m, ~Species),
+		method = list("setosa vs rest" = c(1, -0.5, -0.5)),
+		adjust = "none"
+	))
+
+	expect_equal(out$estimate, ref$estimate, tolerance = 1e-8)
+	expect_equal(out$std.error, ref$SE, tolerance = 1e-8)
+	expect_equal(out$df, ref$df, tolerance = 1e-8)
+	expect_equal(out$p.value, ref$p.value, tolerance = 1e-8)
+	# contrasts form: comparison label, no level1/level2/means columns
+	expect_equal(out$comparison, "setosa vs rest")
+	expect_false(any(c("level1", "level2", "level1.mean") %in% names(out)))
+})
+
+test_that("a two-level contrast reproduces the equivalent pair", {
+	m <- aov(Petal.Width ~ Species, data = iris)
+	pc <- pairwise_comparisons(
+		m,
+		classify = "Species",
+		pairs = "versicolor-virginica",
+		adjust = "none"
+	)
+	cc <- pairwise_comparisons(
+		m,
+		classify = "Species",
+		contrasts = list(
+			"versicolor-virginica" = c(versicolor = 1, virginica = -1)
+		),
+		adjust = "none"
+	)
+	expect_equal(cc$estimate, pc$estimate, tolerance = 1e-8)
+	expect_equal(cc$std.error, pc$std.error, tolerance = 1e-8)
+	expect_equal(cc$p.value, pc$p.value, tolerance = 1e-8)
+})
+
+test_that("pairs and contrasts are mutually exclusive", {
+	m <- aov(Petal.Width ~ Species, data = iris)
+	expect_error(
+		pairwise_comparisons(
+			m,
+			classify = "Species",
+			pairs = "setosa-virginica",
+			contrasts = list(x = c(setosa = 1, virginica = -1))
+		),
+		"only one of"
+	)
+})
+
+test_that("contrasts validate levels and warn on non-zero sums", {
+	m <- aov(Petal.Width ~ Species, data = iris)
+	expect_error(
+		pairwise_comparisons(
+			m,
+			classify = "Species",
+			contrasts = list(x = c(setosa = 1, nope = -1))
+		),
+		"Unknown level"
+	)
+	expect_warning(
+		pairwise_comparisons(
+			m,
+			classify = "Species",
+			contrasts = list(x = c(setosa = 1, versicolor = 1))
+		),
+		"sum to zero"
+	)
+})
+
+test_that("contrasts work within `by` groups", {
+	set.seed(1)
+	d <- expand.grid(
+		Trt = factor(c("A", "B", "C")),
+		Grp = factor(c("G1", "G2")),
+		rep = 1:6
+	)
+	d$y <- rnorm(nrow(d), mean = as.numeric(d$Trt) + ifelse(d$Grp == "G2", 5, 0))
+	m <- aov(y ~ Trt * Grp, data = d)
+
+	out <- pairwise_comparisons(
+		m,
+		classify = "Trt:Grp",
+		by = "Grp",
+		contrasts = list("A vs B&C" = c(A = 1, B = -0.5, C = -0.5))
+	)
+	expect_equal(nrow(out), 2) # one contrast per group
+	expect_true("Grp" %in% names(out))
+	expect_setequal(as.character(unique(out$Grp)), c("G1", "G2"))
+})
