@@ -19,6 +19,7 @@ reference:
 - contents:
   - resplot
   - multiple_comparisons
+  - pairwise_comparisons
   - variogram
   - logl_test
 - title: Utilities
@@ -30,3 +31,11 @@ reference:
   - summary_graph
   - contains("template")
   - install_asreml
+
+articles:
+- title: Articles
+  navbar: ~
+  contents:
+  - installing-asreml-r
+  - choosing-multiple-comparisons
+  - plot_annotation

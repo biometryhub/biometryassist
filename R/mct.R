@@ -128,6 +128,11 @@
 #' @references Jørgensen, E. & Pedersen, A. R. (1997). How to Obtain Those Nasty
 #'  Standard Errors From Transformed Data - and Why They Should Not Be Used.
 #'
+#' @seealso [pairwise_comparisons()] for testing a chosen subset of pairwise
+#'   differences as a tidy table. For guidance on choosing between the two and
+#'   on multiplicity adjustments, see
+#'   `vignette("choosing-multiple-comparisons", "biometryassist")`.
+#'
 #' @examples
 #' # Fit aov model
 #' model <- aov(Petal.Length ~ Species, data = iris)

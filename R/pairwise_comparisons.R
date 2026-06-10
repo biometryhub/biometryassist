@@ -42,6 +42,17 @@
 #'   (e.g. ASReml-R `predict()` arguments).
 #'
 #' @details
+#' ## Relationship to `multiple_comparisons()`
+#' The two functions share the same predicted means and standard errors of
+#' differences, so for a given `adjust` method they report the same comparisons.
+#' Testing all pairs here (`pairs = NULL`) with a particular `adjust` yields the
+#' same adjusted p-values as [multiple_comparisons()] with the same `adjust` —
+#' the difference is presentation (a tidy table of differences and a forest plot,
+#' versus means, confidence intervals and letter groupings). The exception is
+#' Tukey's HSD, which is exact only for the complete set of all pairwise
+#' comparisons and so is the domain of [multiple_comparisons()]; `adjust =
+#' "tukey"` is therefore not accepted here.
+#'
 #' ## `pairs` syntax and sign convention
 #' The estimate for a pair is `mean(level1) - mean(level2)`, in the order
 #' written (`"A-B"` gives A − B). The `level1` and `level2` columns make the sign
@@ -76,7 +87,9 @@
 #'   (adjusted), `conf.low` and `conf.high`. Stored at full precision; rounding
 #'   for display is controlled by [print.pairwise_comparisons()].
 #'
-#' @seealso [multiple_comparisons()] for means-and-letters output.
+#' @seealso [multiple_comparisons()] for means-and-letters output. For guidance
+#'   on choosing between the two and on multiplicity adjustments, see
+#'   `vignette("choosing-multiple-comparisons", "biometryassist")`.
 #'
 #' @importFrom stats pt p.adjust qt p.adjust.methods
 #' @export

@@ -299,6 +299,102 @@ autoplot.mct <- function(
 }
 
 
+#' @rdname pairwise_comparisons
+#'
+#' @param object A `pairwise_comparisons` object.
+#' @param axis_rotation Rotation (degrees) of the x-axis (estimate) labels.
+#' @param label_rotation Rotation (degrees) of the y-axis (comparison) labels.
+#'
+#' @returns `autoplot.pairwise_comparisons()` returns a `ggplot2` object: a
+#'   forest plot of the estimated differences with their confidence intervals
+#'   and a dashed reference line at zero, faceted by the `by` variable(s) when
+#'   present. Comparisons that are significant at the adjusted `sig` level are
+#'   flagged with an asterisk (`*`) — prefixed to the y-axis label when
+#'   unfaceted (keeping the labels right-justified against the axis), or beside
+#'   the interval when faceted by `by`.
+#'
+#' @importFrom ggplot2 autoplot ggplot aes geom_vline geom_linerange geom_point geom_text scale_y_discrete theme_bw labs theme element_text facet_wrap
+#' @importFrom rlang check_dots_used
+#' @importFrom stats as.formula
+#' @export
+#' @examples
+#'
+#' # Forest plot of pairwise differences (significant comparisons marked with *)
+#' pc <- pairwise_comparisons(dat.aov, classify = "Species")
+#' autoplot(pc)
+autoplot.pairwise_comparisons <- function(
+	object,
+	...,
+	axis_rotation = 0,
+	label_rotation = 0
+) {
+	stopifnot(inherits(object, "pairwise_comparisons"))
+	rlang::check_dots_used()
+
+	df <- as.data.frame(object)
+	ylab <- attributes(object)$ylab
+	sig <- attributes(object)$sig_level
+	by <- attributes(object)$by
+
+	# Significant at the adjusted level (flagged with an asterisk below).
+	df$significant <- df$p.value < sig
+
+	# Preserve the table's row order top-to-bottom on the y-axis.
+	df$comparison <- factor(df$comparison, levels = rev(unique(df$comparison)))
+
+	plot <- ggplot2::ggplot(
+		df,
+		ggplot2::aes(x = .data[["estimate"]], y = .data[["comparison"]])
+	) +
+		ggplot2::geom_vline(
+			xintercept = 0,
+			linetype = "dashed",
+			colour = "grey40"
+		) +
+		ggplot2::geom_linerange(
+			ggplot2::aes(xmin = .data[["conf.low"]], xmax = .data[["conf.high"]])
+		) +
+		ggplot2::geom_point(colour = "black", size = 2) +
+		ggplot2::theme_bw() +
+		ggplot2::labs(x = paste0("Estimated difference (", ylab, ")"), y = "") +
+		ggplot2::theme(
+			axis.text.x = ggplot2::element_text(angle = axis_rotation, ...),
+			axis.text.y = ggplot2::element_text(angle = label_rotation)
+		)
+
+	if (is.null(by)) {
+		# Unfaceted: each comparison is a single row, so significance is
+		# well-defined per y-axis label — prefix a "*" to the labels of the
+		# significant ones. The prefix (rather than a suffix) keeps the comparison
+		# labels right-justified against the axis, with the stars hanging to the
+		# left.
+		levs <- levels(df$comparison)
+		sig_by_level <- df$significant[match(levs, as.character(df$comparison))]
+		labels <- ifelse(sig_by_level, paste0("* ", levs), levs)
+		plot <- plot +
+			ggplot2::scale_y_discrete(labels = stats::setNames(labels, levs))
+	} else {
+		# Faceted: the y-axis is shared across panels, so significance (which can
+		# differ between groups) is marked beside each significant interval rather
+		# than on the shared label.
+		plot <- plot +
+			ggplot2::geom_text(
+				data = df[df$significant, , drop = FALSE],
+				ggplot2::aes(x = .data[["conf.high"]], label = "*"),
+				hjust = -0.4,
+				vjust = 0.75,
+				size = 6
+			) +
+			ggplot2::facet_wrap(stats::as.formula(paste(
+				"~",
+				paste(by, collapse = " + ")
+			)))
+	}
+
+	return(plot)
+}
+
+
 #' @rdname autoplot
 #'
 #' @importFrom grDevices colorRampPalette

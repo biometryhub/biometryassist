@@ -232,3 +232,73 @@ test_that("print method shows a header and the table", {
 	expect_output(print(out), "Pairwise comparisons of means")
 	expect_output(print(out), "Adjustment method: holm")
 })
+
+test_that("autoplot builds the expected forest-plot layers", {
+	has_geom <- function(p, cls) {
+		any(vapply(p$layers, function(l) inherits(l$geom, cls), logical(1)))
+	}
+
+	dat.aov <- aov(Petal.Width ~ Species, data = iris)
+	pc <- pairwise_comparisons(dat.aov, classify = "Species")
+	p <- autoplot(pc)
+
+	expect_s3_class(p, "ggplot")
+	expect_true(has_geom(p, "GeomVline")) # zero reference line
+	expect_true(has_geom(p, "GeomLinerange")) # confidence intervals
+	expect_true(has_geom(p, "GeomPoint")) # estimates
+	expect_match(p$labels$x, "Estimated difference")
+	# builds without error/warning
+	expect_silent(ggplot2::ggplot_build(p))
+})
+
+test_that("autoplot flags significant comparisons with an asterisk", {
+	has_geom <- function(p, cls) {
+		any(vapply(p$layers, function(l) inherits(l$geom, cls), logical(1)))
+	}
+
+	# Unfaceted: significant comparisons get a "*" on their y-axis label.
+	dat.aov <- aov(Petal.Width ~ Species, data = iris)
+	p <- autoplot(pairwise_comparisons(dat.aov, classify = "Species"))
+	ylabs <- ggplot2::ggplot_build(p)$layout$panel_params[[1]]$y$get_labels()
+	# significant comparisons are prefixed with "* " (keeps labels right-justified)
+	expect_true(any(grepl("^\\* ", ylabs)))
+	# no colour legend / significance aesthetic any more
+	expect_false(has_geom(p, "GeomText")) # unfaceted uses axis labels, not text
+
+	# Faceted: significance is marked beside the interval (a text layer).
+	set.seed(1)
+	d <- expand.grid(
+		Trt = factor(c("A", "B", "C")),
+		Grp = factor(c("G1", "G2")),
+		rep = 1:6
+	)
+	d$y <- rnorm(nrow(d), mean = as.numeric(d$Trt) + ifelse(d$Grp == "G2", 5, 0))
+	m <- aov(y ~ Trt * Grp, data = d)
+	pf <- autoplot(pairwise_comparisons(m, classify = "Trt:Grp", by = "Grp"))
+	expect_true(has_geom(pf, "GeomText"))
+})
+
+test_that("autoplot facets by the `by` variable", {
+	set.seed(1)
+	d <- expand.grid(
+		Trt = factor(c("A", "B", "C")),
+		Grp = factor(c("G1", "G2")),
+		rep = 1:6
+	)
+	d$y <- rnorm(nrow(d), mean = as.numeric(d$Trt) + ifelse(d$Grp == "G2", 5, 0))
+	m <- aov(y ~ Trt * Grp, data = d)
+	pc <- pairwise_comparisons(m, classify = "Trt:Grp", by = "Grp")
+
+	p <- autoplot(pc)
+	expect_true("Grp" %in% names(p$facet$params$facets))
+})
+
+test_that("autoplot forest plot matches its snapshot", {
+	dat.aov <- aov(Petal.Width ~ Species, data = iris)
+	pc <- pairwise_comparisons(dat.aov, classify = "Species")
+	vdiffr::expect_doppelganger(
+		"pairwise forest plot",
+		autoplot(pc),
+		variant = ggplot2_variant()
+	)
+})
