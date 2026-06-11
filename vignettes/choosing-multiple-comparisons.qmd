@@ -40,12 +40,20 @@ which one you want depends on *what you are comparing*:
   level's mean, the reference mean and the adjusted difference, using an exact
   Dunnett test by default.
 
+"Means-centric" and "difference-centric" describe how each function **presents**
+its results, not what it tests. All three rest on the same underlying pairwise
+differences between predicted means (more generally, linear contrasts):
+`multiple_comparisons()` tests *every* pairwise difference and condenses them
+into letters on the means — it does not test the means themselves — whereas
+`pairwise_comparisons()` and `reference_comparisons()` report a chosen subset of
+those differences directly.
+
 This vignette introduces `pairwise_comparisons()` and `reference_comparisons()`,
 shows them alongside `multiple_comparisons()`, and then discusses how to choose a
 multiplicity adjustment and which function fits your question. All examples use
 built-in data and `aov()` so they can be run without any specialised modelling
 packages, but all three functions work across the supported model types (`aov`,
-`lm`, `aovlist`, `asreml`, `lme4`, `nlme`).
+`lm`, `aovlist`, `asreml`, `lmerMod` and `lme`).
 
 ## A quick tour of `pairwise_comparisons()`
 
@@ -163,7 +171,7 @@ keep when comparisons are many and somewhat exploratory.
 Both functions accept any method supported by `stats::p.adjust()` through their
 `adjust` argument, so you can choose the criterion that matches your goal.
 
-### Why Tukey is the means function's job
+### Why Tukey is reserved for the complete (all-pairs) set
 
 A natural question is why `pairwise_comparisons()` does not offer
 `adjust = "tukey"`. Tukey's critical value is calibrated to the largest
@@ -174,8 +182,8 @@ selected set, a method calibrated to *that* set (Holm, Bonferroni, BH) is
 preferred. Conversely, for the complete set Tukey is the most powerful of these
 because it uses the known structure of the pairwise differences. So Tukey
 belongs with the complete-set, means-and-letters analysis
-(`multiple_comparisons()`), and `pairwise_comparisons()` rejects it with a
-message pointing you there.
+(`multiple_comparisons()`), and `pairwise_comparisons()` rejects it with an
+informative error pointing you there.
 
 Because both functions share the same predicted means and standard errors of
 differences, **testing all pairs in `pairwise_comparisons()` with a given
@@ -215,7 +223,7 @@ As with the other functions, `by` runs the comparisons independently within
 subgroups — for example comparing each treatment to the control *within each
 site or year*. (Dunnett needs a single residual degrees-of-freedom; for models
 that report comparison-specific df, `reference_comparisons()` falls back to Holm
-with a message.)
+with a warning.)
 
 ## The `adjust` and `by` arguments of `multiple_comparisons()`
 
