@@ -37,4 +37,4 @@ inst/manifest.json
 CLAUDE\.md
 .env
 context.md
-comparisons_implementation_plan.md
+.quarto
