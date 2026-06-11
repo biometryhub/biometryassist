@@ -34,8 +34,54 @@ test_that("vario_df structure and properties are correct", {
 	expect_equal(vg$gamma[1], 0) # First gamma should be 0
 	expect_true(max(vg$gamma) > 0) # Should have non-zero gammas
 
-	# Check that np (number of pairs) is reasonable
-	expect_true(all(vg$np <= nrow(vg) * ncol(vg)))
+	# np at the (0,0) lag must equal the number of non-missing residuals - the
+	# exact invariant vario_df() guarantees (nrows*ncols minus missing).
+	n_obs <- sum(!is.na(residuals(model.asr)[model.asr$mf$units]))
+	expect_equal(vg$np[1], n_obs)
+})
+
+test_that("vario_interp interpolates onto a regular grid", {
+	vg <- vario_df(model.asr)
+	gdat <- vario_interp(vg)
+
+	# Default is a 40 x 40 regular grid with x/y coordinates and interpolated z
+	expect_named(gdat, c("x", "y", "z"))
+	expect_equal(nrow(gdat), 40 * 40)
+
+	# The grid-size argument is honoured
+	expect_equal(nrow(vario_interp(vg, n = 10)), 10 * 10)
+
+	# Bilinear interpolation cannot overshoot the convex hull of the inputs, so
+	# the interpolated surface stays within the range of the source gamma. This
+	# is a deterministic, platform-independent check on the data feeding both
+	# the heatmap and the wireframe.
+	expect_true(all(is.finite(gdat$z)))
+	expect_gte(min(gdat$z), min(vg$gamma))
+	expect_lte(max(gdat$z), max(vg$gamma))
+})
+
+test_that("vario_ggplot maps the interpolated surface onto the heatmap", {
+	vg <- vario_df(model.asr)
+	gdat <- vario_interp(vg)
+	a <- vario_ggplot(gdat, "Row", "Column", "rainbow")
+
+	expect_s3_class(a, "ggplot")
+
+	# One tile per interpolated grid cell, with the fill driven by z. Checked
+	# via layer data so it runs on every platform (incl. CI), unlike the vdiffr
+	# snapshots below.
+	tiles <- layer_data_for(a, "GeomTile")
+	expect_equal(nrow(tiles), nrow(gdat))
+	expect_equal(sort(tiles$z), sort(gdat$z))
+
+	# A contour layer is drawn over the tiles
+	expect_silent(layer_data_for(a, "GeomContour"))
+
+	# Changing the palette changes the rendered colours but not the mapped data
+	a2 <- vario_ggplot(gdat, "Row", "Column", "viridis")
+	tiles2 <- layer_data_for(a2, "GeomTile")
+	expect_equal(tiles2$z, tiles$z)
+	expect_false(identical(tiles2$fill, tiles$fill))
 })
 
 test_that("variogram produces correct plot structure", {
@@ -46,7 +92,8 @@ test_that("variogram produces correct plot structure", {
 
 	# Test that the plot has the expected structure
 	expect_true(!is.null(v1))
-	expect_type(v1, "object")
+	expect_s3_class(v1, "variogram_plot")
+	expect_s3_class(v1, "patchwork")
 
 	# Test different palettes return valid plot objects
 	v2 <- variogram(model.asr, palette = "colourblind")
@@ -75,22 +122,28 @@ test_that("variogram plot contains expected data layers", {
 	expect_silent(print(v1))
 })
 
-test_that("variogram visual regression - minimal snapshot", {
-	skip_on_cran()
-	skip_on_ci() # Skip on CI where rendering differs
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
+test_that("variogram heatmap visual regression", {
+	# Snapshot ONLY the 2D ggplot heatmap panel (vario_ggplot()). The full
+	# composite also contains a lattice 3D wireframe grob whose rendering is
+	# non-deterministic even on a fixed machine, so the composite is unsuitable
+	# for pixel snapshots. The wireframe shares its input grid with the heatmap,
+	# so its correctness is covered by the vario_interp() data-level tests above,
+	# and "the composite renders without error" is covered by the print() test.
+	# The heatmap panel is deterministic, so it follows the package's standard
+	# local-snapshot pattern (expect_local_doppelganger + ggplot2 variant).
+	gdat <- vario_interp(vario_df(model.asr))
 
-	# Only test on platforms where we have stable rendering
-	skip_on_os(c("mac", "linux")) # Only test on mac in controlled environment
+	expect_local_doppelganger(
+		"Variogram heatmap",
+		vario_ggplot(gdat, "Row", "Column", "rainbow"),
+		variant = ggplot2_variant()
+	)
 
-	v1 <- variogram(model.asr)
-	vdiffr::expect_doppelganger(title = "Variogram produced", v1)
-
-	# Test only one palette to minimize fragility
-	vdiffr::expect_doppelganger(
-		title = "Variogram palette colourblind",
-		variogram(model.asr, palette = "colourblind")
+	# A single alternative palette guards the colour-scale mapping
+	expect_local_doppelganger(
+		"Variogram heatmap colourblind",
+		vario_ggplot(gdat, "Row", "Column", "colourblind"),
+		variant = ggplot2_variant()
 	)
 })
 
@@ -148,17 +201,16 @@ test_that("variogram works with dsum models - plot structure", {
 	}
 })
 
-test_that("variogram dsum visual regression - minimal", {
-	skip_on_cran()
-	skip_on_ci()
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
-	skip_on_os(c("mac", "linux"))
+test_that("variogram dsum heatmap visual regression", {
+	# Snapshot the deterministic heatmap panel of the first group only - see the
+	# note in the single-group heatmap snapshot test above.
+	vg <- vario_df(model4.asr)
+	grp1 <- vg[vg$groups == unique(vg$groups)[1], ]
 
-	# Test only the first plot to minimize fragility
-	vdiffr::expect_doppelganger(
-		title = "Variogram dsum first",
-		variogram(model4.asr)[[1]]
+	expect_local_doppelganger(
+		"Variogram dsum heatmap first",
+		vario_ggplot(vario_interp(grp1), "Row", "Column", "rainbow"),
+		variant = ggplot2_variant()
 	)
 })
 
@@ -199,18 +251,6 @@ test_that("onepage handles different numbers of groups correctly", {
 	n_groups <- length(unique(vario_df(model_dsum)$groups))
 	expected_pages <- ceiling(n_groups / 6)
 	expect_equal(length(vg_multi), expected_pages)
-})
-
-test_that("onepage visual regression - minimal", {
-	skip_on_cran()
-	skip_on_ci()
-	skip_on_covr()
-	skip_if(packageVersion("grid") < "4.2.1")
-	skip_on_os(c("mac", "linux"))
-
-	# Test only one onepage plot
-	vg <- variogram(model4.asr, onepage = TRUE)
-	vdiffr::expect_doppelganger(title = "Variogram onepage", print(vg[[1]]))
 })
 
 test_that("variogram data is consistent across palette changes", {
