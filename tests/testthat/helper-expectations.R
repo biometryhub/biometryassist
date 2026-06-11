@@ -116,7 +116,11 @@ expect_autoplot_data <- function(plot, pred, tolerance = 1e-6) {
 	pts <- layer_data_for(plot, "GeomPoint")
 	testthat::expect_equal(sort(pts$y), sort(yval), tolerance = tolerance)
 	bars <- layer_data_for(plot, "GeomErrorbar")
-	testthat::expect_equal(sort(bars$ymin), sort(preds$low), tolerance = tolerance)
+	testthat::expect_equal(
+		sort(bars$ymin),
+		sort(preds$low),
+		tolerance = tolerance
+	)
 	testthat::expect_equal(sort(bars$ymax), sort(preds$up), tolerance = tolerance)
 	if ("groups" %in% names(preds)) {
 		txt <- layer_data_for(plot, "GeomText")
