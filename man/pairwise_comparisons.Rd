@@ -33,7 +33,7 @@ pairwise_comparisons(
 
 \item{label_rotation}{Rotation (degrees) of the y-axis (comparison) labels.}
 
-\item{model.obj}{An ASReml-R, \code{aov}, \code{lm}, \code{lme} (\code{\link[nlme:lme]{nlme::lme()}}) or \code{lmerMod}
+\item{model.obj}{An \code{asreml}, \code{aov}, \code{lm}, \code{lme} (\code{\link[nlme:lme]{nlme::lme()}}) or \code{lmerMod}
 (\code{\link[lme4:lmer]{lme4::lmer()}}) model object.}
 
 \item{classify}{Name of the predictor variable(s) to compare, as a string.
@@ -51,10 +51,10 @@ factor level itself contains a \code{-}. See Details.}
 keyed by level label (e.g.
 \code{list("A vs B & C" = c(A = 1, B = -0.5, C = -0.5))}), and the list names
 become the \code{comparison} labels. The estimate is the corresponding linear
-combination of the predicted means, with variance from the reconstructed
-prediction covariance. Mutually exclusive with \code{pairs}; coefficients should
-sum to zero (a warning is issued otherwise). \code{include_means} does not apply
-to this form.}
+combination of the predicted means. Mutually exclusive with \code{pairs};
+coefficients should sum to zero (a warning is issued otherwise).
+\code{include_means} does not apply to this form. See Details for how the
+standard error and degrees of freedom are obtained.}
 
 \item{adjust}{The method used to adjust p-values for multiplicity over the
 chosen set, passed to \code{\link[stats:p.adjust]{stats::p.adjust()}}. Default is \code{"holm"}. Any
@@ -78,7 +78,10 @@ only.}
 
 \item{descending}{Tri-state control of row ordering within each by-group.
 \code{NULL} (default) keeps the input order of \code{pairs}; \code{FALSE} sorts ascending
-by estimate; \code{TRUE} sorts descending by estimate.}
+by estimate; \code{TRUE} sorts descending by estimate. Note this orders by the
+comparison \emph{estimate} (the difference), unlike \code{\link[=multiple_comparisons]{multiple_comparisons()}}
+which orders by the predicted \emph{mean} — appropriate here as the output is
+difference-centric.}
 
 \item{x}{A \code{pairwise_comparisons} object.}
 
@@ -102,7 +105,9 @@ A \code{data.frame} of class \code{pairwise_comparisons} with one row per
 \code{conf.high}. Stored at full precision; rounding for display is controlled
 by \code{\link[=print.pairwise_comparisons]{print.pairwise_comparisons()}}. For the \code{contrasts} form, the
 \code{level1}/\code{level2} and mean columns are omitted and \code{comparison} holds the
-contrast name.
+contrast name. If any levels were aliased (not estimable) in the model they
+are dropped from the comparisons (with a warning) and recorded in an
+\code{aliased} attribute.
 
 \code{print.pairwise_comparisons()} invisibly returns \code{x}.
 }
@@ -151,7 +156,32 @@ inflate the adjustment family.
 labels reference the remaining (non-\code{by}) factor levels. For example,
 \code{classify = "Trt:Site"}, \code{by = "Site"}, \code{pairs = "A-B"} compares Trt levels A
 and B within each Site. A group with fewer than two levels is skipped with a
-warning.
+warning. In an unbalanced design a requested comparison may reference a level
+that is absent from some groups: such a comparison is skipped (with a warning)
+in the groups where it cannot be computed and reported in those where it can.
+A level that is absent from \emph{every} group — or that was aliased — is instead
+an error, since that indicates a mistake rather than an incomplete design.
+}
+
+\subsection{Standard error and degrees of freedom for \code{contrasts}}{
+
+For a general contrast the standard error and degrees of freedom depend on
+the model engine:
+\itemize{
+\item For models predicted via \code{emmeans} (\code{aov}, \code{lm}, \code{\link[nlme:lme]{nlme::lme()}},
+\code{\link[lme4:lmer]{lme4::lmer()}}, and \code{aov} with \code{Error()} strata) the estimate, standard
+error and degrees of freedom are obtained directly from
+\code{\link[emmeans:contrast]{emmeans::contrast()}} on the model's reference grid. The degrees of freedom
+are therefore the \emph{exact} contrast df for that engine (Satterthwaite or
+Kenward-Roger for mixed models, containment for \code{aov}/\code{Error()}), including
+for contrasts spanning more than two levels — these cannot be recovered
+from the SED matrix alone.
+\item For \code{asreml} models the contrast variance is computed from the prediction
+error covariance (reconstructed from the SED matrix), and the degrees of
+freedom are the term's denominator df from \code{asreml::wald(denDF = "default")}
+(a single Kenward-Roger-style value shared by all contrasts within the
+term, as ASReml-R does not provide a per-contrast approximate df).
+}
 }
 
 \subsection{Transformations}{
@@ -166,7 +196,9 @@ if the response appears to be transformed in the model formula.
 
 The per-comparison confidence intervals are \emph{not} simultaneity-adjusted: as
 with the confidence-interval/letter note in \code{\link[=multiple_comparisons]{multiple_comparisons()}}, an
-interval may exclude zero while the adjusted p-value is \verb{>= sig}.
+interval may exclude zero while the adjusted p-value is \verb{>= sig}. When this
+happens a one-time \code{message()} notes it (suppressible with
+\code{\link[=suppressMessages]{suppressMessages()}}).
 }
 }
 \examples{

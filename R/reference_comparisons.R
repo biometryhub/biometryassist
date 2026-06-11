@@ -40,7 +40,9 @@
 #'   `FALSE` is ignored with a warning.
 #' @param descending Tri-state control of row ordering within each by-group.
 #'   `NULL` (default) keeps prediction order; `FALSE` sorts ascending by
-#'   estimate; `TRUE` sorts descending by estimate.
+#'   estimate; `TRUE` sorts descending by estimate. This orders by the comparison
+#'   *estimate* (each level minus the reference), unlike [multiple_comparisons()]
+#'   which orders by the predicted *mean*.
 #' @param ... Other arguments passed to the model-specific prediction methods
 #'   (e.g. ASReml-R `predict()` arguments).
 #'
@@ -54,6 +56,15 @@
 #' models that report comparison-specific df, `reference_comparisons()` falls
 #' back to `"holm"` with a warning. Any [stats::p.adjust.methods] method may be
 #' requested explicitly (a message notes that Dunnett is the exact option).
+#'
+#' The multivariate-t routine ([mvtnorm::pmvt()]) requires an integer
+#' degrees-of-freedom, so a *fractional* denominator df (such as an ASReml-R
+#' Kenward-Roger `denDF`) is rounded to the nearest integer for the Dunnett
+#' calculation when two or more comparisons are made. The reported `df` column is
+#' the exact (unrounded) value, and a single comparison uses the exact df. In
+#' practice this rounding only affects `asreml` models with a fractional denDF
+#' (`aov`/`lm`/`lme` have integer df, and mixed models with comparison-specific df
+#' fall back to Holm).
 #'
 #' The Dunnett correlation structure is reconstructed from the standard errors of
 #' the means and the standard errors of differences that the prediction machinery
@@ -84,7 +95,9 @@
 #'   `p.value` (adjusted), `conf.low` and `conf.high`. The reference level is not
 #'   given its own row (its mean appears as `level2.mean` on every row, and in the
 #'   `reference` attribute). Stored at full precision; rounding for display is
-#'   controlled by [print.reference_comparisons()].
+#'   controlled by [print.reference_comparisons()]. If any levels were aliased
+#'   (not estimable) in the model they are dropped (with a warning) and recorded
+#'   in an `aliased` attribute; an aliased `reference` is an error.
 #'
 #' @seealso [multiple_comparisons()] for all-pairs means and letters,
 #'   [pairwise_comparisons()] for selected differences. For guidance on choosing
@@ -109,6 +122,11 @@ reference_comparisons <- function(
 	descending = NULL,
 	...
 ) {
+	# Catch misspelled arguments silently swallowed by `...` (consistent with
+	# multiple_comparisons()). Any dot not consumed by the prediction method
+	# (e.g. ASReml-R predict() arguments) is an error rather than ignored.
+	rlang::check_dots_used()
+
 	# Validate the reference
 	if (
 		missing(reference) ||
@@ -170,6 +188,9 @@ reference_comparisons <- function(
 	sed <- result$sed
 	ndf <- result$df
 	ylab <- result$ylab
+	# Levels that were aliased (not estimable) and dropped by process_aliased();
+	# used to give a clear error if the reference is one, and stored on the output.
+	aliased <- result$aliased_names
 
 	# Exact Dunnett needs a single common df; comparison-specific df (a matrix)
 	# has no single multivariate-t df, so fall back to Holm.
@@ -212,8 +233,17 @@ reference_comparisons <- function(
 		sep = ":"
 	))
 
-	# The reference must exist among the (within-group) levels
+	# The reference must exist among the (within-group) estimable levels
 	if (reference %notin% within_label) {
+		if (reference %in% aliased) {
+			stop(
+				"`reference` level '",
+				reference,
+				"' was aliased (not estimable) in the model and removed from the ",
+				"predictions, so it cannot be used as a reference.",
+				call. = FALSE
+			)
+		}
 		stop(
 			"`reference` level '",
 			reference,
@@ -291,6 +321,13 @@ reference_comparisons <- function(
 	attr(out, "by") <- by
 	attr(out, "ylab") <- ylab
 	attr(out, "reference") <- reference
+	if (!is.null(aliased)) {
+		attr(out, "aliased") <- as.character(aliased)
+	}
+
+	# Nudge if any per-comparison CI disagrees with its adjusted p-value
+	# (skipped for Dunnett, whose intervals are simultaneous and agree).
+	note_ci_padjust_mismatch(out, sig, adjust)
 
 	return(out)
 }
@@ -334,5 +371,11 @@ print.reference_comparisons <- function(x, decimals = 2, ...) {
 	}
 
 	print(out, ...)
+
+	note <- aliased_note(attr(x, "aliased"))
+	if (!is.null(note)) {
+		cat("\n", note, "\n", sep = "")
+	}
+
 	invisible(x)
 }

@@ -3,6 +3,50 @@ test_that("quiet supresses output", {
 	expect_silent(quiet(cat("Hello")))
 })
 
+test_that("aliased_note lists few levels and collapses many", {
+	expect_null(aliased_note(NULL))
+	expect_null(aliased_note(character(0)))
+	expect_equal(aliased_note("A"), "Aliased level is: A")
+	expect_equal(aliased_note(c("A", "B")), "Aliased levels are: A and B")
+	expect_equal(
+		aliased_note(c("A", "B", "C")),
+		"Aliased levels are: A, B and C"
+	)
+	# more than max_show -> collapse to a count + how to retrieve them
+	many <- aliased_note(LETTERS[1:7])
+	expect_match(many, "^7 levels are aliased")
+	expect_no_match(many, "A, B")
+	expect_match(many, "attr\\(x, \"aliased\"\\)")
+	# threshold is respected (6 still listed, 7 collapsed) and max_show is honoured
+	expect_match(aliased_note(LETTERS[1:6]), "Aliased levels are: A, B")
+})
+
+test_that("note_ci_padjust_mismatch flags CI vs adjusted-p disagreement", {
+	# CI excludes zero (conf.low > 0) but adjusted p is not significant -> mismatch
+	mismatch <- data.frame(conf.low = 0.1, conf.high = 0.5, p.value = 0.2)
+	expect_message(
+		note_ci_padjust_mismatch(mismatch, sig = 0.05, method = "holm"),
+		"per-comparison"
+	)
+	expect_true(suppressMessages(
+		note_ci_padjust_mismatch(mismatch, sig = 0.05, method = "holm")
+	))
+
+	# agreement (CI excludes zero AND significant) -> silent
+	agree <- data.frame(conf.low = 0.1, conf.high = 0.5, p.value = 0.01)
+	expect_silent(note_ci_padjust_mismatch(agree, sig = 0.05, method = "holm"))
+	# agreement (CI includes zero AND not significant) -> silent
+	agree2 <- data.frame(conf.low = -0.1, conf.high = 0.5, p.value = 0.2)
+	expect_silent(note_ci_padjust_mismatch(agree2, sig = 0.05, method = "holm"))
+
+	# Dunnett intervals are simultaneous -> never flagged even when CI/p disagree
+	expect_silent(note_ci_padjust_mismatch(
+		mismatch,
+		sig = 0.05,
+		method = "dunnett"
+	))
+})
+
 test_that("Package message prints on load", {
 	rlang::local_interactive(value = TRUE)
 	expect_snapshot(biometryassist:::.onAttach(pkg = "biometryassist"))

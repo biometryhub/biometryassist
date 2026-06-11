@@ -188,13 +188,13 @@ get_predictions.lm <- function(model.obj, classify, ...) {
 	on.exit(options(emmeans = emmeans::emm_defaults))
 	emmeans::emm_options("msg.interaction" = FALSE, "msg.nesting" = FALSE)
 
-	# Generate predictions
-	pred.out <- emmeans::emmeans(model.obj, as.formula(paste("~", classify)))
+	# Generate predictions (keep the reference grid for exact contrast df later)
+	emm <- emmeans::emmeans(model.obj, as.formula(paste("~", classify)))
 
 	# Extract standard errors and predictions
-	sed <- pred.out@misc$sigma *
-		sqrt(outer(1 / pred.out@grid$.wgt., 1 / pred.out@grid$.wgt., "+"))
-	pred.out <- as.data.frame(pred.out)
+	sed <- emm@misc$sigma *
+		sqrt(outer(1 / emm@grid$.wgt., 1 / emm@grid$.wgt., "+"))
+	pred.out <- as.data.frame(emm)
 	pred.out <- pred.out[, !grepl("CL", names(pred.out))]
 
 	# Rename columns for consistency
@@ -226,7 +226,8 @@ get_predictions.lm <- function(model.obj, classify, ...) {
 		sed = sed,
 		df = ndf,
 		ylab = ylab,
-		aliased_names = aliased_names
+		aliased_names = aliased_names,
+		emmeans_grid = emm
 	))
 }
 
@@ -248,18 +249,18 @@ get_predictions.aovlist <- function(model.obj, classify, ...) {
 	on.exit(options(emmeans = emmeans::emm_defaults))
 	emmeans::emm_options("msg.interaction" = FALSE, "msg.nesting" = FALSE)
 
-	# Generate predictions
-	pred.out <- emmeans::emmeans(
+	# Generate predictions (keep the reference grid for exact contrast df later)
+	emm <- emmeans::emmeans(
 		model.obj,
 		as.formula(paste("~", classify)),
 		method = "pairwise"
 	)
 
 	# Use emmeans embedded function for multiple comparisons
-	aov_compare <- as.data.frame(emmeans::contrast(pred.out, method = "pairwise"))
+	aov_compare <- as.data.frame(emmeans::contrast(emm, method = "pairwise"))
 
 	# Convert emmeans predictions to a data frame
-	pred.out <- as.data.frame(pred.out)
+	pred.out <- as.data.frame(emm)
 
 	# Extract standard errors
 	# define SED matrix (vectorised fill of upper triangle then mirror)
@@ -307,7 +308,8 @@ get_predictions.aovlist <- function(model.obj, classify, ...) {
 		sed = sed,
 		df = ndf,
 		ylab = ylab,
-		aliased_names = aliased_names
+		aliased_names = aliased_names,
+		emmeans_grid = emm
 	))
 }
 
@@ -371,8 +373,19 @@ process_aliased <- function(
 			aliased_names <- apply(aliased_names, 1, paste, collapse = ":")
 		}
 
-		# Create warning message
-		if (length(aliased_names) > 1) {
+		# Create warning message. Listed when few; collapsed to a count once there
+		# are more than 6, to avoid a very large warning block.
+		if (length(aliased_names) == 1) {
+			warn_string <- paste0(
+				"A level of ",
+				classify,
+				" is aliased. It has been removed from predicted output.\n",
+				"  Aliased level is: ",
+				aliased_names,
+				".\n  This level is saved as an attribute of the output object."
+			)
+		} else if (length(aliased_names) <= 6) {
+			# cap the listing at 6 to avoid a very large warning block
 			warn_string <- paste0(
 				"Some levels of ",
 				classify,
@@ -383,12 +396,12 @@ process_aliased <- function(
 			)
 		} else {
 			warn_string <- paste0(
-				"A level of ",
+				"Some levels of ",
 				classify,
-				" is aliased. It has been removed from predicted output.\n",
-				"  Aliased level is: ",
-				aliased_names,
-				".\n  This level is saved as an attribute of the output object."
+				" are aliased (",
+				length(aliased_names),
+				" levels). They have been removed from predicted output and saved ",
+				"in the \"aliased\" attribute of the output object."
 			)
 		}
 

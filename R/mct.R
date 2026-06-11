@@ -2,7 +2,7 @@
 #'
 #' A function for comparing and ranking predicted means with Tukey's Honest Significant Difference (HSD) Test.
 #'
-#' @param model.obj An ASReml-R or aov model object. Will likely also work with `lme` ([nlme::lme()]), `lmerMod` ([lme4::lmer()]) models as well.
+#' @param model.obj An `asreml` or `aov` model object. Will likely also work with `lme` ([nlme::lme()]), `lmerMod` ([lme4::lmer()]) models as well.
 #' @param classify Name of predictor variable as string.
 #' @param sig The significance level, numeric between 0 and 1. Default is 0.05.
 #' @param int.type The type of confidence interval to calculate. One of `ci`, `tukey`, `1se`, `2se`, or `none`. Default is `ci`.
@@ -192,7 +192,7 @@
 #' # ASReml-R Example
 #' library(asreml)
 #'
-#' #Fit ASReml Model
+#' # Fit ASReml-R model
 #' model.asr <- asreml(yield ~ Nitrogen + Variety + Nitrogen:Variety,
 #'                     random = ~ Blocks + Blocks:Wplots,
 #'                     residual = ~ units,
@@ -544,19 +544,9 @@ print.mct <- function(x, decimals = 2, ...) {
 	pp[numeric_cols] <- lapply(pp[numeric_cols], round, decimals)
 	print.data.frame(pp, ...)
 
-	if (!is.null(x$aliased)) {
-		aliased <- x$aliased
-		if (length(aliased) > 1) {
-			cat(
-				"\nAliased levels are:",
-				paste(aliased[1:(length(aliased) - 1)], collapse = ", "),
-				"and",
-				aliased[length(aliased)],
-				"\n"
-			)
-		} else {
-			cat("\nAliased level is:", aliased, "\n")
-		}
+	note <- aliased_note(x$aliased)
+	if (!is.null(note)) {
+		cat("\n", note, "\n", sep = "")
 	}
 
 	invisible(x)

@@ -110,9 +110,22 @@ test_that("adjust methods behave as documented", {
 		pairwise_comparisons(dat.aov, classify = "Species", adjust = "tukey"),
 		"multiple_comparisons"
 	)
+	# "dunnett" is reference_comparisons()'s domain -> rejected here, pointing there
+	expect_error(
+		pairwise_comparisons(dat.aov, classify = "Species", adjust = "dunnett"),
+		"reference_comparisons"
+	)
 	expect_error(
 		pairwise_comparisons(dat.aov, classify = "Species", adjust = "nonsense"),
 		"Invalid `adjust`"
+	)
+})
+
+test_that("a misspelled argument is caught (check_dots_used), not silently ignored", {
+	dat.aov <- aov(Petal.Width ~ Species, data = iris)
+	expect_error(
+		pairwise_comparisons(dat.aov, classify = "Species", adjut = "none"),
+		"must be used"
 	)
 })
 
@@ -179,6 +192,49 @@ test_that("unknown levels and identical-level pairs error clearly", {
 	)
 })
 
+test_that("aliased levels are stored as an attribute and named clearly in errors", {
+	# Empty A:Y cell -> A:Y not estimable -> aliased and dropped by get_predictions
+	set.seed(1)
+	d <- expand.grid(
+		Trt = factor(c("A", "B")),
+		Site = factor(c("X", "Y")),
+		rep = 1:5
+	)
+	d <- d[!(d$Trt == "A" & d$Site == "Y"), ]
+	d$y <- rnorm(nrow(d), as.numeric(d$Trt) + as.numeric(d$Site))
+	m <- aov(y ~ Trt * Site, data = d)
+
+	out <- suppressWarnings(pairwise_comparisons(m, classify = "Trt:Site"))
+	# the aliased level is recorded on the object (parity with multiple_comparisons)
+	expect_identical(attr(out, "aliased"), "A:Y")
+	# and it is excluded from the comparison set
+	expect_false(any(grepl("A:Y", out$comparison)))
+	# and reported once on print (shared note, same wording as multiple_comparisons)
+	expect_output(print(out), "Aliased level is: A:Y")
+
+	# naming the aliased level gives a clear "aliased" error, not "Unknown level"
+	err <- tryCatch(
+		suppressWarnings(pairwise_comparisons(
+			m,
+			classify = "Trt:Site",
+			pairs = "A:Y-B:Y"
+		)),
+		error = function(e) conditionMessage(e)
+	)
+	expect_match(err, "[Aa]liased")
+	expect_no_match(err, "Unknown level")
+
+	# a genuinely unknown level still reports "Unknown level"
+	expect_error(
+		suppressWarnings(pairwise_comparisons(
+			m,
+			classify = "Trt:Site",
+			pairs = "B:X-Z:Z"
+		)),
+		"Unknown level"
+	)
+})
+
 test_that("interaction classify: string and list forms are equivalent", {
 	set.seed(1)
 	d <- expand.grid(
@@ -228,6 +284,44 @@ test_that("by splits comparisons and adjusts within each group", {
 	)
 })
 
+test_that("by + a level missing from one group: warn and skip, compute the rest", {
+	# Unbalanced design: Trt C only at Site X (absent at Site Y).
+	set.seed(1)
+	d <- expand.grid(
+		Trt = factor(c("A", "B", "C")),
+		Site = factor(c("X", "Y")),
+		rep = 1:4
+	)
+	d <- d[!(d$Trt == "C" & d$Site == "Y"), ]
+	d$y <- rnorm(nrow(d), as.numeric(d$Trt) + as.numeric(d$Site))
+	m <- aov(y ~ Trt * Site, data = d)
+
+	# A-C is computable at Site X but not Site Y -> warn + skip Y, keep X
+	# (rather than aborting the whole call).
+	w <- capture_warnings(
+		out <- pairwise_comparisons(
+			m,
+			classify = "Trt:Site",
+			by = "Site",
+			pairs = "A-C"
+		)
+	)
+	expect_true(any(grepl("skipped comparison", w)))
+	expect_equal(as.character(unique(out$Site)), "X")
+	expect_equal(out$comparison, "A - C")
+
+	# a level missing from EVERY group (a typo) still hard-errors up front
+	expect_error(
+		suppressWarnings(pairwise_comparisons(
+			m,
+			classify = "Trt:Site",
+			by = "Site",
+			pairs = "A-Z"
+		)),
+		"Unknown level"
+	)
+})
+
 test_that("levels containing '-' require the list form", {
 	set.seed(2)
 	d <- data.frame(
@@ -256,6 +350,25 @@ test_that("print method shows a header and the table", {
 	out <- pairwise_comparisons(dat.aov, classify = "Species")
 	expect_output(print(out), "Pairwise comparisons of means")
 	expect_output(print(out), "Adjustment method: holm")
+})
+
+test_that("print header reflects the comparison type (pairs vs contrasts)", {
+	dat.aov <- aov(weight ~ group, data = PlantGrowth)
+
+	pw <- pairwise_comparisons(dat.aov, classify = "group")
+	expect_identical(attr(pw, "comparison_type"), "pairs")
+	expect_output(print(pw), "Pairwise comparisons of means")
+
+	ct <- pairwise_comparisons(
+		dat.aov,
+		classify = "group",
+		contrasts = list("ctrl vs trts" = c(ctrl = 1, trt1 = -0.5, trt2 = -0.5))
+	)
+	expect_identical(attr(ct, "comparison_type"), "contrasts")
+	expect_output(print(ct), "Contrasts of means")
+	# the pairwise header must NOT appear for the contrasts form
+	ct_out <- paste(capture.output(print(ct)), collapse = "\n")
+	expect_false(grepl("Pairwise comparisons of means", ct_out))
 })
 
 test_that("autoplot builds the expected forest-plot layers", {
@@ -428,4 +541,33 @@ test_that("contrasts work within `by` groups", {
 	expect_equal(nrow(out), 2) # one contrast per group
 	expect_true("Grp" %in% names(out))
 	expect_setequal(as.character(unique(out$Grp)), c("G1", "G2"))
+})
+
+test_that("a >2-level contrast on a matrix-df model uses the exact emmeans df", {
+	skip_if_not_installed("emmeans")
+	# aov + Error() gives comparison-specific (matrix) df, so a >2-level contrast
+	# has no single df recoverable from the SEDs. The engine delegates to emmeans
+	# on the reference grid, which returns the exact Satterthwaite/containment df.
+	m <- suppressMessages(aov(weight ~ Diet + Error(Chick), data = ChickWeight))
+	coefs <- c(`1` = 1, `2` = -1 / 3, `3` = -1 / 3, `4` = -1 / 3)
+	out <- suppressMessages(pairwise_comparisons(
+		m,
+		classify = "Diet",
+		contrasts = list("D1 vs rest" = coefs)
+	))
+
+	# independent reference: emmeans contrast on the same model
+	emm <- suppressMessages(emmeans::emmeans(m, ~Diet))
+	ref <- as.data.frame(emmeans::contrast(
+		emm,
+		method = list("D1 vs rest" = as.numeric(coefs)),
+		adjust = "none"
+	))
+
+	expect_equal(out$estimate, ref$estimate, tolerance = 1e-6)
+	expect_equal(out$std.error, ref$SE, tolerance = 1e-6)
+	expect_equal(out$df, ref$df, tolerance = 1e-6)
+	# a single finite df (the exact contrast df), not the old min-of-pairwise NA/heuristic
+	expect_length(out$df, 1)
+	expect_true(is.finite(out$df))
 })

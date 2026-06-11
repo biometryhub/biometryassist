@@ -49,7 +49,7 @@
     10  0.6_cwt Golden_rain          121.48      8.92     de 18.16 103.32 139.64
     11  0.6_cwt  Marvellous          128.10      8.77      e 17.85 110.25 145.95
     
-    Aliased level is: 0.2_cwt:Golden_rain 
+    Aliased level is: 0.2_cwt:Golden_rain
 
 ---
 
@@ -71,7 +71,7 @@
     9   0.6_cwt     Victory          116.85      9.34      c 19.03  97.81 135.88
     10  0.6_cwt  Marvellous          128.99      9.20      c 18.74 110.25 147.73
     
-    Aliased levels are: 0.2_cwt:Golden_rain and 0.2_cwt:Victory 
+    Aliased levels are: 0.2_cwt:Golden_rain and 0.2_cwt:Victory
 
 # 3 way interaction works
 

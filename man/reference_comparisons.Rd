@@ -66,7 +66,9 @@ display, so they are always included (\code{level1.mean}, \code{level2.mean}); s
 
 \item{descending}{Tri-state control of row ordering within each by-group.
 \code{NULL} (default) keeps prediction order; \code{FALSE} sorts ascending by
-estimate; \code{TRUE} sorts descending by estimate.}
+estimate; \code{TRUE} sorts descending by estimate. This orders by the comparison
+\emph{estimate} (each level minus the reference), unlike \code{\link[=multiple_comparisons]{multiple_comparisons()}}
+which orders by the predicted \emph{mean}.}
 
 \item{x}{A \code{reference_comparisons} object.}
 
@@ -92,7 +94,9 @@ A \code{data.frame} of class \code{reference_comparisons} with one row per
 \code{p.value} (adjusted), \code{conf.low} and \code{conf.high}. The reference level is not
 given its own row (its mean appears as \code{level2.mean} on every row, and in the
 \code{reference} attribute). Stored at full precision; rounding for display is
-controlled by \code{\link[=print.reference_comparisons]{print.reference_comparisons()}}.
+controlled by \code{\link[=print.reference_comparisons]{print.reference_comparisons()}}. If any levels were aliased
+(not estimable) in the model they are dropped (with a warning) and recorded
+in an \code{aliased} attribute; an aliased \code{reference} is an error.
 
 \code{print.reference_comparisons()} invisibly returns \code{x}.
 }
@@ -120,6 +124,15 @@ default. The exact test requires a single (common) degrees-of-freedom; for
 models that report comparison-specific df, \code{reference_comparisons()} falls
 back to \code{"holm"} with a warning. Any \link[stats:p.adjust.methods]{stats::p.adjust.methods} method may be
 requested explicitly (a message notes that Dunnett is the exact option).
+
+The multivariate-t routine (\code{\link[mvtnorm:pmvt]{mvtnorm::pmvt()}}) requires an integer
+degrees-of-freedom, so a \emph{fractional} denominator df (such as an ASReml-R
+Kenward-Roger \code{denDF}) is rounded to the nearest integer for the Dunnett
+calculation when two or more comparisons are made. The reported \code{df} column is
+the exact (unrounded) value, and a single comparison uses the exact df. In
+practice this rounding only affects \code{asreml} models with a fractional denDF
+(\code{aov}/\code{lm}/\code{lme} have integer df, and mixed models with comparison-specific df
+fall back to Holm).
 
 The Dunnett correlation structure is reconstructed from the standard errors of
 the means and the standard errors of differences that the prediction machinery

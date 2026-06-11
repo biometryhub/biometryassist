@@ -332,3 +332,82 @@ make_treatment_labels <- function(pp, vars, sep) {
 		apply(pp[, vars, drop = FALSE], 1, paste, collapse = sep)
 	}
 }
+
+
+#' Format the aliased-levels note for the comparison print methods
+#'
+#' Shared by `print.mct()`, `print.pairwise_comparisons()` and
+#' `print.reference_comparisons()` so all three report aliasing identically.
+#' Returns `NULL` when nothing was aliased. The levels are listed when there are
+#' few; once there are more than 6 the list is collapsed to a count (to
+#' avoid a large block) and the user is shown how to retrieve them from the
+#' `aliased` attribute.
+#'
+#' @param aliased Character vector of aliased level labels (or `NULL`).
+#' @return A single-line character string, or `NULL`.
+#' @keywords internal
+aliased_note <- function(aliased) {
+	aliased <- as.character(aliased)
+	n <- length(aliased)
+	if (n == 0) {
+		return(NULL)
+	}
+	if (n == 1) {
+		return(paste0("Aliased level is: ", aliased))
+	}
+	if (n > 6) {
+		# Too many to list: show how to retrieve them from the output object.
+		return(paste0(
+			n,
+			" levels are aliased. Run attr(x, \"aliased\") to see them."
+		))
+	}
+	paste0(
+		"Aliased levels are: ",
+		paste(aliased[-n], collapse = ", "),
+		" and ",
+		aliased[n]
+	)
+}
+
+
+#' Note when per-comparison CIs and adjusted p-values can disagree
+#'
+#' Shared by `pairwise_comparisons()` and `reference_comparisons()`. For
+#' non-simultaneous adjustments the confidence intervals are per-comparison (at
+#' level `sig`) while the p-values are adjusted for multiplicity, so an interval
+#' can exclude zero while the adjusted p-value is not significant (or, more
+#' rarely, the reverse). Emits a one-time explanatory `message()` when this
+#' actually occurs in the result. Dunnett intervals are the simultaneous
+#' intervals and agree with the test by construction, so they are never flagged;
+#' `"none"` likewise never disagrees.
+#'
+#' @param x A comparison table with `conf.low`, `conf.high` and `p.value`.
+#' @param sig The significance level used for the intervals and tests.
+#' @param method The resolved adjustment method (e.g. `"holm"`, `"dunnett"`).
+#' @return Invisibly `TRUE` if a message was shown, otherwise `FALSE`.
+#' @keywords internal
+note_ci_padjust_mismatch <- function(x, sig, method) {
+	# Dunnett intervals are simultaneous and agree with the test by construction.
+	if (identical(method, "dunnett")) {
+		return(invisible(FALSE))
+	}
+	if (!all(c("conf.low", "conf.high", "p.value") %in% names(x))) {
+		return(invisible(FALSE))
+	}
+	ci_excludes_zero <- x$conf.low > 0 | x$conf.high < 0
+	significant <- x$p.value < sig
+	mismatch <- !is.na(ci_excludes_zero) &
+		!is.na(significant) &
+		(ci_excludes_zero != significant)
+	if (any(mismatch)) {
+		message(
+			"Note: confidence intervals are per-comparison (not adjusted for ",
+			"multiplicity), while the p-values are adjusted. A comparison's ",
+			"interval can therefore exclude zero when its adjusted p-value is not ",
+			"significant at `sig` (or, less often, the reverse)."
+		)
+		return(invisible(TRUE))
+	}
+	invisible(FALSE)
+}

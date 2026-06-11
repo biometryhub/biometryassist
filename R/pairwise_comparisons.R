@@ -14,7 +14,7 @@
 #' pairwise difference needs only the standard error of the difference (SED)
 #' matrix that the prediction machinery already returns.
 #'
-#' @param model.obj An ASReml-R, `aov`, `lm`, `lme` ([nlme::lme()]) or `lmerMod`
+#' @param model.obj An `asreml`, `aov`, `lm`, `lme` ([nlme::lme()]) or `lmerMod`
 #'   ([lme4::lmer()]) model object.
 #' @param classify Name of the predictor variable(s) to compare, as a string.
 #'   Interactions are specified with `:` (e.g. `"Trt:Site"`).
@@ -29,10 +29,10 @@
 #'   keyed by level label (e.g.
 #'   `list("A vs B & C" = c(A = 1, B = -0.5, C = -0.5))`), and the list names
 #'   become the `comparison` labels. The estimate is the corresponding linear
-#'   combination of the predicted means, with variance from the reconstructed
-#'   prediction covariance. Mutually exclusive with `pairs`; coefficients should
-#'   sum to zero (a warning is issued otherwise). `include_means` does not apply
-#'   to this form.
+#'   combination of the predicted means. Mutually exclusive with `pairs`;
+#'   coefficients should sum to zero (a warning is issued otherwise).
+#'   `include_means` does not apply to this form. See Details for how the
+#'   standard error and degrees of freedom are obtained.
 #' @param adjust The method used to adjust p-values for multiplicity over the
 #'   chosen set, passed to [stats::p.adjust()]. Default is `"holm"`. Any
 #'   [stats::p.adjust.methods] value is accepted. `"tukey"` is **not** valid
@@ -51,7 +51,10 @@
 #'   only.
 #' @param descending Tri-state control of row ordering within each by-group.
 #'   `NULL` (default) keeps the input order of `pairs`; `FALSE` sorts ascending
-#'   by estimate; `TRUE` sorts descending by estimate.
+#'   by estimate; `TRUE` sorts descending by estimate. Note this orders by the
+#'   comparison *estimate* (the difference), unlike [multiple_comparisons()]
+#'   which orders by the predicted *mean* — appropriate here as the output is
+#'   difference-centric.
 #' @param ... Other arguments passed to the model-specific prediction methods
 #'   (e.g. ASReml-R `predict()` arguments).
 #'
@@ -82,7 +85,28 @@
 #' labels reference the remaining (non-`by`) factor levels. For example,
 #' `classify = "Trt:Site"`, `by = "Site"`, `pairs = "A-B"` compares Trt levels A
 #' and B within each Site. A group with fewer than two levels is skipped with a
-#' warning.
+#' warning. In an unbalanced design a requested comparison may reference a level
+#' that is absent from some groups: such a comparison is skipped (with a warning)
+#' in the groups where it cannot be computed and reported in those where it can.
+#' A level that is absent from *every* group — or that was aliased — is instead
+#' an error, since that indicates a mistake rather than an incomplete design.
+#'
+#' ## Standard error and degrees of freedom for `contrasts`
+#' For a general contrast the standard error and degrees of freedom depend on
+#' the model engine:
+#' * For models predicted via `emmeans` (`aov`, `lm`, [nlme::lme()],
+#'   [lme4::lmer()], and `aov` with `Error()` strata) the estimate, standard
+#'   error and degrees of freedom are obtained directly from
+#'   [emmeans::contrast()] on the model's reference grid. The degrees of freedom
+#'   are therefore the *exact* contrast df for that engine (Satterthwaite or
+#'   Kenward-Roger for mixed models, containment for `aov`/`Error()`), including
+#'   for contrasts spanning more than two levels — these cannot be recovered
+#'   from the SED matrix alone.
+#' * For `asreml` models the contrast variance is computed from the prediction
+#'   error covariance (reconstructed from the SED matrix), and the degrees of
+#'   freedom are the term's denominator df from `asreml::wald(denDF = "default")`
+#'   (a single Kenward-Roger-style value shared by all contrasts within the
+#'   term, as ASReml-R does not provide a per-contrast approximate df).
 #'
 #' ## Transformations
 #' Comparisons are reported on the model scale. A difference of transformed means
@@ -93,7 +117,9 @@
 #' ## Confidence intervals
 #' The per-comparison confidence intervals are *not* simultaneity-adjusted: as
 #' with the confidence-interval/letter note in [multiple_comparisons()], an
-#' interval may exclude zero while the adjusted p-value is `>= sig`.
+#' interval may exclude zero while the adjusted p-value is `>= sig`. When this
+#' happens a one-time `message()` notes it (suppressible with
+#' [suppressMessages()]).
 #'
 #' @returns A `data.frame` of class `pairwise_comparisons` with one row per
 #'   (group × comparison) and columns: any `by` column(s), `level1`, `level2`,
@@ -102,7 +128,9 @@
 #'   `conf.high`. Stored at full precision; rounding for display is controlled
 #'   by [print.pairwise_comparisons()]. For the `contrasts` form, the
 #'   `level1`/`level2` and mean columns are omitted and `comparison` holds the
-#'   contrast name.
+#'   contrast name. If any levels were aliased (not estimable) in the model they
+#'   are dropped from the comparisons (with a warning) and recorded in an
+#'   `aliased` attribute.
 #'
 #' @seealso [multiple_comparisons()] for means-and-letters output. For guidance
 #'   on choosing between the two and on multiplicity adjustments, see
@@ -144,6 +172,11 @@ pairwise_comparisons <- function(
 	descending = NULL,
 	...
 ) {
+	# Catch misspelled arguments silently swallowed by `...` (consistent with
+	# multiple_comparisons()). Any dot not consumed by the prediction method
+	# (e.g. ASReml-R predict() arguments) is an error rather than ignored.
+	rlang::check_dots_used()
+
 	# `pairs` and `contrasts` are two ways to specify the same engine
 	if (!is.null(pairs) && !is.null(contrasts)) {
 		stop("Supply only one of `pairs` or `contrasts`, not both.", call. = FALSE)
@@ -160,6 +193,14 @@ pairwise_comparisons <- function(
 			"HSD is exact only for the complete set of all pairwise comparisons. ",
 			"Use multiple_comparisons() for that, or choose another `adjust` ",
 			"method (e.g. \"holm\", \"bonferroni\", \"BH\").",
+			call. = FALSE
+		)
+	}
+	if (adjust == "dunnett") {
+		stop(
+			"`adjust = \"dunnett\"` is not valid for pairwise_comparisons(): the ",
+			"Dunnett test compares every level against a single control. Use ",
+			"reference_comparisons() for that.",
 			call. = FALSE
 		)
 	}
@@ -181,6 +222,9 @@ pairwise_comparisons <- function(
 	sed <- result$sed
 	ndf <- result$df
 	ylab <- result$ylab
+	# Levels that were aliased (not estimable) and dropped by process_aliased();
+	# used to give a clear error if the user names one, and stored on the output.
+	aliased <- result$aliased_names
 
 	# Resolve the `by` split and the remaining within-group factors
 	if (!is.null(by)) {
@@ -212,6 +256,25 @@ pairwise_comparisons <- function(
 		sep = ":"
 	))
 
+	# For general contrasts on an emmeans-backed engine (everything except
+	# asreml), delegate the estimate/SE/df to emmeans on its reference grid so
+	# the degrees of freedom are exact (Satterthwaite / Kenward-Roger) rather
+	# than reconstructed from the SEDs. `emm_info` carries the grid, the map from
+	# prediction rows to grid rows (matched by full classify label so it is
+	# robust to aliased rows having been dropped), and the grid size. It is NULL
+	# for asreml (no grid), where build_contrast_block() reconstructs from SEDs.
+	emm_info <- NULL
+	if (!is.null(contrasts) && !is.null(result$emmeans_grid)) {
+		grid_df <- as.data.frame(result$emmeans_grid)
+		grid_label <- as.character(make_treatment_labels(grid_df, vars, sep = ":"))
+		pp_label <- as.character(make_treatment_labels(pp, vars, sep = ":"))
+		emm_info <- list(
+			grid = result$emmeans_grid,
+			pp_to_grid = match(pp_label, grid_label),
+			n = nrow(grid_df)
+		)
+	}
+
 	# Split rows into by-groups (or a single "All" group)
 	if (!is.null(by)) {
 		by_key <- interaction(pp[, by, drop = FALSE], drop = TRUE, sep = ":")
@@ -219,6 +282,20 @@ pairwise_comparisons <- function(
 	} else {
 		by_key <- factor(rep("All", nrow(pp)))
 		group_levels <- "All"
+	}
+
+	# Validate the user-named levels once, against the full set of estimable
+	# levels: a typo or an aliased level errors here (clear, up front). The
+	# per-group loop below then only *warns and skips* comparisons a particular
+	# by-group cannot compute (an unbalanced design where a level is absent from
+	# some group), rather than failing the whole call.
+	global_labels <- unique(within_label)
+	all_pairs <- NULL
+	all_contrasts <- NULL
+	if (!is.null(contrasts)) {
+		all_contrasts <- parse_contrasts(contrasts, global_labels, aliased)
+	} else if (!is.null(pairs)) {
+		all_pairs <- parse_pairs(pairs, global_labels, aliased)
 	}
 
 	blocks <- list()
@@ -234,8 +311,28 @@ pairwise_comparisons <- function(
 			next
 		}
 		group_labels <- within_label[idx]
+
 		if (!is.null(contrasts)) {
-			group_contrasts <- parse_contrasts(contrasts, group_labels)
+			# Keep only contrasts whose every level is present in this group.
+			keep <- vapply(
+				all_contrasts,
+				function(co) all(names(co) %in% group_labels),
+				logical(1)
+			)
+			if (any(!keep)) {
+				warning(
+					"In group '",
+					g,
+					"', skipped contrast(s) referencing levels not present there: ",
+					paste(names(all_contrasts)[!keep], collapse = ", "),
+					".",
+					call. = FALSE
+				)
+			}
+			group_contrasts <- all_contrasts[keep]
+			if (length(group_contrasts) == 0) {
+				next
+			}
 			blocks[[length(blocks) + 1]] <- build_contrast_block(
 				group_contrasts,
 				idx,
@@ -246,10 +343,38 @@ pairwise_comparisons <- function(
 				adjust,
 				sig,
 				by,
-				descending
+				descending,
+				emm_info
 			)
 		} else {
-			group_pairs <- parse_pairs(pairs, group_labels)
+			if (is.null(pairs)) {
+				# Default: all pairwise comparisons within this group.
+				group_pairs <- parse_pairs(NULL, group_labels)
+			} else {
+				# Keep only pairs whose both levels are present in this group.
+				keep <- vapply(
+					all_pairs,
+					function(p) all(p %in% group_labels),
+					logical(1)
+				)
+				if (any(!keep)) {
+					skipped <- vapply(
+						all_pairs[!keep],
+						function(p) paste(p, collapse = " - "),
+						character(1)
+					)
+					warning(
+						"In group '",
+						g,
+						"', skipped comparison(s) referencing levels not present ",
+						"there: ",
+						paste(skipped, collapse = ", "),
+						".",
+						call. = FALSE
+					)
+				}
+				group_pairs <- all_pairs[keep]
+			}
 			if (length(group_pairs) == 0) {
 				next
 			}
@@ -282,8 +407,66 @@ pairwise_comparisons <- function(
 	attr(out, "classify") <- classify
 	attr(out, "by") <- by
 	attr(out, "ylab") <- ylab
+	attr(out, "comparison_type") <- if (!is.null(contrasts)) {
+		"contrasts"
+	} else {
+		"pairs"
+	}
+	if (!is.null(aliased)) {
+		attr(out, "aliased") <- as.character(aliased)
+	}
+
+	# Nudge if any per-comparison CI disagrees with its adjusted p-value.
+	note_ci_padjust_mismatch(out, sig, adjust)
 
 	return(out)
+}
+
+
+#' Error on level labels that are not among the estimable levels
+#'
+#' Distinguishes levels that were *aliased* (present in the data but not
+#' estimable, so dropped from the predictions by `process_aliased()`) from
+#' levels that are genuinely unknown, and reports each group with the
+#' appropriate explanation.
+#'
+#' @param unknown Character vector of requested labels not found in `labels`.
+#' @param labels Character vector of valid (estimable) level labels.
+#' @param aliased Character vector of aliased level labels (or `NULL`).
+#' @param context The argument name to name in the message (e.g. `"pairs"`).
+#' @noRd
+stop_unknown_levels <- function(unknown, labels, aliased, context) {
+	aliased_hit <- intersect(unknown, aliased)
+	truly <- setdiff(unknown, aliased)
+	msg <- character(0)
+	if (length(aliased_hit) > 0) {
+		msg <- c(
+			msg,
+			paste0(
+				"Aliased (not estimable) level(s) in `",
+				context,
+				"`: ",
+				paste(aliased_hit, collapse = ", "),
+				". These levels were aliased in the model and removed from the ",
+				"predictions, so they cannot be compared."
+			)
+		)
+	}
+	if (length(truly) > 0) {
+		msg <- c(
+			msg,
+			paste0(
+				"Unknown level(s) in `",
+				context,
+				"`: ",
+				paste(truly, collapse = ", "),
+				".\nAvailable levels: ",
+				paste(labels, collapse = ", "),
+				"."
+			)
+		)
+	}
+	stop(paste(msg, collapse = "\n"), call. = FALSE)
 }
 
 
@@ -295,8 +478,10 @@ pairwise_comparisons <- function(
 #'
 #' @param pairs The user-supplied `pairs` argument.
 #' @param labels Character vector of valid (within-group) level labels.
+#' @param aliased Character vector of aliased level labels (or `NULL`), used to
+#'   give a clearer error when a requested level was aliased rather than unknown.
 #' @noRd
-parse_pairs <- function(pairs, labels) {
+parse_pairs <- function(pairs, labels, aliased = NULL) {
 	if (is.null(pairs)) {
 		return(utils::combn(labels, 2, simplify = FALSE))
 	}
@@ -338,14 +523,7 @@ parse_pairs <- function(pairs, labels) {
 	# Existence and distinctness checks
 	unknown <- setdiff(unique(unlist(raw)), labels)
 	if (length(unknown) > 0) {
-		stop(
-			"Unknown level(s) in `pairs`: ",
-			paste(unknown, collapse = ", "),
-			".\nAvailable levels: ",
-			paste(labels, collapse = ", "),
-			".",
-			call. = FALSE
-		)
+		stop_unknown_levels(unknown, labels, aliased, "pairs")
 	}
 	for (p in raw) {
 		if (p[1] == p[2]) {
@@ -430,6 +608,12 @@ build_pairwise_block <- function(
 	if (adjust == "dunnett") {
 		# Exact simultaneous all-vs-reference inference (the CIs are then the
 		# simultaneous Dunnett intervals, which agree with the adjusted test).
+		# This branch is only ever reached via reference_comparisons():
+		# pairwise_comparisons() explicitly rejects adjust = "dunnett" (directing
+		# the user to reference_comparisons()), so build_pairwise_block() never
+		# sees it from the pairwise entry point. The engine lives here because
+		# reference_comparisons() reuses build_pairwise_block() for its
+		# all-vs-reference set.
 		dn <- dunnett_adjust(i_idx, j_idx, se, df_ij, tstat, pp, sed, sig)
 		p_adj <- dn$p.value
 		crit <- dn$crit
@@ -507,15 +691,23 @@ dunnett_adjust <- function(i_idx, j_idx, se, df_ij, tstat, pp, sed, sig) {
 	}
 
 	m <- length(tstat)
-	df0 <- as.integer(round(df_ij[1]))
+	df_exact <- df_ij[1]
 
-	# Single comparison: no multiplicity, exact t
+	# Single comparison: no multiplicity -> exact two-sided t on the exact df.
+	# stats::pt/qt accept a fractional df, so don't round here (mvtnorm below
+	# does require an integer, but it isn't used in this branch).
 	if (m == 1) {
 		return(list(
-			p.value = 2 * stats::pt(-abs(tstat), df0),
-			crit = stats::qt(1 - sig / 2, df0)
+			p.value = 2 * stats::pt(-abs(tstat), df_exact),
+			crit = stats::qt(1 - sig / 2, df_exact)
 		))
 	}
+
+	# mvtnorm::pmvt/qmvt require an INTEGER df for the multivariate t, so a
+	# fractional denominator df (e.g. an asreml Kenward-Roger denDF) is rounded to
+	# the nearest integer. aov/lm/lme have integer df and lmer/aov+Error fall back
+	# to Holm, so in practice this only affects an asreml fractional denDF.
+	df0 <- as.integer(round(df_exact))
 
 	# Reconstruct V over the involved means
 	u <- sort(unique(c(i_idx, j_idx)))
@@ -595,8 +787,10 @@ reconstruct_vcov <- function(u, pp, sed) {
 #'
 #' @param contrasts A named list of named numeric coefficient vectors.
 #' @param labels Character vector of valid (within-group) level labels.
+#' @param aliased Character vector of aliased level labels (or `NULL`), used to
+#'   give a clearer error when a requested level was aliased rather than unknown.
 #' @noRd
-parse_contrasts <- function(contrasts, labels) {
+parse_contrasts <- function(contrasts, labels, aliased = NULL) {
 	if (
 		!is.list(contrasts) ||
 			length(contrasts) == 0 ||
@@ -620,14 +814,7 @@ parse_contrasts <- function(contrasts, labels) {
 		}
 		unknown <- setdiff(names(co), labels)
 		if (length(unknown) > 0) {
-			stop(
-				"Unknown level(s) in `contrasts`: ",
-				paste(unknown, collapse = ", "),
-				".\nAvailable levels: ",
-				paste(labels, collapse = ", "),
-				".",
-				call. = FALSE
-			)
+			stop_unknown_levels(unknown, labels, aliased, "contrasts")
 		}
 		if (abs(sum(co)) > 1e-8) {
 			warning(
@@ -664,7 +851,8 @@ build_contrast_block <- function(
 	adjust,
 	sig,
 	by,
-	descending
+	descending,
+	emm_info = NULL
 ) {
 	lab2idx <- stats::setNames(idx, group_labels)
 	pv <- pp$predicted.value
@@ -678,27 +866,51 @@ build_contrast_block <- function(
 		co <- group_contrasts[[k]]
 		gi <- as.integer(lab2idx[names(co)])
 		w <- as.numeric(co)
-		est[k] <- sum(w * pv[gi])
 
-		u <- sort(unique(gi))
-		V <- reconstruct_vcov(u, pp, sed)
-		wal <- numeric(length(u))
-		pos <- match(gi, u)
-		for (q in seq_along(gi)) {
-			wal[pos[q]] <- wal[pos[q]] + w[q]
-		}
-		se[k] <- sqrt(as.numeric(t(wal) %*% V %*% wal))
-
-		if (is.matrix(ndf)) {
-			# A multi-level contrast has no single df; take the (conservative)
-			# minimum of the pairwise df among the involved levels.
-			if (length(u) >= 2) {
-				prs <- utils::combn(u, 2)
-				df_c[k] <- min(ndf[cbind(prs[1, ], prs[2, ])], na.rm = TRUE)
-			} else {
-				df_c[k] <- NA_real_
-			}
+		if (!is.null(emm_info)) {
+			# emmeans-backed engine: delegate to emmeans on the reference grid so
+			# estimate, SE and (crucially) the degrees of freedom are exact for an
+			# arbitrary linear contrast, including >2-level contrasts on mixed
+			# models where the df is Satterthwaite / Kenward-Roger and cannot be
+			# recovered from the SEDs. Coefficients are placed at the grid rows for
+			# this group's levels (zero elsewhere); adjust = "none" because the
+			# multiplicity adjustment is applied below over our chosen family.
+			coef_full <- numeric(emm_info$n)
+			coef_full[emm_info$pp_to_grid[gi]] <- w
+			ct <- as.data.frame(emmeans::contrast(
+				emm_info$grid,
+				method = stats::setNames(list(coef_full), names(group_contrasts)[k]),
+				adjust = "none"
+			))
+			est[k] <- ct$estimate
+			se[k] <- ct$SE
+			df_c[k] <- ct$df
 		} else {
+			# asreml (no grid): reconstruct from the SEDs. df is the model's single
+			# residual df (scalar for asreml). Floor c'Vc at zero so a contrast with
+			# ~0 true variance rounding just below zero gives se = 0, not a NaN; the
+			# reconstructed V is the exact (PSD) model covariance, so this only ever
+			# floors floating-point rounding noise.
+			est[k] <- sum(w * pv[gi])
+			u <- sort(unique(gi))
+			V <- reconstruct_vcov(u, pp, sed)
+			wal <- numeric(length(u))
+			pos <- match(gi, u)
+			for (q in seq_along(gi)) {
+				wal[pos[q]] <- wal[pos[q]] + w[q]
+			}
+			qf <- as.numeric(t(wal) %*% V %*% wal)
+			se[k] <- sqrt(max(0, qf))
+			if (is.matrix(ndf)) {
+				# Should not occur: matrix df only arises for emmeans engines, which
+				# take the branch above. Guard rather than emit an ad-hoc df.
+				stop(
+					"General contrasts are not supported for this model: it reports ",
+					"comparison-specific degrees of freedom but provides no emmeans ",
+					"reference grid to derive an exact contrast df.",
+					call. = FALSE
+				)
+			}
 			df_c[k] <- ndf
 		}
 	}
@@ -750,7 +962,12 @@ build_contrast_block <- function(
 #'
 #' @export
 print.pairwise_comparisons <- function(x, decimals = 2, ...) {
-	cat("Pairwise comparisons of means\n")
+	header <- if (identical(attr(x, "comparison_type"), "contrasts")) {
+		"Contrasts of means"
+	} else {
+		"Pairwise comparisons of means"
+	}
+	cat(header, "\n", sep = "")
 	cat("Classify:", attr(x, "classify"), "\n")
 	cat("Adjustment method:", attr(x, "comparison_method"), "\n")
 	cat("Significance level:", attr(x, "sig_level"), "\n\n")
@@ -776,5 +993,11 @@ print.pairwise_comparisons <- function(x, decimals = 2, ...) {
 	}
 
 	print(out, ...)
+
+	note <- aliased_note(attr(x, "aliased"))
+	if (!is.null(note)) {
+		cat("\n", note, "\n", sep = "")
+	}
+
 	invisible(x)
 }

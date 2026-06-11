@@ -109,6 +109,19 @@ test_that("adjust = 'tukey' is rejected", {
 	)
 })
 
+test_that("a misspelled argument is caught (check_dots_used), not silently ignored", {
+	m <- aov(weight ~ feed, data = chickwts)
+	expect_error(
+		reference_comparisons(
+			m,
+			classify = "feed",
+			reference = "casein",
+			adjsut = "holm"
+		),
+		"must be used"
+	)
+})
+
 test_that("include_means = FALSE is ignored with a warning", {
 	m <- aov(weight ~ feed, data = chickwts)
 	expect_warning(
@@ -121,6 +134,39 @@ test_that("include_means = FALSE is ignored with a warning", {
 		"include_means"
 	)
 	expect_true(all(c("level1.mean", "level2.mean") %in% names(out)))
+})
+
+test_that("aliased levels are stored and an aliased reference errors clearly", {
+	# Empty A:Y cell -> A:Y not estimable -> aliased and dropped
+	set.seed(1)
+	d <- expand.grid(
+		Trt = factor(c("A", "B")),
+		Site = factor(c("X", "Y")),
+		rep = 1:5
+	)
+	d <- d[!(d$Trt == "A" & d$Site == "Y"), ]
+	d$y <- rnorm(nrow(d), as.numeric(d$Trt) + as.numeric(d$Site))
+	m <- aov(y ~ Trt * Site, data = d)
+
+	out <- suppressWarnings(reference_comparisons(
+		m,
+		classify = "Trt:Site",
+		reference = "B:X"
+	))
+	expect_identical(attr(out, "aliased"), "A:Y")
+	# reported once on print (shared note, same wording as multiple_comparisons)
+	expect_output(print(out), "Aliased level is: A:Y")
+
+	# using the aliased level as the reference gives a clear error
+	err <- tryCatch(
+		suppressWarnings(reference_comparisons(
+			m,
+			classify = "Trt:Site",
+			reference = "A:Y"
+		)),
+		error = function(e) conditionMessage(e)
+	)
+	expect_match(err, "[Aa]liased")
 })
 
 test_that("an unknown reference level errors", {
@@ -220,4 +266,36 @@ test_that("autoplot reference means plot is stable", {
 		ggplot2::autoplot(out),
 		variant = ggplot2_variant()
 	)
+})
+
+test_that("reconstructed V matches a directly-supplied vcov (asreml)", {
+	# reconstruct_vcov() rebuilds the variance-covariance of the
+	# predicted means from the SEDs and per-mean SEs via
+	#   V_ij = (V_ii + V_jj - SED_ij^2) / 2
+	# which is algebraically exact. ASReml-R is the only supported engine here
+	# that exposes the native V directly (predict(..., vcov = TRUE)$vcov), so this
+	# is the one place the reconstruction can be checked against ground truth.
+	#
+	# asreml is commercial and unlicensed on CI/CRAN, so this is skipped there and
+	# only runs on a licensed machine.
+	skip_on_cran()
+	skip_on_ci()
+	skip_if_not_installed("asreml")
+
+	# --- Scaffold (uncomment / adapt once a fixture is chosen) -----------------
+	load(test_path("data", "w2_models.Rdata"), envir = environment())
+	classify <- "Variety"
+
+	# Native vcov of the predicted means straight from asreml.
+	pred <- predict(example3.asr, classify = classify, vcov = TRUE)
+	V_direct <- as.matrix(pred$vcov)
+
+	# The package's internal reconstruction from SED + per-mean SE.
+	res <- biometryassist:::get_predictions(example3.asr, classify)
+	u <- seq_len(nrow(res$predictions))
+	V_recon <- biometryassist:::reconstruct_vcov(u, res$predictions, res$sed)
+
+	# Compare (asreml may order the vcov differently to the prediction table;
+	# align by the prediction labels before comparing if so).
+	expect_equal(unname(V_recon), unname(V_direct), tolerance = 1e-6)
 })

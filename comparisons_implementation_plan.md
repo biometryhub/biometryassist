@@ -1,6 +1,7 @@
 # Plan: the comparison functions (`pairwise_comparisons()`, `reference_comparisons()`, general contrasts)
 
 **Status:**
+
 - **Phase 1 — `pairwise_comparisons()`: IMPLEMENTED** on the `feature/pairwise-comparisons`
   branch (off `dev`). Difference-centric tidy table + forest-plot `autoplot`. Ships in the next
   release (currently the `1.5.0` section of `NEWS.md`).
@@ -11,8 +12,13 @@
   vcov plumbing (§5.1) was **not needed** — reconstruction is exact and engine-agnostic, and was the
   only path testable without a licensed asreml. Direct `V` (asreml `vcov = TRUE`, emmeans) remains a
   possible later numerical-robustness optimisation.
-- **Phase 2b — general `contrasts =` argument: DESIGNED (this document), not yet implemented.**
-  Target: a later release (likely `v2.0.0`, alongside the `design()` backend swap).
+- **Phase 2b — general `contrasts =` argument: IMPLEMENTED** on `feature/pairwise-comparisons`,
+  validated to machine precision against `emmeans` contrasts (scalar-df models). Implementation
+  deviations from §5: the `get_predictions()` vcov plumbing (§5.1) was **not** done (reconstruction is
+  exact); the shared engine is `build_pairwise_block()` + `build_contrast_block()` +
+  `reconstruct_vcov()` + `dunnett_adjust()` rather than the single `compute_comparison_block()` of §5.7.
+- **Open — post-implementation review actions: see §7** (adversarial sanity check against `mct.R`,
+  awaiting triage).
 
 This document captures (1) the conceptual discussion and decisions behind the comparison functions,
 and (2) the implementation plans for both phases. It is a planning artefact, not package code, and is
@@ -427,11 +433,293 @@ reference_comparisons(model, classify = "Trt:Year", reference = "Control", by = 
 
 ---
 
-## 6. Out of scope / future
+## 6. Future work & out of scope
 
-- **Ratios for log/logit** back-transformation of contrasts (and a documented "model-scale only"
-  fallback for sqrt/power/inverse/arcsin). Applies to pairwise, reference, and general contrasts.
-- **Joint multi-df "zero" tests** as an optional bonus from the `waldTest` kernel.
+Two kinds of item live here: **planned** work that needs doing but is deferred to its own effort
+(too large to fold into the post-implementation review), and things that are **out of scope** (not
+planned, or explicitly never).
+
+### Planned (needed, deferred to their own work)
+
+- **Back-transformation / ratios for transformed responses.** *(Substantial — needs its own design
+  pass and dedicated implementation. Raised in the review as REV-10.)*
+  Comparisons are currently reported on the **model scale** only (documented, with a warning when the
+  response looks transformed). This is a real limitation, not a nicety, and it bites
+  `reference_comparisons()` hardest: its `level1.mean`/`level2.mean` stay on the transformed scale, and
+  the natural "treatment vs control" quantity on the original scale — a **ratio** for log/logit links —
+  is unavailable. The work spans all three functions (pairwise differences, reference comparisons,
+  general contrasts) and must decide: ratios + their (delta-method or profile) intervals for
+  log/logit; a clearly-documented "model-scale only" fallback for sqrt/power/inverse/arcsin where a
+  difference has no clean original-scale meaning; how back-transformed means interact with the
+  difference/contrast columns; and how `mct`'s existing `trans`/`offset`/`power` machinery should (or
+  should not) be reused. Tracked as its own task — **do not** attempt as a review fix.
+- **Joint multi-df "zero" tests** from the `waldTest` kernel. **Reference implementation available:**
+  the scratch file `waldTest.R` (asreml, works directly from `predict(model, classify, vcov =
+  TRUE)$vcov`) implements exactly this — the `type = "zero"` branch computes
+  `W = τ′Z′(Z V Z′)⁻¹ Z τ ~ χ²_q` (or `F_{q,ν}/q`). It needs the full `V`, so it pairs with the
+  direct-vcov path (REV-14). Use it as the blueprint if/when this is built.
+
+### Out of scope (not planned)
+
 - **Simultaneity-adjusted CIs** for the non-Dunnett methods (Bonferroni-consistent intervals).
 - **Letter groupings** — never; that remains `multiple_comparisons()`'s exclusive job.
 - One-sided Dunnett (`trt > ctrl` / `trt < ctrl`) variants, if requested.
+
+---
+
+## 7. Post-implementation review (adversarial sanity check vs `mct.R`)
+
+Findings from reviewing `pairwise_comparisons.R` / `reference_comparisons.R` and their `autoplot`
+methods against `multiple_comparisons()`. **Status: proposed — awaiting triage.** Tick the box and
+record a decision per item.
+
+**Overall verdict:** the trichotomy is well-motivated; the code largely follows `mct`'s conventions
+(`validate_inputs()`, `get_predictions()`, `make_treatment_labels()`, the by-loop, store-full /
+round-at-print). Not over-engineered for what was asked. Two real bugs and a few consistency/coverage
+gaps below.
+
+Severity: **bug** > **robustness** > **accuracy** > **consistency** > **incompleteness** > **nit**.
+
+### High priority
+
+- [x] **REV-1 — `print.pairwise_comparisons()` mislabels the `contrasts` form.** ✅ *Done.*
+  *Severity: bug · Priority: High* — [`pairwise_comparisons.R:753`]
+  Header is always `"Pairwise comparisons of means"`, but `contrasts =` rows are general contrasts,
+  not pairwise differences. Branch the header on whether `level1`/`level2` exist (or store a mode
+  flag/attribute).
+  **Fix:** added a `comparison_type` attribute (`"pairs"` / `"contrasts"`) set when the object is
+  built; `print()` now prints `"Contrasts of means"` for the contrasts form, `"Pairwise comparisons
+  of means"` otherwise. Test: *"print header reflects the comparison type"* in
+  `test-pairwise_comparisons.R` (asserts the attribute, the right header, and the absence of the
+  pairwise header on the contrasts form). *(Note: `autoplot`'s x-axis label "Estimated difference" is
+  also arguably loose for a general contrast — left as-is, out of REV-1 scope.)*
+- [x] **REV-2 — `c'Vc` can be negative → `NaN` standard error.** ✅ *Done.*
+  *Severity: robustness · Priority: High* — [`pairwise_comparisons.R:690`]
+  `se <- sqrt(t(wal) %*% V %*% wal)`. Reconstructed `V` isn't guaranteed PSD under floating-point
+  cancellation, so a near-degenerate contrast could give a tiny negative quadratic form and a silent
+  `NaN`. Guard with `sqrt(max(0, ...))` (and optionally warn if materially negative). `mct` is immune
+  (uses SEDs directly).
+  **Fix:** `build_contrast_block()` now floors the contrast variance —
+  `se <- sqrt(max(0, c'Vc))` — so a contrast whose true variance is ~0 (aliased / null-space) that
+  rounds just below zero yields `se = 0` rather than a `NaN`.
+  **Decision (scope-down):** the originally-proposed "warn if materially negative" guard was
+  **dropped** as unreachable, not just deferred. `reconstruct_vcov()` recovers the model's *exact*
+  prediction covariance, which is PSD, so `c'Vc` can only ever go *trivially* negative from
+  floating-point rounding — never materially. A materially-negative form would require SEDs and SEs
+  that didn't come from a common covariance (which no supported engine produces), so a warning for it
+  is speculative defensive code. The floor is the whole fix; no helper, flag, or `tol`/`scale`
+  machinery. (The existing emmeans-equivalence test already pins the normal path; flooring `max(0, x)`
+  is too trivial to warrant its own test.)
+  *(Note: a 2-level contrast's variance is exactly `SED²` ≥ 0, so the floor only ever matters for
+  ≥3-level contrasts under rounding cancellation — which is non-deterministic and so not asserted
+  end-to-end.)*
+- [x] **REV-3 — General-contrast df on matrix-df models is an unvalidated, silent heuristic.** ✅ *Done.*
+  *Severity: accuracy · Priority: High* — [`pairwise_comparisons.R:692-700`]
+  For `aovlist`/`lmer`, `build_contrast_block()` uses `min` of the involved pairwise dfs. Exact for a
+  2-level contrast; for ≥3-level contrasts it's ad-hoc and **won't match** emmeans' Satterthwaite df.
+  `contrasts` was validated only on `aov` (scalar df). At minimum **warn** when contrasts meet
+  matrix-df; better, document as approximate (or restrict).
+  **Fix (chosen: solve properly, not warn/restrict — user decision "all emmeans-backed engines"):**
+  the `min`-of-pairwise-df heuristic is **deleted**. For every emmeans-backed engine (`aov`, `lm`,
+  `lme`, `lmer`, `aov+Error`), contrasts now delegate to `emmeans::contrast()` on the model's
+  **reference grid**, giving the exact estimate, SE *and* df (Satterthwaite / Kenward-Roger /
+  containment) for any linear contrast. Plumbing: `get_predictions.lm` and `get_predictions.aovlist`
+  now return the kept `emmGrid` as `emmeans_grid`; `pairwise_comparisons()` builds `emm_info` (grid +
+  `pp_to_grid` label-matched mapping + grid size) and threads it into `build_contrast_block()`, which
+  branches: emmeans-delegate when a grid is present, SED-reconstruction (scalar df) for `asreml`. No
+  new dependency — `emmeans` is already in **Imports** and already produces these predictions. The
+  previously-untested matrix-df contrast path now has a test (*">2-level contrast on a matrix-df model
+  uses the exact emmeans df"*, validating estimate/SE/df against `emmeans::contrast()` on
+  `aov(weight ~ Diet + Error(Chick))`). aov/lm/lme/asreml contrast behaviour is numerically unchanged
+  (now exercised through the grid path, still matches the existing emmeans-equivalence tests).
+  *(asreml df: see note under REV-3a below.)*
+
+- [x] **REV-3a — asreml contrast df is the term-level `denDF`, not per-contrast. (decision/doc)** ✅ *Resolved: option (a).*
+  *Severity: accuracy / doc · Priority: Low* — `get_predictions.asreml` ([prediction_methods.R:134-164])
+  For `asreml`, `get_predictions()` already pulls the term's Kenward-Roger-style **denominator df**
+  from `asreml::wald(..., denDF = "default")` (falling back to residual df with a warning if the term
+  isn't fixed). `build_contrast_block()` uses that single `denDF` for every contrast within the term —
+  the conventional, defensible choice (all linear contrasts within one fixed term share the term
+  denominator df). asreml does **not** expose a per-contrast approximate df the way emmeans does, so a
+  contrast-specific denDF would need bespoke KR computation and a **licensed asreml** to author/verify
+  (parallel to REV-14).
+  **Decision (option a — accept + document):** the user-supplied scratch function `waldTest.R`
+  (asreml, working from `predict(..., vcov = TRUE)`) was reviewed and **confirms there is nothing
+  better to lean on** — by default it does an asymptotic Wald χ² test (no denominator df at all), and
+  its F-test path uses a single `df_error = model$nedf` (raw residual df) for every contrast. Our term
+  `denDF` is *finer* than that `nedf`. So asreml contrasts keep the term `denDF`; this is now
+  documented in a new "Standard error and degrees of freedom for `contrasts`" section in the
+  `pairwise_comparisons()` roxygen (emmeans engines → exact emmeans df; asreml → term `denDF`). No
+  code change. A per-contrast denDF remains a possible licensed-only future item but is not planned.
+- [x] **REV-5 — No `rlang::check_dots_used()`.** ✅ *Done.*
+  *Severity: consistency / footgun · Priority: High* — both functions
+  `mct` guards (`mct.R:286`); the new functions don't, so a misspelled argument
+  (`adjut = "none"`) is silently swallowed into `...` and ignored. Add the same guard (note the
+  trade-off: legitimate-but-unconsumed `...` args would then error too, as in `mct`).
+  **Fix:** added `rlang::check_dots_used()` as the first statement of both `pairwise_comparisons()`
+  and `reference_comparisons()` (mirrors `mct.R:286`). A misspelled argument now errors with rlang's
+  "Arguments in `...` must be used / Did you misspell an argument name?" rather than being ignored.
+  Tests added to both suites (*"a misspelled argument is caught (check_dots_used)…"*). Behaviour for
+  legitimate ASReml-R `predict()` args is preserved — `get_predictions.asreml()` consumes the dots, so
+  they count as used (same mechanism, and same minor limitation, as `mct`).
+
+### Medium priority
+
+- [x] **REV-6 — Aliased levels not surfaced in the output object.** ✅ *Done (attribute + better error + consistent print note).*
+  *Severity: consistency / incompleteness · Priority: Medium* — [`pairwise_comparisons.R:178-183`]
+  `mct` captures `result$aliased_names` and reports them (object + print, `mct.R:326`). The new
+  functions discard them — the `get_predictions()` warning still fires, but the object has no record.
+  Consider an `aliased` attribute + a print note.
+  **Implemented:**
+  * **Attribute:** `pairwise_comparisons()` and `reference_comparisons()` now store
+    `attr(out, "aliased")` (only when aliasing occurred) — parity with `mct`, and makes the existing
+    `process_aliased()` warning's "saved in the output object" promise true.
+  * **Clear error on a named aliased level:** new internal `stop_unknown_levels()` splits requested-
+    but-missing levels into *aliased* (dropped, not estimable) vs *genuinely unknown* and reports each
+    appropriately, used by `parse_pairs()` and `parse_contrasts()`; `reference_comparisons()` gives the
+    same clear message when the `reference` itself is aliased. Previously these all said the misleading
+    "Unknown level: X". (Unique to the new functions — `mct` can't name levels.)
+  **Reporting-design decision (revisited after a dedicated discussion — *reverses* the initial "no
+  print note"):** the runtime warning and the print note do *different* jobs — the warning flags a
+  one-time computation *event*, the print note flags that the displayed table is *incomplete*
+  (persists when the object is reloaded and reprinted). Silent incomplete tables are the worse failure
+  mode for a teaching-oriented package, so we keep **both**, made consistent and terse:
+  * New shared helper `aliased_note()` (in `utils.R`) used by **all three** print methods
+    (`print.mct`, `print.pairwise_comparisons`, `print.reference_comparisons`) so wording is identical.
+    Lists the levels when few; **collapses to a count** (pointing to the `aliased` attribute) once
+    there are more than `max_show` (= 6). `print.mct` was refactored onto this helper with its
+    small-`n` wording preserved exactly (existing mct `expect_output` tests still pass).
+  * `process_aliased()` warning likewise made terse: identical wording for `n == 1` and `2 ≤ n ≤ 6`
+    (existing mct warning tests preserved), collapsed to a count for `n > 6` (the "very large warning
+    block" the user flagged).
+  Tests: both suites (empty-cell factorial → `A:Y` aliased) assert the attribute, exclusion from the
+  comparison set, the clear aliased error for a named level / reference, the print note, and that a
+  genuinely-unknown level still says "Unknown level"; `aliased_note()` has a unit test in
+  `test-utility_functions.R` covering n = 0/1/2/3, the 6-vs-7 threshold and the collapse. `@returns`
+  roxygen updated for both functions. `mct` behaviour unchanged for realistic counts.
+- **REV-10 — Back-transformation / ratios for transformed responses.** ➜ *Moved out of the review:
+  too large for a review fix. Now tracked as planned future work in §6 ("Planned"). Not a defect to
+  patch here — needs its own design + implementation effort.*
+- [x] **REV-11 — `by` + missing level: error vs warn-and-skip asymmetry.** ✅ *Done (unified on lenient).*
+  *Severity: consistency · Priority: Medium* — `parse_pairs`/`parse_contrasts` vs `reference_comparisons`
+  A `pairs`/`contrasts` entry naming a level absent from one `by` group **errors** the whole call,
+  whereas `reference_comparisons` **warns and skips** that group. Pick one behaviour across the three.
+  **Decision (user chose lenient warn-and-skip):** all three now warn-and-skip a comparison that a
+  particular by-group cannot compute (an unbalanced design where a level is absent from some group),
+  while still computing the rest — instead of aborting the whole call. **Implementation:**
+  `pairwise_comparisons()` now validates the user-named levels **once, globally** against the full
+  estimable-level set (`parse_pairs`/`parse_contrasts` called on `unique(within_label)`), so a typo or
+  an aliased level still hard-errors up front (REV-6 messages preserved). The per-group loop then
+  *filters* the canonical pairs/contrasts to those whose levels are all present in the group, emitting
+  a per-group warning naming the skipped comparison(s); a group left with nothing to compute is
+  skipped (and if *no* group can compute anything, the existing "No comparisons could be computed."
+  error fires). `reference_comparisons()` already behaved this way (global error if the reference is
+  absent everywhere; warn-and-skip a group missing it) and is unchanged. Test added
+  (*"by + a level missing from one group: warn and skip, compute the rest"*): unbalanced `Trt:Site`
+  design, asserts the skip warning, that only the computable group is returned, and that a level absent
+  everywhere still errors "Unknown level". `by`-semantics roxygen updated.
+
+### Low priority
+
+- [x] **REV-4 — Dunnett df rounded to integer.** ✅ *Done.*
+  *Severity: nit / doc · Priority: Low* — [`pairwise_comparisons.R:510`]
+  `as.integer(round(df_ij[1]))` for `mvtnorm::pmvt`. A fractional scalar denDF (asreml/KR) is silently
+  rounded, so Dunnett vs Holm on the same model use slightly different df. Document the one-line caveat.
+  **Finding:** the rounding is *forced* — confirmed `mvtnorm::pmvt`/`qmvt` reject a fractional `df`
+  (`'df' is not an integer`), so the multivariate-t path must use an integer. It only ever bites an
+  ASReml-R fractional Kenward-Roger `denDF` (`aov`/`lm`/`lme` are integer; `lmer`/`aov+Error` fall back
+  to Holm before Dunnett runs). **Fix:** (1) the single-comparison branch (`m == 1`) now uses the
+  **exact** df via `stats::pt`/`qt` (which accept fractional df and don't call `mvtnorm`), so a single
+  reference comparison under `adjust = "dunnett"` matches the ordinary t-test/Holm exactly; only the
+  `m > 1` multivariate-t path keeps the forced integer rounding, with a code comment explaining why.
+  (2) Documented the caveat in `reference_comparisons()`'s Dunnett details (rounding applies only for
+  ≥2 comparisons on a fractional denDF; the reported `df` column stays the exact value). No behaviour
+  change for the common integer-df engines.
+- [x] **REV-7 — No CI/significance consistency check.** ✅ *Done.*
+  *Severity: consistency · Priority: Low* — `mct` warns (`check_ci_consistency`, `mct.R:846`)
+  The new functions have the same per-comparison-CI-vs-adjusted-p tension but only document it. A
+  parallel nudge would match `mct`'s helpfulness (judgment call, not a defect).
+  **Fix:** new shared helper `note_ci_padjust_mismatch()` (in `utils.R`), called at the end of
+  `pairwise_comparisons()` and `reference_comparisons()`. It emits a one-time `message()` when any
+  comparison's per-comparison CI disagrees with its adjusted p-value (CI excludes zero but adjusted
+  p ≥ `sig`, or the rare reverse). Distinct from `mct`'s `check_ci_consistency()` — that flags the
+  letter-vs-CI overlap case; this is the difference-centric CI-vs-adjusted-p case. **Dunnett is never
+  flagged** (its intervals are the simultaneous intervals and agree with the test by construction);
+  `"none"` never disagrees either, so the note only fires for genuine multiplicity adjustments
+  (holm/bonferroni/BH/…) when a borderline comparison actually flips. Uses `message()` (informational,
+  suppressible) to match `mct`'s style. Unit test in `test-utility_functions.R` covers the mismatch,
+  both agreement directions, and the Dunnett skip; documented in the pairwise "Confidence intervals"
+  roxygen.
+- [x] **REV-8 — `descending` orders by *estimate*, not by *mean*.** ✅ *Done (conscious, now explicit).*
+  *Severity: consistency (documented) · Priority: Low* — [`pairwise_comparisons.R:52-54`]
+  Same argument name as `mct` but a different axis (difference vs mean). Documented; flagging only so
+  the divergence is a conscious choice.
+  **Decision:** keep ordering by the **estimate** (the difference) — appropriate for the
+  difference-centric output, and consistent between `pairwise_comparisons()` and
+  `reference_comparisons()`. The `descending` roxygen in both now states explicitly that it sorts by
+  the comparison estimate, *unlike* `multiple_comparisons()` which sorts by the predicted mean, so the
+  divergence is documented rather than surprising. No behaviour change.
+- [x] **REV-9 — Style drift vs `mct`.** ✅ *Done (aligned the one that mattered; rest consciously kept).*
+  *Severity: nit · Priority: Low*
+  `print` doc via `@rdname` vs `mct`'s `@method print mct`; `%notin%` vs `!(x %in% y)`; `@param
+  model.obj` says `asreml` vs `ASReml-R`; output label `"A - B"` (spaces) vs `mct`'s internal `"A-B"`.
+  **Resolution:**
+  * **Naming convention (user-specified):** the model **object type** is written `asreml` (lowercase,
+    code font) for consistency with the other types in the lists (`aov`, `lm`, `lme`, `lmerMod`);
+    **ASReml-R** (proper name) is used only for the software as a noun (e.g. "ASReml-R `predict()`
+    arguments", "ASReml-R does not provide a per-contrast df"). Applied throughout both functions:
+    `@param model.obj` reads "An `asreml`, `aov`, ..." in both, and "ASReml-R models" was corrected to
+    "`asreml` models" where it denotes the object type, while software-noun usages keep "ASReml-R".
+  * **Consciously kept:** `@rdname` for the `print` methods (modern roxygen, fine); `%notin%` (the new
+    code is internally consistent, and the user is standardising `mct` onto `%notin%` separately, so
+    the new functions are already on the target convention); the `"A - B"` spaced display label is a
+    deliberate readability choice for the user-facing `comparison` column (distinct from `mct`'s
+    internal `"A-B"`/`"A_B"` keys, which are not displayed). No behaviour change.
+- [x] **REV-12 — Dunnett branch lives in the pairwise file but is only reached via `reference_comparisons`.** ✅ *Done (clarifying comment).*
+  *Severity: nit / clarity · Priority: Low* — [`pairwise_comparisons.R:430`]
+  `build_pairwise_block()` handles `adjust == "dunnett"`, yet `pairwise_comparisons()` rejects that
+  value — so the branch is "dead" from the pairwise entry point. Add a clarifying comment, or move the
+  shared engine to its own file (`R/comparisons_engine.R`, per §5.7).
+  **Fix:** added a comment at the `adjust == "dunnett"` branch in `build_pairwise_block()` explaining
+  it is only reached via `reference_comparisons()` (pairwise rejects `"dunnett"` because it is not a
+  `stats::p.adjust.methods` value), and that the engine lives here because `reference_comparisons()`
+  reuses `build_pairwise_block()`. Chose the comment over a file move — splitting out
+  `R/comparisons_engine.R` is churn for no functional gain at this size.
+
+### Test coverage gaps (vs §5.10)
+
+Audit of the §5.10 checklist against the implemented suite (`test-pairwise_comparisons.R`,
+`test-reference_comparisons.R`). All other §5.10 bullets are covered; these two are not.
+
+- [x] **REV-13 — `adjust = "dunnett"` is never tested as rejected in `pairwise_comparisons()`.** ✅ *Done.*
+  *Severity: incompleteness (coverage) · Priority: Medium* — §5.10 "adjust policy" sub-item
+  The policy bullet asks for `"dunnett"` to be rejected by `pairwise_comparisons()` (it is its own
+  function via `reference_comparisons()`), but only `"tukey"` and `"nonsense"` rejection are asserted
+  ([`test-pairwise_comparisons.R:109-116`]). First **confirm the code actually rejects `"dunnett"`** —
+  the shared `build_pairwise_block()` has a live Dunnett branch (REV-12), so verify the
+  `pairwise_comparisons()` entry guard refuses it before relying on the test. Then add an
+  `expect_error(pairwise_comparisons(..., adjust = "dunnett"), "reference_comparisons")` (or whatever
+  the guard message points to). Quick to add.
+  **Fix:** previously `"dunnett"` was rejected only by the generic "Invalid `adjust` method" check (it
+  isn't a `stats::p.adjust.methods` value). Added a **dedicated** rejection branch mirroring `"tukey"`,
+  pointing the user to `reference_comparisons()`: *"`adjust = "dunnett"` is not valid for
+  pairwise_comparisons(): the Dunnett test compares every level against a single control. Use
+  reference_comparisons() for that."* Test added asserting the error matches `"reference_comparisons"`.
+  The REV-12 comment in `build_pairwise_block()` was updated to say pairwise *explicitly* rejects
+  `"dunnett"` (no longer "because it is not a p.adjust.methods value").
+- [x] **REV-14 — `V`-reconstruction-equals-direct-`V` test is unimplemented (blocked on asreml). 🔶 NEEDS SAM**
+  *Severity: accuracy (validation) · Priority: Medium — requires your manual input* — §5.10 "`V`
+  reconstruction equals direct `V`" bullet
+  The reconstruction (`reconstruct_vcov()`, `V_ij = (V_ii + V_jj − SED_ij²)/2`) is algebraically exact
+  and validated indirectly (Dunnett vs emmeans), but the §5.10 bullet wants a direct check against a
+  `V` an engine exposes natively. The only engine that does so here is **ASReml-R** (`predict(...,
+  vcov = TRUE)`), which is **not licensed in this environment** — so this test can only be authored and
+  run by Sam on a licensed machine. **Action for Sam:** fit a small asreml model, pull the native
+  `vcov`, and assert `reconstruct_vcov(sed, se)` matches it to tolerance. A scaffold has been added
+  (`test-reference_comparisons.R`, skipped on CI/CRAN and when asreml is absent) for you to fill in the
+  fixture and assertion.
+  **Reference implementation:** the scratch file `waldTest.R` already pulls and uses the native
+  `predict(model, classify, vcov = TRUE)$vcov` directly (no reconstruction). It is the blueprint for
+  both this direct-`V` validation and the §6 joint multi-df "zero" tests — if the direct-`V` path is
+  ever wired into `get_predictions.asreml`, `waldTest.R` shows the exact `predict()` call and vcov
+  alignment (drop-NA rows + matching `Vcov` subset) to reuse.

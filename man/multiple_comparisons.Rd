@@ -29,7 +29,7 @@ multiple_comparisons(
 )
 }
 \arguments{
-\item{model.obj}{An ASReml-R or aov model object. Will likely also work with \code{lme} (\code{\link[nlme:lme]{nlme::lme()}}), \code{lmerMod} (\code{\link[lme4:lmer]{lme4::lmer()}}) models as well.}
+\item{model.obj}{An \code{asreml} or \code{aov} model object. Will likely also work with \code{lme} (\code{\link[nlme:lme]{nlme::lme()}}), \code{lmerMod} (\code{\link[lme4:lmer]{lme4::lmer()}}) models as well.}
 
 \item{classify}{Name of predictor variable as string.}
 
@@ -239,7 +239,7 @@ autoplot(pred.out, label_height = 15)
 # ASReml-R Example
 library(asreml)
 
-#Fit ASReml Model
+# Fit ASReml-R model
 model.asr <- asreml(yield ~ Nitrogen + Variety + Nitrogen:Variety,
                     random = ~ Blocks + Blocks:Wplots,
                     residual = ~ units,

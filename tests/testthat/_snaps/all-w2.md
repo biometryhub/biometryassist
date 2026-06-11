@@ -275,7 +275,7 @@
       20   Tristar    High            1.90      0.21     ab 0.42 1.48 2.33
       21    Hussar     Low            2.01      0.21      b 0.42 1.59 2.43
       
-      Aliased levels are: Achieve:Control, Atlantis:Control, Atlantis:Medium, Control:High, Control:Low, Control:Medium, Hoegrass:Control, Hussar:Control, Hussar:Medium, MatavenL:Control, MatavenL:Medium, Topik:Control, Tristar:Control, Tristar:Medium and Wildcat:Control 
+      15 levels are aliased. Run attr(x, "aliased") to see them.
 
 # exercise 1 works
 
