@@ -62,7 +62,7 @@
 <text x='389.92' y='556.10' text-anchor='middle' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='15.16px' lengthAdjust='spacingAndGlyphs'>-1.0</text>
 <text x='538.41' y='556.10' text-anchor='middle' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='15.16px' lengthAdjust='spacingAndGlyphs'>-0.5</text>
 <text x='686.89' y='556.10' text-anchor='middle' style='font-size: 8.80px; fill: #4D4D4D; font-family: sans;' textLength='12.23px' lengthAdjust='spacingAndGlyphs'>0.0</text>
-<text x='410.58' y='568.24' text-anchor='middle' style='font-size: 11.00px; font-family: sans;' textLength='166.91px' lengthAdjust='spacingAndGlyphs'>Estimated difference (Petal.Width)</text>
+<text x='410.58' y='568.24' text-anchor='middle' style='font-size: 11.00px; font-family: sans;' textLength='171.20px' lengthAdjust='spacingAndGlyphs'>Estimated difference in Petal.Width</text>
 <text x='106.64' y='14.56' style='font-size: 13.20px; font-family: sans;' textLength='110.06px' lengthAdjust='spacingAndGlyphs'>pairwise forest plot</text>
 </g>
 </svg>
