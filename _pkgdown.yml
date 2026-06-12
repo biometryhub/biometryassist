@@ -21,6 +21,7 @@ reference:
   - resplot
   - multiple_comparisons
   - autoplot.mct
+  - print.mct
   - pairwise_comparisons
   - reference_comparisons
   - variogram
@@ -30,7 +31,6 @@ reference:
 - contents:
   - autoplot
   - heat_map
-  - print.mct
   - summary_graph
   - contains("template")
   - install_asreml
