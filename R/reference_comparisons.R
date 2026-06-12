@@ -18,11 +18,12 @@
 #' @param classify Name of the predictor variable(s) to compare, as a string.
 #'   Interactions are specified with `:` (e.g. `"Trt:Site"`).
 #' @param reference The reference (control) level to compare every other level
-#'   against, as a single character string. For an interaction `classify`, this
-#'   is the `:`-joined cell label (e.g. `"A:X"`); when `by` is used it is a level
-#'   of the remaining (non-`by`) factor. Each comparison is
-#'   `mean(level) - mean(reference)`, so a positive estimate is "above the
-#'   control".
+#'   against, as a single character string. When `by` is used it is a level of
+#'   the remaining (non-`by`) factor; for an interaction `classify` with no `by`
+#'   it is the full `:`-joined cell label, whose components must be in the same
+#'   order as `classify` (e.g. `"A:X"` for `classify = "Trt:Site"`). Each
+#'   comparison is `mean(level) - mean(reference)`, so a positive estimate is
+#'   "above the control". See Details for guidance on interaction `classify`.
 #' @param adjust The method used to adjust p-values for multiplicity over the
 #'   set of comparisons against the reference. Default `"dunnett"` performs the
 #'   exact simultaneous two-sided Dunnett test (via the multivariate-t
@@ -82,6 +83,22 @@
 #' compares every Trt level against Control *within each Site*, adjusted within
 #' each Site. A group missing the reference, or with fewer than two levels, is
 #' skipped with a warning.
+#'
+#' To compare a control level against the others within every combination of the
+#' *remaining* factors, put all the other factors in `by`. The within-group
+#' factor is then the single control factor, so `reference` is just that level
+#' (e.g. `"0"`). For example, with `classify = "time:variety:dose"` and a zero
+#' dose labelled `"0"`, `by = c("time", "variety")`, `reference = "0"` compares
+#' each dose against the zero dose within every time-by-variety cell. Specified
+#' this way `reference` is a single level, so it is unaffected by the order of
+#' the factors in `classify` or `by` (those orderings only change the column
+#' order and group labels of the output, not the comparisons).
+#'
+#' Without `by`, by contrast, `reference` is the full `:`-joined cell label and
+#' its components must follow the `classify` order. A mis-ordered label that
+#' happens to name another valid cell is used silently (no error), so it is
+#' worth double-checking the order matches; the order-proof `by` form above
+#' avoids this entirely.
 #'
 #' ## Transformations
 #' Comparisons are reported on the model scale (a difference of transformed means

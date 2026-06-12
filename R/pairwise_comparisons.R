@@ -80,6 +80,14 @@
 #' (`"A-B"` and `"B-A"`) are de-duplicated with a warning, since duplicates would
 #' inflate the adjustment family.
 #'
+#' For an interaction `classify`, the `:`-joined components of each level label
+#' must be in the same order as `classify` (e.g. `"A:X"` for
+#' `classify = "Trt:Site"`, not `"X:A"`); the same applies to the level names
+#' used in `contrasts`. A label that names no existing cell is rejected with the
+#' list of available levels, but a mis-ordered label that happens to name
+#' another valid cell is used silently — so when the factors share level names,
+#' check the component order matches `classify`.
+#'
 #' ## `by` semantics
 #' `by` must be a subset of the `classify` factors. Within each group, pair
 #' labels reference the remaining (non-`by`) factor levels. For example,

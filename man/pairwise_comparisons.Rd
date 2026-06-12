@@ -148,6 +148,14 @@ contains a \code{-}; a level containing \code{-} referenced via the string form 
 error directing you to the list form. Reversed or duplicated pairs
 (\code{"A-B"} and \code{"B-A"}) are de-duplicated with a warning, since duplicates would
 inflate the adjustment family.
+
+For an interaction \code{classify}, the \code{:}-joined components of each level label
+must be in the same order as \code{classify} (e.g. \code{"A:X"} for
+\code{classify = "Trt:Site"}, not \code{"X:A"}); the same applies to the level names
+used in \code{contrasts}. A label that names no existing cell is rejected with the
+list of available levels, but a mis-ordered label that happens to name
+another valid cell is used silently — so when the factors share level names,
+check the component order matches \code{classify}.
 }
 
 \subsection{\code{by} semantics}{

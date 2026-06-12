@@ -39,11 +39,12 @@ reference_comparisons(
 Interactions are specified with \code{:} (e.g. \code{"Trt:Site"}).}
 
 \item{reference}{The reference (control) level to compare every other level
-against, as a single character string. For an interaction \code{classify}, this
-is the \code{:}-joined cell label (e.g. \code{"A:X"}); when \code{by} is used it is a level
-of the remaining (non-\code{by}) factor. Each comparison is
-\code{mean(level) - mean(reference)}, so a positive estimate is "above the
-control".}
+against, as a single character string. When \code{by} is used it is a level of
+the remaining (non-\code{by}) factor; for an interaction \code{classify} with no \code{by}
+it is the full \code{:}-joined cell label, whose components must be in the same
+order as \code{classify} (e.g. \code{"A:X"} for \code{classify = "Trt:Site"}). Each
+comparison is \code{mean(level) - mean(reference)}, so a positive estimate is
+"above the control". See Details for guidance on interaction \code{classify}.}
 
 \item{adjust}{The method used to adjust p-values for multiplicity over the
 set of comparisons against the reference. Default \code{"dunnett"} performs the
@@ -152,6 +153,22 @@ For example \code{classify = "Trt:Site"}, \code{by = "Site"}, \code{reference = 
 compares every Trt level against Control \emph{within each Site}, adjusted within
 each Site. A group missing the reference, or with fewer than two levels, is
 skipped with a warning.
+
+To compare a control level against the others within every combination of the
+\emph{remaining} factors, put all the other factors in \code{by}. The within-group
+factor is then the single control factor, so \code{reference} is just that level
+(e.g. \code{"0"}). For example, with \code{classify = "time:variety:dose"} and a zero
+dose labelled \code{"0"}, \code{by = c("time", "variety")}, \code{reference = "0"} compares
+each dose against the zero dose within every time-by-variety cell. Specified
+this way \code{reference} is a single level, so it is unaffected by the order of
+the factors in \code{classify} or \code{by} (those orderings only change the column
+order and group labels of the output, not the comparisons).
+
+Without \code{by}, by contrast, \code{reference} is the full \code{:}-joined cell label and
+its components must follow the \code{classify} order. A mis-ordered label that
+happens to name another valid cell is used silently (no error), so it is
+worth double-checking the order matches; the order-proof \code{by} form above
+avoids this entirely.
 }
 
 \subsection{Transformations}{
