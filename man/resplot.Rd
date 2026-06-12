@@ -49,19 +49,20 @@ Produces plots of residuals for assumption checking of linear (mixed) models.
 \code{extract_model_info()} method. These are currently:\tabular{lll}{
    Model class \tab Fitted by \tab Notes \cr
    \code{aov}, \code{lm} \tab \code{\link[stats:aov]{stats::aov()}}, \code{\link[stats:lm]{stats::lm()}} \tab Fixed-effects linear models. \cr
+   \code{aovlist} \tab \code{\link[stats:aov]{stats::aov()}} with an \code{Error()} term \tab Multi-stratum aov; each error stratum (except the intercept) is shown as a separate plot. \cr
    \code{lme} \tab \code{\link[nlme:lme]{nlme::lme()}} \tab Linear mixed model. \cr
    \code{lmerMod} \tab \code{\link[lme4:lmer]{lme4::lmer()}} \tab Linear mixed model. \cr
    \code{lmerModLmerTest} \tab \code{\link[lmerTest:lmer]{lmerTest::lmer()}} \tab As \code{lmerMod}. \cr
    \code{asreml} \tab ASReml-R \code{asreml()} \tab Linear mixed model (commercial; not on CRAN). Residual strata are shown as separate plots. \cr
    \code{mmer}, \code{mmes} \tab sommer \code{mmer()} / \code{mmes()} \tab Linear mixed model. \cr
    \code{art} \tab \code{ARTool::art()} \tab Aligned rank transform model. \cr
+   \code{afex_aov} \tab afex \code{aov_car()} / \code{aov_ez()} / \code{aov_4()} \tab Factorial / repeated-measures ANOVA; a single diagnostic panel from the model residuals. \cr
 }
 
 
 This set differs slightly from the comparison functions (see
 \code{\link[=get_predictions]{get_predictions()}}): \code{resplot()} additionally supports sommer and ARTool
-models, but does not support multi-stratum \code{aov} models fitted with an
-\code{Error()} term (\code{aovlist}).
+models.
 
 To add a new engine, write an \verb{extract_model_info.<class>()} method returning
 a list with elements \code{facet}, \code{facet_name}, \code{resids}, \code{fits}, \code{k} and

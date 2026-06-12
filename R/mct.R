@@ -986,7 +986,12 @@ validate_inputs <- function(sig, classify, model.obj, trans) {
 	}
 
 	# Check if the response variable is transformed in the model formula
-	if (class(model.obj)[1] == c("aovlist")) {
+	if (inherits(model.obj, "afex_aov")) {
+		# afex_aov has no formula() method; its response (dv) is always a plain
+		# column name (afex does not allow a transformed response), so build a
+		# trivial formula from the dv for the transformation check below.
+		model_formula <- stats::reformulate("1", response = attr(model.obj, "dv"))
+	} else if (class(model.obj)[1] == c("aovlist")) {
 		model_formula <- stats::formula(model.obj[[1]])
 	} else {
 		model_formula <- stats::formula(model.obj)

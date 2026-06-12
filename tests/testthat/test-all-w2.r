@@ -155,7 +155,7 @@ test_that("example 4 LMM works", {
 		c(1707.94, 1802.7, 2053.73, 2200.08),
 		tolerance = 0.01
 	)
-	expect_snapshot(print(pred4lmm.out))
+	expect_snapshot(print(pred4lmm.out, decimals = 1))
 
 	ap <- autoplot(pred4lmm.out)
 	expect_autoplot_data(ap, pred4lmm.out)

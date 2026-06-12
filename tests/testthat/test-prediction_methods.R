@@ -797,6 +797,83 @@ test_that("get_predictions.listof delegates to get_predictions.aovlist", {
 	expect_equal(is.matrix(pred.listof$df), TRUE)
 })
 
+test_that("get_predictions errors informatively for ARTool (art) models", {
+	skip_if_not_installed("ARTool")
+	load(test_path("data", "ARTool_model.Rdata"), .GlobalEnv)
+
+	# ART models are deliberately unsupported for mean-based comparisons; the error
+	# should point users at ARTool::art.con() rather than the generic default error.
+	expect_error(
+		get_predictions.art(model.art, classify = "name"),
+		"ARTool::art\\.con\\(\\)"
+	)
+	expect_error(
+		multiple_comparisons(model.art, classify = "name"),
+		"ARTool::art\\.con\\(\\)"
+	)
+})
+
+test_that("get_predictions works for afex (afex_aov) models", {
+	skip_if_not_installed("afex")
+	data(obk.long, package = "afex")
+
+	# Between-subjects design: the backing aov is a single stratum, so emmeans gives
+	# a scalar df, replicated across the (matrix) df like other emmeans engines.
+	afex_b <- afex::aov_ez(
+		id = "id",
+		dv = "value",
+		between = c("treatment", "gender"),
+		data = obk.long,
+		fun_aggregate = mean
+	)
+	pred_b <- get_predictions.afex_aov(afex_b, classify = "treatment")
+
+	expect_equal(
+		pred_b$predictions$predicted.value,
+		c(4.222222, 6.250000, 6.027778),
+		tolerance = 1e-4
+	)
+	expect_equal(pred_b$ylab, "value")
+	expect_true(is.matrix(pred_b$sed))
+	expect_true(is.matrix(pred_b$df))
+	expect_equal(mean(pred_b$df, na.rm = TRUE), 10)
+
+	# Within-subjects design: the backing aov is multi-stratum (aovlist), so the
+	# comparison-specific (matrix) degrees of freedom path is exercised.
+	afex_w <- afex::aov_ez(
+		id = "id",
+		dv = "value",
+		within = c("phase", "hour"),
+		data = obk.long
+	)
+	pred_w <- get_predictions.afex_aov(afex_w, classify = "phase")
+
+	expect_setequal(
+		round(pred_w$predictions$predicted.value, 3),
+		c(6.375, 5.750, 4.375)
+	)
+	expect_true(is.matrix(pred_w$sed))
+	expect_equal(mean(pred_w$df, na.rm = TRUE), 15)
+})
+
+test_that("get_predictions.afex_aov errors when classify is not in model terms", {
+	skip_if_not_installed("afex")
+	data(obk.long, package = "afex")
+
+	afex_b <- afex::aov_ez(
+		id = "id",
+		dv = "value",
+		between = c("treatment", "gender"),
+		data = obk.long,
+		fun_aggregate = mean
+	)
+
+	expect_error(
+		get_predictions.afex_aov(afex_b, classify = "NotATerm"),
+		"NotATerm is not a term in the model"
+	)
+})
+
 # check that predictions from asreml are the same as a aovlist object
 test_that("Test that asreml provides the same results as multi-stratum ANOVA for oats data", {
 	skip_if_not_installed("asreml")

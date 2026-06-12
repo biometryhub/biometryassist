@@ -190,8 +190,13 @@ and \code{\link[=reference_comparisons]{reference_comparisons()}}) work with any
    \code{lmerMod} \tab \code{\link[lme4:lmer]{lme4::lmer()}} \tab Linear mixed model. \cr
    \code{lmerModLmerTest} \tab \code{\link[lmerTest:lmer]{lmerTest::lmer()}} \tab As \code{lmerMod}, with Satterthwaite degrees of freedom. \cr
    \code{asreml} \tab ASReml-R \code{asreml()} \tab Linear mixed model (commercial; not on CRAN). \cr
+   \code{afex_aov} \tab afex \code{aov_car()} / \code{aov_ez()} / \code{aov_4()} \tab Factorial / repeated-measures ANOVA; gives comparison-specific (matrix) degrees of freedom. \cr
 }
 
+
+ARTool (\code{art}) models are supported by \code{\link[=resplot]{resplot()}} but \strong{not} by the comparison
+functions: the aligned rank transform makes mean-based comparisons inappropriate.
+Use \code{ARTool::art.con()} for contrasts on ART models instead.
 
 To add a new engine, write a \verb{get_predictions.<class>()} method returning a
 list with elements \code{predictions}, \code{sed}, \code{df}, \code{ylab} and \code{aliased_names}

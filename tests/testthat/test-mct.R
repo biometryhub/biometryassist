@@ -1786,6 +1786,34 @@ test_that("nlme/lme model is supported", {
 	expect_local_doppelganger("nlme output", ap)
 })
 
+test_that("afex (afex_aov) model is supported", {
+	skip_if_not_installed("afex")
+	data(obk.long, package = "afex")
+
+	# Between-subjects factorial design.
+	afex_b <- afex::aov_ez(
+		id = "id",
+		dv = "value",
+		between = c("treatment", "gender"),
+		data = obk.long,
+		fun_aggregate = mean
+	)
+	output <- multiple_comparisons(afex_b, classify = "treatment")
+
+	expect_s3_class(output, "mct")
+	expect_equal(
+		output$predictions$predicted.value,
+		c(4.22, 6.03, 6.25),
+		tolerance = 5e-2
+	)
+	# No significant treatment differences here, so all share a single letter group.
+	expect_equal(unique(output$predictions$groups), "a")
+
+	ap <- autoplot(output)
+	expect_autoplot_data(ap, output)
+	expect_local_doppelganger("afex output", ap)
+})
+
 test_that("invalid model types give a clear error", {
 	# Use an unsupported model type that still has a `formula()` method so that
 	# the error comes from `get_predictions.default()` (not from validate_inputs()).

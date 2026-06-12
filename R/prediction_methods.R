@@ -77,6 +77,11 @@ check_classify_in_terms <- function(classify, model_terms) {
 #' | `lmerMod` | [lme4::lmer()] | Linear mixed model. |
 #' | `lmerModLmerTest` | [lmerTest::lmer()] | As `lmerMod`, with Satterthwaite degrees of freedom. |
 #' | `asreml` | ASReml-R `asreml()` | Linear mixed model (commercial; not on CRAN). |
+#' | `afex_aov` | afex `aov_car()` / `aov_ez()` / `aov_4()` | Factorial / repeated-measures ANOVA; gives comparison-specific (matrix) degrees of freedom. |
+#'
+#' ARTool (`art`) models are supported by [resplot()] but **not** by the comparison
+#' functions: the aligned rank transform makes mean-based comparisons inappropriate.
+#' Use `ARTool::art.con()` for contrasts on ART models instead.
 #'
 #' To add a new engine, write a `get_predictions.<class>()` method returning a
 #' list with elements `predictions`, `sed`, `df`, `ylab` and `aliased_names`
@@ -99,10 +104,12 @@ get_predictions.default <- function(model.obj, ...) {
 	supported_types <- c(
 		"aov",
 		"lm",
+		"aovlist",
 		"lmerMod",
 		"lmerModLmerTest",
 		"lme",
-		"asreml"
+		"asreml",
+		"afex_aov"
 	)
 	stop(
 		"model.obj must be a linear (mixed) model object. Currently supported model types are: ",
@@ -264,18 +271,25 @@ get_predictions.lm <- function(model.obj, classify, ...) {
 }
 
 
-#' @noRd
-#' @exportS3Method get_predictions aovlist
-#' @importFrom emmeans emmeans
-get_predictions.aovlist <- function(model.obj, classify, ...) {
-	# Check if classify is in model terms
-	if (classify %!in% attr(stats::terms(model.obj), 'term.labels')) {
-		stop(
-			classify,
-			" is not a term in the model. Please check model specification.",
-			call. = FALSE
-		)
-	}
+#' Build predictions, SED and df from an emmeans-backed model
+#'
+#' Shared core for the emmeans-backed `get_predictions()` methods (`aovlist`,
+#' `afex_aov`, ...). Given the emmeans reference grid for `classify`, it builds the
+#' predicted means, the comparison-specific (matrix) SED and degrees of freedom from
+#' the pairwise contrasts, and processes aliased levels. The terms check and `ylab`
+#' are computed by the caller (these differ per engine) and passed in.
+#'
+#' @param model.obj A fitted model object with an `emmeans::emmeans()` method.
+#' @param classify Name of the predictor variable(s) as a string.
+#' @param model_terms Character vector of model term labels (for the classify check).
+#' @param ylab Response variable label for the plot.
+#'
+#' @return A list with elements `predictions`, `sed`, `df`, `ylab`, `aliased_names`
+#'   and `emmeans_grid`.
+#' @keywords internal
+predictions_from_emmeans <- function(model.obj, classify, model_terms, ylab) {
+	# Check if classify is in model terms (handles reversed interaction order)
+	classify <- check_classify_in_terms(classify, model_terms)
 
 	# Set emmeans options
 	on.exit(options(emmeans = emmeans::emm_defaults))
@@ -324,17 +338,6 @@ get_predictions.aovlist <- function(model.obj, classify, ...) {
 	sed <- aliased_result$sed
 	aliased_names <- aliased_result$aliased_names
 
-	# Get response variable for plot label
-	if (class(model.obj)[1] %in% c("lmerMod", "lmerModLmerTest")) {
-		formula_text <- deparse(stats::formula(model.obj))
-		ylab <- strsplit(formula_text, "~")[[1]][1]
-		ylab <- trimws(ylab)
-	} else {
-		formula_text <- deparse(stats::formula(model.obj[[1]]))
-		ylab <- strsplit(formula_text, "~")[[1]][1]
-		ylab <- trimws(ylab)
-	}
-
 	return(list(
 		predictions = pp,
 		sed = sed,
@@ -343,6 +346,36 @@ get_predictions.aovlist <- function(model.obj, classify, ...) {
 		aliased_names = aliased_names,
 		emmeans_grid = emm
 	))
+}
+
+#' @noRd
+#' @exportS3Method get_predictions aovlist
+#' @importFrom emmeans emmeans
+get_predictions.aovlist <- function(model.obj, classify, ...) {
+	model_terms <- attr(stats::terms(model.obj), 'term.labels')
+
+	# Get response variable for plot label
+	if (class(model.obj)[1] %in% c("lmerMod", "lmerModLmerTest")) {
+		formula_text <- deparse(stats::formula(model.obj))
+	} else {
+		formula_text <- deparse(stats::formula(model.obj[[1]]))
+	}
+	ylab <- trimws(strsplit(formula_text, "~")[[1]][1])
+
+	predictions_from_emmeans(model.obj, classify, model_terms, ylab)
+}
+
+#' @noRd
+#' @exportS3Method get_predictions afex_aov
+#' @importFrom emmeans emmeans
+get_predictions.afex_aov <- function(model.obj, classify, ...) {
+	# afex_aov has no terms() method; the model effects are the rows of the ANOVA
+	# table and the response is stored in the "dv" attribute. emmeans() dispatches
+	# directly on afex_aov objects, so the shared emmeans core does the rest.
+	model_terms <- rownames(model.obj$anova_table)
+	ylab <- attr(model.obj, "dv")
+
+	predictions_from_emmeans(model.obj, classify, model_terms, ylab)
 }
 
 #' @noRd
@@ -376,6 +409,21 @@ get_predictions.lmerModLmerTest <- function(model.obj, classify, ...) {
 #' @exportS3Method get_predictions lme
 get_predictions.lme <- function(model.obj, classify, ...) {
 	get_predictions.lm(model.obj, classify, ...)
+}
+
+#' @noRd
+#' @exportS3Method get_predictions art
+get_predictions.art <- function(model.obj, classify, ...) {
+	# ARTool models are deliberately unsupported for mean-based comparisons: the
+	# aligned-rank transform means Tukey-style contrasts on the predicted means are
+	# not statistically appropriate. resplot() still supports `art` models.
+	stop(
+		"ARTool (`art`) models use an aligned rank transform, so mean-based ",
+		"multiple comparisons are not appropriate.\n",
+		"  Use `ARTool::art.con()` for contrasts on ART models.\n",
+		"  (`art` models are still supported by resplot().)",
+		call. = FALSE
+	)
 }
 
 #' Process aliased treatments in predictions

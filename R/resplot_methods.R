@@ -17,17 +17,18 @@
 #' | Model class | Fitted by | Notes |
 #' | --- | --- | --- |
 #' | `aov`, `lm` | [stats::aov()], [stats::lm()] | Fixed-effects linear models. |
+#' | `aovlist` | [stats::aov()] with an `Error()` term | Multi-stratum aov; each error stratum (except the intercept) is shown as a separate plot. |
 #' | `lme` | [nlme::lme()] | Linear mixed model. |
 #' | `lmerMod` | [lme4::lmer()] | Linear mixed model. |
 #' | `lmerModLmerTest` | [lmerTest::lmer()] | As `lmerMod`. |
 #' | `asreml` | ASReml-R `asreml()` | Linear mixed model (commercial; not on CRAN). Residual strata are shown as separate plots. |
 #' | `mmer`, `mmes` | sommer `mmer()` / `mmes()` | Linear mixed model. |
 #' | `art` | `ARTool::art()` | Aligned rank transform model. |
+#' | `afex_aov` | afex `aov_car()` / `aov_ez()` / `aov_4()` | Factorial / repeated-measures ANOVA; a single diagnostic panel from the model residuals. |
 #'
 #' This set differs slightly from the comparison functions (see
 #' [get_predictions()]): `resplot()` additionally supports sommer and ARTool
-#' models, but does not support multi-stratum `aov` models fitted with an
-#' `Error()` term (`aovlist`).
+#' models.
 #'
 #' To add a new engine, write an `extract_model_info.<class>()` method returning
 #' a list with elements `facet`, `facet_name`, `resids`, `fits`, `k` and
@@ -48,13 +49,15 @@ extract_model_info.default <- function(model.obj, call = FALSE) {
 	supported_types <- c(
 		"aov",
 		"lm",
+		"aovlist",
 		"lme",
 		"lmerMod",
 		"lmerModLmerTest",
 		"asreml",
 		"mmer",
 		"mmes",
-		"art"
+		"art",
+		"afex_aov"
 	)
 	stop(
 		"model.obj must be a linear (mixed) model object. Currently supported model types are: ",
@@ -97,6 +100,52 @@ extract_model_info.lm <- extract_model_info.aov
 #' @noRd
 #' @exportS3Method extract_model_info lme
 extract_model_info.lme <- extract_model_info.aov
+
+#' @noRd
+#' @exportS3Method extract_model_info aovlist
+extract_model_info.aovlist <- function(model.obj, call = FALSE) {
+	# An aovlist (aov fitted with an Error() term) is a list of per-stratum aov
+	# objects, one per error stratum. The intercept-only stratum carries no useful
+	# residual diagnostic, so it is dropped; each remaining stratum becomes a facet,
+	# mirroring the multi-stratum handling in extract_model_info.asreml().
+	strata <- names(model.obj)
+	strata <- strata[strata != "(Intercept)"]
+
+	resids <- unlist(lapply(strata, function(s) residuals(model.obj[[s]])))
+	fits <- unlist(lapply(strata, function(s) fitted(model.obj[[s]])))
+	k <- vapply(
+		strata,
+		function(s) length(residuals(model.obj[[s]])),
+		numeric(1)
+	)
+	names(resids) <- NULL
+	names(fits) <- NULL
+	names(k) <- NULL
+
+	facet <- length(strata)
+	facet_name <- if (facet > 1) strata else NULL
+
+	model_call <- NULL
+	if (call) {
+		model_call <- paste(
+			trimws(deparse(attr(model.obj, "call"), width.cutoff = 50)),
+			collapse = "\n"
+		)
+	}
+
+	list(
+		facet = facet,
+		facet_name = facet_name,
+		resids = resids,
+		fits = fits,
+		k = k,
+		model_call = model_call
+	)
+}
+
+#' @noRd
+#' @exportS3Method extract_model_info listof
+extract_model_info.listof <- extract_model_info.aovlist
 
 #' @noRd
 #' @exportS3Method extract_model_info lmerMod
@@ -245,6 +294,37 @@ extract_model_info.art <- function(model.obj, call = FALSE) {
 		model_call <- paste(
 			trimws(deparse(model.obj$call, width.cutoff = 50)),
 			collapse = "\n"
+		)
+	}
+
+	list(
+		facet = 1,
+		facet_name = NULL,
+		resids = resids,
+		fits = fits,
+		k = k,
+		model_call = model_call
+	)
+}
+
+#' @noRd
+#' @exportS3Method extract_model_info afex_aov
+extract_model_info.afex_aov <- function(model.obj, call = FALSE) {
+	# residuals()/fitted() on an afex_aov emit informational messages about the data
+	# being changed during ANOVA calculation; suppress those and return the residual
+	# vector from the underlying model. A single diagnostic panel is produced.
+	resids <- suppressMessages(as.numeric(residuals(model.obj)))
+	fits <- suppressMessages(as.numeric(fitted(model.obj)))
+	k <- length(resids)
+
+	model_call <- NULL
+	if (call) {
+		# afex_aov objects do not store a call; build a representative formula from
+		# the response (dv) and the ANOVA-table effects.
+		model_call <- paste0(
+			attr(model.obj, "dv"),
+			" ~ ",
+			paste(rownames(model.obj$anova_table), collapse = " + ")
 		)
 	}
 

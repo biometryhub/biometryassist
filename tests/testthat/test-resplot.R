@@ -39,7 +39,7 @@ test_that("resplt is deprecated and produces a warning", {
 test_that("resplot produces an error for invalid data types", {
 	expect_error(
 		resplot(1:10),
-		"model\\.obj must be a linear \\(mixed\\) model object\\. Currently supported model types are: aov, lm, lme, lmerMod, lmerModLmerTest, asreml, mmer, mmes, art"
+		"model\\.obj must be a linear \\(mixed\\) model object\\. Currently supported model types are: aov, lm, aovlist, lme, lmerMod, lmerModLmerTest, asreml, mmer, mmes, art, afex_aov"
 	)
 })
 
@@ -120,6 +120,38 @@ test_that("Residual plots work for asreml", {
 })
 
 
+test_that("Residual plots work for multi-stratum aov (aovlist)", {
+	load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
+	oats.aov <- aov(
+		yield ~ Variety * Nitrogen + Error(Blocks / Wplots),
+		data = dat
+	)
+
+	p1 <- resplot(oats.aov)
+
+	# Three error strata remain after dropping the intercept-only stratum:
+	# Blocks, Blocks:Wplots and Within. resplot() returns one plot per stratum.
+	expect_equal(length(p1), 3)
+	expect_equal(names(p1), c("Blocks", "Blocks:Wplots", "Within"))
+	expect_contains(class(p1[[1]]), "ggplot")
+
+	vdiffr::expect_doppelganger(
+		title = "Resplot for aovlist Blocks",
+		p1[["Blocks"]],
+		variant = ggplot2_variant()
+	)
+	vdiffr::expect_doppelganger(
+		title = "Resplot for aovlist Blocks-Wplots",
+		p1[["Blocks:Wplots"]],
+		variant = ggplot2_variant()
+	)
+	vdiffr::expect_doppelganger(
+		title = "Resplot for aovlist Within",
+		p1[["Within"]],
+		variant = ggplot2_variant()
+	)
+})
+
 test_that("Residual plots work for lme4", {
 	skip_if_not_installed("lme4")
 	p1 <- resplot(dat.lme4, call = TRUE)
@@ -172,6 +204,42 @@ test_that("Residual plots display call for aov and lm", {
 	)
 	vdiffr::expect_doppelganger(
 		title = "Resplot with smaller call",
+		p2,
+		variant = ggplot2_variant()
+	)
+})
+
+test_that("Residual plots work for afex (afex_aov) models", {
+	skip_if_not_installed("afex")
+	data(obk.long, package = "afex")
+
+	afex_b <- afex::aov_ez(
+		id = "id",
+		dv = "value",
+		between = c("treatment", "gender"),
+		data = obk.long,
+		fun_aggregate = mean
+	)
+	afex_w <- afex::aov_ez(
+		id = "id",
+		dv = "value",
+		within = c("phase", "hour"),
+		data = obk.long
+	)
+
+	p1 <- resplot(afex_b)
+	p2 <- resplot(afex_w, call = TRUE)
+
+	expect_contains(class(p1), "ggplot")
+	expect_contains(class(p2), "ggplot")
+
+	vdiffr::expect_doppelganger(
+		title = "Resplot for afex between",
+		p1,
+		variant = ggplot2_variant()
+	)
+	vdiffr::expect_doppelganger(
+		title = "Resplot for afex within",
 		p2,
 		variant = ggplot2_variant()
 	)

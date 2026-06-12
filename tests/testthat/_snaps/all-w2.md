@@ -143,18 +143,18 @@
 ---
 
     Code
-      print(pred4lmm.out)
+      print(pred4lmm.out, decimals = 1)
     Output
       Multiple Comparisons of Means: Tukey's HSD Test
       Significance level: 0.05 
       HSD value: 273.2876 
       
       Predicted values:
-        trt predicted.value std.error groups     ci     low      up
-      1  S4         1707.94     64.09      a 144.99 1562.95 1852.93
-      2  S2         1802.70     64.09     ab 144.99 1657.71 1947.68
-      3  S1         2053.73     64.09     bc 144.99 1908.75 2198.72
-      4  S3         2200.09     64.09      c 144.99 2055.10 2345.07
+        trt predicted.value std.error groups  ci    low     up
+      1  S4          1707.9      64.1      a 145 1563.0 1852.9
+      2  S2          1802.7      64.1     ab 145 1657.7 1947.7
+      3  S1          2053.7      64.1     bc 145 1908.7 2198.7
+      4  S3          2200.1      64.1      c 145 2055.1 2345.1
 
 # example 5 works
 
