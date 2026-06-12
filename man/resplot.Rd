@@ -17,7 +17,9 @@ resplot(
 )
 }
 \arguments{
-\item{model.obj}{An \code{aov}, \code{lm}, \code{lme} (\code{\link[nlme:lme]{nlme::lme()}}), \code{lmerMod} (\code{\link[lme4:lmer]{lme4::lmer()}}), \code{asreml} or \code{mmer} (sommer) model object.}
+\item{model.obj}{A fitted model object of a supported class (\code{aov}, \code{lm},
+\code{lme} (\code{\link[nlme:lme]{nlme::lme()}}), \code{lmerMod} (\code{\link[lme4:lmer]{lme4::lmer()}}), \code{asreml}, \code{mmer}/\code{mmes}
+(sommer) or \code{art} (ARTool)). See the \emph{Supported model types} section.}
 
 \item{shapiro}{(Logical) Display the Shapiro-Wilk test of normality on the plot? This test is unreliable for larger numbers of observations and will not work with n >= 5000 so will be omitted from any plots.}
 
@@ -41,6 +43,31 @@ A ggplot2 object containing the diagnostic plots.
 \description{
 Produces plots of residuals for assumption checking of linear (mixed) models.
 }
+\section{Supported model types}{
+
+\code{\link[=resplot]{resplot()}} produces residual diagnostics for any model with an
+\code{extract_model_info()} method. These are currently:\tabular{lll}{
+   Model class \tab Fitted by \tab Notes \cr
+   \code{aov}, \code{lm} \tab \code{\link[stats:aov]{stats::aov()}}, \code{\link[stats:lm]{stats::lm()}} \tab Fixed-effects linear models. \cr
+   \code{lme} \tab \code{\link[nlme:lme]{nlme::lme()}} \tab Linear mixed model. \cr
+   \code{lmerMod} \tab \code{\link[lme4:lmer]{lme4::lmer()}} \tab Linear mixed model. \cr
+   \code{lmerModLmerTest} \tab \code{\link[lmerTest:lmer]{lmerTest::lmer()}} \tab As \code{lmerMod}. \cr
+   \code{asreml} \tab ASReml-R \code{asreml()} \tab Linear mixed model (commercial; not on CRAN). Residual strata are shown as separate plots. \cr
+   \code{mmer}, \code{mmes} \tab sommer \code{mmer()} / \code{mmes()} \tab Linear mixed model. \cr
+   \code{art} \tab \code{ARTool::art()} \tab Aligned rank transform model. \cr
+}
+
+
+This set differs slightly from the comparison functions (see
+\code{\link[=get_predictions]{get_predictions()}}): \code{resplot()} additionally supports sommer and ARTool
+models, but does not support multi-stratum \code{aov} models fitted with an
+\code{Error()} term (\code{aovlist}).
+
+To add a new engine, write an \verb{extract_model_info.<class>()} method returning
+a list with elements \code{facet}, \code{facet_name}, \code{resids}, \code{fits}, \code{k} and
+\code{model_call}, and add a row to the table above.
+}
+
 \examples{
 dat.aov <- aov(Petal.Length ~ Petal.Width, data = iris)
 resplot(dat.aov)

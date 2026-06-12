@@ -2,7 +2,9 @@
 #'
 #' Produces plots of residuals for assumption checking of linear (mixed) models.
 #'
-#' @param model.obj An `aov`, `lm`, `lme` ([nlme::lme()]), `lmerMod` ([lme4::lmer()]), `asreml` or `mmer` (sommer) model object.
+#' @param model.obj A fitted model object of a supported class (`aov`, `lm`,
+#'   `lme` ([nlme::lme()]), `lmerMod` ([lme4::lmer()]), `asreml`, `mmer`/`mmes`
+#'   (sommer) or `art` (ARTool)). See the *Supported model types* section.
 #' @param shapiro (Logical) Display the Shapiro-Wilk test of normality on the plot? This test is unreliable for larger numbers of observations and will not work with n >= 5000 so will be omitted from any plots.
 #' @param call (Logical) Display the model call on the plot?
 #' @param axes.size A numeric value for the size of the axes label font size in points.
@@ -13,6 +15,8 @@
 #' @param mod.obj Deprecated to be consistent with other functions. Please use `model.obj` instead.
 #'
 #' @returns A ggplot2 object containing the diagnostic plots.
+#'
+#' @inheritSection extract_model_info Supported model types
 #'
 #' @importFrom ggplot2 ggplot geom_histogram aes theme_bw stat_qq labs geom_qq_line geom_point
 #' @importFrom stats fitted qnorm quantile residuals sd shapiro.test

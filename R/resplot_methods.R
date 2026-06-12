@@ -1,8 +1,43 @@
-#' Extract model information using S3 dispatch
-#' @param model.obj Model object
-#' @param call Logical, whether to extract model call
+#' Internal model-information extraction for resplot()
+#'
+#' `extract_model_info()` is the internal generic that [resplot()] uses to pull
+#' the residuals, fitted values and (optionally) the model call from a fitted
+#' model. It dispatches on the class of `model.obj`. It is not exported and is
+#' not called directly by users; support for a new model engine is added by
+#' writing a new `extract_model_info()` method.
+#'
+#' @param model.obj A fitted model object of a supported class (see
+#'   *Supported model types* below).
+#' @param call Logical; whether to extract the model call for display.
+#'
+#' @section Supported model types:
+#' [resplot()] produces residual diagnostics for any model with an
+#' `extract_model_info()` method. These are currently:
+#'
+#' | Model class | Fitted by | Notes |
+#' | --- | --- | --- |
+#' | `aov`, `lm` | [stats::aov()], [stats::lm()] | Fixed-effects linear models. |
+#' | `lme` | [nlme::lme()] | Linear mixed model. |
+#' | `lmerMod` | [lme4::lmer()] | Linear mixed model. |
+#' | `lmerModLmerTest` | [lmerTest::lmer()] | As `lmerMod`. |
+#' | `asreml` | ASReml-R `asreml()` | Linear mixed model (commercial; not on CRAN). Residual strata are shown as separate plots. |
+#' | `mmer`, `mmes` | sommer `mmer()` / `mmes()` | Linear mixed model. |
+#' | `art` | `ARTool::art()` | Aligned rank transform model. |
+#'
+#' This set differs slightly from the comparison functions (see
+#' [get_predictions()]): `resplot()` additionally supports sommer and ARTool
+#' models, but does not support multi-stratum `aov` models fitted with an
+#' `Error()` term (`aovlist`).
+#'
+#' To add a new engine, write an `extract_model_info.<class>()` method returning
+#' a list with elements `facet`, `facet_name`, `resids`, `fits`, `k` and
+#' `model_call`, and add a row to the table above.
+#'
+#' @returns A list with elements `facet`, `facet_name`, `resids`, `fits`, `k`
+#'   and `model_call`.
+#'
+#' @seealso [resplot()]
 #' @keywords internal
-#' @noRd
 extract_model_info <- function(model.obj, call = FALSE) {
 	UseMethod("extract_model_info")
 }
