@@ -47,16 +47,48 @@ check_classify_in_terms <- function(classify, model_terms) {
 	)
 }
 
-#' Get Predictions for Statistical Models
+#' Internal prediction extraction for the comparison functions
 #'
-#' A generic function to get predictions for statistical models.
+#' `get_predictions()` is the internal generic that [multiple_comparisons()],
+#' [pairwise_comparisons()] and [reference_comparisons()] use to obtain the
+#' predicted means, the standard-error-of-differences (SED) matrix and the
+#' degrees of freedom from a fitted model. It dispatches on the class of
+#' `model.obj`. It is not exported and is not called directly by users; support
+#' for a new model engine is added by writing a new `get_predictions()` method.
 #'
-#' @param model.obj A model object. Currently supported model objects are asreml, aov/lm, lmerMod/lmerModLmerTest.
-#' @param classify Name of predictor variable as a string.
-#' @param pred.obj Optional precomputed prediction object.
-#' @param ... Additional arguments passed to specific methods.
+#' @param model.obj A fitted model object of a supported class (see
+#'   *Supported model types* below).
+#' @param classify Name of the predictor variable(s) as a string.
+#' @param pred.obj Optional precomputed prediction object (`asreml` only;
+#'   otherwise predictions are computed internally).
+#' @param ... Additional arguments passed to the class-specific method (e.g.
+#'   ASReml-R `predict()` arguments).
+#'
+#' @section Supported model types:
+#' The comparison functions ([multiple_comparisons()], [pairwise_comparisons()]
+#' and [reference_comparisons()]) work with any model for which a
+#' `get_predictions()` method is defined. These are currently:
+#'
+#' | Model class | Fitted by | Notes |
+#' | --- | --- | --- |
+#' | `aov`, `lm` | [stats::aov()], [stats::lm()] | Fixed-effects linear models. |
+#' | `aovlist` | [stats::aov()] with an `Error()` term | Multi-stratum aov; gives comparison-specific (matrix) degrees of freedom. |
+#' | `lme` | [nlme::lme()] | Linear mixed model. |
+#' | `lmerMod` | [lme4::lmer()] | Linear mixed model. |
+#' | `lmerModLmerTest` | [lmerTest::lmer()] | As `lmerMod`, with Satterthwaite degrees of freedom. |
+#' | `asreml` | ASReml-R `asreml()` | Linear mixed model (commercial; not on CRAN). |
+#'
+#' To add a new engine, write a `get_predictions.<class>()` method returning a
+#' list with elements `predictions`, `sed`, `df`, `ylab` and `aliased_names`
+#' (plus `emmeans_grid` for engines backed by [emmeans::emmeans()]), and add a
+#' row to the table above.
+#'
+#' @returns A list with elements `predictions`, `sed`, `df`, `ylab` and
+#'   `aliased_names` (and `emmeans_grid` for emmeans-backed engines).
+#'
+#' @seealso [multiple_comparisons()], [pairwise_comparisons()],
+#'   [reference_comparisons()]
 #' @keywords internal
-#' @noRd
 get_predictions <- function(model.obj, classify, pred.obj = NULL, ...) {
 	UseMethod("get_predictions")
 }
