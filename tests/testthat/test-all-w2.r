@@ -312,7 +312,7 @@ test_that("example 7 works", {
 				classify = "Herbicide:Rate",
 				present = c("Control", "Herbicide", "Rate")
 			),
-			"Some levels of Herbicide:Rate are aliased. They have been removed from predicted output."
+			"Some levels of Herbicide:Rate are aliased"
 		),
 		"Some treatments sharing the same letter group have non-overlapping confidence intervals"
 	)
