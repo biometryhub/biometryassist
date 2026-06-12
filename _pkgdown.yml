@@ -14,11 +14,13 @@ reference:
   - starts_with("des")
   - add_buffers
   - export_design_to_excel
+  - autoplot.design
 - title: Analysis
   desc: Functions to help with the analysis of experiments.
 - contents:
   - resplot
   - multiple_comparisons
+  - autoplot.mct
   - pairwise_comparisons
   - reference_comparisons
   - variogram
