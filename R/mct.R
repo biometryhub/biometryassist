@@ -382,10 +382,25 @@ multiple_comparisons <- function(
 			pp_g <- add_letter_groups(pp_g, diff_res$diffs, descending)
 		}
 
+		# Confidence/comparison intervals are computed per (sub)group so that
+		# `int.type = "tukey"` uses this group's mean count and degrees of freedom.
+		# Computing them once on the recombined table would use the total mean
+		# count, making the intervals inconsistent with the per-group letter
+		# groupings. For the no-`by` case this group is the whole table.
+		pp_g <- add_confidence_intervals(pp_g, int.type, sig, ndf_g)
+
+		# Detect (but do not yet emit) any CI/letter inconsistency within this
+		# group; the caller emits a single note if any group is inconsistent.
+		ci_inconsistent <- FALSE
+		if (groups && tolower(int.type) == "ci" && adjust == "tukey") {
+			ci_inconsistent <- check_ci_consistency(pp_g)
+		}
+
 		list(
 			pp = pp_g,
 			pval_matrix = diff_res$adjusted_matrix,
-			crit_val = crit_val_g
+			crit_val = crit_val_g,
+			ci_inconsistent = ci_inconsistent
 		)
 	}
 
@@ -394,6 +409,7 @@ multiple_comparisons <- function(
 		pp <- res$pp
 		pval_matrix <- res$pval_matrix
 		crit_val <- res$crit_val
+		ci_inconsistent <- res$ci_inconsistent
 	} else {
 		by_vals <- interaction(pp[, by, drop = FALSE], drop = TRUE)
 		groups_list <- split(seq_len(nrow(pp)), by_vals)
@@ -409,10 +425,12 @@ multiple_comparisons <- function(
 		rownames(pp) <- NULL
 		pval_matrix <- lapply(res_list, function(r) r$pval_matrix)
 		crit_val <- lapply(res_list, function(r) r$crit_val)
+		ci_inconsistent <- any(vapply(
+			res_list,
+			function(r) r$ci_inconsistent,
+			logical(1)
+		))
 	}
-
-	# Calculate confidence intervals
-	pp <- add_confidence_intervals(pp, int.type, sig, ndf)
 
 	# Apply transformations if requested
 	if (!is.null(trans)) {
@@ -430,9 +448,16 @@ multiple_comparisons <- function(
 		utils::write.csv(pp, file = paste0(savename, ".csv"), row.names = FALSE)
 	}
 
-	# Check for CI/letter group inconsistencies and warn if needed
-	if (groups && tolower(int.type) == "ci" && adjust == "tukey" && is.null(by)) {
-		check_ci_consistency(pp)
+	# Emit a single CI/letter inconsistency note if any (sub)group triggered it.
+	# Detection happens per (sub)group inside run_comparisons() so that grouped
+	# comparisons (`by`) are covered too.
+	if (isTRUE(ci_inconsistent)) {
+		message(
+			"Note: Some treatments sharing the same letter group have non-overlapping confidence intervals.\n",
+			"This is expected behavior as regular confidence intervals estimate individual mean precision,\n",
+			"while Tukey's HSD controls family-wise error rates. For visual consistency with letter groups,\n",
+			"consider using 'int.type = \"tukey\"' to display Tukey comparison intervals."
+		)
 	}
 
 	# Prepare HSD value(s) for output. Only meaningful for Tukey's HSD.
@@ -832,9 +857,19 @@ strip_transformation_from_label <- function(ylab, trans) {
 }
 
 
+#' Detect CI/letter-group inconsistencies within a single (sub)group
+#'
+#' Returns `TRUE` if any pair of treatments with non-overlapping confidence
+#' intervals nonetheless shares a letter group (the common source of confusion
+#' when `int.type = "ci"` is used with Tukey's HSD). Detection only; the caller
+#' is responsible for emitting the user-facing note (once, even across `by`
+#' subgroups).
+#'
+#' @param pp Predictions for one (sub)group, with `predicted.value`, `ci` and
+#'   `groups` columns.
+#' @return A single logical.
 #' @noRd
 check_ci_consistency <- function(pp) {
-	result <- FALSE
 	# Pre-extract and validate data once
 	n <- nrow(pp)
 	low <- pp$predicted.value - pp$ci
@@ -879,17 +914,11 @@ check_ci_consistency <- function(pp) {
 			groups[i] == groups[j] |
 				length(intersect(group_letters[[i]], group_letters[[j]])) > 0
 		) {
-			message(
-				"Note: Some treatments sharing the same letter group have non-overlapping confidence intervals.\n",
-				"This is expected behavior as regular confidence intervals estimate individual mean precision,\n",
-				"while Tukey's HSD controls family-wise error rates. For visual consistency with letter groups,\n",
-				"consider using 'int.type = \"tukey\"' to display Tukey comparison intervals."
-			)
 			return(TRUE)
 		}
 	}
 
-	invisible(result)
+	FALSE
 }
 
 
