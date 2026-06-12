@@ -140,6 +140,8 @@
 #'   are dropped from the comparisons (with a warning) and recorded in an
 #'   `aliased` attribute.
 #'
+#' @inheritSection get_predictions Supported model types
+#'
 #' @seealso [multiple_comparisons()] for means-and-letters output. For guidance
 #'   on choosing between the two and on multiplicity adjustments, see
 #'   `vignette("choosing-multiple-comparisons", "biometryassist")`.

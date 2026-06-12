@@ -1755,7 +1755,7 @@ test_that("plots are produced when requested", {
 	})
 })
 
-test_that("nlme model produces an error", {
+test_that("nlme/lme model is supported", {
 	skip_if_not_installed("nlme")
 	suppressPackageStartupMessages(library(nlme))
 	load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)

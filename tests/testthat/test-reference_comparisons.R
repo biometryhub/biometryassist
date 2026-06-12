@@ -213,6 +213,35 @@ test_that("comparison-specific df (aovlist) falls back to holm with a warning", 
 	expect_equal(attr(out, "comparison_method"), "holm")
 })
 
+test_that("reference_comparisons supports nlme::lme models", {
+	skip_if_not_installed("nlme")
+	# A common (scalar) df, so the exact Dunnett test is used.
+	m <- nlme::lme(
+		distance ~ Sex,
+		random = ~ 1 | Subject,
+		data = nlme::Orthodont
+	)
+	out <- reference_comparisons(m, classify = "Sex", reference = "Male")
+	expect_s3_class(out, "reference_comparisons")
+	expect_equal(nrow(out), 1L) # 2 levels -> 1 comparison vs the reference
+	expect_equal(attr(out, "comparison_method"), "dunnett")
+	expect_true(is.finite(out$df))
+})
+
+test_that("reference_comparisons supports lme4::lmer models (Holm fallback)", {
+	skip_if_not_installed("lme4")
+	# lmer reports comparison-specific (Kenward-Roger) df, so exact Dunnett is
+	# unavailable and the adjustment falls back to Holm with a warning.
+	m <- lme4::lmer(weight ~ Diet + (1 | Chick), data = ChickWeight)
+	expect_warning(
+		out <- reference_comparisons(m, classify = "Diet", reference = "1"),
+		"Falling back"
+	)
+	expect_s3_class(out, "reference_comparisons")
+	expect_equal(nrow(out), 3L) # 4 diets -> 3 comparisons vs the reference
+	expect_equal(attr(out, "comparison_method"), "holm")
+})
+
 test_that("descending orders rows by estimate within the group", {
 	m <- aov(weight ~ feed, data = chickwts)
 	asc <- reference_comparisons(
@@ -266,6 +295,32 @@ test_that("autoplot reference means plot is stable", {
 		ggplot2::autoplot(out),
 		variant = ggplot2_variant()
 	)
+})
+
+test_that("reference_comparisons supports asreml models", {
+	# asreml is commercial and unlicensed on CI/CRAN, so this is skipped there
+	# and only runs on a licensed machine (run manually to verify).
+	skip_on_cran()
+	skip_if_not_installed("asreml")
+	quiet(library(asreml))
+	# Load into the global environment: asreml's predict()/wald() refit the model
+	# by evaluating its original call, which needs the data object on the search
+	# path (matching how test-all-w2.r loads these fixtures).
+	suppressWarnings(load(
+		test_path("data", "w2_models.Rdata"),
+		envir = .GlobalEnv
+	))
+
+	out <- reference_comparisons(
+		example3.asr,
+		classify = "Variety",
+		reference = "Excell"
+	)
+	expect_s3_class(out, "reference_comparisons")
+	expect_equal(nrow(out), 3L) # 4 varieties -> 3 comparisons vs the reference
+	expect_true(all(out$level2 == "Excell"))
+	# asreml reports a single (scalar) denDF, so the exact Dunnett test is used.
+	expect_equal(attr(out, "comparison_method"), "dunnett")
 })
 
 test_that("reconstructed V matches a directly-supplied vcov (asreml)", {

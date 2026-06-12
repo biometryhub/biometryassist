@@ -178,6 +178,27 @@ does not back-transform to a difference on the original scale); a warning is
 issued if the response appears to be transformed in the model formula.
 }
 }
+\section{Supported model types}{
+
+The comparison functions (\code{\link[=multiple_comparisons]{multiple_comparisons()}}, \code{\link[=pairwise_comparisons]{pairwise_comparisons()}}
+and \code{\link[=reference_comparisons]{reference_comparisons()}}) work with any model for which a
+\code{get_predictions()} method is defined. These are currently:\tabular{lll}{
+   Model class \tab Fitted by \tab Notes \cr
+   \code{aov}, \code{lm} \tab \code{\link[stats:aov]{stats::aov()}}, \code{\link[stats:lm]{stats::lm()}} \tab Fixed-effects linear models. \cr
+   \code{aovlist} \tab \code{\link[stats:aov]{stats::aov()}} with an \code{Error()} term \tab Multi-stratum aov; gives comparison-specific (matrix) degrees of freedom. \cr
+   \code{lme} \tab \code{\link[nlme:lme]{nlme::lme()}} \tab Linear mixed model. \cr
+   \code{lmerMod} \tab \code{\link[lme4:lmer]{lme4::lmer()}} \tab Linear mixed model. \cr
+   \code{lmerModLmerTest} \tab \code{\link[lmerTest:lmer]{lmerTest::lmer()}} \tab As \code{lmerMod}, with Satterthwaite degrees of freedom. \cr
+   \code{asreml} \tab ASReml-R \code{asreml()} \tab Linear mixed model (commercial; not on CRAN). \cr
+}
+
+
+To add a new engine, write a \verb{get_predictions.<class>()} method returning a
+list with elements \code{predictions}, \code{sed}, \code{df}, \code{ylab} and \code{aliased_names}
+(plus \code{emmeans_grid} for engines backed by \code{\link[emmeans:emmeans]{emmeans::emmeans()}}), and add a
+row to the table above.
+}
+
 \examples{
 
 # Means plot of each level vs the reference (significant ones marked with *)

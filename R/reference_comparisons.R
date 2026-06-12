@@ -116,6 +116,8 @@
 #'   (not estimable) in the model they are dropped (with a warning) and recorded
 #'   in an `aliased` attribute; an aliased `reference` is an error.
 #'
+#' @inheritSection get_predictions Supported model types
+#'
 #' @seealso [multiple_comparisons()] for all-pairs means and letters,
 #'   [pairwise_comparisons()] for selected differences. For guidance on choosing
 #'   between them and on multiplicity adjustments, see

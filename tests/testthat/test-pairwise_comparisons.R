@@ -571,3 +571,28 @@ test_that("a >2-level contrast on a matrix-df model uses the exact emmeans df", 
 	expect_length(out$df, 1)
 	expect_true(is.finite(out$df))
 })
+
+test_that("pairwise_comparisons supports nlme::lme models", {
+	skip_if_not_installed("nlme")
+	m <- nlme::lme(
+		distance ~ Sex,
+		random = ~ 1 | Subject,
+		data = nlme::Orthodont
+	)
+	out <- pairwise_comparisons(m, classify = "Sex")
+	expect_s3_class(out, "pairwise_comparisons")
+	expect_equal(nrow(out), 1L) # 2 levels -> 1 pair
+	expect_true(all(
+		c("estimate", "std.error", "df", "p.value") %in% names(out)
+	))
+	expect_true(is.finite(out$df))
+})
+
+test_that("pairwise_comparisons supports lme4::lmer models", {
+	skip_if_not_installed("lme4")
+	m <- lme4::lmer(weight ~ Diet + (1 | Chick), data = ChickWeight)
+	out <- pairwise_comparisons(m, classify = "Diet")
+	expect_s3_class(out, "pairwise_comparisons")
+	expect_equal(nrow(out), choose(4L, 2L)) # 4 diets -> 6 pairs
+	expect_true(all(is.finite(out$df)))
+})
