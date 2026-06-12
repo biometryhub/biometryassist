@@ -163,6 +163,16 @@
 #' pred.out.none <- multiple_comparisons(model, classify = "Species", int.type = "none")
 #' autoplot(pred.out.none)
 #'
+#' # Use a different p-value adjustment instead of Tukey's HSD
+#' multiple_comparisons(model, classify = "Species", adjust = "fdr")
+#'
+#' # `by`: run the comparisons independently within each level of another factor.
+#' # Here a 2 x 3 factorial - compare tension levels within each wool type.
+#' m_wb <- aov(breaks ~ wool * tension, data = warpbreaks)
+#' mc_by <- multiple_comparisons(m_wb, classify = "wool:tension", by = "wool")
+#' mc_by
+#' autoplot(mc_by) # faceted by wool
+#'
 #' # AOV model example with transformation
 #' my_iris <- iris
 #' my_iris$Petal.Length <- exp(my_iris$Petal.Length) # Create exponential response

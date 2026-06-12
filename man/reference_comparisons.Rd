@@ -188,6 +188,28 @@ dat.aov <- aov(weight ~ feed, data = chickwts)
 
 # Compare every feed against the "casein" control (exact Dunnett)
 reference_comparisons(dat.aov, classify = "feed", reference = "casein")
+
+# A different adjustment can be requested (a message notes that Dunnett is the
+# exact option for this family):
+reference_comparisons(
+    dat.aov,
+    classify = "feed",
+    reference = "casein",
+    adjust = "holm"
+)
+
+# `by`: compare each level against the reference *within* each group, adjusted
+# independently. Here a 2 x 3 factorial - each tension level vs the "L"
+# reference within each wool type; autoplot() facets by wool.
+m_wb <- aov(breaks ~ wool * tension, data = warpbreaks)
+rc_by <- reference_comparisons(
+    m_wb,
+    classify = "wool:tension",
+    reference = "L",
+    by = "wool"
+)
+rc_by
+autoplot(rc_by)
 }
 \seealso{
 \code{\link[=multiple_comparisons]{multiple_comparisons()}} for all-pairs means and letters,

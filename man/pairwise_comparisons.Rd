@@ -235,6 +235,17 @@ pairwise_comparisons(
         "setosa vs rest" = c(setosa = 1, versicolor = -0.5, virginica = -0.5)
     )
 )
+
+# `by`: the same comparisons, adjusted independently within each group. Here a
+# 2 x 3 factorial - compare tension levels within each wool type. The `pairs`
+# labels reference the remaining (tension) factor.
+m_wb <- aov(breaks ~ wool * tension, data = warpbreaks)
+pairwise_comparisons(
+    m_wb,
+    classify = "wool:tension",
+    by = "wool",
+    pairs = c("L-M", "L-H")
+)
 }
 \seealso{
 \code{\link[=multiple_comparisons]{multiple_comparisons()}} for means-and-letters output. For guidance
