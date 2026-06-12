@@ -336,9 +336,15 @@ test_that("reconstructed V matches a directly-supplied vcov (asreml)", {
 	skip_on_cran()
 	skip_on_ci()
 	skip_if_not_installed("asreml")
+	quiet(library(asreml))
 
-	# --- Scaffold (uncomment / adapt once a fixture is chosen) -----------------
-	load(test_path("data", "w2_models.Rdata"), envir = environment())
+	# Load into the global environment: asreml's predict()/wald() refit the model
+	# by evaluating its original call, which needs the data object on the search
+	# path (matching how test-all-w2.r loads these fixtures).
+	suppressWarnings(load(
+		test_path("data", "w2_models.Rdata"),
+		envir = .GlobalEnv
+	))
 	classify <- "Variety"
 
 	# Native vcov of the predicted means straight from asreml.
