@@ -1856,6 +1856,41 @@ test_that("sommer mmes model is supported", {
 	expect_local_doppelganger("sommer mmes output", ap)
 })
 
+test_that("lme4breeding (lmebreed) model is supported", {
+	skip_if_not_installed("lme4breeding")
+	# lmebreed() relies on lme4 internals being attached (lme4 is in its Depends).
+	suppressPackageStartupMessages(library(lme4breeding))
+	load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+
+	# lmebreed() objects carry class `lmerMod` and use the existing lmerMod method.
+	# An identity relationship matrix gives an exact lme4::lmer() reference.
+	blocks <- levels(factor(dat$Blocks))
+	A <- diag(length(blocks))
+	dimnames(A) <- list(blocks, blocks)
+
+	m_lmb <- suppressMessages(suppressWarnings(lmebreed(
+		yield ~ Nitrogen + (1 | Blocks),
+		relmat = list(Blocks = A),
+		data = dat,
+		verbose = FALSE,
+		dateWarning = FALSE
+	)))
+	output <- suppressMessages(multiple_comparisons(m_lmb, classify = "Nitrogen"))
+
+	expect_s3_class(output, "mct")
+	expect_equal(nrow(output$predictions), 4)
+
+	out_lmer <- multiple_comparisons(
+		lme4::lmer(yield ~ Nitrogen + (1 | Blocks), data = dat),
+		classify = "Nitrogen"
+	)
+	expect_equal(
+		output$predictions$predicted.value,
+		out_lmer$predictions$predicted.value,
+		tolerance = 1e-4
+	)
+})
+
 test_that("invalid model types give a clear error", {
 	# Use an unsupported model type that still has a `formula()` method so that
 	# the error comes from `get_predictions.default()` (not from validate_inputs()).

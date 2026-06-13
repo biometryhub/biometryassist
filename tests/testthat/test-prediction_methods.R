@@ -947,6 +947,47 @@ test_that("get_predictions errors informatively for sommer mmer models", {
 	)
 })
 
+test_that("get_predictions handles lme4breeding (lmebreed) models via lmerMod", {
+	skip_if_not_installed("lme4breeding")
+	# lmebreed() relies on lme4 internals being attached (lme4 is in its Depends).
+	suppressPackageStartupMessages(library(lme4breeding))
+	load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+
+	# An identity relationship matrix makes lmebreed() exactly equivalent to
+	# lme4::lmer(), giving a deterministic reference. lmebreed() objects carry class
+	# `lmerMod`, so they dispatch to the existing get_predictions.lmerMod method.
+	blocks <- levels(factor(dat$Blocks))
+	A <- diag(length(blocks))
+	dimnames(A) <- list(blocks, blocks)
+
+	m_lmb <- suppressMessages(suppressWarnings(lmebreed(
+		yield ~ Nitrogen + (1 | Blocks),
+		relmat = list(Blocks = A),
+		data = dat,
+		verbose = FALSE,
+		dateWarning = FALSE
+	)))
+	expect_true(methods::is(m_lmb, "lmerMod"))
+
+	pred_lmb <- suppressMessages(get_predictions(m_lmb, classify = "Nitrogen"))
+	pred_lmer <- get_predictions(
+		lme4::lmer(yield ~ Nitrogen + (1 | Blocks), data = dat),
+		classify = "Nitrogen"
+	)
+
+	# Under an identity relationship matrix the two fits coincide exactly.
+	expect_equal(
+		pred_lmb$predictions$predicted.value,
+		pred_lmer$predictions$predicted.value,
+		tolerance = 1e-4
+	)
+	expect_equal(
+		mean(pred_lmb$sed, na.rm = TRUE),
+		mean(pred_lmer$sed, na.rm = TRUE),
+		tolerance = 1e-4
+	)
+})
+
 # check that predictions from asreml are the same as a aovlist object
 test_that("Test that asreml provides the same results as multi-stratum ANOVA for oats data", {
 	skip_if_not_installed("asreml")

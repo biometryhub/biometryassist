@@ -131,8 +131,9 @@
 #' @inheritSection get_predictions Supported model types
 #'
 #' @seealso [pairwise_comparisons()] for testing a chosen subset of pairwise
-#'   differences as a tidy table. For guidance on choosing between the two and
-#'   on multiplicity adjustments, see
+#'   differences as a tidy table, or [reference_comparisons()] for testing
+#'   treatments against a chosen reference or control. For guidance on choosing
+#'   between the two and on multiplicity adjustments, see
 #'   `vignette("choosing-multiple-comparisons", "biometryassist")`.
 #'
 #' @examples

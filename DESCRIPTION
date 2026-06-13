@@ -72,6 +72,7 @@ Enhances:
     asreml,
     glmmTMB,
     lme4,
+    lme4breeding,
     lmerTest,
     nlme,
     sommer

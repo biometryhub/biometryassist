@@ -218,7 +218,7 @@ and \code{\link[=reference_comparisons]{reference_comparisons()}}) work with any
    \code{aov}, \code{lm} \tab \code{\link[stats:aov]{stats::aov()}}, \code{\link[stats:lm]{stats::lm()}} \tab Fixed-effects linear models. \cr
    \code{aovlist} \tab \code{\link[stats:aov]{stats::aov()}} with an \code{Error()} term \tab Multi-stratum aov; gives comparison-specific (matrix) degrees of freedom. \cr
    \code{lme} \tab \code{\link[nlme:lme]{nlme::lme()}} \tab Linear mixed model. \cr
-   \code{lmerMod} \tab \code{\link[lme4:lmer]{lme4::lmer()}} \tab Linear mixed model. \cr
+   \code{lmerMod} \tab \code{\link[lme4:lmer]{lme4::lmer()}}, \code{lme4breeding::lmebreed()} \tab Linear mixed model. \code{lmebreed()} (relationship-based) models also carry class \code{lmerMod}; comparisons target the fixed-effect means with Kenward-Roger degrees of freedom, and correctly reflect the relationship structure (validated against ASReml-R). \cr
    \code{lmerModLmerTest} \tab \code{\link[lmerTest:lmer]{lmerTest::lmer()}} \tab As \code{lmerMod}, with Satterthwaite degrees of freedom. \cr
    \code{asreml} \tab ASReml-R \code{asreml()} \tab Linear mixed model (commercial; not on CRAN). \cr
    \code{afex_aov} \tab afex \code{aov_car()} / \code{aov_ez()} / \code{aov_4()} \tab Factorial / repeated-measures ANOVA; gives comparison-specific (matrix) degrees of freedom. \cr

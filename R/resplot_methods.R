@@ -19,7 +19,7 @@
 #' | `aov`, `lm` | [stats::aov()], [stats::lm()] | Fixed-effects linear models. |
 #' | `aovlist` | [stats::aov()] with an `Error()` term | Multi-stratum aov; each error stratum (except the intercept) is shown as a separate plot. |
 #' | `lme` | [nlme::lme()] | Linear mixed model. |
-#' | `lmerMod` | [lme4::lmer()] | Linear mixed model. |
+#' | `lmerMod` | [lme4::lmer()], `lme4breeding::lmebreed()` | Linear mixed model. `lmebreed()` (relationship-based) models also carry class `lmerMod`; their residuals/fitted values are on the response scale, so the diagnostics are valid. |
 #' | `lmerModLmerTest` | [lmerTest::lmer()] | As `lmerMod`. |
 #' | `asreml` | ASReml-R `asreml()` | Linear mixed model (commercial; not on CRAN). Residual strata are shown as separate plots. |
 #' | `mmer`, `mmes` | sommer `mmer()` / `mmes()` | Linear mixed model. |

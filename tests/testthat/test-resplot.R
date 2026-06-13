@@ -193,6 +193,38 @@ test_that("Residual plots work for sommer", {
 	)
 })
 
+test_that("Residual plots work for lme4breeding (lmebreed) models", {
+	skip_if_not_installed("lme4breeding")
+	# lmebreed() relies on lme4 internals being attached (lme4 is in its Depends).
+	suppressPackageStartupMessages(library(lme4breeding))
+	load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
+
+	# lmebreed() objects carry class `lmerMod` and use the existing extract_model_info
+	# method. Residuals/fitted values are on the response scale, so the diagnostic is
+	# valid. An identity relationship matrix gives an exact lme4::lmer() reference.
+	blocks <- levels(factor(dat$Blocks))
+	A <- diag(length(blocks))
+	dimnames(A) <- list(blocks, blocks)
+
+	m_lmb <- suppressMessages(suppressWarnings(lmebreed(
+		yield ~ Nitrogen + (1 | Blocks),
+		relmat = list(Blocks = A),
+		data = dat,
+		verbose = FALSE,
+		dateWarning = FALSE
+	)))
+
+	p <- resplot(m_lmb, shapiro = FALSE)
+	expect_contains(class(p), "ggplot")
+
+	m_lmer <- lme4::lmer(yield ~ Nitrogen + (1 | Blocks), data = dat)
+	expect_equal(
+		unname(residuals(m_lmb)),
+		unname(residuals(m_lmer)),
+		tolerance = 1e-4
+	)
+})
+
 test_that("Residual plots display call for aov and lm", {
 	p1 <- resplot(dat.aov, call = TRUE)
 	p2 <- resplot(dat.aov, call = TRUE, call.size = 7)

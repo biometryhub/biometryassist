@@ -31,7 +31,7 @@ writing a new \code{extract_model_info()} method.
    \code{aov}, \code{lm} \tab \code{\link[stats:aov]{stats::aov()}}, \code{\link[stats:lm]{stats::lm()}} \tab Fixed-effects linear models. \cr
    \code{aovlist} \tab \code{\link[stats:aov]{stats::aov()}} with an \code{Error()} term \tab Multi-stratum aov; each error stratum (except the intercept) is shown as a separate plot. \cr
    \code{lme} \tab \code{\link[nlme:lme]{nlme::lme()}} \tab Linear mixed model. \cr
-   \code{lmerMod} \tab \code{\link[lme4:lmer]{lme4::lmer()}} \tab Linear mixed model. \cr
+   \code{lmerMod} \tab \code{\link[lme4:lmer]{lme4::lmer()}}, \code{lme4breeding::lmebreed()} \tab Linear mixed model. \code{lmebreed()} (relationship-based) models also carry class \code{lmerMod}; their residuals/fitted values are on the response scale, so the diagnostics are valid. \cr
    \code{lmerModLmerTest} \tab \code{\link[lmerTest:lmer]{lmerTest::lmer()}} \tab As \code{lmerMod}. \cr
    \code{asreml} \tab ASReml-R \code{asreml()} \tab Linear mixed model (commercial; not on CRAN). Residual strata are shown as separate plots. \cr
    \code{mmer}, \code{mmes} \tab sommer \code{mmer()} / \code{mmes()} \tab Linear mixed model. \cr
