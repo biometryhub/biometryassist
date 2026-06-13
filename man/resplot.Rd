@@ -62,8 +62,10 @@ Produces plots of residuals for assumption checking of linear (mixed) models.
 
 
 This set differs slightly from the comparison functions (see
-\code{\link[=get_predictions]{get_predictions()}}): \code{resplot()} additionally supports sommer and ARTool
-models.
+\code{\link[=get_predictions]{get_predictions()}}): \code{resplot()} additionally supports ARTool (\code{art}) models and
+sommer's legacy \code{mmer} interface. Neither is available for the comparison
+functions — ART uses aligned ranks (use \code{ARTool::art.con()}), and current sommer
+provides no \code{predict()} for \code{mmer} (refit with \code{sommer::mmes()}).
 
 To add a new engine, write an \verb{extract_model_info.<class>()} method returning
 a list with elements \code{facet}, \code{facet_name}, \code{resids}, \code{fits}, \code{k} and

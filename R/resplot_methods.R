@@ -28,8 +28,10 @@
 #' | `glmmTMB` | glmmTMB `glmmTMB()` | **Gaussian family only.** Non-Gaussian families error with a pointer to `DHARMa::simulateResiduals()`, since a normal Q-Q plot is not a valid diagnostic for them. |
 #'
 #' This set differs slightly from the comparison functions (see
-#' [get_predictions()]): `resplot()` additionally supports sommer and ARTool
-#' models.
+#' [get_predictions()]): `resplot()` additionally supports ARTool (`art`) models and
+#' sommer's legacy `mmer` interface. Neither is available for the comparison
+#' functions — ART uses aligned ranks (use `ARTool::art.con()`), and current sommer
+#' provides no `predict()` for `mmer` (refit with `sommer::mmes()`).
 #'
 #' To add a new engine, write an `extract_model_info.<class>()` method returning
 #' a list with elements `facet`, `facet_name`, `resids`, `fits`, `k` and
