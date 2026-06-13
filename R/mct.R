@@ -991,6 +991,9 @@ validate_inputs <- function(sig, classify, model.obj, trans) {
 		# column name (afex does not allow a transformed response), so build a
 		# trivial formula from the dv for the transformation check below.
 		model_formula <- stats::reformulate("1", response = attr(model.obj, "dv"))
+	} else if (inherits(model.obj, "mmes")) {
+		# sommer mmes has no formula() method; the fixed formula is stored in $args.
+		model_formula <- model.obj$args$fixed
 	} else if (class(model.obj)[1] == c("aovlist")) {
 		model_formula <- stats::formula(model.obj[[1]])
 	} else {

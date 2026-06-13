@@ -911,6 +911,42 @@ test_that("get_predictions works for glmmTMB models", {
 	)
 })
 
+test_that("get_predictions works for sommer mmes models", {
+	skip_if_not_installed("sommer")
+	load(test_path("data", "sommer_models.Rdata"), .GlobalEnv)
+
+	pred <- get_predictions.mmes(model_mmes, classify = "Env")
+
+	# Predictions match the equivalent lme4 fit on the same data.
+	expect_equal(
+		pred$predictions$predicted.value,
+		c(16.49635, 10.71959, 10.11587),
+		tolerance = 1e-4
+	)
+	expect_equal(as.character(pred$ylab), "Yield")
+	expect_true(is.matrix(pred$sed))
+	# SED is built from the prediction covariance matrix.
+	expect_equal(mean(pred$sed, na.rm = TRUE), 0.736, tolerance = 1e-2)
+	# sommer provides no denominator df, so asymptotic (z-based) inference is used.
+	expect_equal(pred$df, Inf)
+	expect_null(pred$emmeans_grid)
+})
+
+test_that("get_predictions errors informatively for sommer mmer models", {
+	skip_if_not_installed("sommer")
+	load(test_path("data", "sommer_models.Rdata"), .GlobalEnv)
+
+	# mmer has no predict() method in current sommer; point users to mmes().
+	expect_error(
+		get_predictions.mmer(model_mmer, classify = "Env"),
+		"sommer::mmes\\(\\)"
+	)
+	expect_error(
+		multiple_comparisons(model_mmer, classify = "Env"),
+		"sommer::mmes\\(\\)"
+	)
+})
+
 # check that predictions from asreml are the same as a aovlist object
 test_that("Test that asreml provides the same results as multi-stratum ANOVA for oats data", {
 	skip_if_not_installed("asreml")

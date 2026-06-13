@@ -79,10 +79,15 @@ check_classify_in_terms <- function(classify, model_terms) {
 #' | `asreml` | ASReml-R `asreml()` | Linear mixed model (commercial; not on CRAN). |
 #' | `afex_aov` | afex `aov_car()` / `aov_ez()` / `aov_4()` | Factorial / repeated-measures ANOVA; gives comparison-specific (matrix) degrees of freedom. |
 #' | `glmmTMB` | glmmTMB `glmmTMB()` | Generalized linear mixed model. Predictions are on the link scale with asymptotic (infinite) degrees of freedom; supply `trans` to back-transform. |
+#' | `mmes` | sommer `mmes()` | Linear mixed model, via sommer's native `predict()`. SED from the prediction covariance; asymptotic (infinite) degrees of freedom (sommer provides none). |
 #'
 #' ARTool (`art`) models are supported by [resplot()] but **not** by the comparison
 #' functions: the aligned rank transform makes mean-based comparisons inappropriate.
 #' Use `ARTool::art.con()` for contrasts on ART models instead.
+#'
+#' sommer `mmer` models (the legacy interface) are supported by [resplot()] but
+#' **not** by the comparison functions: current sommer provides no `predict()` method
+#' for `mmer`. Refit with `sommer::mmes()` to use the comparison functions.
 #'
 #' To add a new engine, write a `get_predictions.<class>()` method returning a
 #' list with elements `predictions`, `sed`, `df`, `ylab` and `aliased_names`
@@ -111,7 +116,8 @@ get_predictions.default <- function(model.obj, ...) {
 		"lme",
 		"asreml",
 		"afex_aov",
-		"glmmTMB"
+		"glmmTMB",
+		"mmes"
 	)
 	stop(
 		"model.obj must be a linear (mixed) model object. Currently supported model types are: ",
@@ -394,6 +400,64 @@ get_predictions.glmmTMB <- function(model.obj, classify, ...) {
 	ylab <- trimws(strsplit(formula_text, "~")[[1]][1])
 
 	predictions_from_emmeans(model.obj, classify, model_terms, ylab)
+}
+
+#' @noRd
+#' @exportS3Method get_predictions mmes
+get_predictions.mmes <- function(model.obj, classify, ...) {
+	# sommer has no emmeans support, so use its native predict() with D = classify
+	# to obtain predicted means and their covariance matrix. The pairwise SED is then
+	# built from that covariance. Fixed model terms come from the Dtable, and the
+	# response (ylab) from the stored fixed formula.
+	model_terms <- model.obj$Dtable$term[model.obj$Dtable$type == "fixed"]
+	model_terms <- setdiff(model_terms, c("1", "(Intercept)"))
+	classify <- check_classify_in_terms(classify, model_terms)
+
+	pred <- predict(model.obj, D = classify)
+	pp <- pred$pvals
+
+	# Build the SED matrix from the prediction covariance:
+	# SED_ij = sqrt(V_ii + V_jj - 2 * V_ij).
+	vcov <- as.matrix(pred$vcov)
+	sed <- sqrt(outer(diag(vcov), diag(vcov), "+") - 2 * vcov)
+	diag(sed) <- NA
+
+	# Process aliased treatments (levels with NA predictions), reusing shared helper.
+	aliased_result <- process_aliased(pp, sed, classify)
+	pp <- aliased_result$predictions
+	sed <- aliased_result$sed
+	aliased_names <- aliased_result$aliased_names
+
+	# sommer provides no denominator degrees of freedom; use asymptotic (z-based)
+	# inference, as for glmmTMB.
+	ndf <- Inf
+
+	ylab <- model.obj$args$fixed[[2]]
+
+	return(list(
+		predictions = pp,
+		sed = sed,
+		df = ndf,
+		ylab = ylab,
+		aliased_names = aliased_names,
+		emmeans_grid = NULL
+	))
+}
+
+#' @noRd
+#' @exportS3Method get_predictions mmer
+get_predictions.mmer <- function(model.obj, classify, ...) {
+	# sommer's legacy `mmer` interface has no predict() method in current sommer, so
+	# mean-based comparisons are not available. Point users at the mmes() interface.
+	# resplot() still supports `mmer` models.
+	stop(
+		"sommer `mmer` models are not supported for multiple comparisons ",
+		"(sommer no longer provides a predict() method for the legacy `mmer` ",
+		"interface).\n",
+		"  Refit the model with sommer::mmes() to use the comparison functions.\n",
+		"  (`mmer` models are still supported by resplot().)",
+		call. = FALSE
+	)
 }
 
 #' @noRd

@@ -1838,6 +1838,24 @@ test_that("glmmTMB model is supported", {
 	expect_local_doppelganger("glmmTMB output", ap)
 })
 
+test_that("sommer mmes model is supported", {
+	skip_if_not_installed("sommer")
+	load(test_path("data", "sommer_models.Rdata"), .GlobalEnv)
+
+	output <- multiple_comparisons(model_mmes, classify = "Env")
+
+	expect_s3_class(output, "mct")
+	# Env effect: CA.2011 separates from the CA.2012/CA.2013 group.
+	expect_setequal(
+		round(output$predictions$predicted.value, 2),
+		c(10.12, 10.72, 16.50)
+	)
+
+	ap <- autoplot(output)
+	expect_autoplot_data(ap, output)
+	expect_local_doppelganger("sommer mmes output", ap)
+})
+
 test_that("invalid model types give a clear error", {
 	# Use an unsupported model type that still has a `formula()` method so that
 	# the error comes from `get_predictions.default()` (not from validate_inputs()).
