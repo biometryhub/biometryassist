@@ -874,6 +874,43 @@ test_that("get_predictions.afex_aov errors when classify is not in model terms",
 	)
 })
 
+test_that("get_predictions works for glmmTMB models", {
+	skip_if_not_installed("glmmTMB")
+	data(Salamanders, package = "glmmTMB")
+
+	# Gaussian family: predictions on the response scale.
+	g_gauss <- glmmTMB::glmmTMB(
+		count ~ spp + mined + (1 | site),
+		data = Salamanders,
+		family = gaussian()
+	)
+	pred <- get_predictions.glmmTMB(g_gauss, classify = "mined")
+
+	expect_equal(
+		pred$predictions$predicted.value,
+		c(0.2954544, 2.2648810),
+		tolerance = 1e-4
+	)
+	expect_equal(pred$ylab, "count")
+	expect_true(is.matrix(pred$sed))
+	expect_true(is.matrix(pred$df))
+	# glmmTMB uses asymptotic (infinite) degrees of freedom.
+	expect_true(all(is.infinite(pred$df[!is.na(pred$df)])))
+
+	# Non-Gaussian families predict on the link (here log) scale.
+	g_pois <- glmmTMB::glmmTMB(
+		count ~ spp + mined + (1 | site),
+		data = Salamanders,
+		family = poisson()
+	)
+	pred_p <- get_predictions.glmmTMB(g_pois, classify = "mined")
+	expect_equal(
+		pred_p$predictions$predicted.value,
+		c(-1.7028112, 0.5616248),
+		tolerance = 1e-4
+	)
+})
+
 # check that predictions from asreml are the same as a aovlist object
 test_that("Test that asreml provides the same results as multi-stratum ANOVA for oats data", {
 	skip_if_not_installed("asreml")

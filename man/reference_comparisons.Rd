@@ -191,6 +191,7 @@ and \code{\link[=reference_comparisons]{reference_comparisons()}}) work with any
    \code{lmerModLmerTest} \tab \code{\link[lmerTest:lmer]{lmerTest::lmer()}} \tab As \code{lmerMod}, with Satterthwaite degrees of freedom. \cr
    \code{asreml} \tab ASReml-R \code{asreml()} \tab Linear mixed model (commercial; not on CRAN). \cr
    \code{afex_aov} \tab afex \code{aov_car()} / \code{aov_ez()} / \code{aov_4()} \tab Factorial / repeated-measures ANOVA; gives comparison-specific (matrix) degrees of freedom. \cr
+   \code{glmmTMB} \tab glmmTMB \code{glmmTMB()} \tab Generalized linear mixed model. Predictions are on the link scale with asymptotic (infinite) degrees of freedom; supply \code{trans} to back-transform. \cr
 }
 
 

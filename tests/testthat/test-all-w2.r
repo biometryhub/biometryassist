@@ -280,9 +280,15 @@ test_that("example 6 works", {
 		resplot(example6.asr),
 		variant = ggplot2_variant()
 	)
+	# The variogram composite embeds a non-deterministic lattice wireframe, so
+	# confirm the composite renders and pixel-snapshot only the deterministic
+	# heatmap panel. See test-variogram.r for the full rationale.
+	expect_silent(print(vg6))
+	vg6_df <- vario_df(example6.asr)
+	vg6_dims <- setdiff(names(vg6_df), c("gamma", "np", "groups"))
 	expect_local_doppelganger(
 		"example6variogram",
-		vg6,
+		vario_ggplot(vario_interp(vg6_df), vg6_dims[1], vg6_dims[2], "rainbow"),
 		variant = ggplot2_variant()
 	)
 	expect_local_doppelganger("example6lmmautoplot2", ap)
@@ -326,9 +332,15 @@ test_that("example 7 works", {
 		resplot(example7.asr),
 		variant = ggplot2_variant()
 	)
+	# The variogram composite embeds a non-deterministic lattice wireframe, so
+	# confirm the composite renders and pixel-snapshot only the deterministic
+	# heatmap panel. See test-variogram.r for the full rationale.
+	expect_silent(print(vg7))
+	vg7_df <- vario_df(example7.asr)
+	vg7_dims <- setdiff(names(vg7_df), c("gamma", "np", "groups"))
 	expect_local_doppelganger(
 		"example7variogram",
-		vg7,
+		vario_ggplot(vario_interp(vg7_df), vg7_dims[1], vg7_dims[2], "rainbow"),
 		variant = ggplot2_variant()
 	)
 	expect_local_doppelganger("example7lmmautoplot", ap)
@@ -718,9 +730,21 @@ test_that("exercise 13 works", {
 	)
 	expect_local_doppelganger("exercise13autoplot1", ap1)
 	expect_local_doppelganger("exercise13autoplot2", ap2)
+	# The variogram composite embeds a non-deterministic lattice wireframe, so
+	# confirm the composite renders and pixel-snapshot only the deterministic
+	# heatmap panel. See test-variogram.r for the full rationale.
+	vg13 <- variogram(exercise13.asr)
+	expect_silent(print(vg13))
+	vg13_df <- vario_df(exercise13.asr)
+	vg13_dims <- setdiff(names(vg13_df), c("gamma", "np", "groups"))
 	expect_local_doppelganger(
 		"exercise13variogram",
-		variogram(exercise13.asr),
+		vario_ggplot(
+			vario_interp(vg13_df),
+			vg13_dims[1],
+			vg13_dims[2],
+			"rainbow"
+		),
 		variant = ggplot2_variant()
 	)
 })
@@ -813,9 +837,21 @@ test_that("exercise 14 works", {
 		variant = ggplot2_variant()
 	)
 	expect_local_doppelganger("exercise14autoplot", ap)
+	# The variogram composite embeds a non-deterministic lattice wireframe, so
+	# confirm the composite renders and pixel-snapshot only the deterministic
+	# heatmap panel. See test-variogram.r for the full rationale.
+	vg14 <- variogram(exercise14.asr)
+	expect_silent(print(vg14))
+	vg14_df <- vario_df(exercise14.asr)
+	vg14_dims <- setdiff(names(vg14_df), c("gamma", "np", "groups"))
 	expect_local_doppelganger(
 		"exercise14variogram",
-		variogram(exercise14.asr),
+		vario_ggplot(
+			vario_interp(vg14_df),
+			vg14_dims[1],
+			vg14_dims[2],
+			"rainbow"
+		),
 		variant = ggplot2_variant()
 	)
 })
@@ -891,9 +927,21 @@ test_that("exercise 15 works", {
 	expect_local_doppelganger("exercise15autoplot1", ap1)
 	expect_local_doppelganger("exercise15autoplot2", ap2)
 	expect_local_doppelganger("exercise15autoplot3", ap3)
+	# The variogram composite embeds a non-deterministic lattice wireframe, so
+	# confirm the composite renders and pixel-snapshot only the deterministic
+	# heatmap panel. See test-variogram.r for the full rationale.
+	vg15 <- variogram(exercise15.asr)
+	expect_silent(print(vg15))
+	vg15_df <- vario_df(exercise15.asr)
+	vg15_dims <- setdiff(names(vg15_df), c("gamma", "np", "groups"))
 	expect_local_doppelganger(
 		"exercise15variogram",
-		variogram(exercise15.asr),
+		vario_ggplot(
+			vario_interp(vg15_df),
+			vg15_dims[1],
+			vg15_dims[2],
+			"rainbow"
+		),
 		variant = ggplot2_variant()
 	)
 })

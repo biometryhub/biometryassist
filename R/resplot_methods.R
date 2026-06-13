@@ -25,6 +25,7 @@
 #' | `mmer`, `mmes` | sommer `mmer()` / `mmes()` | Linear mixed model. |
 #' | `art` | `ARTool::art()` | Aligned rank transform model. |
 #' | `afex_aov` | afex `aov_car()` / `aov_ez()` / `aov_4()` | Factorial / repeated-measures ANOVA; a single diagnostic panel from the model residuals. |
+#' | `glmmTMB` | glmmTMB `glmmTMB()` | **Gaussian family only.** Non-Gaussian families error with a pointer to `DHARMa::simulateResiduals()`, since a normal Q-Q plot is not a valid diagnostic for them. |
 #'
 #' This set differs slightly from the comparison functions (see
 #' [get_predictions()]): `resplot()` additionally supports sommer and ARTool
@@ -57,7 +58,8 @@ extract_model_info.default <- function(model.obj, call = FALSE) {
 		"mmer",
 		"mmes",
 		"art",
-		"afex_aov"
+		"afex_aov",
+		"glmmTMB"
 	)
 	stop(
 		"model.obj must be a linear (mixed) model object. Currently supported model types are: ",
@@ -288,6 +290,47 @@ extract_model_info.art <- function(model.obj, call = FALSE) {
 	resids <- residuals(model.obj)
 	k <- length(resids)
 	fits <- model.obj$cell.means[, ncol(model.obj$cell.means)]
+
+	model_call <- NULL
+	if (call) {
+		model_call <- paste(
+			trimws(deparse(model.obj$call, width.cutoff = 50)),
+			collapse = "\n"
+		)
+	}
+
+	list(
+		facet = 1,
+		facet_name = NULL,
+		resids = resids,
+		fits = fits,
+		k = k,
+		model_call = model_call
+	)
+}
+
+#' @noRd
+#' @exportS3Method extract_model_info glmmTMB
+extract_model_info.glmmTMB <- function(model.obj, call = FALSE) {
+	# resplot() draws Gaussian diagnostics (a normal Q-Q plot), which are only valid
+	# for a Gaussian-family fit. For any other family, error and point the user at
+	# DHARMa, which provides simulated quantile residuals appropriate for GLMMs.
+	fam <- stats::family(model.obj)$family
+	if (!identical(fam, "gaussian")) {
+		stop(
+			"resplot() produces Gaussian residual diagnostics (a normal Q-Q plot), ",
+			"which are not valid for a glmmTMB model with family \"",
+			fam,
+			"\".\n",
+			"  Use DHARMa::simulateResiduals() for residual diagnostics of ",
+			"non-Gaussian (mixed) models.",
+			call. = FALSE
+		)
+	}
+
+	resids <- as.numeric(residuals(model.obj))
+	fits <- as.numeric(fitted(model.obj))
+	k <- length(resids)
 
 	model_call <- NULL
 	if (call) {

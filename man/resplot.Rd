@@ -57,6 +57,7 @@ Produces plots of residuals for assumption checking of linear (mixed) models.
    \code{mmer}, \code{mmes} \tab sommer \code{mmer()} / \code{mmes()} \tab Linear mixed model. \cr
    \code{art} \tab \code{ARTool::art()} \tab Aligned rank transform model. \cr
    \code{afex_aov} \tab afex \code{aov_car()} / \code{aov_ez()} / \code{aov_4()} \tab Factorial / repeated-measures ANOVA; a single diagnostic panel from the model residuals. \cr
+   \code{glmmTMB} \tab glmmTMB \code{glmmTMB()} \tab \strong{Gaussian family only.} Non-Gaussian families error with a pointer to \code{DHARMa::simulateResiduals()}, since a normal Q-Q plot is not a valid diagnostic for them. \cr
 }
 
 

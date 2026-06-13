@@ -1814,6 +1814,30 @@ test_that("afex (afex_aov) model is supported", {
 	expect_local_doppelganger("afex output", ap)
 })
 
+test_that("glmmTMB model is supported", {
+	skip_if_not_installed("glmmTMB")
+	data(Salamanders, package = "glmmTMB")
+
+	g <- glmmTMB::glmmTMB(
+		count ~ spp + mined + (1 | site),
+		data = Salamanders,
+		family = gaussian()
+	)
+	output <- multiple_comparisons(g, classify = "mined")
+
+	expect_s3_class(output, "mct")
+	expect_equal(
+		output$predictions$predicted.value,
+		c(0.30, 2.26),
+		tolerance = 5e-2
+	)
+	expect_equal(output$predictions$groups, c("a", "b"))
+
+	ap <- autoplot(output)
+	expect_autoplot_data(ap, output)
+	expect_local_doppelganger("glmmTMB output", ap)
+})
+
 test_that("invalid model types give a clear error", {
 	# Use an unsupported model type that still has a `formula()` method so that
 	# the error comes from `get_predictions.default()` (not from validate_inputs()).

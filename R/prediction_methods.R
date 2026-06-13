@@ -78,6 +78,7 @@ check_classify_in_terms <- function(classify, model_terms) {
 #' | `lmerModLmerTest` | [lmerTest::lmer()] | As `lmerMod`, with Satterthwaite degrees of freedom. |
 #' | `asreml` | ASReml-R `asreml()` | Linear mixed model (commercial; not on CRAN). |
 #' | `afex_aov` | afex `aov_car()` / `aov_ez()` / `aov_4()` | Factorial / repeated-measures ANOVA; gives comparison-specific (matrix) degrees of freedom. |
+#' | `glmmTMB` | glmmTMB `glmmTMB()` | Generalized linear mixed model. Predictions are on the link scale with asymptotic (infinite) degrees of freedom; supply `trans` to back-transform. |
 #'
 #' ARTool (`art`) models are supported by [resplot()] but **not** by the comparison
 #' functions: the aligned rank transform makes mean-based comparisons inappropriate.
@@ -109,7 +110,8 @@ get_predictions.default <- function(model.obj, ...) {
 		"lmerModLmerTest",
 		"lme",
 		"asreml",
-		"afex_aov"
+		"afex_aov",
+		"glmmTMB"
 	)
 	stop(
 		"model.obj must be a linear (mixed) model object. Currently supported model types are: ",
@@ -374,6 +376,22 @@ get_predictions.afex_aov <- function(model.obj, classify, ...) {
 	# directly on afex_aov objects, so the shared emmeans core does the rest.
 	model_terms <- rownames(model.obj$anova_table)
 	ylab <- attr(model.obj, "dv")
+
+	predictions_from_emmeans(model.obj, classify, model_terms, ylab)
+}
+
+#' @noRd
+#' @exportS3Method get_predictions glmmTMB
+#' @importFrom emmeans emmeans
+get_predictions.glmmTMB <- function(model.obj, classify, ...) {
+	# emmeans() supports glmmTMB natively (conditional component, link scale by
+	# default), and the pairwise-contrast SEs in the shared core give the correct SED
+	# from the full coefficient covariance. Degrees of freedom are asymptotic (Inf).
+	# For non-Gaussian families predictions are on the link scale; supply `trans` to
+	# multiple_comparisons() to back-transform.
+	model_terms <- attr(stats::terms(model.obj), 'term.labels')
+	formula_text <- deparse(stats::formula(model.obj))
+	ylab <- trimws(strsplit(formula_text, "~")[[1]][1])
 
 	predictions_from_emmeans(model.obj, classify, model_terms, ylab)
 }
