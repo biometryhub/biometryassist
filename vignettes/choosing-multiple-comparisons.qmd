@@ -6,6 +6,9 @@ vignette: >
   %\VignetteEngine{quarto::html}
   %\VignetteEncoding{UTF-8}
 engine: knitr
+bibliography: references.bib
+nocite: |
+  @hothorn2008, @miller1981
 ---
 
 ```{r, include = FALSE}
@@ -44,7 +47,7 @@ which one you want depends on *what you are comparing*:
 its results, not what it tests. All three rest on the same underlying pairwise
 differences between predicted means (more generally, linear contrasts):
 `multiple_comparisons()` tests *every* pairwise difference and condenses them
-into letters on the means — it does not test the means themselves — whereas
+into letters on the means, it does not test the means themselves; whereas
 `pairwise_comparisons()` and `reference_comparisons()` report a chosen subset of
 those differences directly.
 
@@ -141,18 +144,18 @@ rejection across the whole family. It is the conservative, "every claim must be
 trustworthy" criterion, appropriate for a small set of planned comparisons.
 
 - **Bonferroni** is the simplest FWER method but is unnecessarily conservative.
-- **Holm** [Holm, 1979] is a step-down procedure that controls the FWER under
+- **Holm** [@holm1979] is a step-down procedure that controls the FWER under
   *any* dependence structure and is uniformly more powerful than Bonferroni —
   there is essentially never a reason to prefer plain Bonferroni over Holm. It
   is the default in `pairwise_comparisons()`.
-- **Tukey's HSD** [Tukey, 1953; Hsu, 1996] uses the studentized range
+- **Tukey's HSD** [@tukey1953; @hsu1996] uses the studentized range
   distribution to give *exact* simultaneous FWER control for the complete set of
   **all** pairwise comparisons (exact for equal replication; the Tukey–Kramer
   extension covers unequal replication). Because it exploits the exact joint
   distribution of all pairwise differences, it is more powerful than Bonferroni
   or Holm *for that complete set* — which is why it is the default in
   `multiple_comparisons()`.
-- **Dunnett's test** [Dunnett, 1955] is the exact FWER procedure for the
+- **Dunnett's test** [@dunnett1955] is the exact FWER procedure for the
   specific family of comparing every treatment against a *single control*. Like
   Tukey for all pairs, it exploits the known joint distribution of those
   comparisons (the correlation induced by the shared control), so it is more
@@ -163,7 +166,7 @@ trustworthy" criterion, appropriate for a small set of planned comparisons.
 among the rejected comparisons. It is less stringent than FWER and earns its
 keep when comparisons are many and somewhat exploratory.
 
-- **Benjamini–Hochberg (`"BH"`/`"fdr"`)** [Benjamini & Hochberg, 1995] controls
+- **Benjamini–Hochberg (`"BH"`/`"fdr"`)** [@benjamini1995] controls
   the FDR under independence and positive dependence (which pairwise comparisons
   satisfy); **`"BY"`** is valid under arbitrary dependence but more
   conservative.
@@ -177,7 +180,7 @@ A natural question is why `pairwise_comparisons()` does not offer
 `adjust = "tukey"`. Tukey's critical value is calibrated to the largest
 difference among *all* the means; applied to a chosen subset it still controls
 the FWER, but it is sized for comparisons you are not making, so it is
-conservative and conceptually mismatched [Hsu, 1996; Bretz et al., 2010]. For a
+conservative and conceptually mismatched [@hsu1996; @bretz2010]. For a
 selected set, a method calibrated to *that* set (Holm, Bonferroni, BH) is
 preferred. Conversely, for the complete set Tukey is the most powerful of these
 because it uses the known structure of the pairwise differences. So Tukey
@@ -286,26 +289,6 @@ whether the drawn interval happens to cross zero.
 
 ## References
 
-- Benjamini, Y., & Hochberg, Y. (1995). Controlling the false discovery rate: a
-  practical and powerful approach to multiple testing. *Journal of the Royal
-  Statistical Society, Series B (Methodological)*, 57(1), 289–300.
-  <doi:10.1111/j.2517-6161.1995.tb02031.x>
-- Bretz, F., Hothorn, T., & Westfall, P. (2010). *Multiple Comparisons Using R*.
-  Boca Raton: Chapman & Hall/CRC.
-- Dunnett, C. W. (1955). A multiple comparison procedure for comparing several
-  treatments with a control. *Journal of the American Statistical Association*,
-  50(272), 1096–1121. <doi:10.1080/01621459.1955.10501294>
-- Holm, S. (1979). A simple sequentially rejective multiple test procedure.
-  *Scandinavian Journal of Statistics*, 6(2), 65–70.
-- Hothorn, T., Bretz, F., & Westfall, P. (2008). Simultaneous inference in
-  general parametric models. *Biometrical Journal*, 50(3), 346–363.
-  <doi:10.1002/bimj.200810425>
-- Hsu, J. C. (1996). *Multiple Comparisons: Theory and Methods*. London:
-  Chapman & Hall.
-- Miller, R. G. (1981). *Simultaneous Statistical Inference* (2nd ed.). New York:
-  Springer-Verlag.
-- Tukey, J. W. (1953). The problem of multiple comparisons. Unpublished
-  manuscript. Reprinted in H. I. Braun (Ed.) (1994), *The Collected Works of
-  John W. Tukey, Volume VIII: Multiple Comparisons, 1948–1983* (pp. 1–300). New
-  York: Chapman & Hall.
+::: {#refs}
+:::
 ```
