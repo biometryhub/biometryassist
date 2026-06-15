@@ -61,12 +61,6 @@ multiple_comparisons(
 \item{savename}{A file name for the predicted values to be saved to. Default is \code{predicted_values}.}
 
 \item{...}{Other arguments passed internally to model-specific prediction methods.}
-
-\item{order}{Deprecated. Use \code{descending} instead.}
-
-\item{pred}{Deprecated. Use \code{classify} instead.}
-
-\item{pred.obj}{Deprecated. Predicted values are calculated within the function from version 1.0.1 onwards.}
 }
 \value{
 An object of class \code{mct} (a list with class attributes) containing:
