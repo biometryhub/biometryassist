@@ -782,30 +782,6 @@ test_that("get_diffs_from_pvalues flags significant pairs and adjusts", {
 # ORIGINAL TESTS (Updated to work with new structure)
 # ============================================================================
 
-test_that("mct produces output", {
-	tmp <- withr::local_tempdir()
-	withr::with_dir(tmp, {
-		withr::local_file("Rplots.pdf")
-
-		output <- multiple_comparisons(
-			dat.aov,
-			classify = "Species",
-			plot = TRUE
-		)
-		while (grDevices::dev.cur() > 1) {
-			grDevices::dev.off()
-		}
-
-		expect_equal(
-			output$predictions$predicted.value,
-			c(0.25, 1.33, 2.03),
-			tolerance = 5e-2
-		)
-		ap <- autoplot(output)
-		expect_autoplot_data(ap, output)
-		expect_local_doppelganger("mct output", ap)
-	})
-})
 
 test_that("mct ylab handles call/language labels", {
 	pp <- data.frame(
@@ -1408,17 +1384,14 @@ test_that("different interval types work", {
 })
 
 test_that("Testing asreml predictions", {
+	skip_if_not_installed("asreml")
 	skip_if_not_installed("Matrix")
+	suppressPackageStartupMessages(library(asreml))
 	load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
-	expect_warning(
-		output <- multiple_comparisons(
-			model.asr,
-			classify = "Nitrogen",
-			pred.obj = pred.asr,
-			dendf = dendf
-		),
-		"Argument `pred\\.obj` has been deprecated and will be removed in a future version\\. Predictions are now performed internally in the function\\."
-	)
+	output <- suppressWarnings(multiple_comparisons(
+		model.asr,
+		classify = "Nitrogen"
+	))
 	expect_equal(
 		output$predictions$predicted.value,
 		c(77.76, 100.15, 114.41, 123.23),
@@ -1432,16 +1405,37 @@ test_that("Testing asreml predictions", {
 
 test_that("save produces output", {
 	withr::local_file("pred_vals.csv")
-	output <- multiple_comparisons(
+	output <- suppressWarnings(multiple_comparisons(
 		dat.aov,
 		classify = "Species",
 		save = TRUE,
 		savename = "pred_vals"
-	)
+	))
 	expect_snapshot_output(output)
 
 	# CSV contains full precision values
 	expect_csv_matches_df(output$predictions, "pred_vals.csv")
+})
+
+test_that("plot, save and savename arguments are deprecated", {
+	tmp <- withr::local_tempdir()
+	withr::with_dir(tmp, {
+		expect_warning(
+			multiple_comparisons(dat.aov, classify = "Species", plot = TRUE),
+			"`plot` has been deprecated"
+		)
+		while (grDevices::dev.cur() > 1) grDevices::dev.off()
+	})
+	withr::with_dir(tmp, {
+		expect_warning(
+			multiple_comparisons(dat.aov, classify = "Species", save = TRUE),
+			"`save` has been deprecated"
+		)
+	})
+	expect_warning(
+		multiple_comparisons(dat.aov, classify = "Species", savename = "test"),
+		"`savename` has been deprecated"
+	)
 })
 
 test_that("Interaction terms work", {
@@ -1477,11 +1471,10 @@ test_that("Interaction terms work", {
 	expect_local_doppelganger("Interactions work", ap)
 })
 
-test_that("order argument is deprecated", {
-	# dat.aov <- aov(Petal.Width ~ Species, data = iris)
-	expect_warning(
+test_that("order argument was removed in 1.5.0", {
+	expect_error(
 		multiple_comparisons(dat.aov, classify = "Species", order = "xyz"),
-		"Argument `order` has been deprecated and will be removed in a future version. Please use `descending` instead."
+		"`order` was removed in biometryassist 1.5.0. Use `descending` instead."
 	)
 })
 
@@ -1598,11 +1591,10 @@ test_that("Significance values that are too high give a warning or error", {
 	)
 })
 
-test_that("Use of pred argument gives warning", {
-	# dat.aov <- aov(Petal.Width ~ Species, data = iris)
-	expect_warning(
+test_that("pred argument was removed in 1.5.0", {
+	expect_error(
 		multiple_comparisons(dat.aov, classify = "Species", pred = "Species"),
-		"Argument `pred` has been deprecated and will be removed in a future version. Please use `classify` instead."
+		"`pred` was removed in biometryassist 1.5.0. Use `classify` instead."
 	)
 })
 
@@ -1624,17 +1616,15 @@ test_that("Invalid column name causes an error", {
 	)
 })
 
-test_that("Including pred.obj object causes warning", {
-	skip_if_not_installed("asreml")
-	quiet(library(asreml))
+test_that("pred.obj argument was removed in 1.5.0", {
 	load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
-	expect_warning(
+	expect_error(
 		multiple_comparisons(
 			model.asr,
 			pred.obj = pred.asr,
 			classify = "Nitrogen"
 		),
-		"Argument \\`pred.obj\\` has been deprecated and will be removed in a future version\\. Predictions are now performed internally in the function\\."
+		"`pred.obj` was removed in biometryassist 1.5.0."
 	)
 })
 
@@ -1723,11 +1713,11 @@ test_that("plots are produced when requested", {
 		withr::local_file("Rplots.pdf")
 
 		expect_snapshot_output(
-			output <- multiple_comparisons(
+			output <- suppressWarnings(multiple_comparisons(
 				dat.aov,
 				classify = "A:B:C",
 				plot = TRUE
-			)
+			))
 		)
 		while (grDevices::dev.cur() > 1) {
 			grDevices::dev.off()
@@ -1741,11 +1731,11 @@ test_that("plots are produced when requested", {
 		expect_local_doppelganger(
 			"3 way interaction internal",
 			function() {
-				invisible(multiple_comparisons(
+				suppressWarnings(invisible(multiple_comparisons(
 					dat.aov,
 					classify = "A:B:C",
 					plot = TRUE
-				))
+				)))
 			},
 			variant = ggplot2_variant()
 		)
@@ -2046,7 +2036,7 @@ Please specify the 'trans' argument if you want back-transformed predictions\\."
 # Test aliased output prints
 test_that("print.mct with no aliased attribute", {
 	dat.aov <- aov(Petal.Width ~ Species, data = iris)
-	output <- multiple_comparisons(dat.aov, classify = "Species", plot = FALSE)
+	output <- multiple_comparisons(dat.aov, classify = "Species")
 
 	# Manually set aliased for testing (in new structure)
 	output$aliased <- "ABC"

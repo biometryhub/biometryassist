@@ -272,28 +272,57 @@ multiple_comparisons <- function(
 	rotation = 0,
 	save = FALSE,
 	savename = "predicted_values",
-	order,
-	pred.obj,
-	pred,
 	...
 ) {
+	# Parameters removed in 1.5.0: give a clear error with migration guidance
+	.removed_params <- list(
+		pred = "`pred` was removed in biometryassist 1.5.0. Use `classify` instead.",
+		order = "`order` was removed in biometryassist 1.5.0. Use `descending` instead.",
+		pred.obj = paste0(
+			"`pred.obj` was removed in biometryassist 1.5.0. ",
+			"Predictions are now performed internally in the function."
+		)
+	)
+	.early_dots <- list(...)
+	for (.p in names(.removed_params)) {
+		if (.p %in% names(.early_dots)) {
+			stop(.removed_params[[.p]], call. = FALSE)
+		}
+	}
+
 	# Handle deprecated parameters
-	handle_deprecated_param("pred", "classify", classify)
-	handle_deprecated_param("order", "descending", descending)
 	handle_deprecated_param(
 		"decimals",
 		NULL,
 		"Rounding is now controlled via the `decimals` argument of `print.mct()`."
 	)
+	handle_deprecated_param(
+		"plot",
+		NULL,
+		"Use `autoplot(<multiple_comparisons output>)` instead."
+	)
+	handle_deprecated_param(
+		"label_height",
+		NULL,
+		"Pass `label_height` to `autoplot()` instead."
+	)
+	handle_deprecated_param(
+		"rotation",
+		NULL,
+		"Pass `rotation` to `autoplot()` instead."
+	)
+	handle_deprecated_param(
+		"save",
+		NULL,
+		"Use `write.csv(result$predictions, \"filename.csv\")` instead."
+	)
+	handle_deprecated_param(
+		"savename",
+		NULL,
+		"Use `write.csv(result$predictions, \"filename.csv\")` instead."
+	)
 
 	vars <- validate_inputs(sig, classify, model.obj, trans)
-
-	# Handle deprecated parameter that's being removed
-	handle_deprecated_param(
-		"pred.obj",
-		NULL,
-		"Predictions are now performed internally in the function."
-	)
 
 	# Process dots
 	rlang::check_dots_used()
@@ -330,7 +359,7 @@ multiple_comparisons <- function(
 	}
 
 	# Get model-specific predictions and SED
-	result <- get_predictions(model.obj, classify, pred.obj, ...)
+	result <- get_predictions(model.obj, classify, ...)
 
 	pp <- result$predictions
 	sed <- result$sed

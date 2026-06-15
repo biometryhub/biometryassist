@@ -2,6 +2,7 @@
 
 ## Major changes
 
+- `multiple_comparisons()`: the `plot`, `label_height`, `rotation`, `save`, and `savename` arguments are now **deprecated** and will be removed in a future version. Use `autoplot(<result>)` for plotting (pass `label_height` and `rotation` there), and `write.csv(result$predictions, "file.csv")` for saving. The `pred`, `order`, and `pred.obj` arguments were deprecated in 1.1.0 or earlier and have now been **removed**.
 - `multiple_comparisons()` gains an `adjust` argument to choose the p-value adjustment method (any `stats::p.adjust()` method, in addition to the default Tukey's HSD), and a `by` argument to run comparisons independently within groups.
 - Added support for `aovlist` and `nlme::lme()` models in `multiple_comparisons()` (#107).
 - Broadened model-engine support across both workflows to bring `resplot()` and the comparison functions (`multiple_comparisons()`, `pairwise_comparisons()`, `reference_comparisons()`) closer to parity:

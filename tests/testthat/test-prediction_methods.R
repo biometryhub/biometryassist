@@ -711,18 +711,29 @@ test_that("check_classify_in_terms works correctly", {
 	)
 })
 
-test_that("Testing asreml predictions", {
+test_that("Testing pred.obj removal for asreml predictions", {
 	skip_if_not_installed("Matrix")
 	load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
-	expect_warning(
+	expect_error(
 		output <- multiple_comparisons(
 			model.asr,
 			classify = "Nitrogen",
 			pred.obj = pred.asr,
 			dendf = dendf
 		),
-		"Argument `pred\\.obj` has been deprecated and will be removed in a future version\\. Predictions are now performed internally in the function\\."
+		"`pred.obj` was removed in biometryassist 1\\.5\\.0\\. Predictions are now performed internally in the function\\."
 	)
+})
+
+test_that("Testing asreml predictions", {
+	skip_if_not_installed("asreml")
+	skip_if_not_installed("Matrix")
+	suppressPackageStartupMessages(library(asreml))
+	load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
+	output <- suppressWarnings(multiple_comparisons(
+		model.asr,
+		classify = "Nitrogen"
+	))
 	expect_equal(
 		output$predictions$predicted.value,
 		c(77.76, 100.15, 114.41, 123.23),

@@ -75,18 +75,24 @@ validate_inputs <- function(
 		)
 	}
 
-	# Check if the response variable is transformed in the model formula
-	if (class(model.obj)[1] == c("aovlist")) {
-		model_formula <- stats::formula(model.obj[[1]])
+	# Check if the response variable is transformed in the model formula.
+	# Some model types (e.g. afex_aov) do not expose a standard formula; skip
+	# the transformation check for those.
+	model_formula <- if (class(model.obj)[1] == "aovlist") {
+		stats::formula(model.obj[[1]])
+	} else if (inherits(model.obj, "mmes")) {
+		model.obj$args$fixed
 	} else {
-		model_formula <- stats::formula(model.obj)
+		tryCatch(stats::formula(model.obj), error = function(e) NULL)
 	}
-	if (inherits(model.obj, "asreml")) {
-		response_part <- model_formula[[1]][[2]]
-	} else {
-		response_part <- model_formula[[2]]
+	response_part <- if (!is.null(model_formula)) {
+		if (inherits(model.obj, "asreml")) {
+			model_formula[[1]][[2]]
+		} else {
+			model_formula[[2]]
+		}
 	}
-	if (is.call(response_part) & is.null(trans)) {
+	if (!is.null(response_part) && is.call(response_part) & is.null(trans)) {
 		hint <- if (trans_supported) {
 			"\nPlease specify the 'trans' argument if you want back-transformed predictions."
 		} else {
