@@ -636,3 +636,209 @@ test_that("transformed response warns it is reported on the model scale", {
 		"appears to be transformed"
 	)
 })
+
+test_that("`adjust` must be a single character string", {
+	m <- aov(Petal.Width ~ Species, data = iris)
+	expect_error(
+		pairwise_comparisons(m, classify = "Species", adjust = 1.5),
+		"single character string"
+	)
+	expect_error(
+		pairwise_comparisons(m, classify = "Species", adjust = c("holm", "bonferroni")),
+		"single character string"
+	)
+})
+
+test_that("`by` referencing a factor not in `classify` errors clearly", {
+	m <- aov(Petal.Width ~ Species, data = iris)
+	expect_error(
+		pairwise_comparisons(m, classify = "Species", by = "NotAFactor"),
+		"Unknown"
+	)
+})
+
+test_that("`by` group with fewer than 2 estimable levels warns and is skipped", {
+	set.seed(1)
+	d <- expand.grid(
+		Trt = factor(c("A", "B")),
+		Site = factor(c("X", "Y")),
+		rep = 1:5
+	)
+	d <- d[!(d$Trt == "A" & d$Site == "Y"), ] # A:Y aliased; Site Y has only B:Y
+	d$y <- rnorm(nrow(d), as.numeric(d$Trt) + as.numeric(d$Site))
+	m <- aov(y ~ Trt * Site, data = d)
+
+	w <- capture_warnings(
+		out <- pairwise_comparisons(m, classify = "Trt:Site", by = "Site")
+	)
+	expect_true(any(grepl("fewer than 2 levels", w)))
+	# Site Y is skipped; only Site X (with levels A and B) contributes
+	expect_equal(as.character(unique(out$Site)), "X")
+	expect_equal(out$comparison, "A - B")
+})
+
+test_that("`by` + contrasts: contrast referencing a level absent from a group warns and skips", {
+	set.seed(1)
+	d <- expand.grid(
+		Trt = factor(c("A", "B", "C")),
+		Site = factor(c("X", "Y")),
+		rep = 1:4
+	)
+	d <- d[!(d$Trt == "C" & d$Site == "Y"), ] # C:Y aliased; Site Y has only A,B
+	d$y <- rnorm(nrow(d), as.numeric(d$Trt) + as.numeric(d$Site))
+	m <- aov(y ~ Trt * Site, data = d)
+
+	# "A vs C" needs C; Site Y doesn't have it -> warns and skips Site Y entirely
+	w <- capture_warnings(
+		out <- pairwise_comparisons(
+			m,
+			classify = "Trt:Site",
+			by = "Site",
+			contrasts = list("A vs C" = c(A = 1, C = -1))
+		)
+	)
+	expect_true(any(grepl("skipped contrast", w)))
+	expect_equal(as.character(unique(out$Site)), "X")
+})
+
+test_that("no comparisons computable at all is an error", {
+	# A only at Site X, C only at Site Y, B at both; `pairs = "A-C"` cannot be
+	# computed in any by-group because one level is always absent from the group.
+	set.seed(1)
+	d <- data.frame(
+		Trt = factor(c(rep("A", 5), rep("B", 5), rep("B", 5), rep("C", 5))),
+		Site = factor(c(rep("X", 5), rep("X", 5), rep("Y", 5), rep("Y", 5)))
+	)
+	d$y <- rnorm(nrow(d), as.numeric(d$Trt) + as.numeric(d$Site))
+	m <- suppressWarnings(aov(y ~ Trt * Site, data = d))
+
+	expect_error(
+		suppressWarnings(
+			pairwise_comparisons(m, classify = "Trt:Site", by = "Site", pairs = "A-C")
+		),
+		"No comparisons could be computed"
+	)
+})
+
+test_that("`pairs` list form: each element must be a length-2 character vector", {
+	m <- aov(Petal.Width ~ Species, data = iris)
+	expect_error(
+		pairwise_comparisons(
+			m,
+			classify = "Species",
+			pairs = list(c("setosa", "versicolor", "virginica"))
+		),
+		"length 2"
+	)
+	expect_error(
+		pairwise_comparisons(
+			m,
+			classify = "Species",
+			pairs = list(c(1L, 2L))
+		),
+		"length 2"
+	)
+})
+
+test_that("a pair string with no '-' separator errors with a clear message", {
+	m <- aov(Petal.Width ~ Species, data = iris)
+	expect_error(
+		pairwise_comparisons(m, classify = "Species", pairs = "setosavirginica"),
+		"expected exactly two levels"
+	)
+})
+
+test_that("`pairs` must be NULL, character, or list — other types error clearly", {
+	m <- aov(Petal.Width ~ Species, data = iris)
+	expect_error(
+		pairwise_comparisons(m, classify = "Species", pairs = 1:3),
+		"must be NULL, a character vector, or a list"
+	)
+})
+
+test_that("malformed `contrasts` argument errors clearly", {
+	m <- aov(Petal.Width ~ Species, data = iris)
+
+	expect_error(
+		pairwise_comparisons(m, classify = "Species", contrasts = "not a list"),
+		"non-empty named list"
+	)
+	expect_error(
+		pairwise_comparisons(m, classify = "Species", contrasts = list()),
+		"non-empty named list"
+	)
+	# Unnamed list element
+	expect_error(
+		pairwise_comparisons(
+			m,
+			classify = "Species",
+			contrasts = list(c(setosa = 1, virginica = -1))
+		),
+		"non-empty named list"
+	)
+	# Named list but coefficients have no names
+	expect_error(
+		pairwise_comparisons(
+			m,
+			classify = "Species",
+			contrasts = list(x = c(1, -1))
+		),
+		"named numeric vector"
+	)
+	# Named list but coefficients are not numeric
+	expect_error(
+		pairwise_comparisons(
+			m,
+			classify = "Species",
+			contrasts = list(x = c(setosa = "a", virginica = "b"))
+		),
+		"named numeric vector"
+	)
+})
+
+test_that("contrasts with descending sorts the output", {
+	m <- aov(weight ~ group, data = PlantGrowth)
+
+	asc <- pairwise_comparisons(
+		m,
+		classify = "group",
+		contrasts = list(
+			"ctrl vs trt1" = c(ctrl = 1, trt1 = -1),
+			"ctrl vs trt2" = c(ctrl = 1, trt2 = -1)
+		),
+		descending = FALSE
+	)
+	expect_false(is.unsorted(asc$estimate))
+
+	desc <- pairwise_comparisons(
+		m,
+		classify = "group",
+		contrasts = list(
+			"ctrl vs trt1" = c(ctrl = 1, trt1 = -1),
+			"ctrl vs trt2" = c(ctrl = 1, trt2 = -1)
+		),
+		descending = TRUE
+	)
+	expect_false(is.unsorted(rev(desc$estimate)))
+})
+
+test_that("asreml models work with contrasts (asreml vcov branch)", {
+	skip_if_not_installed("asreml")
+	skip_if_not_installed("Matrix")
+	suppressPackageStartupMessages(library(asreml))
+	load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
+
+	# asreml has no emmeans_grid, so build_contrast_block uses the model vcov
+	out <- suppressWarnings(pairwise_comparisons(
+		model.asr,
+		classify = "Nitrogen",
+		contrasts = list(
+			"0_cwt vs 0.2_cwt" = c(`0_cwt` = 1, `0.2_cwt` = -1)
+		),
+		dendf = dendf
+	))
+	expect_s3_class(out, "pairwise_comparisons")
+	expect_equal(nrow(out), 1L)
+	expect_true(is.finite(out$estimate))
+	expect_true(is.finite(out$std.error))
+})
