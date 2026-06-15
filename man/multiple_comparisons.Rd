@@ -22,9 +22,6 @@ multiple_comparisons(
   rotation = 0,
   save = FALSE,
   savename = "predicted_values",
-  order,
-  pred.obj,
-  pred,
   ...
 )
 }
@@ -63,13 +60,13 @@ multiple_comparisons(
 
 \item{savename}{A file name for the predicted values to be saved to. Default is \code{predicted_values}.}
 
-\item{order}{Deprecated. Use \code{descending} instead.}
+\item{...}{Other arguments passed internally to model-specific prediction methods.}
 
-\item{pred.obj}{Deprecated. Predicted values are calculated within the function from version 1.0.1 onwards.}
+\item{order}{Deprecated. Use \code{descending} instead.}
 
 \item{pred}{Deprecated. Use \code{classify} instead.}
 
-\item{...}{Other arguments passed internally to model-specific prediction methods.}
+\item{pred.obj}{Deprecated. Predicted values are calculated within the function from version 1.0.1 onwards.}
 }
 \value{
 An object of class \code{mct} (a list with class attributes) containing:
@@ -335,8 +332,8 @@ Standard Errors From Transformed Data - and Why They Should Not Be Used.
 }
 \seealso{
 \code{\link[=pairwise_comparisons]{pairwise_comparisons()}} for testing a chosen subset of pairwise
-differences as a tidy table, and \code{\link[=reference_comparisons]{reference_comparisons()}} for comparing
-every level against a single control. For guidance on choosing between them
-and on multiplicity adjustments, see
+differences as a tidy table, or \code{\link[=reference_comparisons]{reference_comparisons()}} for testing
+treatments against a chosen reference or control. For guidance on choosing
+between the two and on multiplicity adjustments, see
 \code{vignette("choosing-multiple-comparisons", "biometryassist")}.
 }
