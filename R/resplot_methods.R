@@ -266,10 +266,9 @@ extract_model_info.mmer <- function(model.obj, call = FALSE) {
 #' @noRd
 #' @exportS3Method extract_model_info mmes
 extract_model_info.mmes <- function(model.obj, call = FALSE) {
-	k <- length(model.obj$residual)
-
-	resids <- as.numeric(residuals(model.obj))
-	fits <- as.numeric(fitted(model.obj))
+	resids <- as.numeric(model.obj$residuals)
+	fits <- as.numeric(model.obj$fitted)
+	k <- length(resids)
 
 	model_call <- NULL
 	if (call) {
