@@ -28,6 +28,7 @@ Authors:
 
 Other contributors:
 \itemize{
+  \item Michael Mumford [contributor]
   \item University of Adelaide (https://adelaide.edu.au/) [copyright holder, funder]
   \item Grains Research and Development Corporation (https://grdc.com.au/) [copyright holder, funder]
 }

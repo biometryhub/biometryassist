@@ -457,6 +457,89 @@ test_that("by splits comparisons into per-group families", {
 	expect_equal(attr(output, "by"), "Grp")
 })
 
+test_that("by uses per-group nmeans for Tukey comparison intervals", {
+	# Regression: with `by`, `int.type = "tukey"` intervals must use each
+	# subgroup's mean count (here 3), not the total across subgroups (6), so the
+	# intervals stay consistent with the per-group letter groupings.
+	set.seed(1)
+	d <- expand.grid(
+		Trt = factor(c("A", "B", "C")),
+		Grp = factor(c("G1", "G2")),
+		rep = 1:6
+	)
+	d$y <- rnorm(nrow(d), mean = as.numeric(d$Trt))
+	m <- aov(y ~ Trt * Grp, data = d)
+
+	output <- multiple_comparisons(
+		m,
+		classify = "Trt:Grp",
+		by = "Grp",
+		int.type = "tukey"
+	)
+
+	df_res <- m$df.residual
+	se1 <- output$predictions$std.error[1]
+	ci_pergroup <- qtukey(0.95, nmeans = 3, df = df_res) / sqrt(2) * se1
+	ci_total <- qtukey(0.95, nmeans = 6, df = df_res) / sqrt(2) * se1
+
+	expect_equal(output$predictions$ci[1], ci_pergroup)
+	expect_false(isTRUE(all.equal(ci_pergroup, ci_total)))
+})
+
+test_that("check_ci_consistency detects shared letters with disjoint CIs", {
+	# Detection-only helper: TRUE iff a non-overlapping CI pair shares a letter.
+	inconsistent <- data.frame(
+		predicted.value = c(0, 5),
+		ci = c(1, 1), # CIs [-1,1] and [4,6] do not overlap ...
+		groups = c("a", "a") # ... yet they share letter "a"
+	)
+	expect_true(check_ci_consistency(inconsistent))
+
+	consistent <- data.frame(
+		predicted.value = c(0, 5),
+		ci = c(1, 1),
+		groups = c("a", "b") # disjoint CIs, different letters -> no conflict
+	)
+	expect_false(check_ci_consistency(consistent))
+
+	overlapping <- data.frame(
+		predicted.value = c(0, 1),
+		ci = c(1, 1), # CIs [-1,1] and [0,2] overlap
+		groups = c("a", "a")
+	)
+	expect_false(check_ci_consistency(overlapping))
+})
+
+test_that("CI/letter inconsistency note is emitted under `by`", {
+	# Regression: the consistency note must also fire for grouped comparisons,
+	# not only the single-group case. The note can only arise with enough means
+	# per group that the regular-CI half-widths sum to less than the HSD, so use
+	# 10 levels with deterministic, exactly-spaced means (zero-sum residuals give
+	# exact cell means and a fixed residual SD, so this is not a flaky knife-edge).
+	k <- 10
+	n <- 8
+	df <- 2 * k * (n - 1)
+	# Place adjacent means midway through the window
+	# (2*qt(0.975) < gap/se < qtukey) so adjacent pairs share a letter yet have
+	# non-overlapping regular CIs.
+	gap <- (2 * qt(0.975, df) + qtukey(0.95, k, df)) / 2
+	sigma <- sqrt(n) # makes the per-cell std error equal to 1
+	resid <- scale(seq_len(n), center = TRUE, scale = FALSE)[, 1]
+	resid <- resid / sd(resid) * sigma
+
+	d <- data.frame(
+		Trt = factor(rep(LETTERS[1:k], each = n * 2)),
+		Grp = factor(rep(rep(c("G1", "G2"), each = n), times = k)),
+		y = rep((0:(k - 1)) * gap, each = n * 2) + rep(resid, times = k * 2)
+	)
+	m <- aov(y ~ Trt * Grp, data = d)
+
+	expect_message(
+		multiple_comparisons(m, classify = "Trt:Grp", by = "Grp", int.type = "ci"),
+		"non-overlapping confidence intervals"
+	)
+})
+
 test_that("by with a missing column errors", {
 	expect_error(
 		multiple_comparisons(dat.aov, classify = "Species", by = "NotAColumn"),
@@ -1672,7 +1755,7 @@ test_that("plots are produced when requested", {
 	})
 })
 
-test_that("nlme model produces an error", {
+test_that("nlme/lme model is supported", {
 	skip_if_not_installed("nlme")
 	suppressPackageStartupMessages(library(nlme))
 	load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
@@ -2106,4 +2189,26 @@ test_that("Multiple comparisons for lmerTest objects provides the same results a
 	expect_equal(pred.lmet$hsd, 11.833, tolerance = 5e-2)
 	# check p-values matrix
 	expect_equal(pred.lmet$pairwise_pvalues[3, 4], 0.180, tolerance = 5e-2)
+})
+
+test_that("get_predictions() returns exact SED for unbalanced marginal means", {
+	skip_if_not_installed("emmeans")
+	# Unbalanced two-factor design: predicting the `tension` margin averages over
+	# an unbalanced `wool`, where the old sigma * sqrt(1/w_i + 1/w_j) form was
+	# wrong. The SED must equal emmeans' exact pairwise SE (sqrt(V_ii+V_jj-2V_ij)).
+	set.seed(1)
+	wb <- warpbreaks[-sample(which(warpbreaks$wool == "A"), 10), ]
+	m <- aov(breaks ~ wool * tension, data = wb)
+
+	res <- get_predictions(m, "tension")
+	sed <- sort(res$sed[upper.tri(res$sed)])
+
+	emm <- emmeans::emmeans(m, ~tension)
+	exact <- sort(
+		as.data.frame(
+			emmeans::contrast(emm, method = "pairwise")
+		)$SE
+	)
+
+	expect_equal(sed, exact, tolerance = 1e-8)
 })

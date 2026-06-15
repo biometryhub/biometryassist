@@ -2,7 +2,7 @@
 #'
 #' A function for comparing and ranking predicted means with Tukey's Honest Significant Difference (HSD) Test.
 #'
-#' @param model.obj An ASReml-R or aov model object. Will likely also work with `lme` ([nlme::lme()]), `lmerMod` ([lme4::lmer()]) models as well.
+#' @param model.obj An `asreml`, `aov`, `lm`, `lme` ([nlme::lme()]) or `lmerMod` ([lme4::lmer()]) model object.
 #' @param classify Name of predictor variable as string.
 #' @param sig The significance level, numeric between 0 and 1. Default is 0.05.
 #' @param int.type The type of confidence interval to calculate. One of `ci`, `tukey`, `1se`, `2se`, or `none`. Default is `ci`.
@@ -128,6 +128,14 @@
 #' @references Jørgensen, E. & Pedersen, A. R. (1997). How to Obtain Those Nasty
 #'  Standard Errors From Transformed Data - and Why They Should Not Be Used.
 #'
+#' @inheritSection get_predictions Supported model types
+#'
+#' @seealso [pairwise_comparisons()] for testing a chosen subset of pairwise
+#'   differences as a tidy table, and [reference_comparisons()] for comparing
+#'   every level against a single control. For guidance on choosing between them
+#'   and on multiplicity adjustments, see
+#'   `vignette("choosing-multiple-comparisons", "biometryassist")`.
+#'
 #' @examples
 #' # Fit aov model
 #' model <- aov(Petal.Length ~ Species, data = iris)
@@ -158,6 +166,16 @@
 #' pred.out.none <- multiple_comparisons(model, classify = "Species", int.type = "none")
 #' autoplot(pred.out.none)
 #'
+#' # Use a different p-value adjustment instead of Tukey's HSD
+#' multiple_comparisons(model, classify = "Species", adjust = "fdr")
+#'
+#' # `by`: run the comparisons independently within each level of another factor.
+#' # Here a 2 x 3 factorial - compare tension levels within each wool type.
+#' m_wb <- aov(breaks ~ wool * tension, data = warpbreaks)
+#' mc_by <- multiple_comparisons(m_wb, classify = "wool:tension", by = "wool")
+#' mc_by
+#' autoplot(mc_by) # faceted by wool
+#'
 #' # AOV model example with transformation
 #' my_iris <- iris
 #' my_iris$Petal.Length <- exp(my_iris$Petal.Length) # Create exponential response
@@ -187,7 +205,7 @@
 #' # ASReml-R Example
 #' library(asreml)
 #'
-#' #Fit ASReml Model
+#' # Fit ASReml-R model
 #' model.asr <- asreml(yield ~ Nitrogen + Variety + Nitrogen:Variety,
 #'                     random = ~ Blocks + Blocks:Wplots,
 #'                     residual = ~ units,
@@ -262,7 +280,11 @@ multiple_comparisons <- function(
 	# Handle deprecated parameters
 	handle_deprecated_param("pred", "classify", classify)
 	handle_deprecated_param("order", "descending", descending)
-	handle_deprecated_param("decimals", NULL, "Rounding is now controlled via the `decimals` argument of `print.mct()`.")
+	handle_deprecated_param(
+		"decimals",
+		NULL,
+		"Rounding is now controlled via the `decimals` argument of `print.mct()`."
+	)
 
 	vars <- validate_inputs(sig, classify, model.obj, trans)
 
@@ -317,7 +339,7 @@ multiple_comparisons <- function(
 	aliased <- result$aliased_names
 
 	# Process treatment names
-	pp <- process_treatment_names(pp, classify, vars)
+	pp <- process_treatment_names(pp, vars)
 
 	# Validate `by` columns
 	if (!is.null(by)) {
@@ -373,10 +395,25 @@ multiple_comparisons <- function(
 			pp_g <- add_letter_groups(pp_g, diff_res$diffs, descending)
 		}
 
+		# Confidence/comparison intervals are computed per (sub)group so that
+		# `int.type = "tukey"` uses this group's mean count and degrees of freedom.
+		# Computing them once on the recombined table would use the total mean
+		# count, making the intervals inconsistent with the per-group letter
+		# groupings. For the no-`by` case this group is the whole table.
+		pp_g <- add_confidence_intervals(pp_g, int.type, sig, ndf_g)
+
+		# Detect (but do not yet emit) any CI/letter inconsistency within this
+		# group; the caller emits a single note if any group is inconsistent.
+		ci_inconsistent <- FALSE
+		if (groups && tolower(int.type) == "ci" && adjust == "tukey") {
+			ci_inconsistent <- check_ci_consistency(pp_g)
+		}
+
 		list(
 			pp = pp_g,
 			pval_matrix = diff_res$adjusted_matrix,
-			crit_val = crit_val_g
+			crit_val = crit_val_g,
+			ci_inconsistent = ci_inconsistent
 		)
 	}
 
@@ -385,6 +422,7 @@ multiple_comparisons <- function(
 		pp <- res$pp
 		pval_matrix <- res$pval_matrix
 		crit_val <- res$crit_val
+		ci_inconsistent <- res$ci_inconsistent
 	} else {
 		by_vals <- interaction(pp[, by, drop = FALSE], drop = TRUE)
 		groups_list <- split(seq_len(nrow(pp)), by_vals)
@@ -400,10 +438,12 @@ multiple_comparisons <- function(
 		rownames(pp) <- NULL
 		pval_matrix <- lapply(res_list, function(r) r$pval_matrix)
 		crit_val <- lapply(res_list, function(r) r$crit_val)
+		ci_inconsistent <- any(vapply(
+			res_list,
+			function(r) r$ci_inconsistent,
+			logical(1)
+		))
 	}
-
-	# Calculate confidence intervals
-	pp <- add_confidence_intervals(pp, int.type, sig, ndf)
 
 	# Apply transformations if requested
 	if (!is.null(trans)) {
@@ -421,9 +461,16 @@ multiple_comparisons <- function(
 		utils::write.csv(pp, file = paste0(savename, ".csv"), row.names = FALSE)
 	}
 
-	# Check for CI/letter group inconsistencies and warn if needed
-	if (groups && tolower(int.type) == "ci" && adjust == "tukey" && is.null(by)) {
-		check_ci_consistency(pp)
+	# Emit a single CI/letter inconsistency note if any (sub)group triggered it.
+	# Detection happens per (sub)group inside run_comparisons() so that grouped
+	# comparisons (`by`) are covered too.
+	if (isTRUE(ci_inconsistent)) {
+		message(
+			"Note: Some treatments sharing the same letter group have non-overlapping confidence intervals.\n",
+			"This is expected behavior as regular confidence intervals estimate individual mean precision,\n",
+			"while Tukey's HSD controls family-wise error rates. For visual consistency with letter groups,\n",
+			"consider using 'int.type = \"tukey\"' to display Tukey comparison intervals."
+		)
 	}
 
 	# Prepare HSD value(s) for output. Only meaningful for Tukey's HSD.
@@ -493,8 +540,6 @@ multiple_comparisons <- function(
 }
 
 
-
-
 #' Print output of multiple_comparisons
 #'
 #' @param x An mct object to print to the console.
@@ -537,19 +582,9 @@ print.mct <- function(x, decimals = 2, ...) {
 	pp[numeric_cols] <- lapply(pp[numeric_cols], round, decimals)
 	print.data.frame(pp, ...)
 
-	if (!is.null(x$aliased)) {
-		aliased <- x$aliased
-		if (length(aliased) > 1) {
-			cat(
-				"\nAliased levels are:",
-				paste(aliased[1:(length(aliased) - 1)], collapse = ", "),
-				"and",
-				aliased[length(aliased)],
-				"\n"
-			)
-		} else {
-			cat("\nAliased level is:", aliased, "\n")
-		}
+	note <- aliased_note(x$aliased)
+	if (!is.null(note)) {
+		cat("\n", note, "\n", sep = "")
 	}
 
 	invisible(x)
@@ -835,9 +870,19 @@ strip_transformation_from_label <- function(ylab, trans) {
 }
 
 
+#' Detect CI/letter-group inconsistencies within a single (sub)group
+#'
+#' Returns `TRUE` if any pair of treatments with non-overlapping confidence
+#' intervals nonetheless shares a letter group (the common source of confusion
+#' when `int.type = "ci"` is used with Tukey's HSD). Detection only; the caller
+#' is responsible for emitting the user-facing note (once, even across `by`
+#' subgroups).
+#'
+#' @param pp Predictions for one (sub)group, with `predicted.value`, `ci` and
+#'   `groups` columns.
+#' @return A single logical.
 #' @noRd
 check_ci_consistency <- function(pp) {
-	result <- FALSE
 	# Pre-extract and validate data once
 	n <- nrow(pp)
 	low <- pp$predicted.value - pp$ci
@@ -882,105 +927,18 @@ check_ci_consistency <- function(pp) {
 			groups[i] == groups[j] |
 				length(intersect(group_letters[[i]], group_letters[[j]])) > 0
 		) {
-			message(
-				"Note: Some treatments sharing the same letter group have non-overlapping confidence intervals.\n",
-				"This is expected behavior as regular confidence intervals estimate individual mean precision,\n",
-				"while Tukey's HSD controls family-wise error rates. For visual consistency with letter groups,\n",
-				"consider using 'int.type = \"tukey\"' to display Tukey comparison intervals."
-			)
 			return(TRUE)
 		}
 	}
 
-	invisible(result)
-}
-
-
-#' @importFrom stats formula
-#' @keywords internal
-#' @noRd
-validate_inputs <- function(sig, classify, model.obj, trans) {
-	# Check significance level
-	if (sig >= 0.5) {
-		if (sig >= 1 & sig < 50) {
-			stop(
-				"Significance level given by `sig` is high. Perhaps you meant ",
-				sig / 100,
-				"?",
-				call. = FALSE
-			)
-		} else if (sig >= 1 & sig >= 50) {
-			stop(
-				"Significance level given by `sig` is high. Perhaps you meant ",
-				1 - (sig / 100),
-				"?",
-				call. = FALSE
-			)
-		} else {
-			warning(
-				"Significance level given by `sig` is high. Perhaps you meant ",
-				1 - sig,
-				"?",
-				call. = FALSE
-			)
-		}
-	}
-
-	# Get the individual names provided in classify
-	vars <- unlist(strsplit(classify, "\\:"))
-	reserved_col_names <- c(
-		"predicted.value",
-		"std.error",
-		"Df",
-		"groups",
-		"PredictedValue",
-		"ApproxSE",
-		"ci",
-		"low",
-		"up"
-	)
-	if (any(vars %in% reserved_col_names)) {
-		stop(
-			"Invalid column name. Please change the name of column(s): ",
-			vars[vars %in% reserved_col_names],
-			call. = FALSE
-		)
-	}
-
-	# Check if the response variable is transformed in the model formula
-	if (class(model.obj)[1] == c("aovlist")) {
-		model_formula <- stats::formula(model.obj[[1]])
-	} else {
-		model_formula <- stats::formula(model.obj)
-	}
-	if (inherits(model.obj, "asreml")) {
-		response_part <- model_formula[[1]][[2]]
-	} else {
-		response_part <- model_formula[[2]]
-	}
-	if (is.call(response_part) & is.null(trans)) {
-		warning(
-			call. = FALSE,
-			sprintf(
-				"The response variable appears to be transformed in the model formula: %s.",
-				deparse(response_part)
-			),
-			"\nPlease specify the 'trans' argument if you want back-transformed predictions."
-		)
-	}
-
-	return(vars)
+	FALSE
 }
 
 
 #' @noRd
-process_treatment_names <- function(pp, classify, vars) {
-	# Create Names column
-	if (grepl(":", classify)) {
-		pp$Names <- apply(pp[, vars], 1, paste, collapse = "_")
-	} else {
-		pp$Names <- pp[[classify]]
-	}
+process_treatment_names <- function(pp, vars) {
+	# Create Names column (interaction factors joined with "_")
+	pp$Names <- make_treatment_labels(pp, vars, sep = "_")
 
 	# Check and replace dashes in treatment names
 	if (any(grepl("-", pp$Names) | any(grepl("-", pp[, 1])))) {

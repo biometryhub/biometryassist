@@ -59,7 +59,9 @@ Suggests:
     knitr,
     Matrix,
     mockery,
+    mvtnorm,
     openxlsx2,
+    quarto,
     rmarkdown,
     testthat,
     vdiffr,
@@ -75,5 +77,5 @@ Config/testthat/edition: 3
 Config/testthat/parallel: true
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-VignetteBuilder: knitr
+VignetteBuilder: quarto
 Config/roxygen2/version: 8.0.0

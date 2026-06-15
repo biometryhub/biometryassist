@@ -14,11 +14,16 @@ reference:
   - starts_with("des")
   - add_buffers
   - export_design_to_excel
+  - autoplot.design
 - title: Analysis
   desc: Functions to help with the analysis of experiments.
 - contents:
   - resplot
   - multiple_comparisons
+  - autoplot.mct
+  - print.mct
+  - pairwise_comparisons
+  - reference_comparisons
   - variogram
   - logl_test
 - title: Utilities
@@ -26,7 +31,14 @@ reference:
 - contents:
   - autoplot
   - heat_map
-  - print.mct
   - summary_graph
   - contains("template")
   - install_asreml
+
+articles:
+- title: Articles
+  navbar: ~
+  contents:
+  - installing-asreml-r
+  - choosing-multiple-comparisons
+  - plot_annotation

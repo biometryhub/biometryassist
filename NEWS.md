@@ -2,16 +2,17 @@
 
 ## Major changes
 
-- `multiple_comparisons()` gains two new arguments for more flexible comparisons:
-  - `adjust` selects the method used to adjust p-values for multiple comparisons. As well as the default Tukey's HSD (`adjust = "tukey"`), any method supported by `stats::p.adjust()` can now be used (e.g. `"bonferroni"`, `"holm"`, `"BH"`/`"fdr"`, `"BY"`, `"none"`). For non-Tukey methods, raw (unadjusted) p-values are calculated first to avoid double-adjustment before the chosen adjustment is applied.
-  - `by` runs comparisons independently within each level (or combination of levels) of one or more grouping variables, with no pooling or p-value adjustment across groups. `autoplot()` facets by the `by` variable(s) by default. `by` must leave at least one `classify` factor to compare, so a single-factor `classify` cannot be split with `by`.
-  The output also gains a `comparison_method` element recording the method used; `$pairwise_pvalues` reports a single p-value matrix of the adjusted p-values for the chosen method (the Tukey p-values when `adjust = "tukey"`), consistent with the letter groupings, and `$hsd` is `NULL` for non-Tukey methods.
-- Added support for `aovlist` (models fitted with `aov()` using an `Error()` strata term) and `nlme::lme()` models in `multiple_comparisons()` (#107).
+- `multiple_comparisons()` gains an `adjust` argument to choose the p-value adjustment method (any `stats::p.adjust()` method, in addition to the default Tukey's HSD), and a `by` argument to run comparisons independently within groups.
+- Added support for `aovlist` and `nlme::lme()` models in `multiple_comparisons()` (#107).
+- New function `pairwise_comparisons()` to test selected pairwise differences (or general linear contrasts) between predicted means, returning a tidy table of estimates, predicted means and multiplicity-adjusted p-values, with a forest plot via `autoplot()`.
+- New function `reference_comparisons()` to compare every level against a single reference (control) level, using an exact Dunnett test by default. It returns a means-centric table (each level's mean, the reference mean and the adjusted difference) and a means plot via `autoplot()`.
+
 
 ## Minor changes
 
 - Added the ability to add buffers or double buffers around blocks. (#169)
 - `autoplot()` for `multiple_comparisons()` output gains several new options (thanks to Michael Mumford, #161): `type = "line"` joins the means with a line; `include_errorbar` and `include_lettering` toggle the error bars and significance letters; `errorbar_type = "hsd"` draws a single Tukey's HSD reference bar instead of per-mean intervals; and `trans_scale = TRUE` plots back-transformed means on the model (transformed) scale with an exact back-transformed secondary axis.
+- Added a vignette, "Choosing and interpreting multiple comparisons", introducing `pairwise_comparisons()` and `reference_comparisons()` alongside `multiple_comparisons()` and giving guidance on choosing a multiplicity adjustment.
 
 ## Bug Fixes
 
@@ -20,7 +21,6 @@
 - Colours are now consistent between the output of designs printed with `autoplot()` and the `export_design_to_excel()` function. (#170)
 - The `export_design_to_excel()` function is now less fragile. It can handle design objects and data frames as input, and alternative names for the row and column columns. (#168 and #172)
 - Fixed a bug where asreml models didn't report the correct number of residual points in `resplot()`. (#167)
-
 
 # biometryassist 1.4.0
 

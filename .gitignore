@@ -16,3 +16,6 @@ inst/doc
 .DS_Store
 .quarto
 .env
+
+/.quarto/
+**/*.quarto_ipynb

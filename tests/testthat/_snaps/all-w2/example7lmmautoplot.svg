@@ -248,7 +248,7 @@
 </defs>
 <g clip-path='url(#cpMzUuMjR8MzcyLjE0fDI4Ni42OXwzMDMuMzQ=)'>
 <rect x='35.24' y='286.69' width='336.90' height='16.65' style='stroke-width: 1.07; stroke: #333333; fill: #D9D9D9;' />
-<text x='203.69' y='298.04' text-anchor='middle' style='font-size: 8.80px; fill: #1A1A1A; font-family: sans;' textLength='18.10px' lengthAdjust='spacingAndGlyphs'>High</text>
+<text x='203.69' y='298.04' text-anchor='middle' style='font-size: 8.80px; fill: #1A1A1A; font-family: sans;' textLength='41.58px' lengthAdjust='spacingAndGlyphs'>Rate: High</text>
 </g>
 <g clip-path='url(#cpMC4wMHw3MjAuMDB8MC4wMHw1NzYuMDA=)'>
 </g>
@@ -259,7 +259,7 @@
 </defs>
 <g clip-path='url(#cpMzc3LjYyfDcxNC41MnwyODYuNjl8MzAzLjM0)'>
 <rect x='377.62' y='286.69' width='336.90' height='16.65' style='stroke-width: 1.07; stroke: #333333; fill: #D9D9D9;' />
-<text x='546.07' y='298.04' text-anchor='middle' style='font-size: 8.80px; fill: #1A1A1A; font-family: sans;' textLength='28.37px' lengthAdjust='spacingAndGlyphs'>Control</text>
+<text x='546.07' y='298.04' text-anchor='middle' style='font-size: 8.80px; fill: #1A1A1A; font-family: sans;' textLength='51.85px' lengthAdjust='spacingAndGlyphs'>Rate: Control</text>
 </g>
 <g clip-path='url(#cpMC4wMHw3MjAuMDB8MC4wMHw1NzYuMDA=)'>
 </g>
@@ -270,7 +270,7 @@
 </defs>
 <g clip-path='url(#cpMzUuMjR8MzcyLjE0fDIyLjc4fDM5LjQz)'>
 <rect x='35.24' y='22.78' width='336.90' height='16.65' style='stroke-width: 1.07; stroke: #333333; fill: #D9D9D9;' />
-<text x='203.69' y='34.14' text-anchor='middle' style='font-size: 8.80px; fill: #1A1A1A; font-family: sans;' textLength='16.15px' lengthAdjust='spacingAndGlyphs'>Low</text>
+<text x='203.69' y='34.14' text-anchor='middle' style='font-size: 8.80px; fill: #1A1A1A; font-family: sans;' textLength='39.63px' lengthAdjust='spacingAndGlyphs'>Rate: Low</text>
 </g>
 <g clip-path='url(#cpMC4wMHw3MjAuMDB8MC4wMHw1NzYuMDA=)'>
 </g>
@@ -281,7 +281,7 @@
 </defs>
 <g clip-path='url(#cpMzc3LjYyfDcxNC41MnwyMi43OHwzOS40Mw==)'>
 <rect x='377.62' y='22.78' width='336.90' height='16.65' style='stroke-width: 1.07; stroke: #333333; fill: #D9D9D9;' />
-<text x='546.07' y='34.14' text-anchor='middle' style='font-size: 8.80px; fill: #1A1A1A; font-family: sans;' textLength='31.31px' lengthAdjust='spacingAndGlyphs'>Medium</text>
+<text x='546.07' y='34.14' text-anchor='middle' style='font-size: 8.80px; fill: #1A1A1A; font-family: sans;' textLength='54.79px' lengthAdjust='spacingAndGlyphs'>Rate: Medium</text>
 </g>
 <g clip-path='url(#cpMC4wMHw3MjAuMDB8MC4wMHw1NzYuMDA=)'>
 <polyline points='57.21,547.85 57.21,545.11 ' style='stroke-width: 1.07; stroke: #333333; stroke-linecap: butt;' />

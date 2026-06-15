@@ -1,12 +1,13 @@
 ---
 title: "Installing ASReml-R"
-output: 
-    rmarkdown::html_vignette:
-        toc: yes
+format:
+  html:
+    toc: true
 vignette: >
   %\VignetteIndexEntry{Installing ASReml-R}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{quarto::html}
   %\VignetteEncoding{UTF-8}
+engine: knitr
 ---
 
 ```{r, include = FALSE}

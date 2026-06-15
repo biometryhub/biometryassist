@@ -1,29 +1,21 @@
 #' Generate automatic plots for objects generated in biometryassist
 #'
-#' @param object An object to create a plot for. Currently objects from the [multiple_comparisons()] or [design()] functions with class "mct" or "design" respectively are supported.
-#' @param label_height Height of the text labels above the upper error bar on the plot. Default is 0.1 (10%) of the difference between upper and lower error bars above the top error bar. Values > 1 are interpreted as the actual value above the upper error bar.
-#' @param size Increase or decrease the text size within the plot for treatment labels. Numeric with default value of 4.
-#' @param rotation Rotate the x axis labels and the treatment group labels within the plot. Allows for easier reading of long axis or treatment labels. Number between 0 and 360 (inclusive) - default 0
-#' @param axis_rotation Enables rotation of the x axis independently of the group labels within the plot.
-#' @param label_rotation Enables rotation of the treatment group labels independently of the x axis labels within the plot.
-#' @param type A string specifying the type of plot to display. The default of 'point' will display a point estimate with error bars. The alternative, 'column' (or 'col'), will display a column graph with error bars.
-#' @param include_errorbar Logical (default 'TRUE') indicating whether to include errorbars when plotting the predicted values from a multiple comparisons test
-#' @param include_lettering Logical (default 'TRUE') indicating whether to include group lettering when plotting the predicted values from a multiple comparisons test
-#' @param errorbar_type A character (default is "ci") that indicates what the errorbars in the plot represent. Current options are 95% confidence interval ("ci") or Tukeys (average) HSD value ("hsd")
-#' @param trans_scale Logical (default 'FALSE') that indicates whether the predicted values should be displayed on the transformed scale.
-#' @param margin Logical (default `FALSE`). A value of `FALSE` will expand the plot to the edges of the plotting area i.e. remove white space between plot and axes.
-#' @param palette A string specifying the colour scheme to use for plotting or a vector of custom colours to use as the palette. Default is equivalent to "Spectral". Colour blind friendly palettes can also be provided via options `"colour blind"` (or `"colour blind"`, both equivalent to `"viridis"`), `"magma"`, `"inferno"`, `"plasma"`, `"cividis"`, `"rocket"`, `"mako"` or `"turbo"`. Other palettes from [scales::brewer_pal()] are also possible.
-#' @param row A variable to plot a column from `object` as rows.
-#' @param column A variable to plot a column from `object` as columns.
-#' @param block A variable to plot a column from `object` as blocks.
-#' @param treatments A variable to plot a column from `object` as treatments.
-#' @param legend Logical (default `TRUE`). If `TRUE`, displays the legend for treatment colours.
-#' @inheritParams rlang::args_dots_used
+#' [ggplot2::autoplot()] methods are provided for the objects created by
+#' `biometryassist`. See the per-class methods for the available options:
+#' [autoplot.mct()] for [multiple_comparisons()] output, [autoplot.design()] for
+#' [design()] output, and [autoplot.pairwise_comparisons()] /
+#' [autoplot.reference_comparisons()], which are documented alongside their
+#' respective functions.
+#'
+#' @param object An object created by `biometryassist`. Methods are provided for
+#'   the `mct`, `design`, `pairwise_comparisons` and `reference_comparisons`
+#'   classes.
+#' @param ... Arguments passed to the individual `autoplot` methods.
 #'
 #' @name autoplot
 #'
 #' @returns A `ggplot2` object.
-#' @seealso [multiple_comparisons()] and [design()]
+#' @seealso [autoplot.mct()], [autoplot.design()], [multiple_comparisons()] and [design()]
 #'
 NULL
 
@@ -33,7 +25,28 @@ NULL
 ggplot2::autoplot
 
 
-#' @rdname autoplot
+#' Plot the predicted means from a multiple comparisons test
+#'
+#' Produces a plot of the predicted means from a [multiple_comparisons()] result,
+#' with error bars (or a single Tukey's HSD reference bar) and significance-group
+#' lettering.
+#'
+#' @param object An `mct` object, as produced by [multiple_comparisons()].
+#' @param size Increase or decrease the text size within the plot for treatment labels. Numeric with default value of 4.
+#' @param label_height Height of the text labels above the upper error bar on the plot. Default is 0.1 (10%) of the difference between upper and lower error bars above the top error bar. Values > 1 are interpreted as the actual value above the upper error bar.
+#' @param rotation Rotate the x axis labels and the treatment group labels within the plot. Allows for easier reading of long axis or treatment labels. Number between 0 and 360 (inclusive) - default 0
+#' @param axis_rotation Enables rotation of the x axis independently of the group labels within the plot.
+#' @param label_rotation Enables rotation of the treatment group labels independently of the x axis labels within the plot.
+#' @param type A string specifying the type of plot to display. One of `"point"` (the default; point estimates), `"line"` (point estimates joined by a line), or `"column"` (also `"col"` or `"bar"`; a column graph). Error bars are added according to `errorbar_type` unless `include_errorbar = FALSE`.
+#' @param errorbar_type A string (default `"ci"`) specifying what the error bars represent. `"ci"` draws an interval around each mean (the interval type chosen via `int.type` in [multiple_comparisons()]). `"hsd"` draws a single Tukey's Honest Significant Difference reference bar instead of per-mean intervals. An HSD bar is only meaningful on the model (transformed) scale, so requesting `"hsd"` plots the means on that scale.
+#' @param include_errorbar Logical (default `TRUE`). Whether to draw error bars. `FALSE` omits them entirely (the `errorbar_type` is then ignored).
+#' @param include_lettering Logical (default `TRUE`). Whether to draw the significance-group lettering above the means.
+#' @param trans_scale Logical (default `FALSE`). When the means were back-transformed in [multiple_comparisons()], `FALSE` plots them on the original (back-transformed) scale, while `TRUE` plots them on the model (transformed) scale and adds a back-transformed secondary axis. Has no effect when no transformation was used.
+#' @param ... Arguments passed to [ggplot2::element_text()] for the axis and label text.
+#'
+#' @returns A `ggplot2` object.
+#' @seealso [multiple_comparisons()]
+#'
 #' @importFrom ggplot2 autoplot ggplot aes geom_errorbar geom_text geom_point geom_line geom_col theme_bw labs theme element_text facet_wrap scale_x_discrete scale_y_continuous sec_axis
 #' @importFrom rlang ensym check_dots_used
 #' @importFrom stats as.formula
@@ -273,10 +286,10 @@ autoplot.mct <- function(
 
 	if (length(facet_cols) > 0) {
 		plot <- plot +
-			ggplot2::facet_wrap(stats::as.formula(paste(
-				"~",
-				paste(facet_cols, collapse = " + ")
-			)))
+			ggplot2::facet_wrap(
+				stats::as.formula(paste("~", paste(facet_cols, collapse = " + "))),
+				labeller = ggplot2::label_both
+			)
 	}
 
 	# When plotting on the model scale and a back-transformation is available,
@@ -299,7 +312,264 @@ autoplot.mct <- function(
 }
 
 
-#' @rdname autoplot
+#' @rdname pairwise_comparisons
+#'
+#' @param object A `pairwise_comparisons` object.
+#' @param axis_rotation Rotation (degrees) of the x-axis (estimate) labels.
+#' @param label_rotation Rotation (degrees) of the y-axis (comparison) labels.
+#'
+#' @returns `autoplot.pairwise_comparisons()` returns a `ggplot2` object: a
+#'   forest plot of the estimated differences with their confidence intervals
+#'   and a dashed reference line at zero, faceted by the `by` variable(s) when
+#'   present. Comparisons that are significant at the adjusted `sig` level are
+#'   flagged with an asterisk (`*`) — prefixed to the y-axis label when
+#'   unfaceted (keeping the labels right-justified against the axis), or beside
+#'   the interval when faceted by `by`.
+#'
+#' @importFrom ggplot2 autoplot ggplot aes geom_vline geom_linerange geom_point geom_text scale_y_discrete theme_bw labs theme element_text facet_wrap
+#' @importFrom rlang check_dots_used
+#' @importFrom stats as.formula
+#' @export
+#' @examples
+#'
+#' # Forest plot of pairwise differences (significant comparisons marked with *)
+#' dat.aov <- aov(Petal.Width ~ Species, data = iris)
+#' pc <- pairwise_comparisons(dat.aov, classify = "Species")
+#' autoplot(pc)
+autoplot.pairwise_comparisons <- function(
+	object,
+	...,
+	axis_rotation = 0,
+	label_rotation = 0
+) {
+	stopifnot(inherits(object, "pairwise_comparisons"))
+	rlang::check_dots_used()
+
+	df <- as.data.frame(object)
+	ylab <- attributes(object)$ylab
+	sig <- attributes(object)$sig_level
+	by <- attributes(object)$by
+
+	# Significant at the adjusted level (flagged with an asterisk below).
+	df$significant <- df$p.value < sig
+
+	# Preserve the table's row order top-to-bottom on the y-axis.
+	df$comparison <- factor(df$comparison, levels = rev(unique(df$comparison)))
+
+	plot <- ggplot2::ggplot(
+		df,
+		ggplot2::aes(x = .data[["estimate"]], y = .data[["comparison"]])
+	) +
+		ggplot2::geom_vline(
+			xintercept = 0,
+			linetype = "dashed",
+			colour = "grey40"
+		) +
+		ggplot2::geom_linerange(
+			ggplot2::aes(xmin = .data[["conf.low"]], xmax = .data[["conf.high"]])
+		) +
+		ggplot2::geom_point(colour = "black", size = 2) +
+		ggplot2::theme_bw() +
+		ggplot2::labs(x = paste0("Estimated difference in ", ylab), y = "") +
+		ggplot2::theme(
+			axis.text.x = ggplot2::element_text(angle = axis_rotation, ...),
+			axis.text.y = ggplot2::element_text(angle = label_rotation)
+		)
+
+	if (is.null(by)) {
+		# Unfaceted: each comparison is a single row, so significance is
+		# well-defined per y-axis label — prefix a "*" to the labels of the
+		# significant ones. The prefix (rather than a suffix) keeps the comparison
+		# labels right-justified against the axis, with the stars hanging to the
+		# left.
+		levs <- levels(df$comparison)
+		sig_by_level <- df$significant[match(levs, as.character(df$comparison))]
+		labels <- ifelse(sig_by_level, paste0("* ", levs), levs)
+		plot <- plot +
+			ggplot2::scale_y_discrete(labels = stats::setNames(labels, levs))
+	} else {
+		# Faceted: the y-axis is shared across panels, so significance (which can
+		# differ between groups) is marked beside each significant interval rather
+		# than on the shared label.
+		plot <- plot +
+			ggplot2::geom_text(
+				data = df[df$significant, , drop = FALSE],
+				ggplot2::aes(x = .data[["conf.high"]], label = "*"),
+				hjust = -0.4,
+				vjust = 0.75,
+				size = 6
+			) +
+			ggplot2::facet_wrap(
+				stats::as.formula(paste("~", paste(by, collapse = " + "))),
+				labeller = ggplot2::label_both
+			)
+	}
+
+	return(plot)
+}
+
+
+#' @rdname reference_comparisons
+#'
+#' @param object A `reference_comparisons` object.
+#' @param axis_rotation Rotation (degrees) of the x-axis (mean) labels.
+#' @param label_rotation Rotation (degrees) of the y-axis (level) labels.
+#'
+#' @returns `autoplot.reference_comparisons()` returns a `ggplot2` object: a
+#'   means plot with one point per level at its predicted mean, a dashed
+#'   reference line at the reference mean (marked with a diamond), and an
+#'   interval around each mean showing the (adjusted) confidence interval for the
+#'   difference from the reference — so the interval clears the reference line
+#'   exactly when the comparison is significant (with `adjust = "dunnett"`).
+#'   Faceted by the `by` variable(s) when present. Significant comparisons are
+#'   flagged with an asterisk (`*`), prefixed to the y-axis label when unfaceted
+#'   or beside the interval when faceted.
+#'
+#' @importFrom ggplot2 autoplot ggplot aes geom_vline geom_linerange geom_point geom_text scale_y_discrete theme_bw labs theme element_text facet_wrap
+#' @importFrom rlang check_dots_used
+#' @importFrom stats as.formula setNames
+#' @export
+#' @examples
+#'
+#' # Means plot of each level vs the reference (significant ones marked with *)
+#' dat.aov <- aov(Petal.Width ~ Species, data = iris)
+#' rc <- reference_comparisons(dat.aov, classify = "Species", reference = "setosa")
+#' autoplot(rc)
+autoplot.reference_comparisons <- function(
+	object,
+	...,
+	axis_rotation = 0,
+	label_rotation = 0
+) {
+	stopifnot(inherits(object, "reference_comparisons"))
+	rlang::check_dots_used()
+
+	df <- as.data.frame(object)
+	ylab <- attributes(object)$ylab
+	sig <- attributes(object)$sig_level
+	by <- attributes(object)$by
+	reference <- attributes(object)$reference
+
+	# Significant at the adjusted level (flagged with an asterisk below).
+	df$significant <- df$p.value < sig
+
+	# The CI for the difference, re-centred on each level's mean. It clears the
+	# reference line (the reference mean) exactly when the difference excludes
+	# zero, i.e. when the comparison is significant (exact under Dunnett).
+	df$mean <- df$level1.mean
+	df$xmin <- df$level2.mean + df$conf.low
+	df$xmax <- df$level2.mean + df$conf.high
+
+	# Reference marker / line: one reference mean per by-group.
+	if (is.null(by)) {
+		ref_df <- data.frame(mean = df$level2.mean[1])
+	} else {
+		ref_df <- unique(df[, c(by, "level2.mean"), drop = FALSE])
+		names(ref_df)[names(ref_df) == "level2.mean"] <- "mean"
+	}
+
+	# y categories: the reference at the bottom, then the compared levels in
+	# table order above it.
+	others <- unique(as.character(df$level1))
+	y_levels <- c(reference, rev(others))
+	df$ylevel <- factor(as.character(df$level1), levels = y_levels)
+	ref_df$ylevel <- factor(reference, levels = y_levels)
+
+	plot <- ggplot2::ggplot() +
+		ggplot2::geom_vline(
+			data = ref_df,
+			ggplot2::aes(xintercept = .data[["mean"]]),
+			linetype = "dashed",
+			colour = "grey40"
+		) +
+		ggplot2::geom_linerange(
+			data = df,
+			ggplot2::aes(
+				y = .data[["ylevel"]],
+				xmin = .data[["xmin"]],
+				xmax = .data[["xmax"]]
+			)
+		) +
+		ggplot2::geom_point(
+			data = df,
+			ggplot2::aes(x = .data[["mean"]], y = .data[["ylevel"]]),
+			colour = "black",
+			size = 2
+		) +
+		ggplot2::geom_point(
+			data = ref_df,
+			ggplot2::aes(x = .data[["mean"]], y = .data[["ylevel"]]),
+			shape = 18,
+			size = 3.5,
+			colour = "grey30"
+		) +
+		ggplot2::theme_bw() +
+		ggplot2::labs(x = paste0("Predicted ", ylab), y = "") +
+		ggplot2::theme(
+			axis.text.x = ggplot2::element_text(angle = axis_rotation, ...),
+			axis.text.y = ggplot2::element_text(angle = label_rotation)
+		)
+
+	if (is.null(by)) {
+		# Unfaceted: prefix a "*" to the labels of significant levels (keeping
+		# labels right-justified against the axis). The reference carries no test.
+		sig_lookup <- stats::setNames(df$significant, as.character(df$level1))
+		labels <- vapply(
+			y_levels,
+			function(l) {
+				if (!is.na(sig_lookup[l]) && isTRUE(unname(sig_lookup[l]))) {
+					paste0("* ", l)
+				} else {
+					l
+				}
+			},
+			character(1)
+		)
+		plot <- plot +
+			ggplot2::scale_y_discrete(labels = stats::setNames(labels, y_levels))
+	} else {
+		# Faceted: mark significance beside each significant interval.
+		plot <- plot +
+			ggplot2::geom_text(
+				data = df[df$significant, , drop = FALSE],
+				ggplot2::aes(
+					x = .data[["xmax"]],
+					y = .data[["ylevel"]],
+					label = "*"
+				),
+				hjust = -0.4,
+				vjust = 0.75,
+				size = 6
+			) +
+			ggplot2::facet_wrap(
+				stats::as.formula(paste("~", paste(by, collapse = " + "))),
+				labeller = ggplot2::label_both
+			)
+	}
+
+	return(plot)
+}
+
+
+#' Plot the layout of an experimental design
+#'
+#' Produces a plot of the plot/field layout for a [design()] result, with plots
+#' coloured by treatment and block boundaries drawn for blocked designs.
+#'
+#' @param object A `design` object, as produced by [design()].
+#' @param rotation Rotate the treatment labels within the plot. Allows for easier reading of long treatment labels. Number between 0 and 360 (inclusive) - default 0
+#' @param size Increase or decrease the text size within the plot for treatment labels. Numeric with default value of 4.
+#' @param margin Logical (default `FALSE`). A value of `FALSE` will expand the plot to the edges of the plotting area i.e. remove white space between plot and axes.
+#' @param palette A string specifying the colour scheme to use for plotting or a vector of custom colours to use as the palette. Default is equivalent to "Spectral". Colour blind friendly palettes can also be provided via options `"colour blind"` (or `"colour blind"`, both equivalent to `"viridis"`), `"magma"`, `"inferno"`, `"plasma"`, `"cividis"`, `"rocket"`, `"mako"` or `"turbo"`. Other palettes from [scales::brewer_pal()] are also possible.
+#' @param row A variable to plot a column from `object` as rows.
+#' @param column A variable to plot a column from `object` as columns.
+#' @param block A variable to plot a column from `object` as blocks.
+#' @param treatments A variable to plot a column from `object` as treatments.
+#' @param legend Logical (default `TRUE`). If `TRUE`, displays the legend for treatment colours.
+#' @param ... Arguments passed to [ggplot2::geom_text()] for the plot labels.
+#'
+#' @returns A `ggplot2` object.
+#' @seealso [design()]
 #'
 #' @importFrom grDevices colorRampPalette
 #' @importFrom ggplot2 ggplot geom_tile aes geom_text theme_bw scale_fill_manual scale_x_continuous scale_y_continuous scale_y_reverse
