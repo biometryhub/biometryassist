@@ -324,7 +324,8 @@ Standard Errors From Transformed Data - and Why They Should Not Be Used.
 }
 \seealso{
 \code{\link[=pairwise_comparisons]{pairwise_comparisons()}} for testing a chosen subset of pairwise
-differences as a tidy table. For guidance on choosing between the two and
-on multiplicity adjustments, see
+differences as a tidy table, and \code{\link[=reference_comparisons]{reference_comparisons()}} for comparing
+every level against a single control. For guidance on choosing between them
+and on multiplicity adjustments, see
 \code{vignette("choosing-multiple-comparisons", "biometryassist")}.
 }

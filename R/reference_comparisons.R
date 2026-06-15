@@ -67,10 +67,10 @@
 #' (`aov`/`lm`/`lme` have integer df, and mixed models with comparison-specific df
 #' fall back to Holm).
 #'
-#' The Dunnett correlation structure is reconstructed from the standard errors of
-#' the means and the standard errors of differences that the prediction machinery
-#' already returns, so the exact test is available for every supported model
-#' engine. With `adjust = "dunnett"` the confidence intervals are the
+#' The Dunnett correlation structure is taken from the variance-covariance matrix
+#' of the predicted means that the prediction machinery returns, so the exact
+#' test is available for every supported model engine. With `adjust = "dunnett"`
+#' the confidence intervals are the
 #' *simultaneous* Dunnett intervals and therefore agree with the adjusted test
 #' (an interval excludes zero exactly when the comparison is significant). With a
 #' [stats::p.adjust()] method the intervals are per-comparison and may disagree
@@ -220,13 +220,23 @@ reference_comparisons <- function(
 		include_means <- TRUE
 	}
 
-	# sig / classify / transformation checks (shared with multiple_comparisons())
-	vars <- validate_inputs(sig, classify, model.obj, trans = NULL)
+	# sig / classify / transformation checks (shared with multiple_comparisons()).
+	# `trans_supported = FALSE`: these functions report differences on the model
+	# scale and have no `trans` argument, so the transform note reflects that.
+	vars <- validate_inputs(
+		sig,
+		classify,
+		model.obj,
+		trans = NULL,
+		trans_supported = FALSE
+	)
 
-	# Predictions, SED matrix and degrees of freedom for the chosen engine
+	# Predictions, variance-covariance matrix and degrees of freedom for the
+	# chosen engine. The vcov is the authoritative prediction covariance; the
+	# standard error of every comparison is taken from it.
 	result <- get_predictions(model.obj, classify, ...)
 	pp <- result$predictions
-	sed <- result$sed
+	vcov <- result$vcov
 	ndf <- result$df
 	ylab <- result$ylab
 	# Levels that were aliased (not estimable) and dropped by process_aliased();
@@ -338,7 +348,7 @@ reference_comparisons <- function(
 			idx,
 			group_labels,
 			pp,
-			sed,
+			vcov,
 			ndf,
 			adjust,
 			sig,

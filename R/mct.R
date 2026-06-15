@@ -131,8 +131,9 @@
 #' @inheritSection get_predictions Supported model types
 #'
 #' @seealso [pairwise_comparisons()] for testing a chosen subset of pairwise
-#'   differences as a tidy table. For guidance on choosing between the two and
-#'   on multiplicity adjustments, see
+#'   differences as a tidy table, and [reference_comparisons()] for comparing
+#'   every level against a single control. For guidance on choosing between them
+#'   and on multiplicity adjustments, see
 #'   `vignette("choosing-multiple-comparisons", "biometryassist")`.
 #'
 #' @examples
@@ -931,83 +932,6 @@ check_ci_consistency <- function(pp) {
 	}
 
 	FALSE
-}
-
-
-#' @importFrom stats formula
-#' @keywords internal
-#' @noRd
-validate_inputs <- function(sig, classify, model.obj, trans) {
-	# Check significance level
-	if (sig >= 0.5) {
-		if (sig >= 1 & sig < 50) {
-			stop(
-				"Significance level given by `sig` is high. Perhaps you meant ",
-				sig / 100,
-				"?",
-				call. = FALSE
-			)
-		} else if (sig >= 1 & sig >= 50) {
-			stop(
-				"Significance level given by `sig` is high. Perhaps you meant ",
-				1 - (sig / 100),
-				"?",
-				call. = FALSE
-			)
-		} else {
-			warning(
-				"Significance level given by `sig` is high. Perhaps you meant ",
-				1 - sig,
-				"?",
-				call. = FALSE
-			)
-		}
-	}
-
-	# Get the individual names provided in classify
-	vars <- unlist(strsplit(classify, "\\:"))
-	reserved_col_names <- c(
-		"predicted.value",
-		"std.error",
-		"Df",
-		"groups",
-		"PredictedValue",
-		"ApproxSE",
-		"ci",
-		"low",
-		"up"
-	)
-	if (any(vars %in% reserved_col_names)) {
-		stop(
-			"Invalid column name. Please change the name of column(s): ",
-			vars[vars %in% reserved_col_names],
-			call. = FALSE
-		)
-	}
-
-	# Check if the response variable is transformed in the model formula
-	if (class(model.obj)[1] == c("aovlist")) {
-		model_formula <- stats::formula(model.obj[[1]])
-	} else {
-		model_formula <- stats::formula(model.obj)
-	}
-	if (inherits(model.obj, "asreml")) {
-		response_part <- model_formula[[1]][[2]]
-	} else {
-		response_part <- model_formula[[2]]
-	}
-	if (is.call(response_part) & is.null(trans)) {
-		warning(
-			call. = FALSE,
-			sprintf(
-				"The response variable appears to be transformed in the model formula: %s.",
-				deparse(response_part)
-			),
-			"\nPlease specify the 'trans' argument if you want back-transformed predictions."
-		)
-	}
-
-	return(vars)
 }
 
 

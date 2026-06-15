@@ -286,10 +286,10 @@ autoplot.mct <- function(
 
 	if (length(facet_cols) > 0) {
 		plot <- plot +
-			ggplot2::facet_wrap(stats::as.formula(paste(
-				"~",
-				paste(facet_cols, collapse = " + ")
-			)))
+			ggplot2::facet_wrap(
+				stats::as.formula(paste("~", paste(facet_cols, collapse = " + "))),
+				labeller = ggplot2::label_both
+			)
 	}
 
 	# When plotting on the model scale and a back-transformation is available,
@@ -399,10 +399,10 @@ autoplot.pairwise_comparisons <- function(
 				vjust = 0.75,
 				size = 6
 			) +
-			ggplot2::facet_wrap(stats::as.formula(paste(
-				"~",
-				paste(by, collapse = " + ")
-			)))
+			ggplot2::facet_wrap(
+				stats::as.formula(paste("~", paste(by, collapse = " + "))),
+				labeller = ggplot2::label_both
+			)
 	}
 
 	return(plot)
@@ -541,10 +541,10 @@ autoplot.reference_comparisons <- function(
 				vjust = 0.75,
 				size = 6
 			) +
-			ggplot2::facet_wrap(stats::as.formula(paste(
-				"~",
-				paste(by, collapse = " + ")
-			)))
+			ggplot2::facet_wrap(
+				stats::as.formula(paste("~", paste(by, collapse = " + "))),
+				labeller = ggplot2::label_both
+			)
 	}
 
 	return(plot)

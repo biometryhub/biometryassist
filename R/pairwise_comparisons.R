@@ -5,14 +5,9 @@
 #' splitting into independent subgroups. Unlike [multiple_comparisons()], which
 #' is means-centric and summarises *all* pairwise comparisons via a compact
 #' letter display, `pairwise_comparisons()` is difference-centric: it returns a
-#' tidy table with one row per requested comparison (estimate, standard error,
-#' statistic, degrees of freedom and adjusted p-value). This honestly represents
+#' tidy table with one row per requested comparison. This honestly represents
 #' selective and irregular comparison sets, for which letter groupings are not
 #' valid.
-#'
-#' It works for every model supported by [multiple_comparisons()], because a
-#' pairwise difference needs only the standard error of the difference (SED)
-#' matrix that the prediction machinery already returns.
 #'
 #' @param model.obj An `asreml`, `aov`, `lm`, `lme` ([nlme::lme()]) or `lmerMod`
 #'   ([lme4::lmer()]) model object.
@@ -22,10 +17,10 @@
 #'   comparisons. Otherwise either a character vector of `"level1-level2"`
 #'   labels (levels of an interaction joined by `:`, the two sides of a pair
 #'   separated by `-`, e.g. `"A:X-B:Y"`), or a list of length-2 character
-#'   vectors (e.g. `list(c("A:X", "B:Y"))`). The list form is required if any
-#'   factor level itself contains a `-`. See Details.
+#'   vectors (e.g. `list(c("A:X", "B:Y"))`). Level names may contain `-`; the
+#'   list form is only needed if a pair is genuinely ambiguous. See Details.
 #' @param contrasts An optional named list of general linear contrasts to test
-#'   *instead of* `pairs`. Each element is a named numeric vector of coefficients
+#'   instead of `pairs`. Each element is a named numeric vector of coefficients
 #'   keyed by level label (e.g.
 #'   `list("A vs B & C" = c(A = 1, B = -0.5, C = -0.5))`), and the list names
 #'   become the `comparison` labels. The estimate is the corresponding linear
@@ -46,39 +41,36 @@
 #'   between 0 and 1. Default is 0.05.
 #' @param include_means Logical; if `TRUE` (default) the predicted mean of each
 #'   side of the comparison is included as `level1.mean` and `level2.mean`
-#'   columns, immediately after `estimate` (of which they are the decomposition:
-#'   `estimate = level1.mean - level2.mean`). Set `FALSE` for the differences
-#'   only.
+#'   columns, immediately after `estimate`. Set `FALSE` for the differences only.
 #' @param descending Tri-state control of row ordering within each by-group.
 #'   `NULL` (default) keeps the input order of `pairs`; `FALSE` sorts ascending
-#'   by estimate; `TRUE` sorts descending by estimate. Note this orders by the
-#'   comparison *estimate* (the difference), unlike [multiple_comparisons()]
-#'   which orders by the predicted *mean* — appropriate here as the output is
-#'   difference-centric.
+#'   by estimate; `TRUE` sorts descending by estimate.
 #' @param ... Other arguments passed to the model-specific prediction methods
 #'   (e.g. ASReml-R `predict()` arguments).
 #'
 #' @details
-#' ## Relationship to `multiple_comparisons()`
-#' The two functions share the same predicted means and standard errors of
-#' differences, so for a given `adjust` method they report the same comparisons.
-#' Testing all pairs here (`pairs = NULL`) with a particular `adjust` yields the
-#' same adjusted p-values as [multiple_comparisons()] with the same `adjust` —
-#' the difference is presentation (a tidy table of differences and a forest plot,
-#' versus means, confidence intervals and letter groupings). The exception is
-#' Tukey's HSD, which is exact only for the complete set of all pairwise
-#' comparisons and so is the domain of [multiple_comparisons()]; `adjust =
-#' "tukey"` is therefore not accepted here.
+#' ## Relationship to the other comparison functions
+#' `pairwise_comparisons()`, [multiple_comparisons()] and
+#' [reference_comparisons()] share the same predicted means and standard errors
+#' of differences; they differ in which comparisons they report. Testing all
+#' pairs here (`pairs = NULL`) with a given `adjust` yields the same adjusted
+#' p-values as [multiple_comparisons()] with that `adjust`, while
+#' [reference_comparisons()] is the special case of comparing every level against
+#' a single control. Tukey's HSD is exact only for the complete set of all
+#' pairwise comparisons, so `adjust = "tukey"` is not valid for
+#' `pairwise_comparisons()` (use [multiple_comparisons()]).
 #'
 #' ## `pairs` syntax and sign convention
 #' The estimate for a pair is `mean(level1) - mean(level2)`, in the order
 #' written (`"A-B"` gives A − B). The `level1` and `level2` columns make the sign
 #' unambiguous. With `:` joining interaction cells and `-` separating the two
-#' sides of a pair, the string form is unambiguous only when no factor level
-#' contains a `-`; a level containing `-` referenced via the string form is an
-#' error directing you to the list form. Reversed or duplicated pairs
-#' (`"A-B"` and `"B-A"`) are de-duplicated with a warning, since duplicates would
-#' inflate the adjustment family.
+#' sides of a pair, a level name may itself contain `-`: each `-` is tried as the
+#' separator and the split that yields two valid levels is used (so `"A-D-xyz"`
+#' resolves to A versus `D-xyz` when those are the real levels). Only when more
+#' than one split is valid is the pair genuinely ambiguous, and the list form is
+#' then required (the error shows the candidate splits). Reversed or duplicated
+#' pairs (`"A-B"` and `"B-A"`) are de-duplicated with a warning, since duplicates
+#' would inflate the adjustment family.
 #'
 #' For an interaction `classify`, the `:`-joined components of each level label
 #' must be in the same order as `classify` (e.g. `"A:X"` for
@@ -100,21 +92,21 @@
 #' an error, since that indicates a mistake rather than an incomplete design.
 #'
 #' ## Standard error and degrees of freedom for `contrasts`
-#' For a general contrast the standard error and degrees of freedom depend on
-#' the model engine:
+#' The contrast variance is `c' V c`, where `V` is the variance-covariance matrix
+#' of the predicted means taken directly from the fitting engine (no
+#' reconstruction). The degrees of freedom depend on the engine:
 #' * For models predicted via `emmeans` (`aov`, `lm`, [nlme::lme()],
 #'   [lme4::lmer()], and `aov` with `Error()` strata) the estimate, standard
 #'   error and degrees of freedom are obtained directly from
 #'   [emmeans::contrast()] on the model's reference grid. The degrees of freedom
 #'   are therefore the *exact* contrast df for that engine (Satterthwaite or
 #'   Kenward-Roger for mixed models, containment for `aov`/`Error()`), including
-#'   for contrasts spanning more than two levels — these cannot be recovered
-#'   from the SED matrix alone.
-#' * For `asreml` models the contrast variance is computed from the prediction
-#'   error covariance (reconstructed from the SED matrix), and the degrees of
-#'   freedom are the term's denominator df from `asreml::wald(denDF = "default")`
-#'   (a single Kenward-Roger-style value shared by all contrasts within the
-#'   term, as ASReml-R does not provide a per-contrast approximate df).
+#'   for contrasts spanning more than two levels.
+#' * For `asreml` models `V` is the prediction error covariance from
+#'   `predict(..., vcov = TRUE)`, and the degrees of freedom are the term's
+#'   denominator df from `asreml::wald(denDF = "default")` (a single
+#'   Kenward-Roger-style value shared by all contrasts within the term, as
+#'   ASReml-R does not provide a per-contrast approximate df).
 #'
 #' ## Transformations
 #' Comparisons are reported on the model scale. A difference of transformed means
@@ -142,8 +134,10 @@
 #'
 #' @inheritSection get_predictions Supported model types
 #'
-#' @seealso [multiple_comparisons()] for means-and-letters output. For guidance
-#'   on choosing between the two and on multiplicity adjustments, see
+#' @seealso [multiple_comparisons()] for means-and-letters output, and
+#'   [reference_comparisons()] for comparing every level against a single
+#'   control. For guidance on choosing between them and on multiplicity
+#'   adjustments, see
 #'   `vignette("choosing-multiple-comparisons", "biometryassist")`.
 #'
 #' @importFrom stats pt p.adjust qt p.adjust.methods
@@ -234,13 +228,23 @@ pairwise_comparisons <- function(
 		)
 	}
 
-	# sig / classify / transformation checks (shared with multiple_comparisons())
-	vars <- validate_inputs(sig, classify, model.obj, trans = NULL)
+	# sig / classify / transformation checks (shared with multiple_comparisons()).
+	# `trans_supported = FALSE`: these functions report differences on the model
+	# scale and have no `trans` argument, so the transform note reflects that.
+	vars <- validate_inputs(
+		sig,
+		classify,
+		model.obj,
+		trans = NULL,
+		trans_supported = FALSE
+	)
 
-	# Predictions, SED matrix and degrees of freedom for the chosen engine
+	# Predictions, variance-covariance matrix and degrees of freedom for the
+	# chosen engine. The vcov is the authoritative prediction covariance; the
+	# standard error of every difference/contrast is taken from it.
 	result <- get_predictions(model.obj, classify, ...)
 	pp <- result$predictions
-	sed <- result$sed
+	vcov <- result$vcov
 	ndf <- result$df
 	ylab <- result$ylab
 	# Levels that were aliased (not estimable) and dropped by process_aliased();
@@ -279,11 +283,12 @@ pairwise_comparisons <- function(
 
 	# For general contrasts on an emmeans-backed engine (everything except
 	# asreml), delegate the estimate/SE/df to emmeans on its reference grid so
-	# the degrees of freedom are exact (Satterthwaite / Kenward-Roger) rather
-	# than reconstructed from the SEDs. `emm_info` carries the grid, the map from
-	# prediction rows to grid rows (matched by full classify label so it is
+	# the degrees of freedom are exact (Satterthwaite / Kenward-Roger), which
+	# cannot be derived from the vcov alone. `emm_info` carries the grid, the map
+	# from prediction rows to grid rows (matched by full classify label so it is
 	# robust to aliased rows having been dropped), and the grid size. It is NULL
-	# for asreml (no grid), where build_contrast_block() reconstructs from SEDs.
+	# for asreml (no grid), where build_contrast_block() uses the model vcov with
+	# the term-level denominator df.
 	emm_info <- NULL
 	if (!is.null(contrasts) && !is.null(result$emmeans_grid)) {
 		grid_df <- as.data.frame(result$emmeans_grid)
@@ -359,7 +364,7 @@ pairwise_comparisons <- function(
 				idx,
 				group_labels,
 				pp,
-				sed,
+				vcov,
 				ndf,
 				adjust,
 				sig,
@@ -404,7 +409,7 @@ pairwise_comparisons <- function(
 				idx,
 				group_labels,
 				pp,
-				sed,
+				vcov,
 				ndf,
 				adjust,
 				sig,
@@ -520,18 +525,60 @@ parse_pairs <- function(pairs, labels, aliased = NULL) {
 		})
 	} else if (is.character(pairs)) {
 		raw <- lapply(pairs, function(s) {
-			parts <- trimws(strsplit(s, "-", fixed = TRUE)[[1]])
-			if (length(parts) != 2) {
+			s <- trimws(s)
+
+			# A level name may itself contain '-'. Try every '-' as the
+			# separator and keep only the split(s) whose two halves are both
+			# valid labels. The data decides: "A-D-xyz" resolves to
+			# c("A", "D-xyz") when those (and not "A-D"/"xyz") are real levels.
+			dash_pos <- gregexpr("-", s, fixed = TRUE)[[1]]
+			dash_pos <- dash_pos[dash_pos > 0]
+			candidates <- list()
+			for (p in dash_pos) {
+				left <- trimws(substr(s, 1, p - 1))
+				right <- trimws(substr(s, p + 1, nchar(s)))
+				if (left %in% labels && right %in% labels) {
+					candidates[[length(candidates) + 1]] <- c(left, right)
+				}
+			}
+
+			if (length(candidates) == 1) {
+				candidates[[1]]
+			} else if (length(candidates) > 1) {
+				# More than one split yields two valid levels: genuinely
+				# ambiguous, so direct the user to the unambiguous list form.
 				stop(
-					"Could not unambiguously parse pair \"",
+					"Pair \"",
 					s,
-					"\" (expected exactly two levels separated by '-'). If a factor ",
-					"level contains '-', use the list form, e.g. ",
-					"list(c(\"level1\", \"level2\")).",
+					"\" is ambiguous because a level name contains '-' (it could ",
+					"be split as ",
+					paste(
+						vapply(
+							candidates,
+							function(x) paste(x, collapse = " and "),
+							character(1)
+						),
+						collapse = ", or "
+					),
+					"). Use the list form, e.g. list(c(\"level1\", \"level2\")).",
 					call. = FALSE
 				)
+			} else {
+				# No split yields two known levels: fall back so the existing
+				# unknown-level / parse errors report the problem.
+				parts <- trimws(strsplit(s, "-", fixed = TRUE)[[1]])
+				if (length(parts) != 2) {
+					stop(
+						"Could not unambiguously parse pair \"",
+						s,
+						"\" (expected exactly two levels separated by '-'). If a ",
+						"factor level contains '-', use the list form, e.g. ",
+						"list(c(\"level1\", \"level2\")).",
+						call. = FALSE
+					)
+				}
+				parts
 			}
-			parts
 		})
 	} else {
 		stop(
@@ -580,227 +627,6 @@ parse_pairs <- function(pairs, labels, aliased = NULL) {
 	}
 
 	out
-}
-
-
-#' Compute one by-group block of the pairwise comparison table
-#'
-#' @param group_pairs List of length-2 character vectors (within-group labels).
-#' @param idx Global row indices of this group in `pp`.
-#' @param group_labels Within-group labels for `idx` (same order as `idx`).
-#' @param pp,sed,ndf Predictions, SED matrix, degrees of freedom from
-#'   `get_predictions()`.
-#' @param adjust,sig,by,descending,include_means As in [pairwise_comparisons()].
-#' @noRd
-build_pairwise_block <- function(
-	group_pairs,
-	idx,
-	group_labels,
-	pp,
-	sed,
-	ndf,
-	adjust,
-	sig,
-	by,
-	descending,
-	include_means = TRUE
-) {
-	# Map within-group labels to their global row index
-	lab2idx <- stats::setNames(idx, group_labels)
-	i_idx <- vapply(group_pairs, function(p) lab2idx[[p[1]]], integer(1))
-	j_idx <- vapply(group_pairs, function(p) lab2idx[[p[2]]], integer(1))
-
-	pv <- pp$predicted.value
-	est <- pv[i_idx] - pv[j_idx]
-
-	se <- if (!is.null(dim(sed))) {
-		as.numeric(sed[cbind(i_idx, j_idx)])
-	} else {
-		rep_len(sed, length(est))
-	}
-	df_ij <- if (is.matrix(ndf)) {
-		as.numeric(ndf[cbind(i_idx, j_idx)])
-	} else {
-		rep_len(ndf, length(est))
-	}
-
-	tstat <- est / se
-
-	if (adjust == "dunnett") {
-		# Exact simultaneous all-vs-reference inference (the CIs are then the
-		# simultaneous Dunnett intervals, which agree with the adjusted test).
-		# This branch is only ever reached via reference_comparisons():
-		# pairwise_comparisons() explicitly rejects adjust = "dunnett" (directing
-		# the user to reference_comparisons()), so build_pairwise_block() never
-		# sees it from the pairwise entry point. The engine lives here because
-		# reference_comparisons() reuses build_pairwise_block() for its
-		# all-vs-reference set.
-		dn <- dunnett_adjust(i_idx, j_idx, se, df_ij, tstat, pp, sed, sig)
-		p_adj <- dn$p.value
-		crit <- dn$crit
-	} else {
-		p_raw <- 2 * stats::pt(-abs(tstat), df = df_ij)
-		p_adj <- stats::p.adjust(p_raw, method = adjust)
-		crit <- stats::qt(1 - sig / 2, df_ij)
-	}
-
-	block <- data.frame(
-		level1 = vapply(group_pairs, `[`, character(1), 1),
-		level2 = vapply(group_pairs, `[`, character(1), 2),
-		stringsAsFactors = FALSE,
-		check.names = FALSE
-	)
-	block$comparison <- paste(block$level1, "-", block$level2)
-	block$estimate <- est
-	if (include_means) {
-		block$level1.mean <- pv[i_idx]
-		block$level2.mean <- pv[j_idx]
-	}
-	block$std.error <- se
-	block$statistic <- tstat
-	block$df <- df_ij
-	block$p.value <- p_adj
-	block$conf.low <- est - crit * se
-	block$conf.high <- est + crit * se
-
-	# Prepend the by-column(s), taken from this group's (constant) values
-	if (!is.null(by)) {
-		by_df <- pp[rep(idx[1], nrow(block)), by, drop = FALSE]
-		rownames(by_df) <- NULL
-		block <- cbind(by_df, block)
-	}
-
-	# Order within the group block
-	if (!is.null(descending)) {
-		block <- block[
-			order(block$estimate, decreasing = descending),
-			,
-			drop = FALSE
-		]
-	}
-
-	block
-}
-
-
-#' Exact two-sided Dunnett adjustment for a block of all-vs-reference contrasts
-#'
-#' Reconstructs the variance-covariance matrix `V` of the predicted means from
-#' the per-mean SEs (diagonal, `V_ii = std.error_i^2`) and the SED matrix
-#' (off-diagonal, `V_ij = (V_ii + V_jj - SED_ij^2) / 2`), forms the correlation
-#' matrix of the contrasts, and uses the multivariate-t distribution
-#' (`mvtnorm`) for exact simultaneous two-sided adjusted p-values and a single
-#' simultaneous critical value for the confidence intervals. Validated to
-#' machine precision against `emmeans` `trt.vs.ctrl` with `adjust = "mvt"`.
-#'
-#' Assumes a single (effectively integer) degrees-of-freedom across the block;
-#' callers must fall back to another method when df vary by comparison.
-#'
-#' @param i_idx,j_idx Global prediction-row indices for each contrast's level1
-#'   and level2.
-#' @param se,df_ij,tstat Per-contrast SED, degrees of freedom and t-statistic.
-#' @param pp,sed Predictions data frame and SED matrix from `get_predictions()`.
-#' @param sig Significance level.
-#' @noRd
-dunnett_adjust <- function(i_idx, j_idx, se, df_ij, tstat, pp, sed, sig) {
-	if (!requireNamespace("mvtnorm", quietly = TRUE)) {
-		stop(
-			"Package 'mvtnorm' is required for adjust = \"dunnett\". Install it ",
-			"with install.packages(\"mvtnorm\"), or choose another `adjust` method.",
-			call. = FALSE
-		)
-	}
-
-	m <- length(tstat)
-	df_exact <- df_ij[1]
-
-	# Single comparison: no multiplicity -> exact two-sided t on the exact df.
-	# stats::pt/qt accept a fractional df, so don't round here (mvtnorm below
-	# does require an integer, but it isn't used in this branch).
-	if (m == 1) {
-		return(list(
-			p.value = 2 * stats::pt(-abs(tstat), df_exact),
-			crit = stats::qt(1 - sig / 2, df_exact)
-		))
-	}
-
-	# mvtnorm::pmvt/qmvt require an INTEGER df for the multivariate t, so a
-	# fractional denominator df (e.g. an asreml Kenward-Roger denDF) is rounded to
-	# the nearest integer. aov/lm/lme have integer df and lmer/aov+Error fall back
-	# to Holm, so in practice this only affects an asreml fractional denDF.
-	df0 <- as.integer(round(df_exact))
-
-	# Reconstruct V over the involved means
-	u <- sort(unique(c(i_idx, j_idx)))
-	V <- reconstruct_vcov(u, pp, sed)
-	key <- function(g) match(g, u)
-
-	# Correlation matrix of the (level1 - level2) contrasts
-	R <- matrix(1, m, m)
-	for (k in seq_len(m)) {
-		ik <- key(i_idx[k])
-		jk <- key(j_idx[k])
-		for (l in seq_len(m)) {
-			il <- key(i_idx[l])
-			jl <- key(j_idx[l])
-			cov_kl <- V[ik, il] - V[ik, jl] - V[jk, il] + V[jk, jl]
-			R[k, l] <- cov_kl / (se[k] * se[l])
-		}
-	}
-	R <- (R + t(R)) / 2
-	diag(R) <- 1
-
-	# Exact two-sided adjusted p: P(max|T| >= |t_k|)
-	p <- vapply(
-		seq_len(m),
-		function(k) {
-			cc <- abs(tstat[k])
-			1 -
-				as.numeric(mvtnorm::pmvt(
-					lower = rep(-cc, m),
-					upper = rep(cc, m),
-					df = df0,
-					corr = R
-				))
-		},
-		numeric(1)
-	)
-	p <- pmin(pmax(p, 0), 1)
-
-	# Simultaneous two-sided critical value for the confidence intervals
-	cstar <- mvtnorm::qmvt(
-		1 - sig,
-		tail = "both.tails",
-		df = df0,
-		corr = R
-	)$quantile
-
-	list(p.value = p, crit = rep_len(cstar, m))
-}
-
-
-#' Reconstruct the variance-covariance matrix of predicted means
-#'
-#' From the per-mean SEs (diagonal, `V_ii = std.error_i^2`) and the SED matrix
-#' (off-diagonal, `V_ij = (V_ii + V_jj - SED_ij^2) / 2`). Exact: the SEs and SEDs
-#' are derived from the same fitted-model prediction covariance.
-#'
-#' @param u Integer vector of (global) prediction-row indices to include.
-#' @param pp,sed Predictions data frame and SED matrix from `get_predictions()`.
-#' @return A `length(u)` x `length(u)` covariance matrix, ordered as `u`.
-#' @noRd
-reconstruct_vcov <- function(u, pp, sed) {
-	vd <- pp$std.error[u]^2
-	V <- diag(vd, nrow = length(u))
-	if (length(u) > 1) {
-		for (a in seq_len(length(u) - 1)) {
-			for (b in (a + 1):length(u)) {
-				vab <- (vd[a] + vd[b] - as.numeric(sed[u[a], u[b]])^2) / 2
-				V[a, b] <- V[b, a] <- vab
-			}
-		}
-	}
-	V
 }
 
 
@@ -853,21 +679,21 @@ parse_contrasts <- function(contrasts, labels, aliased = NULL) {
 #' Compute one by-group block of general linear contrasts
 #'
 #' Each contrast is a named numeric coefficient vector over levels. The estimate
-#' is `c' tau`, its variance `c' V c` (with `V` reconstructed from the SED matrix
-#' and per-mean SEs via `reconstruct_vcov()`), and the test a two-sided t with
-#' multiplicity-adjusted p-values over the group's family.
+#' is `c' tau` and its variance `c' V c`, where `V` is the prediction
+#' variance-covariance matrix from `get_predictions()`; the test is a two-sided
+#' t with multiplicity-adjusted p-values over the group's family.
 #'
 #' @param group_contrasts List of named numeric coefficient vectors.
 #' @param idx Global row indices of this group in `pp`.
 #' @param group_labels Within-group labels for `idx`.
-#' @param pp,sed,ndf,adjust,sig,by,descending As in [pairwise_comparisons()].
+#' @param pp,vcov,ndf,adjust,sig,by,descending As in [pairwise_comparisons()].
 #' @noRd
 build_contrast_block <- function(
 	group_contrasts,
 	idx,
 	group_labels,
 	pp,
-	sed,
+	vcov,
 	ndf,
 	adjust,
 	sig,
@@ -907,14 +733,14 @@ build_contrast_block <- function(
 			se[k] <- ct$SE
 			df_c[k] <- ct$df
 		} else {
-			# asreml (no grid): reconstruct from the SEDs. df is the model's single
-			# residual df (scalar for asreml). Floor c'Vc at zero so a contrast with
-			# ~0 true variance rounding just below zero gives se = 0, not a NaN; the
-			# reconstructed V is the exact (PSD) model covariance, so this only ever
+			# asreml (no grid): use the exact prediction vcov directly. df is the
+			# model's single residual df (scalar for asreml). Floor c'Vc at zero so a
+			# contrast with ~0 true variance rounding just below zero gives se = 0,
+			# not a NaN; V is the exact (PSD) model covariance, so this only ever
 			# floors floating-point rounding noise.
 			est[k] <- sum(w * pv[gi])
 			u <- sort(unique(gi))
-			V <- reconstruct_vcov(u, pp, sed)
+			V <- vcov[u, u, drop = FALSE]
 			wal <- numeric(length(u))
 			pos <- match(gi, u)
 			for (q in seq_along(gi)) {

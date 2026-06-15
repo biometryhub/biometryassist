@@ -43,11 +43,11 @@ Interactions are specified with \code{:} (e.g. \code{"Trt:Site"}).}
 comparisons. Otherwise either a character vector of \code{"level1-level2"}
 labels (levels of an interaction joined by \code{:}, the two sides of a pair
 separated by \code{-}, e.g. \code{"A:X-B:Y"}), or a list of length-2 character
-vectors (e.g. \code{list(c("A:X", "B:Y"))}). The list form is required if any
-factor level itself contains a \code{-}. See Details.}
+vectors (e.g. \code{list(c("A:X", "B:Y"))}). Level names may contain \code{-}; the
+list form is only needed if a pair is genuinely ambiguous. See Details.}
 
 \item{contrasts}{An optional named list of general linear contrasts to test
-\emph{instead of} \code{pairs}. Each element is a named numeric vector of coefficients
+instead of \code{pairs}. Each element is a named numeric vector of coefficients
 keyed by level label (e.g.
 \code{list("A vs B & C" = c(A = 1, B = -0.5, C = -0.5))}), and the list names
 become the \code{comparison} labels. The estimate is the corresponding linear
@@ -72,16 +72,11 @@ between 0 and 1. Default is 0.05.}
 
 \item{include_means}{Logical; if \code{TRUE} (default) the predicted mean of each
 side of the comparison is included as \code{level1.mean} and \code{level2.mean}
-columns, immediately after \code{estimate} (of which they are the decomposition:
-\code{estimate = level1.mean - level2.mean}). Set \code{FALSE} for the differences
-only.}
+columns, immediately after \code{estimate}. Set \code{FALSE} for the differences only.}
 
 \item{descending}{Tri-state control of row ordering within each by-group.
 \code{NULL} (default) keeps the input order of \code{pairs}; \code{FALSE} sorts ascending
-by estimate; \code{TRUE} sorts descending by estimate. Note this orders by the
-comparison \emph{estimate} (the difference), unlike \code{\link[=multiple_comparisons]{multiple_comparisons()}}
-which orders by the predicted \emph{mean} — appropriate here as the output is
-difference-centric.}
+by estimate; \code{TRUE} sorts descending by estimate.}
 
 \item{x}{A \code{pairwise_comparisons} object.}
 
@@ -117,25 +112,22 @@ fitted model, with multiplicity adjustment over the chosen set and optional
 splitting into independent subgroups. Unlike \code{\link[=multiple_comparisons]{multiple_comparisons()}}, which
 is means-centric and summarises \emph{all} pairwise comparisons via a compact
 letter display, \code{pairwise_comparisons()} is difference-centric: it returns a
-tidy table with one row per requested comparison (estimate, standard error,
-statistic, degrees of freedom and adjusted p-value). This honestly represents
+tidy table with one row per requested comparison. This honestly represents
 selective and irregular comparison sets, for which letter groupings are not
 valid.
 }
 \details{
-It works for every model supported by \code{\link[=multiple_comparisons]{multiple_comparisons()}}, because a
-pairwise difference needs only the standard error of the difference (SED)
-matrix that the prediction machinery already returns.
-\subsection{Relationship to \code{multiple_comparisons()}}{
+\subsection{Relationship to the other comparison functions}{
 
-The two functions share the same predicted means and standard errors of
-differences, so for a given \code{adjust} method they report the same comparisons.
-Testing all pairs here (\code{pairs = NULL}) with a particular \code{adjust} yields the
-same adjusted p-values as \code{\link[=multiple_comparisons]{multiple_comparisons()}} with the same \code{adjust} —
-the difference is presentation (a tidy table of differences and a forest plot,
-versus means, confidence intervals and letter groupings). The exception is
-Tukey's HSD, which is exact only for the complete set of all pairwise
-comparisons and so is the domain of \code{\link[=multiple_comparisons]{multiple_comparisons()}}; \code{adjust = "tukey"} is therefore not accepted here.
+\code{pairwise_comparisons()}, \code{\link[=multiple_comparisons]{multiple_comparisons()}} and
+\code{\link[=reference_comparisons]{reference_comparisons()}} share the same predicted means and standard errors
+of differences; they differ in which comparisons they report. Testing all
+pairs here (\code{pairs = NULL}) with a given \code{adjust} yields the same adjusted
+p-values as \code{\link[=multiple_comparisons]{multiple_comparisons()}} with that \code{adjust}, while
+\code{\link[=reference_comparisons]{reference_comparisons()}} is the special case of comparing every level against
+a single control. Tukey's HSD is exact only for the complete set of all
+pairwise comparisons, so \code{adjust = "tukey"} is not valid for
+\code{pairwise_comparisons()} (use \code{\link[=multiple_comparisons]{multiple_comparisons()}}).
 }
 
 \subsection{\code{pairs} syntax and sign convention}{
@@ -143,11 +135,13 @@ comparisons and so is the domain of \code{\link[=multiple_comparisons]{multiple_
 The estimate for a pair is \code{mean(level1) - mean(level2)}, in the order
 written (\code{"A-B"} gives A − B). The \code{level1} and \code{level2} columns make the sign
 unambiguous. With \code{:} joining interaction cells and \code{-} separating the two
-sides of a pair, the string form is unambiguous only when no factor level
-contains a \code{-}; a level containing \code{-} referenced via the string form is an
-error directing you to the list form. Reversed or duplicated pairs
-(\code{"A-B"} and \code{"B-A"}) are de-duplicated with a warning, since duplicates would
-inflate the adjustment family.
+sides of a pair, a level name may itself contain \code{-}: each \code{-} is tried as the
+separator and the split that yields two valid levels is used (so \code{"A-D-xyz"}
+resolves to A versus \code{D-xyz} when those are the real levels). Only when more
+than one split is valid is the pair genuinely ambiguous, and the list form is
+then required (the error shows the candidate splits). Reversed or duplicated
+pairs (\code{"A-B"} and \code{"B-A"}) are de-duplicated with a warning, since duplicates
+would inflate the adjustment family.
 
 For an interaction \code{classify}, the \code{:}-joined components of each level label
 must be in the same order as \code{classify} (e.g. \code{"A:X"} for
@@ -173,8 +167,9 @@ an error, since that indicates a mistake rather than an incomplete design.
 
 \subsection{Standard error and degrees of freedom for \code{contrasts}}{
 
-For a general contrast the standard error and degrees of freedom depend on
-the model engine:
+The contrast variance is \verb{c' V c}, where \code{V} is the variance-covariance matrix
+of the predicted means taken directly from the fitting engine (no
+reconstruction). The degrees of freedom depend on the engine:
 \itemize{
 \item For models predicted via \code{emmeans} (\code{aov}, \code{lm}, \code{\link[nlme:lme]{nlme::lme()}},
 \code{\link[lme4:lmer]{lme4::lmer()}}, and \code{aov} with \code{Error()} strata) the estimate, standard
@@ -182,13 +177,12 @@ error and degrees of freedom are obtained directly from
 \code{\link[emmeans:contrast]{emmeans::contrast()}} on the model's reference grid. The degrees of freedom
 are therefore the \emph{exact} contrast df for that engine (Satterthwaite or
 Kenward-Roger for mixed models, containment for \code{aov}/\code{Error()}), including
-for contrasts spanning more than two levels — these cannot be recovered
-from the SED matrix alone.
-\item For \code{asreml} models the contrast variance is computed from the prediction
-error covariance (reconstructed from the SED matrix), and the degrees of
-freedom are the term's denominator df from \code{asreml::wald(denDF = "default")}
-(a single Kenward-Roger-style value shared by all contrasts within the
-term, as ASReml-R does not provide a per-contrast approximate df).
+for contrasts spanning more than two levels.
+\item For \code{asreml} models \code{V} is the prediction error covariance from
+\code{predict(..., vcov = TRUE)}, and the degrees of freedom are the term's
+denominator df from \code{asreml::wald(denDF = "default")} (a single
+Kenward-Roger-style value shared by all contrasts within the term, as
+ASReml-R does not provide a per-contrast approximate df).
 }
 }
 
@@ -269,7 +263,9 @@ pairwise_comparisons(
 )
 }
 \seealso{
-\code{\link[=multiple_comparisons]{multiple_comparisons()}} for means-and-letters output. For guidance
-on choosing between the two and on multiplicity adjustments, see
+\code{\link[=multiple_comparisons]{multiple_comparisons()}} for means-and-letters output, and
+\code{\link[=reference_comparisons]{reference_comparisons()}} for comparing every level against a single
+control. For guidance on choosing between them and on multiplicity
+adjustments, see
 \code{vignette("choosing-multiple-comparisons", "biometryassist")}.
 }
