@@ -797,6 +797,197 @@ test_that("get_predictions.listof delegates to get_predictions.aovlist", {
 	expect_equal(is.matrix(pred.listof$df), TRUE)
 })
 
+test_that("get_predictions errors informatively for ARTool (art) models", {
+	skip_if_not_installed("ARTool")
+	load(test_path("data", "ARTool_model.Rdata"), .GlobalEnv)
+
+	# ART models are deliberately unsupported for mean-based comparisons; the error
+	# should point users at ARTool::art.con() rather than the generic default error.
+	expect_error(
+		get_predictions.art(model.art, classify = "name"),
+		"ARTool::art\\.con\\(\\)"
+	)
+	expect_error(
+		multiple_comparisons(model.art, classify = "name"),
+		"ARTool::art\\.con\\(\\)"
+	)
+})
+
+test_that("get_predictions works for afex (afex_aov) models", {
+	skip_if_not_installed("afex")
+	data(obk.long, package = "afex")
+
+	# Between-subjects design: the backing aov is a single stratum, so emmeans gives
+	# a scalar df, replicated across the (matrix) df like other emmeans engines.
+	afex_b <- afex::aov_ez(
+		id = "id",
+		dv = "value",
+		between = c("treatment", "gender"),
+		data = obk.long,
+		fun_aggregate = mean
+	)
+	pred_b <- get_predictions.afex_aov(afex_b, classify = "treatment")
+
+	expect_equal(
+		pred_b$predictions$predicted.value,
+		c(4.222222, 6.250000, 6.027778),
+		tolerance = 1e-4
+	)
+	expect_equal(pred_b$ylab, "value")
+	expect_true(is.matrix(pred_b$sed))
+	expect_true(is.matrix(pred_b$df))
+	expect_equal(mean(pred_b$df, na.rm = TRUE), 10)
+
+	# Within-subjects design: the backing aov is multi-stratum (aovlist), so the
+	# comparison-specific (matrix) degrees of freedom path is exercised.
+	afex_w <- afex::aov_ez(
+		id = "id",
+		dv = "value",
+		within = c("phase", "hour"),
+		data = obk.long
+	)
+	pred_w <- get_predictions.afex_aov(afex_w, classify = "phase")
+
+	expect_setequal(
+		round(pred_w$predictions$predicted.value, 3),
+		c(6.375, 5.750, 4.375)
+	)
+	expect_true(is.matrix(pred_w$sed))
+	expect_equal(mean(pred_w$df, na.rm = TRUE), 15)
+})
+
+test_that("get_predictions.afex_aov errors when classify is not in model terms", {
+	skip_if_not_installed("afex")
+	data(obk.long, package = "afex")
+
+	afex_b <- afex::aov_ez(
+		id = "id",
+		dv = "value",
+		between = c("treatment", "gender"),
+		data = obk.long,
+		fun_aggregate = mean
+	)
+
+	expect_error(
+		get_predictions.afex_aov(afex_b, classify = "NotATerm"),
+		"NotATerm is not a term in the model"
+	)
+})
+
+test_that("get_predictions works for glmmTMB models", {
+	skip_if_not_installed("glmmTMB")
+	data(Salamanders, package = "glmmTMB")
+
+	# Gaussian family: predictions on the response scale.
+	g_gauss <- glmmTMB::glmmTMB(
+		count ~ spp + mined + (1 | site),
+		data = Salamanders,
+		family = gaussian()
+	)
+	pred <- get_predictions.glmmTMB(g_gauss, classify = "mined")
+
+	expect_equal(
+		pred$predictions$predicted.value,
+		c(0.2954544, 2.2648810),
+		tolerance = 1e-4
+	)
+	expect_equal(pred$ylab, "count")
+	expect_true(is.matrix(pred$sed))
+	expect_true(is.matrix(pred$df))
+	# glmmTMB uses asymptotic (infinite) degrees of freedom.
+	expect_true(all(is.infinite(pred$df[!is.na(pred$df)])))
+
+	# Non-Gaussian families predict on the link (here log) scale.
+	g_pois <- glmmTMB::glmmTMB(
+		count ~ spp + mined + (1 | site),
+		data = Salamanders,
+		family = poisson()
+	)
+	pred_p <- get_predictions.glmmTMB(g_pois, classify = "mined")
+	expect_equal(
+		pred_p$predictions$predicted.value,
+		c(-1.7028112, 0.5616248),
+		tolerance = 1e-4
+	)
+})
+
+test_that("get_predictions works for sommer mmes models", {
+	skip_if_not_installed("sommer")
+	load(test_path("data", "sommer_models.Rdata"), .GlobalEnv)
+
+	pred <- get_predictions.mmes(model_mmes, classify = "Env")
+
+	# Predictions match the equivalent lme4 fit on the same data.
+	expect_equal(
+		pred$predictions$predicted.value,
+		c(16.49635, 10.71959, 10.11587),
+		tolerance = 1e-4
+	)
+	expect_equal(as.character(pred$ylab), "Yield")
+	expect_true(is.matrix(pred$sed))
+	# SED is built from the prediction covariance matrix.
+	expect_equal(mean(pred$sed, na.rm = TRUE), 0.736, tolerance = 1e-2)
+	# sommer provides no denominator df, so asymptotic (z-based) inference is used.
+	expect_equal(pred$df, Inf)
+	expect_null(pred$emmeans_grid)
+})
+
+test_that("get_predictions errors informatively for sommer mmer models", {
+	skip_if_not_installed("sommer")
+	load(test_path("data", "sommer_models.Rdata"), .GlobalEnv)
+
+	# mmer has no predict() method in current sommer; point users to mmes().
+	expect_error(
+		get_predictions.mmer(model_mmer, classify = "Env"),
+		"sommer::mmes\\(\\)"
+	)
+	expect_error(
+		multiple_comparisons(model_mmer, classify = "Env"),
+		"sommer::mmes\\(\\)"
+	)
+})
+
+test_that("get_predictions handles lme4breeding (lmebreed) models via lmerMod", {
+	skip_if_not_installed("lme4breeding")
+	# lmebreed() relies on lme4 internals being attached (lme4 is in its Depends).
+	suppressPackageStartupMessages(library(lme4breeding))
+	load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+
+	# An identity relationship matrix makes lmebreed() exactly equivalent to
+	# lme4::lmer(), giving a deterministic reference. lmebreed() objects carry class
+	# `lmerMod`, so they dispatch to the existing get_predictions.lmerMod method.
+	blocks <- levels(factor(dat$Blocks))
+	A <- diag(length(blocks))
+	dimnames(A) <- list(blocks, blocks)
+
+	m_lmb <- suppressMessages(suppressWarnings(lmebreed(
+		yield ~ Nitrogen + (1 | Blocks),
+		relmat = list(Blocks = A),
+		data = dat,
+		verbose = FALSE,
+		dateWarning = FALSE
+	)))
+	expect_true(methods::is(m_lmb, "lmerMod"))
+
+	pred_lmb <- suppressMessages(get_predictions(m_lmb, classify = "Nitrogen"))
+	pred_lmer <- get_predictions(
+		lme4::lmer(yield ~ Nitrogen + (1 | Blocks), data = dat),
+		classify = "Nitrogen"
+	)
+
+	# Under an identity relationship matrix the two fits coincide exactly.
+	expect_equal(
+		pred_lmb$predictions$predicted.value,
+		pred_lmer$predictions$predicted.value,
+		tolerance = 1e-4
+	)
+	expect_equal(
+		mean(pred_lmb$sed, na.rm = TRUE),
+		mean(pred_lmer$sed, na.rm = TRUE),
+		tolerance = 1e-4
+	)
+})
+
 # check that predictions from asreml are the same as a aovlist object
 test_that("Test that asreml provides the same results as multi-stratum ANOVA for oats data", {
 	skip_if_not_installed("asreml")

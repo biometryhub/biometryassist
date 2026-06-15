@@ -1786,6 +1786,111 @@ test_that("nlme/lme model is supported", {
 	expect_local_doppelganger("nlme output", ap)
 })
 
+test_that("afex (afex_aov) model is supported", {
+	skip_if_not_installed("afex")
+	data(obk.long, package = "afex")
+
+	# Between-subjects factorial design.
+	afex_b <- afex::aov_ez(
+		id = "id",
+		dv = "value",
+		between = c("treatment", "gender"),
+		data = obk.long,
+		fun_aggregate = mean
+	)
+	output <- multiple_comparisons(afex_b, classify = "treatment")
+
+	expect_s3_class(output, "mct")
+	expect_equal(
+		output$predictions$predicted.value,
+		c(4.22, 6.03, 6.25),
+		tolerance = 5e-2
+	)
+	# No significant treatment differences here, so all share a single letter group.
+	expect_equal(unique(output$predictions$groups), "a")
+
+	ap <- autoplot(output)
+	expect_autoplot_data(ap, output)
+	expect_local_doppelganger("afex output", ap)
+})
+
+test_that("glmmTMB model is supported", {
+	skip_if_not_installed("glmmTMB")
+	data(Salamanders, package = "glmmTMB")
+
+	g <- glmmTMB::glmmTMB(
+		count ~ spp + mined + (1 | site),
+		data = Salamanders,
+		family = gaussian()
+	)
+	output <- multiple_comparisons(g, classify = "mined")
+
+	expect_s3_class(output, "mct")
+	expect_equal(
+		output$predictions$predicted.value,
+		c(0.30, 2.26),
+		tolerance = 5e-2
+	)
+	expect_equal(output$predictions$groups, c("a", "b"))
+
+	ap <- autoplot(output)
+	expect_autoplot_data(ap, output)
+	expect_local_doppelganger("glmmTMB output", ap)
+})
+
+test_that("sommer mmes model is supported", {
+	skip_if_not_installed("sommer")
+	load(test_path("data", "sommer_models.Rdata"), .GlobalEnv)
+
+	output <- multiple_comparisons(model_mmes, classify = "Env")
+
+	expect_s3_class(output, "mct")
+	# Env effect: CA.2011 separates from the CA.2012/CA.2013 group.
+	expect_setequal(
+		round(output$predictions$predicted.value, 2),
+		c(10.12, 10.72, 16.50)
+	)
+
+	ap <- autoplot(output)
+	expect_autoplot_data(ap, output)
+	expect_local_doppelganger("sommer mmes output", ap)
+})
+
+test_that("lme4breeding (lmebreed) model is supported", {
+	skip_if_not_installed("lme4breeding")
+	# lmebreed() relies on lme4 internals being attached (lme4 is in its Depends).
+	suppressPackageStartupMessages(library(lme4breeding))
+	load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+
+	# lmebreed() objects carry class `lmerMod` and use the existing lmerMod method.
+	# An identity relationship matrix gives an exact lme4::lmer() reference.
+	blocks <- levels(factor(dat$Blocks))
+	A <- diag(length(blocks))
+	dimnames(A) <- list(blocks, blocks)
+
+	m_lmb <- suppressMessages(suppressWarnings(lmebreed(
+		yield ~ Nitrogen + (1 | Blocks),
+		relmat = list(Blocks = A),
+		data = dat,
+		verbose = FALSE,
+		dateWarning = FALSE
+	)))
+	output <- suppressMessages(multiple_comparisons(m_lmb, classify = "Nitrogen"))
+
+	expect_s3_class(output, "mct")
+	expect_equal(nrow(output$predictions), 4)
+
+	out_lmer <- multiple_comparisons(
+		lme4::lmer(yield ~ Nitrogen + (1 | Blocks), data = dat),
+		classify = "Nitrogen"
+	)
+	expect_equal(
+		output$predictions$predicted.value,
+		out_lmer$predictions$predicted.value,
+		tolerance = 1e-4
+	)
+})
+
 test_that("invalid model types give a clear error", {
 	# Use an unsupported model type that still has a `formula()` method so that
 	# the error comes from `get_predictions.default()` (not from validate_inputs()).
