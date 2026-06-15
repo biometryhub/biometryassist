@@ -2308,3 +2308,55 @@ test_that("get_predictions() returns exact SED for unbalanced marginal means", {
 
 	expect_equal(sed, exact, tolerance = 1e-8)
 })
+
+test_that("autoplot.mct sets hjust = 1 for axis_rotation = 90 and hjust = 0 for 270/-90", {
+	output <- multiple_comparisons(dat.aov, classify = "Species")
+
+	# axis_rotation = 90: hjust_value branch returns 1 (line 155)
+	p90 <- autoplot(output, axis_rotation = 90)
+	expect_s3_class(p90, "ggplot")
+	expect_equal(p90$theme$axis.text.x$hjust, 1)
+
+	# axis_rotation = 270: hjust_value branch returns 0 (line 157)
+	p270 <- autoplot(output, axis_rotation = 270)
+	expect_s3_class(p270, "ggplot")
+	expect_equal(p270$theme$axis.text.x$hjust, 0)
+
+	# axis_rotation = -90: in R, -90 %% 360 == 270, so same branch -> hjust = 0
+	p_neg90 <- autoplot(output, axis_rotation = -90)
+	expect_s3_class(p_neg90, "ggplot")
+	expect_equal(p_neg90$theme$axis.text.x$hjust, 0)
+})
+
+test_that("autoplot.mct HSD bar handles a non-factor classify column", {
+	# Construct a legacy mct object whose classify column is a plain character
+	# vector (not a factor), exercising the else-branch at line 231 where
+	# x_levels is built via sort(unique(as.character(...))).
+	pred_df <- data.frame(
+		trt = c("C", "B", "A"),
+		predicted.value = c(3.0, 2.0, 1.0),
+		std.error = c(0.1, 0.1, 0.1),
+		ci = c(0.2, 0.2, 0.2),
+		low = c(2.8, 1.8, 0.8),
+		up = c(3.2, 2.2, 1.2),
+		groups = c("c", "b", "a"),
+		stringsAsFactors = FALSE
+	)
+	out <- list(
+		predictions = pred_df,
+		hsd = 0.5,
+		sig_level = 0.05,
+		comparison_method = "tukey"
+	)
+	class(out) <- "mct"
+	attr(out, "ylab") <- "y"
+	attr(out, "HSD") <- 0.5
+
+	p <- autoplot(out, errorbar_type = "hsd")
+	expect_s3_class(p, "ggplot")
+
+	# One errorbar layer for the HSD reference bar, with one row of data
+	eb <- Filter(function(l) inherits(l$geom, "GeomErrorbar"), p$layers)
+	expect_length(eb, 1)
+	expect_equal(nrow(eb[[1]]$data), 1)
+})

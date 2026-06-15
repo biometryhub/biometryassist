@@ -19,6 +19,9 @@
 #' @param rotation Rotate the text output as Treatments within the plot. Allows for easier reading of long treatment labels. Number between 0 and 360 (inclusive) - default 0
 #' @param save Logical (default `FALSE`). Save the predicted values to a csv file?
 #' @param savename A file name for the predicted values to be saved to. Default is `predicted_values`.
+#' @param order Deprecated. Use `descending` instead.
+#' @param pred Deprecated. Use `classify` instead.
+#' @param pred.obj Deprecated. Predicted values are calculated within the function from version 1.0.1 onwards.
 #' @param ... Other arguments passed internally to model-specific prediction methods.
 #'
 #' @importFrom multcompView multcompLetters

@@ -530,3 +530,26 @@ test_that("get_predictions returns asreml's exact prediction vcov", {
 		tolerance = 1e-6
 	)
 })
+
+test_that("autoplot.reference_comparisons facets by the `by` variable", {
+	set.seed(1)
+	d <- expand.grid(
+		trt = factor(c("ctrl", "a", "b")),
+		site = factor(c("S1", "S2")),
+		rep = 1:5
+	)
+	d$y <- rnorm(nrow(d)) + as.numeric(d$trt)
+	m <- aov(y ~ trt * site, data = d)
+	out <- reference_comparisons(
+		m,
+		classify = "trt:site",
+		reference = "ctrl",
+		by = "site"
+	)
+
+	p <- autoplot(out)
+	expect_s3_class(p, "ggplot")
+	# Faceted plot (by != NULL branch): must not be the trivial FacetNull
+	expect_false(inherits(p$facet, "FacetNull"))
+	expect_silent(ggplot2::ggplot_build(p))
+})

@@ -846,3 +846,84 @@ test_that("asreml models work with contrasts (asreml vcov branch)", {
 	expect_true(is.finite(out$estimate))
 	expect_true(is.finite(out$std.error))
 })
+
+test_that("contrasts: no-emmeans_grid vcov path without asreml (scalar ndf)", {
+	# Exercises the else branch of build_contrast_block (lines 741-761) without
+	# requiring asreml. A temporary S3 method is registered for a unique fake
+	# class so pairwise_comparisons() dispatches through the instrumented code.
+	# The class name is unique so there is no risk of interference with real tests.
+	fake_pp <- data.frame(
+		Trt = factor(c("A", "B", "C")),
+		predicted.value = c(10.0, 12.0, 15.0),
+		stringsAsFactors = FALSE
+	)
+	registerS3method(
+		"get_predictions",
+		"pc_fake_scalar_ndf",
+		function(model.obj, classify, ...) {
+			list(
+				predictions = fake_pp,
+				vcov = diag(3) * 0.5,
+				df = 20L,
+				ylab = "response",
+				aliased_names = NULL,
+				emmeans_grid = NULL
+			)
+		},
+		envir = asNamespace("biometryassist")
+	)
+	m <- structure(list(), class = "pc_fake_scalar_ndf")
+
+	out <- pairwise_comparisons(
+		m,
+		classify = "Trt",
+		contrasts = list("A vs B+C" = c(A = 1, B = -0.5, C = -0.5))
+	)
+
+	expect_s3_class(out, "pairwise_comparisons")
+	expect_equal(nrow(out), 1L)
+	# estimate = 1*10 + (-0.5)*12 + (-0.5)*15
+	expect_equal(out$estimate, 10 - 0.5 * 12 - 0.5 * 15, tolerance = 1e-8)
+	expect_equal(out$df, 20)
+	expect_true(is.finite(out$std.error))
+	expect_true(is.finite(out$p.value))
+	# contrasts form: no level1/level2 columns
+	expect_false(any(c("level1", "level2") %in% names(out)))
+})
+
+test_that("contrasts: matrix ndf + no emmeans_grid errors with clear message", {
+	# Exercises lines 754-759: the defensive stop() in build_contrast_block that
+	# fires when an engine reports per-comparison (matrix) df but provides no
+	# emmeans reference grid. This combination cannot arise from any real engine
+	# but the guard must be reachable to prevent a silent wrong df slipping through.
+	fake_pp <- data.frame(
+		Trt = factor(c("A", "B")),
+		predicted.value = c(1.0, 2.0),
+		stringsAsFactors = FALSE
+	)
+	registerS3method(
+		"get_predictions",
+		"pc_fake_matrix_ndf",
+		function(model.obj, classify, ...) {
+			list(
+				predictions = fake_pp,
+				vcov = diag(2) * 0.5,
+				df = matrix(c(10, 8, 8, 10), nrow = 2),
+				ylab = "response",
+				aliased_names = NULL,
+				emmeans_grid = NULL
+			)
+		},
+		envir = asNamespace("biometryassist")
+	)
+	m <- structure(list(), class = "pc_fake_matrix_ndf")
+
+	expect_error(
+		pairwise_comparisons(
+			m,
+			classify = "Trt",
+			contrasts = list("A vs B" = c(A = 1, B = -1))
+		),
+		"General contrasts are not supported"
+	)
+})
