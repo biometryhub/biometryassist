@@ -782,7 +782,6 @@ test_that("get_diffs_from_pvalues flags significant pairs and adjusts", {
 # ORIGINAL TESTS (Updated to work with new structure)
 # ============================================================================
 
-
 test_that("mct ylab handles call/language labels", {
 	pp <- data.frame(
 		trt = factor(c("A", "B")),
@@ -1424,7 +1423,9 @@ test_that("plot, save and savename arguments are deprecated", {
 			multiple_comparisons(dat.aov, classify = "Species", plot = TRUE),
 			"`plot` has been deprecated"
 		)
-		while (grDevices::dev.cur() > 1) grDevices::dev.off()
+		while (grDevices::dev.cur() > 1) {
+			grDevices::dev.off()
+		}
 	})
 	withr::with_dir(tmp, {
 		expect_warning(
