@@ -13,6 +13,8 @@ load(test_path("data", "large_data.Rdata"), envir = .GlobalEnv)
 dat_large.aov <- aov(y ~ x, data = large_dat)
 dat_med.aov <- aov(y ~ x, data = med_dat)
 
+load(test_path("data", "oats_aov.Rdata"), envir = .GlobalEnv)
+
 # Start testing
 test_that("Residual plots work for aov", {
 	p1 <- resplot(dat.aov, shapiro = FALSE)
@@ -121,12 +123,6 @@ test_that("Residual plots work for asreml", {
 
 
 test_that("Residual plots work for multi-stratum aov (aovlist)", {
-	load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
-	oats.aov <- aov(
-		yield ~ Variety * Nitrogen + Error(Blocks / Wplots),
-		data = dat
-	)
-
 	p1 <- resplot(oats.aov)
 
 	# Three error strata remain after dropping the intercept-only stratum:

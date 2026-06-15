@@ -333,6 +333,167 @@ test_that("reference_comparisons supports asreml models", {
 	expect_equal(attr(out, "comparison_method"), "dunnett")
 })
 
+test_that("`reference` must be a single character string", {
+	m <- aov(weight ~ feed, data = chickwts)
+	expect_error(
+		reference_comparisons(m, classify = "feed"),
+		"single level label"
+	)
+	expect_error(
+		reference_comparisons(m, classify = "feed", reference = 1L),
+		"single level label"
+	)
+	expect_error(
+		reference_comparisons(
+			m,
+			classify = "feed",
+			reference = c("casein", "linseed")
+		),
+		"single level label"
+	)
+})
+
+test_that("`adjust` must be a single character string", {
+	m <- aov(weight ~ feed, data = chickwts)
+	expect_error(
+		reference_comparisons(
+			m,
+			classify = "feed",
+			reference = "casein",
+			adjust = 1.5
+		),
+		"single character string"
+	)
+	expect_error(
+		reference_comparisons(
+			m,
+			classify = "feed",
+			reference = "casein",
+			adjust = c("holm", "bonferroni")
+		),
+		"single character string"
+	)
+})
+
+test_that("invalid `adjust` method name errors clearly", {
+	m <- aov(weight ~ feed, data = chickwts)
+	expect_error(
+		reference_comparisons(
+			m,
+			classify = "feed",
+			reference = "casein",
+			adjust = "bogus"
+		),
+		"Invalid"
+	)
+})
+
+test_that("`by` referencing a factor not in `classify` errors clearly", {
+	m <- aov(weight ~ feed, data = chickwts)
+	expect_error(
+		reference_comparisons(
+			m,
+			classify = "feed",
+			reference = "casein",
+			by = "NotAFactor"
+		),
+		"Unknown"
+	)
+})
+
+test_that("`by` consuming all `classify` factors errors clearly", {
+	m <- aov(weight ~ feed, data = chickwts)
+	expect_error(
+		reference_comparisons(
+			m,
+			classify = "feed",
+			reference = "casein",
+			by = "feed"
+		),
+		"consumes all"
+	)
+})
+
+test_that("`by` group where the reference is absent warns and is skipped", {
+	# ctrl at Site X only; a and b at both sites.
+	# Site Y has no ctrl → warns and is skipped; Site X produces 2 comparisons.
+	set.seed(1)
+	d <- data.frame(
+		Trt = factor(c(
+			rep("ctrl", 4),
+			rep("a", 4),
+			rep("b", 4),
+			rep("a", 4),
+			rep("b", 4)
+		)),
+		Site = factor(c(
+			rep("X", 4),
+			rep("X", 4),
+			rep("X", 4),
+			rep("Y", 4),
+			rep("Y", 4)
+		)),
+		y = rnorm(20)
+	)
+	m <- aov(y ~ Trt * Site, data = d)
+	w <- capture_warnings(
+		out <- reference_comparisons(
+			m,
+			classify = "Trt:Site",
+			reference = "ctrl",
+			by = "Site"
+		)
+	)
+	expect_true(any(grepl("not present in group", w)))
+	expect_equal(as.character(unique(out$Site)), "X")
+	expect_equal(nrow(out), 2L)
+})
+
+test_that("`by` group with the reference as its only level warns and is skipped", {
+	# ctrl and a at Site X; ctrl only at Site Y (a:Y aliased).
+	# Site Y has 1 level → warns and is skipped; Site X produces 1 comparison.
+	set.seed(1)
+	d <- data.frame(
+		Trt = factor(c(rep("ctrl", 4), rep("a", 4), rep("ctrl", 4))),
+		Site = factor(c(rep("X", 4), rep("X", 4), rep("Y", 4))),
+		y = rnorm(12)
+	)
+	m <- aov(y ~ Trt * Site, data = d)
+	w <- capture_warnings(
+		out <- reference_comparisons(
+			m,
+			classify = "Trt:Site",
+			reference = "ctrl",
+			by = "Site"
+		)
+	)
+	expect_true(any(grepl("fewer than 2 levels", w)))
+	expect_equal(as.character(unique(out$Site)), "X")
+	expect_equal(nrow(out), 1L)
+})
+
+test_that("no comparisons can be computed at all errors clearly", {
+	# ctrl only at Site X (1 level in X → skipped), a and b only at Site Y (no ctrl → skipped).
+	set.seed(1)
+	d <- data.frame(
+		Trt = factor(c(rep("ctrl", 4), rep("a", 4), rep("b", 4))),
+		Site = factor(c(rep("X", 4), rep("Y", 4), rep("Y", 4))),
+		y = rnorm(12)
+	)
+	m <- suppressWarnings(aov(y ~ Trt * Site, data = d))
+	expect_error(
+		suppressWarnings(
+			reference_comparisons(
+				m,
+				classify = "Trt:Site",
+				reference = "ctrl",
+				by = "Site"
+			)
+		),
+		"No comparisons could be computed"
+	)
+})
+
 test_that("get_predictions returns asreml's exact prediction vcov", {
 	# The comparison functions take the variance-covariance of the predicted
 	# means straight from asreml's predict(..., vcov = TRUE); this checks that

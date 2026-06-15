@@ -644,7 +644,11 @@ test_that("`adjust` must be a single character string", {
 		"single character string"
 	)
 	expect_error(
-		pairwise_comparisons(m, classify = "Species", adjust = c("holm", "bonferroni")),
+		pairwise_comparisons(
+			m,
+			classify = "Species",
+			adjust = c("holm", "bonferroni")
+		),
 		"single character string"
 	)
 })
