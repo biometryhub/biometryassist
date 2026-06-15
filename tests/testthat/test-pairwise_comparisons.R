@@ -322,7 +322,7 @@ test_that("by + a level missing from one group: warn and skip, compute the rest"
 	)
 })
 
-test_that("levels containing '-' require the list form", {
+test_that("levels containing '-' are resolved against the data", {
 	set.seed(2)
 	d <- data.frame(
 		Trt = factor(rep(c("lo-fat", "hi-fat", "mid"), each = 8)),
@@ -330,19 +330,45 @@ test_that("levels containing '-' require the list form", {
 	)
 	m <- aov(y ~ Trt, data = d)
 
-	# string form cannot disambiguate the hyphen in the level name
-	expect_error(
-		pairwise_comparisons(m, classify = "Trt", pairs = "lo-fat-hi-fat"),
-		"list form"
-	)
-	# list form is unambiguous
-	out <- pairwise_comparisons(
+	# the string form is disambiguated using the actual level names: only
+	# "lo-fat" / "hi-fat" are valid labels, so the middle '-' is the separator
+	out <- pairwise_comparisons(m, classify = "Trt", pairs = "lo-fat-hi-fat")
+	expect_equal(nrow(out), 1)
+	expect_equal(out$level1, "lo-fat")
+	expect_equal(out$level2, "hi-fat")
+
+	# the list form remains available and gives the same result
+	out2 <- pairwise_comparisons(
 		m,
 		classify = "Trt",
 		pairs = list(c("lo-fat", "hi-fat"))
 	)
-	expect_equal(nrow(out), 1)
-	expect_equal(out$level1, "lo-fat")
+	expect_equal(out2$level1, "lo-fat")
+	expect_equal(out2$level2, "hi-fat")
+})
+
+test_that("a genuinely ambiguous '-' pair errors to the list form", {
+	set.seed(3)
+	d <- data.frame(
+		Trt = factor(rep(c("a", "c", "b-c", "a-b"), each = 6)),
+		y = rnorm(24)
+	)
+	m <- aov(y ~ Trt, data = d)
+
+	# "a-b-c" could split as c("a", "b-c") or c("a-b", "c"); both are valid
+	# levels, so it is genuinely ambiguous and must use the list form
+	expect_error(
+		pairwise_comparisons(m, classify = "Trt", pairs = "a-b-c"),
+		"ambiguous"
+	)
+	# the list form resolves it unambiguously
+	out <- pairwise_comparisons(
+		m,
+		classify = "Trt",
+		pairs = list(c("a", "b-c"))
+	)
+	expect_equal(out$level1, "a")
+	expect_equal(out$level2, "b-c")
 })
 
 test_that("print method shows a header and the table", {
@@ -595,4 +621,18 @@ test_that("pairwise_comparisons supports lme4::lmer models", {
 	expect_s3_class(out, "pairwise_comparisons")
 	expect_equal(nrow(out), choose(4L, 2L)) # 4 diets -> 6 pairs
 	expect_true(all(is.finite(out$df)))
+})
+
+test_that("transformed response warns it is reported on the model scale", {
+	# pairwise_comparisons() has no `trans` argument, so the warning must not tell
+	# the user to specify one; it reports differences on the model scale.
+	m <- aov(log(Petal.Width) ~ Species, data = iris)
+	expect_warning(
+		pairwise_comparisons(m, classify = "Species"),
+		"model \\(transformed\\) scale"
+	)
+	expect_warning(
+		pairwise_comparisons(m, classify = "Species"),
+		"appears to be transformed"
+	)
 })

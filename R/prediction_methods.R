@@ -138,12 +138,16 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 	)
 	classify <- check_classify_in_terms(classify, model_terms)
 
-	# Generate predictions if not provided
+	# Generate predictions if not provided. `vcov = TRUE` returns the exact
+	# variance-covariance of the predicted means, used directly by
+	# pairwise_comparisons()/reference_comparisons() for contrasts and the
+	# Dunnett correlation (no reconstruction from SEDs needed).
 	if (missing(pred.obj) || is.null(pred.obj)) {
 		pred.obj <- quiet(asreml::predict.asreml(
 			object = model.obj,
 			classify = classify,
 			sed = TRUE,
+			vcov = TRUE,
 			trace = FALSE,
 			...
 		))
@@ -163,16 +167,22 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 	# For use with asreml 4+
 	pp <- pred.obj$pvals
 	sed <- pred.obj$sed
+	# Exact prediction vcov (NULL on the deprecated `pred.obj` path if it was
+	# generated without `vcov = TRUE`; only multiple_comparisons() uses that path,
+	# and it relies on `sed`, not `vcov`).
+	vcov <- if (!is.null(pred.obj$vcov)) as.matrix(pred.obj$vcov) else NULL
 
 	# Process aliased treatments with asreml-specific exclude columns
 	aliased_result <- process_aliased(
 		pp,
 		sed,
 		classify,
-		exclude_cols = c("predicted.value", "std.error", "status")
+		exclude_cols = c("predicted.value", "std.error", "status"),
+		vcov = vcov
 	)
 	pp <- aliased_result$predictions
 	sed <- aliased_result$sed
+	vcov <- aliased_result$vcov
 	aliased_names <- aliased_result$aliased_names
 
 	# Remove status column if present
@@ -197,7 +207,9 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 		grepl(classify, dendf$Source) &
 			nchar(classify) == nchar(as.character(dendf$Source))
 	]
-	if (rlang::is_empty(ndf)) {
+	# Fall back to the residual df when wald() returns no usable denominator df
+	# for the term (term absent, or an NA denDF).
+	if (rlang::is_empty(ndf) || all(is.na(ndf))) {
 		ndf <- model.obj$nedf
 		rand_terms <- vars[
 			vars %in%
@@ -219,7 +231,8 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 		sed = sed,
 		df = ndf,
 		ylab = ylab,
-		aliased_names = aliased_names
+		aliased_names = aliased_names,
+		vcov = vcov
 	))
 }
 
@@ -238,9 +251,20 @@ get_predictions.lm <- function(model.obj, classify, ...) {
 	# Generate predictions (keep the reference grid for exact contrast df later)
 	emm <- emmeans::emmeans(model.obj, as.formula(paste("~", classify)))
 
-	# Extract standard errors and predictions
-	sed <- emm@misc$sigma *
-		sqrt(outer(1 / emm@grid$.wgt., 1 / emm@grid$.wgt., "+"))
+	# Exact variance-covariance of the predicted means, ordered as the grid.
+	# Used directly by pairwise_comparisons()/reference_comparisons(), and to
+	# build the SED matrix below.
+	vcov <- as.matrix(stats::vcov(emm))
+
+	# SED matrix from the prediction vcov: SED_ij = sqrt(V_ii + V_jj - 2 V_ij).
+	# Exact for all designs, including unbalanced marginal means. The earlier
+	# sigma * sqrt(1/w_i + 1/w_j) form was only exact for balanced or one-way
+	# predictions and was wrong when averaging over an unbalanced factor.
+	vd <- diag(vcov)
+	sed <- outer(vd, vd, "+") - 2 * vcov
+	sed[sed < 0] <- 0 # guard tiny negatives from rounding
+	sed <- sqrt(sed)
+
 	pred.out <- as.data.frame(emm)
 	pred.out <- pred.out[, !grepl("CL", names(pred.out))]
 
@@ -255,9 +279,10 @@ get_predictions.lm <- function(model.obj, classify, ...) {
 	}
 
 	# Process aliased treatments
-	aliased_result <- process_aliased(pp, sed, classify)
+	aliased_result <- process_aliased(pp, sed, classify, vcov = vcov)
 	pp <- aliased_result$predictions
 	sed <- aliased_result$sed
+	vcov <- aliased_result$vcov
 	aliased_names <- aliased_result$aliased_names
 
 	# Get degrees of freedom
@@ -274,7 +299,8 @@ get_predictions.lm <- function(model.obj, classify, ...) {
 		df = ndf,
 		ylab = ylab,
 		aliased_names = aliased_names,
-		emmeans_grid = emm
+		emmeans_grid = emm,
+		vcov = vcov
 	))
 }
 
@@ -340,10 +366,15 @@ predictions_from_emmeans <- function(model.obj, classify, model_terms, ylab) {
 	names(pp)[names(pp) == "emmean"] <- "predicted.value"
 	names(pp)[names(pp) == "SE"] <- "std.error"
 
+	# Exact variance-covariance of the predicted means, ordered as the grid.
+	# Used directly by pairwise_comparisons()/reference_comparisons().
+	vcov <- as.matrix(stats::vcov(emm))
+
 	# Process aliased treatments
-	aliased_result <- process_aliased(pp, sed, classify)
+	aliased_result <- process_aliased(pp, sed, classify, vcov = vcov)
 	pp <- aliased_result$predictions
 	sed <- aliased_result$sed
+	vcov <- aliased_result$vcov
 	aliased_names <- aliased_result$aliased_names
 
 	return(list(
@@ -352,7 +383,8 @@ predictions_from_emmeans <- function(model.obj, classify, model_terms, ylab) {
 		df = ndf,
 		ylab = ylab,
 		aliased_names = aliased_names,
-		emmeans_grid = emm
+		emmeans_grid = emm,
+		vcov = vcov
 	))
 }
 
@@ -514,14 +546,18 @@ get_predictions.art <- function(model.obj, classify, ...) {
 #' @param sed Standard error of differences matrix
 #' @param classify Name of predictor variable
 #' @param exclude_cols Column names to exclude when processing aliased names
+#' @param vcov Optional variance-covariance matrix of the predictions, subset to
+#'   the estimable rows/columns alongside `sed` when supplied (`NULL` otherwise).
 #'
-#' @return List containing processed predictions, sed matrix and aliased names
+#' @return List containing processed predictions, sed matrix, aliased names and
+#'   (when supplied) the subset `vcov`.
 #' @keywords internal
 process_aliased <- function(
 	pp,
 	sed,
 	classify,
-	exclude_cols = c("predicted.value", "std.error", "df", "Names")
+	exclude_cols = c("predicted.value", "std.error", "df", "Names"),
+	vcov = NULL
 ) {
 	aliased_names <- NULL
 
@@ -571,12 +607,16 @@ process_aliased <- function(
 		pp <- pp[!is.na(pp$predicted.value), ]
 		pp <- droplevels(pp)
 		sed <- sed[-aliased, -aliased]
+		if (!is.null(vcov)) {
+			vcov <- vcov[-aliased, -aliased, drop = FALSE]
+		}
 		warning(warn_string, call. = FALSE)
 	}
 
 	return(list(
 		predictions = pp,
 		sed = sed,
-		aliased_names = aliased_names
+		aliased_names = aliased_names,
+		vcov = vcov
 	))
 }

@@ -2295,3 +2295,25 @@ test_that("Multiple comparisons for lmerTest objects provides the same results a
 	# check p-values matrix
 	expect_equal(pred.lmet$pairwise_pvalues[3, 4], 0.180, tolerance = 5e-2)
 })
+
+test_that("get_predictions() returns exact SED for unbalanced marginal means", {
+	skip_if_not_installed("emmeans")
+	# Unbalanced two-factor design: predicting the `tension` margin averages over
+	# an unbalanced `wool`, where the old sigma * sqrt(1/w_i + 1/w_j) form was
+	# wrong. The SED must equal emmeans' exact pairwise SE (sqrt(V_ii+V_jj-2V_ij)).
+	set.seed(1)
+	wb <- warpbreaks[-sample(which(warpbreaks$wool == "A"), 10), ]
+	m <- aov(breaks ~ wool * tension, data = wb)
+
+	res <- get_predictions(m, "tension")
+	sed <- sort(res$sed[upper.tri(res$sed)])
+
+	emm <- emmeans::emmeans(m, ~tension)
+	exact <- sort(
+		as.data.frame(
+			emmeans::contrast(emm, method = "pairwise")
+		)$SE
+	)
+
+	expect_equal(sed, exact, tolerance = 1e-8)
+})

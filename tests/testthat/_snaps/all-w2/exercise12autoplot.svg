@@ -125,7 +125,7 @@
 </defs>
 <g clip-path='url(#cpMzIuNzl8MzcwLjkyfDIyLjc4fDM5LjQz)'>
 <rect x='32.79' y='22.78' width='338.12' height='16.65' style='stroke-width: 1.07; stroke: #333333; fill: #D9D9D9;' />
-<text x='201.86' y='34.14' text-anchor='middle' style='font-size: 8.80px; fill: #1A1A1A; font-family: sans;' textLength='30.33px' lengthAdjust='spacingAndGlyphs'>Rainfed</text>
+<text x='201.86' y='34.14' text-anchor='middle' style='font-size: 8.80px; fill: #1A1A1A; font-family: sans;' textLength='69.46px' lengthAdjust='spacingAndGlyphs'>Irrigation: Rainfed</text>
 </g>
 <g clip-path='url(#cpMC4wMHw3MjAuMDB8MC4wMHw1NzYuMDA=)'>
 </g>
@@ -136,7 +136,7 @@
 </defs>
 <g clip-path='url(#cpMzc2LjQwfDcxNC41MnwyMi43OHwzOS40Mw==)'>
 <rect x='376.40' y='22.78' width='338.12' height='16.65' style='stroke-width: 1.07; stroke: #333333; fill: #D9D9D9;' />
-<text x='545.46' y='34.14' text-anchor='middle' style='font-size: 8.80px; fill: #1A1A1A; font-family: sans;' textLength='32.28px' lengthAdjust='spacingAndGlyphs'>Irrigated</text>
+<text x='545.46' y='34.14' text-anchor='middle' style='font-size: 8.80px; fill: #1A1A1A; font-family: sans;' textLength='71.41px' lengthAdjust='spacingAndGlyphs'>Irrigation: Irrigated</text>
 </g>
 <g clip-path='url(#cpMC4wMHw3MjAuMDB8MC4wMHw1NzYuMDA=)'>
 <polyline points='71.81,547.85 71.81,545.11 ' style='stroke-width: 1.07; stroke: #333333; stroke-linecap: butt;' />

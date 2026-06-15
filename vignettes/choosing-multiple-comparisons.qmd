@@ -6,6 +6,9 @@ vignette: >
   %\VignetteEngine{quarto::html}
   %\VignetteEncoding{UTF-8}
 engine: knitr
+bibliography: references.bib
+nocite: |
+  @hothorn2008, @miller1981
 ---
 
 ```{r, include = FALSE}
@@ -32,11 +35,10 @@ which one you want depends on *what you are comparing*:
   *complete* set of all pairwise comparisons with a compact letter display
   (treatments that share a letter show no evidence of a difference).
 - **`pairwise_comparisons()`** is **difference-centric**. It returns a tidy
-  table with one row per requested comparison (estimate, standard error,
-  statistic, degrees of freedom and an adjusted p-value), and is the honest
-  representation when you only care about *some* of the comparisons.
-- **`reference_comparisons()`** is means-centric, for the specific question
-  "how does each treatment compare to a single control?". It returns each
+  table with one row per requested comparison, and is the honest representation
+  when you care about only *some* of the comparisons, or about general contrasts.
+- **`reference_comparisons()`** is **means-centric**, for the specific question
+  "how does each treatment compare to a single control?". It reports each
   level's mean, the reference mean and the adjusted difference, using an exact
   Dunnett test by default.
 
@@ -44,38 +46,64 @@ which one you want depends on *what you are comparing*:
 its results, not what it tests. All three rest on the same underlying pairwise
 differences between predicted means (more generally, linear contrasts):
 `multiple_comparisons()` tests *every* pairwise difference and condenses them
-into letters on the means — it does not test the means themselves — whereas
+into letters on the means (it does not test the means themselves), whereas
 `pairwise_comparisons()` and `reference_comparisons()` report a chosen subset of
 those differences directly.
 
-This vignette introduces `pairwise_comparisons()` and `reference_comparisons()`,
-shows them alongside `multiple_comparisons()`, and then discusses how to choose a
-multiplicity adjustment and which function fits your question. All examples use
-built-in data and `aov()` so they can be run without any specialised modelling
-packages, but all three functions work across the supported model types (`aov`,
-`lm`, `aovlist`, `asreml`, `lmerMod` and `lme`).
+The rest of this vignette tours the three functions on shared example data, then
+covers the cross-cutting topics: choosing a multiplicity adjustment, the shared
+`adjust` and `by` arguments, confidence intervals, and a summary guide to picking
+the right function. All examples use built-in data and `aov()` so they run
+without any specialised modelling packages, but all three functions work across
+the supported model types (`aov`, `lm`, `aovlist`, `asreml`, `lmerMod` and
+`lme`).
 
-## A quick tour of `pairwise_comparisons()`
+## The three functions in action
 
-We will use the `iris` data and a one-way model for petal width.
+We start with the `iris` data and a one-way model for petal width, and reuse it
+across the first three subsections so the same analysis can be seen from each
+function's perspective.
 
 ```{r}
 model <- aov(Petal.Width ~ Species, data = iris)
 ```
 
-By default `pairwise_comparisons()` tests **all** pairwise differences and
-adjusts the p-values with Holm's method:
+### `multiple_comparisons()`: all pairs, means and letters
+
+`multiple_comparisons()` compares *every* pair of means and summarises the result
+as a letter display on the means, using Tukey's HSD by default:
+
+```{r}
+multiple_comparisons(model, classify = "Species")
+```
+
+Each row is a treatment mean; treatments that share a letter show no evidence of
+a difference. `autoplot()` draws the means with their intervals and letters:
+
+```{r, fig.height = 3}
+autoplot(multiple_comparisons(model, classify = "Species"))
+```
+
+The letter display is a compact summary of *all* pairwise comparisons at once.
+Because every pair has been compared, "share a letter" means "no evidence of a
+difference" — but that interpretation is only valid for the **complete** set (see
+[The same model, several views](#the-same-model-several-views)).
+
+### `pairwise_comparisons()`: a chosen set of differences
+
+`pairwise_comparisons()` reports the comparisons themselves, one per row. By
+default it tests **all** pairwise differences and adjusts the p-values with
+Holm's method:
 
 ```{r}
 pairwise_comparisons(model, classify = "Species")
 ```
 
 Each row is a difference: `estimate` is `mean(level1) - mean(level2)`, with
-`level1`/`level2` making the direction explicit, and the `level1.mean` /
+`level1`/`level2` making the direction explicit and the `level1.mean` /
 `level2.mean` columns reporting the two predicted means it is computed from. If
-you only care about a
-specific set of comparisons, pass them via `pairs` (the multiplicity adjustment
-is then applied over just that set):
+you care about only a specific set of comparisons, pass them via `pairs` — the
+multiplicity adjustment is then applied over just that set:
 
 ```{r}
 pairwise_comparisons(
@@ -92,7 +120,7 @@ and an asterisk marking comparisons that are significant at the (adjusted) level
 autoplot(pairwise_comparisons(model, classify = "Species"))
 ```
 
-### General contrasts
+#### General contrasts
 
 Sometimes the comparison of interest isn't a single pair. The `contrasts`
 argument tests any linear contrast — for example, *setosa* versus the average of
@@ -112,23 +140,54 @@ Each contrast is a named vector of coefficients (which should sum to zero) and
 the list name becomes the row label. A two-level contrast such as
 `c(A = 1, B = -1)` is exactly the pairwise difference `"A-B"`.
 
-### The same model, two views
+### `reference_comparisons()`: each level against a control
 
-Contrast that with `multiple_comparisons()` on the same model, which reports the
-means and their letter groupings:
+When the question is specifically "how does each treatment compare to a single
+control?", `reference_comparisons()` is the natural tool. It is means-centric like
+`multiple_comparisons()`, but only the comparisons against the chosen reference
+are made — and because every comparison shares that reference, significance
+attaches cleanly to each treatment (which a letter display cannot do for an
+incomplete set; see [The same model, several
+views](#the-same-model-several-views)).
+
+Switching to the `chickwts` data (chick weights by feed type), we compare every
+feed to the `casein` control:
 
 ```{r}
-multiple_comparisons(model, classify = "Species")
+model_cw <- aov(weight ~ feed, data = chickwts)
+reference_comparisons(model_cw, classify = "feed", reference = "casein")
 ```
 
-Both are correct; they answer different questions. The letter display is a
-compact summary of *every* pairwise comparison at once — its contract is that
-all pairs have been compared, so "share a letter" means "no evidence of a
-difference". That summary is only meaningful for the **complete** set: with an
-incomplete or irregular set of comparisons there is no valid letter display, and
-forcing one would silently assert "not different" for pairs that were never
-tested. When you are interested in a chosen subset of comparisons, the tidy
-difference table is the honest representation.
+Each row gives the mean of a feed (`level1.mean`), the mean of the control
+(`level2.mean`) and their difference, with the adjustment defaulting to the exact
+Dunnett test. The `autoplot()` method draws each feed's mean, a dashed line at
+the control mean (marked with a diamond), and an interval for the difference from
+the control, so the interval clears the control line exactly when the comparison
+is significant; significant feeds are also flagged with an asterisk:
+
+```{r, fig.height = 3.5}
+autoplot(reference_comparisons(model_cw, classify = "feed", reference = "casein"))
+```
+
+### The same model, several views
+
+The three functions are different *views* of the same fitted model, not different
+tests. On the iris model, `multiple_comparisons()` and an all-pairs
+`pairwise_comparisons()` rest on identical pairwise differences — one presents
+them as means-with-letters, the other as a table of differences. Both are
+correct; they answer different questions:
+
+- the **letter display** (`multiple_comparisons()`) is a compact summary of the
+  *complete* set of pairwise comparisons, valid only because every pair is
+  compared;
+- the **difference table** (`pairwise_comparisons()`) is the honest
+  representation when the set is incomplete or irregular — forcing letters onto
+  such a set would silently assert "not different" for pairs that were never
+  tested;
+- the **reference table** (`reference_comparisons()`) is the right view when one
+  level is a control, where significance attaches to each treatment directly.
+
+So the choice of function follows from the *question*, not from the model.
 
 ## Controlling error across comparisons
 
@@ -140,19 +199,19 @@ right choice depends on your goal.
 rejection across the whole family. It is the conservative, "every claim must be
 trustworthy" criterion, appropriate for a small set of planned comparisons.
 
-- **Bonferroni** is the simplest FWER method but is unnecessarily conservative.
-- **Holm** [Holm, 1979] is a step-down procedure that controls the FWER under
-  *any* dependence structure and is uniformly more powerful than Bonferroni —
-  there is essentially never a reason to prefer plain Bonferroni over Holm. It
-  is the default in `pairwise_comparisons()`.
-- **Tukey's HSD** [Tukey, 1953; Hsu, 1996] uses the studentized range
+- **Bonferroni** is the simplest FWER method, but quite conservative: Holm
+  controls the same error rate and is uniformly more powerful, so there is
+  essentially never a reason to prefer plain Bonferroni over Holm.
+- **Holm** [@holm1979] is a step-down procedure that controls the FWER under
+  *any* dependence structure. It is the default in `pairwise_comparisons()`.
+- **Tukey's HSD** [@tukey1953; @hsu1996] uses the studentized range
   distribution to give *exact* simultaneous FWER control for the complete set of
   **all** pairwise comparisons (exact for equal replication; the Tukey–Kramer
   extension covers unequal replication). Because it exploits the exact joint
   distribution of all pairwise differences, it is more powerful than Bonferroni
   or Holm *for that complete set* — which is why it is the default in
   `multiple_comparisons()`.
-- **Dunnett's test** [Dunnett, 1955] is the exact FWER procedure for the
+- **Dunnett's test** [@dunnett1955] is the exact FWER procedure for the
   specific family of comparing every treatment against a *single control*. Like
   Tukey for all pairs, it exploits the known joint distribution of those
   comparisons (the correlation induced by the shared control), so it is more
@@ -160,87 +219,60 @@ trustworthy" criterion, appropriate for a small set of planned comparisons.
   `reference_comparisons()`.
 
 **False discovery rate (FDR)** is the expected *proportion* of false rejections
-among the rejected comparisons. It is less stringent than FWER and earns its
-keep when comparisons are many and somewhat exploratory.
+among the rejected comparisons. It is less stringent than FWER and earns its keep
+when comparisons are many and somewhat exploratory, such as in plant breeding.
 
-- **Benjamini–Hochberg (`"BH"`/`"fdr"`)** [Benjamini & Hochberg, 1995] controls
-  the FDR under independence and positive dependence (which pairwise comparisons
-  satisfy); **`"BY"`** is valid under arbitrary dependence but more
-  conservative.
-
-Both functions accept any method supported by `stats::p.adjust()` through their
-`adjust` argument, so you can choose the criterion that matches your goal.
+- **Benjamini–Hochberg (`"BH"`/`"fdr"`)** [@benjamini1995] controls the FDR
+  under independence and positive dependence (which pairwise comparisons
+  satisfy); **`"BY"`** is valid under arbitrary dependence but more conservative.
 
 ### Why Tukey is reserved for the complete (all-pairs) set
 
-A natural question is why `pairwise_comparisons()` does not offer
-`adjust = "tukey"`. Tukey's critical value is calibrated to the largest
-difference among *all* the means; applied to a chosen subset it still controls
-the FWER, but it is sized for comparisons you are not making, so it is
-conservative and conceptually mismatched [Hsu, 1996; Bretz et al., 2010]. For a
+A natural question is why `pairwise_comparisons()` and `reference_comparisons()`
+do not offer `adjust = "tukey"`. Tukey's critical value is calibrated to the
+largest difference among *all* the means; applied to a chosen subset it still
+controls the FWER, but it is sized for comparisons you are not making, so it is
+overly conservative and conceptually mismatched [@hsu1996; @bretz2010]. For a
 selected set, a method calibrated to *that* set (Holm, Bonferroni, BH) is
-preferred. Conversely, for the complete set Tukey is the most powerful of these
-because it uses the known structure of the pairwise differences. So Tukey
-belongs with the complete-set, means-and-letters analysis
-(`multiple_comparisons()`), and `pairwise_comparisons()` rejects it with an
-informative error pointing you there.
+preferred; for the all-vs-control set, Dunnett is the calibrated choice.
+Conversely, for the complete set Tukey is the most powerful of these because it
+uses the known structure of the pairwise differences. So Tukey belongs with the
+complete-set, means-and-letters analysis (`multiple_comparisons()`), and the
+other two functions reject it with an informative error pointing you there.
 
-Because both functions share the same predicted means and standard errors of
+Because all three functions share the same predicted means and standard errors of
 differences, **testing all pairs in `pairwise_comparisons()` with a given
 `adjust` reproduces the adjusted p-values of `multiple_comparisons()` with the
 same `adjust`** — only the presentation differs (a table of differences versus
 means and letters). The one exception is Tukey, for the reasons above.
 
-## Comparing each treatment to a control
+## The shared `adjust` and `by` arguments
 
-When the question is specifically "how does each treatment compare to a single
-control?", `reference_comparisons()` is the natural tool. It is means-centric
-like `multiple_comparisons()`, but only the comparisons against the chosen
-reference are made — and because every comparison shares that reference,
-significance attaches cleanly to each treatment's mean (which a letter display
-cannot do for an incomplete set).
+All three functions take `adjust` and `by`, with the same meaning throughout.
 
-Using the `chickwts` data (chick weights by feed type), comparing every feed to
-the `casein` control:
+### `adjust`: choosing the multiplicity method
 
-```{r}
-model_cw <- aov(weight ~ feed, data = chickwts)
-reference_comparisons(model_cw, classify = "feed", reference = "casein")
-```
-
-Each row gives a feed's mean (`level1.mean`), the control mean (`level2.mean`)
-and their difference, with the adjustment defaulting to the exact **Dunnett**
-test. The `autoplot()` method draws each feed's mean, a dashed line at the
-control mean (marked with a diamond), and an interval for the difference from the
-control, so the interval clears the control line exactly when the comparison is
-significant; significant feeds are also flagged with an asterisk:
-
-```{r, fig.height = 3.5}
-autoplot(reference_comparisons(model_cw, classify = "feed", reference = "casein"))
-```
-
-As with the other functions, `by` runs the comparisons independently within
-subgroups — for example comparing each treatment to the control *within each
-site or year*. (Dunnett needs a single residual degrees-of-freedom; for models
-that report comparison-specific df, `reference_comparisons()` falls back to Holm
-with a warning.)
-
-## The `adjust` and `by` arguments of `multiple_comparisons()`
-
-`multiple_comparisons()` also accepts `adjust` for choosing the p-value
-adjustment method. The default is Tukey's HSD; any `stats::p.adjust()` method can
-be used instead:
+`adjust` selects the p-value adjustment from the previous section. Each function
+has a sensible default (Tukey for `multiple_comparisons()`, Holm for
+`pairwise_comparisons()`, Dunnett for `reference_comparisons()`), but any
+`stats::p.adjust()` method can be requested instead — for example Bonferroni:
 
 ```{r}
 mc <- multiple_comparisons(model, classify = "Species", adjust = "bonferroni")
 mc$comparison_method
 ```
 
-The `by` argument runs comparisons **independently within subgroups** — useful
-for a factorial where you want to compare one factor *within* each level of
-another, rather than across the whole experiment. Each subgroup is a separate
-family, with no pooling or adjustment across groups. Using the `warpbreaks`
-data (number of breaks by `wool` type and `tension`):
+The only restriction is that the calibrated methods are tied to their family:
+`"tukey"` is accepted only by `multiple_comparisons()` and `"dunnett"` only by
+`reference_comparisons()` (see the previous section).
+
+### `by`: comparisons within subgroups
+
+`by` runs the comparisons **independently within subgroups** — useful for a
+factorial where you want to compare one factor *within* each level of another,
+rather than across the whole experiment. Each subgroup is a separate family, with
+no pooling or adjustment across groups. Using the `warpbreaks` data (number of
+breaks by `wool` type and `tension`):
 
 ```{r}
 wb <- aov(breaks ~ wool * tension, data = warpbreaks)
@@ -253,8 +285,9 @@ to the remaining (non-`by`) factor:
 pairwise_comparisons(wb, classify = "wool:tension", by = "wool")
 ```
 
-`by` works the same way in `multiple_comparisons()`, where `autoplot()` then
-facets the means and letters by the `by` variable:
+`by` behaves the same way in the other two functions. In `multiple_comparisons()`
+the letter display restarts within each subgroup and `autoplot()` facets the
+means and letters by the `by` variable:
 
 ```{r, fig.height = 3.5}
 autoplot(multiple_comparisons(wb, classify = "wool:tension", by = "wool"))
@@ -262,50 +295,48 @@ autoplot(multiple_comparisons(wb, classify = "wool:tension", by = "wool"))
 
 ## A note on confidence intervals
 
-The intervals shown by `pairwise_comparisons()` (and its forest plot) are
-*per-comparison* intervals — they are **not** adjusted for simultaneity.
-Significance, on the other hand, is judged by the multiplicity-adjusted
-p-value. These two can disagree: an interval may exclude zero while the adjusted
-p-value is no longer below `sig`. This is the same tension that the `int.type`
-options address in `multiple_comparisons()`. So in the forest plot, read
-significance from the asterisk (which tracks the adjusted test), not from
-whether the drawn interval happens to cross zero.
+The intervals shown by `pairwise_comparisons()` and `reference_comparisons()`
+(and their plots) are *per-comparison* intervals — except for Dunnett, they are
+**not** adjusted for simultaneity. Significance, on the other hand, is judged by
+the multiplicity-adjusted p-value. These two can disagree: an interval may
+exclude zero while the adjusted p-value is no longer below `sig`, and both
+functions emit a one-time note when this happens in a result. (Dunnett is the
+exception: its intervals *are* the simultaneous intervals, so for
+`reference_comparisons()` with its default they agree with the test by
+construction.) This is the same tension that the `int.type` options address in
+`multiple_comparisons()`. So in a forest plot, read significance from the
+asterisk (which tracks the adjusted test), not from whether the drawn interval
+happens to cross zero.
 
-## Choosing: a short guide
+## Choosing the right function: a summary
+
+Match the function to the question you are asking:
 
 - **All pairwise comparisons, with a compact summary?** Use
   `multiple_comparisons()` (Tukey's HSD by default, with letter groupings).
-- **A specific or planned subset of comparisons?** Use
+- **A specific or planned subset of comparisons, or a general contrast?** Use
   `pairwise_comparisons()` (Holm by default), which represents the chosen set
   honestly as a table of differences.
 - **Each treatment against a single control?** Use `reference_comparisons()`
   (exact Dunnett by default), which keeps the analysis means-centric.
 - **Many, exploratory comparisons where a controlled proportion of false
   positives is acceptable?** Use an FDR method (`adjust = "BH"`).
-- **Comparisons within subgroups of a factorial?** Use `by` in either function.
+- **Comparisons within subgroups of a factorial?** Use `by` in any of the three.
+
+The same advice as a table:
+
+| Question / comparison type | Function | Default adjustment | Not valid |
+|---|---|---|---|
+| All pairwise comparisons, summarised with letters | `multiple_comparisons()` | Tukey's HSD | `dunnett` |
+| A chosen subset of pairs, or general contrasts | `pairwise_comparisons()` | Holm | `tukey`, `dunnett` |
+| Every treatment vs a single control | `reference_comparisons()` | Dunnett | `tukey` |
+
+Any other `stats::p.adjust()` method (Holm, Bonferroni, BH, BY, …) can be
+requested in all three via `adjust`; only the calibrated methods are restricted
+to their family, as shown in the final column.
 
 ## References
 
-- Benjamini, Y., & Hochberg, Y. (1995). Controlling the false discovery rate: a
-  practical and powerful approach to multiple testing. *Journal of the Royal
-  Statistical Society, Series B (Methodological)*, 57(1), 289–300.
-  <doi:10.1111/j.2517-6161.1995.tb02031.x>
-- Bretz, F., Hothorn, T., & Westfall, P. (2010). *Multiple Comparisons Using R*.
-  Boca Raton: Chapman & Hall/CRC.
-- Dunnett, C. W. (1955). A multiple comparison procedure for comparing several
-  treatments with a control. *Journal of the American Statistical Association*,
-  50(272), 1096–1121. <doi:10.1080/01621459.1955.10501294>
-- Holm, S. (1979). A simple sequentially rejective multiple test procedure.
-  *Scandinavian Journal of Statistics*, 6(2), 65–70.
-- Hothorn, T., Bretz, F., & Westfall, P. (2008). Simultaneous inference in
-  general parametric models. *Biometrical Journal*, 50(3), 346–363.
-  <doi:10.1002/bimj.200810425>
-- Hsu, J. C. (1996). *Multiple Comparisons: Theory and Methods*. London:
-  Chapman & Hall.
-- Miller, R. G. (1981). *Simultaneous Statistical Inference* (2nd ed.). New York:
-  Springer-Verlag.
-- Tukey, J. W. (1953). The problem of multiple comparisons. Unpublished
-  manuscript. Reprinted in H. I. Braun (Ed.) (1994), *The Collected Works of
-  John W. Tukey, Volume VIII: Multiple Comparisons, 1948–1983* (pp. 1–300). New
-  York: Chapman & Hall.
+::: {#refs}
+:::
 ```

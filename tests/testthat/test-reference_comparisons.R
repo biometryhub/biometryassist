@@ -213,6 +213,16 @@ test_that("comparison-specific df (aovlist) falls back to holm with a warning", 
 	expect_equal(attr(out, "comparison_method"), "holm")
 })
 
+test_that("transformed response warns it is reported on the model scale", {
+	# reference_comparisons() has no `trans` argument, so the warning must not
+	# tell the user to specify one; it reports differences on the model scale.
+	m <- aov(log(weight) ~ feed, data = chickwts)
+	expect_warning(
+		reference_comparisons(m, classify = "feed", reference = "casein"),
+		"model \\(transformed\\) scale"
+	)
+})
+
 test_that("reference_comparisons supports nlme::lme models", {
 	skip_if_not_installed("nlme")
 	# A common (scalar) df, so the exact Dunnett test is used.
@@ -323,13 +333,11 @@ test_that("reference_comparisons supports asreml models", {
 	expect_equal(attr(out, "comparison_method"), "dunnett")
 })
 
-test_that("reconstructed V matches a directly-supplied vcov (asreml)", {
-	# reconstruct_vcov() rebuilds the variance-covariance of the
-	# predicted means from the SEDs and per-mean SEs via
-	#   V_ij = (V_ii + V_jj - SED_ij^2) / 2
-	# which is algebraically exact. ASReml-R is the only supported engine here
-	# that exposes the native V directly (predict(..., vcov = TRUE)$vcov), so this
-	# is the one place the reconstruction can be checked against ground truth.
+test_that("get_predictions returns asreml's exact prediction vcov", {
+	# The comparison functions take the variance-covariance of the predicted
+	# means straight from asreml's predict(..., vcov = TRUE); this checks that
+	# get_predictions() surfaces that matrix unchanged (and consistent with the
+	# reported SEs).
 	#
 	# asreml is commercial and unlicensed on CI/CRAN, so this is skipped there and
 	# only runs on a licensed machine.
@@ -351,12 +359,13 @@ test_that("reconstructed V matches a directly-supplied vcov (asreml)", {
 	pred <- predict(example3.asr, classify = classify, vcov = TRUE)
 	V_direct <- as.matrix(pred$vcov)
 
-	# The package's internal reconstruction from SED + per-mean SE.
+	# The vcov surfaced by get_predictions().
 	res <- biometryassist:::get_predictions(example3.asr, classify)
-	u <- seq_len(nrow(res$predictions))
-	V_recon <- biometryassist:::reconstruct_vcov(u, res$predictions, res$sed)
-
-	# Compare (asreml may order the vcov differently to the prediction table;
-	# align by the prediction labels before comparing if so).
-	expect_equal(unname(V_recon), unname(V_direct), tolerance = 1e-6)
+	expect_equal(unname(as.matrix(res$vcov)), unname(V_direct), tolerance = 1e-8)
+	# Diagonal of V matches the reported standard errors squared.
+	expect_equal(
+		sqrt(diag(as.matrix(res$vcov))),
+		res$predictions$std.error,
+		tolerance = 1e-6
+	)
 })

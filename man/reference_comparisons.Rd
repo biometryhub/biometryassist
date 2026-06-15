@@ -135,10 +135,10 @@ practice this rounding only affects \code{asreml} models with a fractional denDF
 (\code{aov}/\code{lm}/\code{lme} have integer df, and mixed models with comparison-specific df
 fall back to Holm).
 
-The Dunnett correlation structure is reconstructed from the standard errors of
-the means and the standard errors of differences that the prediction machinery
-already returns, so the exact test is available for every supported model
-engine. With \code{adjust = "dunnett"} the confidence intervals are the
+The Dunnett correlation structure is taken from the variance-covariance matrix
+of the predicted means that the prediction machinery returns, so the exact
+test is available for every supported model engine. With \code{adjust = "dunnett"}
+the confidence intervals are the
 \emph{simultaneous} Dunnett intervals and therefore agree with the adjusted test
 (an interval excludes zero exactly when the comparison is significant). With a
 \code{\link[stats:p.adjust]{stats::p.adjust()}} method the intervals are per-comparison and may disagree
