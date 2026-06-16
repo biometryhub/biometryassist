@@ -2102,6 +2102,40 @@ test_that("Adding buffers to plots works for RCBD", {
 	)
 })
 
+test_that("design() adds block buffers for block-based buffer types", {
+	# Exercises the `by <- "block"` default in design() for block-type buffers
+	# (a 2x2 grid of 2x2 blocks gives internal boundaries on both axes).
+	d_block <- design(
+		"rcbd",
+		treatments = LETTERS[1:4],
+		reps = 4,
+		nrows = 4,
+		ncols = 4,
+		brows = 2,
+		bcols = 2,
+		seed = 42,
+		quiet = TRUE,
+		plot = FALSE,
+		buffer = "block"
+	)
+	expect_in("buffer", d_block$design$treatments)
+
+	d_double <- design(
+		"rcbd",
+		treatments = LETTERS[1:4],
+		reps = 4,
+		nrows = 4,
+		ncols = 4,
+		brows = 2,
+		bcols = 2,
+		seed = 42,
+		quiet = TRUE,
+		plot = FALSE,
+		buffer = "double block"
+	)
+	expect_in("buffer", d_double$design$treatments)
+})
+
 test_that("Invalid buffer options produce an error", {
 	# RCBD
 	expect_error(
