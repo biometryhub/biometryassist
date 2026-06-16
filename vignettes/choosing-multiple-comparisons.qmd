@@ -81,7 +81,7 @@ Each row is a treatment mean; treatments that share a letter show no evidence of
 a difference. `autoplot()` draws the means with their intervals and letters:
 
 ```{r, fig.height = 3}
-autoplot(multiple_comparisons(model, classify = "Species"))
+autoplot(multiple_comparisons(model, classify = "Species"), label_height = 0.95)
 ```
 
 The letter display is a compact summary of *all* pairwise comparisons at once.
