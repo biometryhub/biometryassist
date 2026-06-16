@@ -4,7 +4,7 @@
 \alias{add_buffers}
 \title{Add buffers to an existing design}
 \usage{
-add_buffers(design_obj, type)
+add_buffers(design_obj, type, by = NULL)
 }
 \arguments{
 \item{design_obj}{A design object (with class "design") from the design() function}
@@ -12,6 +12,10 @@ add_buffers(design_obj, type)
 \item{type}{The type of buffer to add. One of 'edge', 'row', 'column',
 'double row', 'double column', 'blocks', or
 'double block'/'entire block'/'full block'.}
+
+\item{by}{The name of the grouping column used by the block-based buffer
+types (\code{"block"} and the \code{"double block"} family). Defaults to \code{"block"}
+when the design has a \code{"block"} column, otherwise \code{NULL}.}
 }
 \value{
 The modified design object with buffers added

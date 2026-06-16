@@ -4,7 +4,7 @@
 \alias{create_buffers}
 \title{Create buffers for design plots}
 \usage{
-create_buffers(design, type, blocks = FALSE)
+create_buffers(design, type, by = NULL)
 }
 \arguments{
 \item{design}{The data frame of the design.}
@@ -13,7 +13,11 @@ create_buffers(design, type, blocks = FALSE)
 double column, blocks (internal boundaries only), or double
 block/entire block/full block (buffers fully surrounding each block).}
 
-\item{blocks}{Does the design data frame contain blocks?}
+\item{by}{The name of the grouping column used by the block-based buffer
+types (e.g. \code{"block"}). Required for \code{type = "block"} and the
+\code{"double block"} family; ignored by the simple types. The simple types
+still assign buffer cells to blocks by position when the design has a
+\code{"block"} column.}
 }
 \value{
 The original data frame, updated to include buffers
