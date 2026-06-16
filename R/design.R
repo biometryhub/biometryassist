@@ -677,7 +677,7 @@ build_split <- function(design_book, nrows, ncols, brows, bcols, byrow) {
 		]
 	}
 
-	des
+	return(des)
 }
 
 #' Build Strip Plot Design
@@ -734,7 +734,7 @@ build_strip <- function(design_book, nrows, ncols, brows, bcols, byrow) {
 		sep = "_"
 	))
 
-	des
+	return(des)
 }
 
 #' Normalise Agricolae Book Column Names
@@ -825,7 +825,7 @@ normalise_agricolae_book <- function(design_book, design_info) {
 		}
 	}
 
-	design_book
+	return(design_book)
 }
 
 
@@ -861,15 +861,11 @@ add_plot_numbers <- function(des, plot_numbers) {
 
 	# Insert plot_number immediately after the col column
 	col_pos <- which(names(des) == "col")
-	if (length(col_pos) == 1L) {
-		des <- cbind(
-			des[, seq_len(col_pos), drop = FALSE],
-			plot_number = pnum,
-			des[, seq(col_pos + 1L, ncol(des)), drop = FALSE]
-		)
-	} else {
-		des$plot_number <- pnum
-	}
+	des <- cbind(
+		des[, seq_len(col_pos), drop = FALSE],
+		plot_number = pnum,
+		des[, seq(col_pos + 1L, ncol(des)), drop = FALSE]
+	)
 
-	des
+	return(des)
 }
