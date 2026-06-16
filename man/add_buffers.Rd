@@ -13,9 +13,11 @@ add_buffers(design_obj, type, by = NULL)
 'double row', 'double column', 'blocks', or
 'double block'/'entire block'/'full block'.}
 
-\item{by}{The name of the grouping column used by the block-based buffer
-types (\code{"block"} and the \code{"double block"} family). Defaults to \code{"block"}
-when the design has a \code{"block"} column, otherwise \code{NULL}.}
+\item{by}{The name of a grouping column. Used by the block-based buffer types
+(\code{"block"} and the \code{"double block"} family), and optionally by \code{"row"}/
+\code{"column"} to insert a buffer only where the group changes between adjacent
+rows/columns (e.g. between wholeplots in a split-plot design). Defaults to
+\code{"block"} when the design has a \code{"block"} column, otherwise \code{NULL}.}
 }
 \value{
 The modified design object with buffers added

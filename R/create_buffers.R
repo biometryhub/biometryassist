@@ -28,17 +28,60 @@ apply_coord_remap <- function(design, row_gap_counts, col_gap_counts) {
 	list(design = design, map_rows = map_rows, map_cols = map_cols)
 }
 
+# Empty named gap-count vector covering every gap on one axis (one entry per
+# index from min-1 to max). Names are gap positions; values start at zero.
+empty_gap_counts <- function(min_all, max_all) {
+	gaps <- (min_all - 1L):max_all
+	stats::setNames(integer(length(gaps)), as.character(gaps))
+}
+
+# Cells (row, col) whose `by` group differs from the cell immediately above
+# them (a horizontal group boundary sits in the gap after row `row - 1`).
+row_group_boundaries <- function(design, by) {
+	top <- design[, c("row", "col", by)]
+	bottom <- design[, c("row", "col", by)]
+	top$row <- top$row + 1L
+	pairs <- merge(top, bottom, by = c("row", "col"), suffixes = c("_a", "_b"))
+	pairs[pairs[[paste0(by, "_a")]] != pairs[[paste0(by, "_b")]], c("row", "col")]
+}
+
+# Cells (row, col) whose `by` group differs from the cell immediately to their
+# left (a vertical group boundary sits in the gap after col `col - 1`).
+col_group_boundaries <- function(design, by) {
+	left <- design[, c("row", "col", by)]
+	right <- design[, c("row", "col", by)]
+	left$col <- left$col + 1L
+	pairs <- merge(left, right, by = c("row", "col"), suffixes = c("_a", "_b"))
+	pairs[pairs[[paste0(by, "_a")]] != pairs[[paste0(by, "_b")]], c("row", "col")]
+}
+
+# TRUE when `type` selects a block-based buffer (internal boundaries or full
+# surrounding rings). These require a grouping column, so `by` is defaulted to
+# "block" for them; the simple types treat `by` as opt-in.
+is_block_buffer_type <- function(type) {
+	grepl(
+		paste0(
+			"(^blocks?$|^b$|^double blocks?$|^entire blocks?$|",
+			"^full blocks?$|^db$|^eb$|^fb$)"
+		),
+		tolower(type)
+	)
+}
+
 #' Create buffers for design plots
 #'
 #' @param design The data frame of the design.
 #' @param type The type of buffer. One of edge, row, column, double row,
 #' double column, blocks (internal boundaries only), or double
 #' block/entire block/full block (buffers fully surrounding each block).
-#' @param by The name of the grouping column used by the block-based buffer
-#' types (e.g. `"block"`). Required for `type = "block"` and the
-#' `"double block"` family; ignored by the simple types. The simple types
-#' still assign buffer cells to blocks by position when the design has a
-#' `"block"` column.
+#' @param by The name of a grouping column. Required for `type = "block"` and the
+#' `"double block"` family (buffers are placed at the boundaries of this
+#' column's groups). Optional for `type = "row"`/`"col"`: when supplied, a
+#' buffer is inserted only where the `by` group changes between adjacent
+#' rows/columns (rather than between every pair); when `NULL`, a buffer is
+#' inserted between every pair. Ignored by `edge`, `double row`, and
+#' `double col`. The `edge`/`row`/`col` (and double) types still assign buffer
+#' cells to blocks by position when the design has a `"block"` column.
 #'
 #' @importFrom stats setNames aggregate
 #'
@@ -77,24 +120,106 @@ create_buffers <- function(design, type, by = NULL) {
 		do_block_assignment <- "block" %in% names(design)
 	} else if (grepl("(^rows?$|^r$)", tolower(type))) {
 		# Match row, rows, r
-		design$row <- 2 * design$row
+		if (is.null(by)) {
+			# Insert a buffer row between *every* pair of adjacent rows.
+			design$row <- 2 * design$row
 
-		min_row <- min(design$row)
+			min_row <- min(design$row)
 
-		row <- rep(seq(min_row - 1, (2 * n_rows) + 1, by = 2), each = n_cols)
-		col <- rep(seq(1, n_cols), times = n_rows + 1)
-		buffer_cells <- data.frame(row = row, col = col)
-		do_block_assignment <- "block" %in% names(design)
+			row <- rep(seq(min_row - 1, (2 * n_rows) + 1, by = 2), each = n_cols)
+			col <- rep(seq(1, n_cols), times = n_rows + 1)
+			buffer_cells <- data.frame(row = row, col = col)
+			do_block_assignment <- "block" %in% names(design)
+		} else {
+			# Insert a full-width buffer row only where `by` changes between
+			# vertically adjacent rows (e.g. between wholeplots).
+			if (!(by %in% names(design))) {
+				stop(
+					"`by` must name a column in the design; \"",
+					by,
+					"\" was not found.",
+					call. = FALSE
+				)
+			}
+
+			row_min_all <- min(design$row)
+			row_max_all <- max(design$row)
+			col_min_all <- min(design$col)
+			col_max_all <- max(design$col)
+
+			boundary_gaps <- sort(unique(
+				as.integer(row_group_boundaries(design, by)$row) - 1L
+			))
+
+			row_gap_counts <- empty_gap_counts(row_min_all, row_max_all)
+			col_gap_counts <- empty_gap_counts(col_min_all, col_max_all)
+			if (length(boundary_gaps) > 0) {
+				row_gap_counts[as.character(boundary_gaps)] <- 1L
+			}
+
+			remap <- apply_coord_remap(design, row_gap_counts, col_gap_counts)
+			design <- remap$design
+			map_rows <- remap$map_rows
+			map_cols <- remap$map_cols
+
+			if (length(boundary_gaps) > 0) {
+				buffer_cells <- expand.grid(
+					row = map_rows(boundary_gaps) + 1L,
+					col = map_cols(col_min_all:col_max_all)
+				)
+			}
+		}
 	} else if (grepl("(^col(umn)?s?$|^c$)", tolower(type))) {
 		# Match col, cols, column, columns or c
-		design$col <- 2 * design$col
+		if (is.null(by)) {
+			# Insert a buffer column between *every* pair of adjacent columns.
+			design$col <- 2 * design$col
 
-		min_col <- min(design$col)
+			min_col <- min(design$col)
 
-		row <- rep(seq(1, n_rows), times = n_cols + 1)
-		col <- rep(seq(min_col - 1, (2 * n_cols) + 1, by = 2), each = n_rows)
-		buffer_cells <- data.frame(row = row, col = col)
-		do_block_assignment <- "block" %in% names(design)
+			row <- rep(seq(1, n_rows), times = n_cols + 1)
+			col <- rep(seq(min_col - 1, (2 * n_cols) + 1, by = 2), each = n_rows)
+			buffer_cells <- data.frame(row = row, col = col)
+			do_block_assignment <- "block" %in% names(design)
+		} else {
+			# Insert a full-height buffer column only where `by` changes between
+			# horizontally adjacent columns.
+			if (!(by %in% names(design))) {
+				stop(
+					"`by` must name a column in the design; \"",
+					by,
+					"\" was not found.",
+					call. = FALSE
+				)
+			}
+
+			row_min_all <- min(design$row)
+			row_max_all <- max(design$row)
+			col_min_all <- min(design$col)
+			col_max_all <- max(design$col)
+
+			boundary_gaps <- sort(unique(
+				as.integer(col_group_boundaries(design, by)$col) - 1L
+			))
+
+			row_gap_counts <- empty_gap_counts(row_min_all, row_max_all)
+			col_gap_counts <- empty_gap_counts(col_min_all, col_max_all)
+			if (length(boundary_gaps) > 0) {
+				col_gap_counts[as.character(boundary_gaps)] <- 1L
+			}
+
+			remap <- apply_coord_remap(design, row_gap_counts, col_gap_counts)
+			design <- remap$design
+			map_rows <- remap$map_rows
+			map_cols <- remap$map_cols
+
+			if (length(boundary_gaps) > 0) {
+				buffer_cells <- expand.grid(
+					row = map_rows(row_min_all:row_max_all),
+					col = map_cols(boundary_gaps) + 1L
+				)
+			}
+		}
 	} else if (grepl("(^double rows?$|^dr$)", tolower(type))) {
 		# Match double row, double rows, or dr
 		design$row <- (3 * design$row) - 1
@@ -161,12 +286,8 @@ create_buffers <- function(design, type, by = NULL) {
 
 		# Build gap insert counts. We insert one buffer row/col for each block edge.
 		# Where two blocks are adjacent, this yields two buffer rows/cols (one per block).
-		row_gaps <- (row_min_all - 1L):row_max_all
-		col_gaps <- (col_min_all - 1L):col_max_all
-		row_gap_counts <- integer(length(row_gaps))
-		col_gap_counts <- integer(length(col_gaps))
-		names(row_gap_counts) <- as.character(row_gaps)
-		names(col_gap_counts) <- as.character(col_gaps)
+		row_gap_counts <- empty_gap_counts(row_min_all, row_max_all)
+		col_gap_counts <- empty_gap_counts(col_min_all, col_max_all)
 
 		add_gap_counts <- function(counts, gaps) {
 			gaps <- as.character(as.integer(gaps))
@@ -294,39 +415,9 @@ create_buffers <- function(design, type, by = NULL) {
 		col_min_all <- min(design$col)
 		col_max_all <- max(design$col)
 
-		# Identify internal boundaries where adjacent plots belong to different groups.
-		by_top <- paste0(by, "_top")
-		by_bottom <- paste0(by, "_bottom")
-		by_left <- paste0(by, "_left")
-		by_right <- paste0(by, "_right")
-
-		top <- design[, c("row", "col", by)]
-		bottom <- design[, c("row", "col", by)]
-		top$row <- top$row + 1L
-		row_pairs <- merge(
-			top,
-			bottom,
-			by = c("row", "col"),
-			suffixes = c("_top", "_bottom")
-		)
-		row_boundary_cells <- row_pairs[
-			row_pairs[[by_top]] != row_pairs[[by_bottom]],
-			c("row", "col")
-		]
-
-		left <- design[, c("row", "col", by)]
-		right <- design[, c("row", "col", by)]
-		left$col <- left$col + 1L
-		col_pairs <- merge(
-			left,
-			right,
-			by = c("row", "col"),
-			suffixes = c("_left", "_right")
-		)
-		col_boundary_cells <- col_pairs[
-			col_pairs[[by_left]] != col_pairs[[by_right]],
-			c("row", "col")
-		]
+		# Internal boundaries where adjacent plots belong to different groups.
+		row_boundary_cells <- row_group_boundaries(design, by)
+		col_boundary_cells <- col_group_boundaries(design, by)
 
 		row_boundary_gaps <- sort(unique(
 			as.integer(row_boundary_cells$row) - 1L
@@ -335,12 +426,8 @@ create_buffers <- function(design, type, by = NULL) {
 			as.integer(col_boundary_cells$col) - 1L
 		))
 
-		row_gaps <- (row_min_all - 1L):row_max_all
-		col_gaps <- (col_min_all - 1L):col_max_all
-		row_gap_counts <- integer(length(row_gaps))
-		col_gap_counts <- integer(length(col_gaps))
-		names(row_gap_counts) <- as.character(row_gaps)
-		names(col_gap_counts) <- as.character(col_gaps)
+		row_gap_counts <- empty_gap_counts(row_min_all, row_max_all)
+		col_gap_counts <- empty_gap_counts(col_min_all, col_max_all)
 
 		if (length(row_boundary_gaps) > 0) {
 			row_gap_counts[as.character(row_boundary_gaps)] <- 1L
@@ -441,9 +528,11 @@ create_buffers <- function(design, type, by = NULL) {
 #' @param type The type of buffer to add. One of 'edge', 'row', 'column',
 #' 'double row', 'double column', 'blocks', or
 #' 'double block'/'entire block'/'full block'.
-#' @param by The name of the grouping column used by the block-based buffer
-#' types (`"block"` and the `"double block"` family). Defaults to `"block"`
-#' when the design has a `"block"` column, otherwise `NULL`.
+#' @param by The name of a grouping column. Used by the block-based buffer types
+#' (`"block"` and the `"double block"` family), and optionally by `"row"`/
+#' `"column"` to insert a buffer only where the group changes between adjacent
+#' rows/columns (e.g. between wholeplots in a split-plot design). Defaults to
+#' `"block"` when the design has a `"block"` column, otherwise `NULL`.
 #' @returns The modified design object with buffers added
 #'
 #' @examples
@@ -467,8 +556,14 @@ create_buffers <- function(design, type, by = NULL) {
 add_buffers <- function(design_obj, type, by = NULL) {
 	stopifnot(inherits(design_obj, "design"))
 
-	# Default the grouping column to "block" when the design has one
-	if (is.null(by) && "block" %in% names(design_obj$design)) {
+	# Default the grouping column to "block" for the block-based types when the
+	# design has one. For row/col, `by` stays opt-in so the default remains a
+	# buffer between every row/column.
+	if (
+		is.null(by) &&
+			is_block_buffer_type(type) &&
+			"block" %in% names(design_obj$design)
+	) {
 		by <- "block"
 	}
 

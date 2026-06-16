@@ -410,3 +410,104 @@ test_that("double block buffers land at exact coordinates", {
 	expect_equal(as.character(corner$treatments), "buffer")
 	expect_equal(corner$block, 1)
 })
+
+# ---------------------------------------------------------------------------
+# `by` support for the simple row/col types: insert a buffer only where the
+# grouping column changes, rather than between every adjacent row/column.
+# ---------------------------------------------------------------------------
+
+# 4x2 design with two row-wise wholeplots: rows 1-2 = wp 1, rows 3-4 = wp 2
+wholeplot_4x2 <- function() {
+	data.frame(
+		row = rep(1:4, each = 2),
+		col = rep(1:2, 4),
+		treatments = paste0("T", 1:8),
+		wholeplot = rep(c(1, 2), each = 4)
+	)
+}
+
+# 2x4 design with two column-wise strips: cols 1-2 = strip 1, cols 3-4 = strip 2
+strip_2x4 <- function() {
+	data.frame(
+		row = rep(1:2, each = 4),
+		col = rep(1:4, 2),
+		treatments = paste0("T", 1:8),
+		strip = rep(c(1, 1, 2, 2), 2)
+	)
+}
+
+test_that("row buffers with `by` insert only at group boundaries", {
+	out <- create_buffers(wholeplot_4x2(), type = "row", by = "wholeplot")
+
+	# A single full-width buffer row sits between the two wholeplots (at row 3)
+	buf <- out[out$treatments == "buffer", ]
+	expect_equal(sort(unique(buf$row)), 3)
+	expect_equal(sort(unique(buf$col)), c(1, 2))
+	expect_true(all(is.na(buf$wholeplot)))
+
+	# Wholeplot 1 (rows 1-2) unchanged; wholeplot 2 (rows 3-4) shifts to 4-5
+	expect_equal(out[out$treatments == "T1", "row"], 1)
+	expect_equal(out[out$treatments == "T3", "row"], 2)
+	expect_equal(out[out$treatments == "T5", "row"], 4)
+	expect_equal(out[out$treatments == "T7", "row"], 5)
+})
+
+test_that("column buffers with `by` insert only at group boundaries", {
+	out <- create_buffers(strip_2x4(), type = "col", by = "strip")
+
+	# A single full-height buffer column sits between the two strips (at col 3)
+	buf <- out[out$treatments == "buffer", ]
+	expect_equal(sort(unique(buf$col)), 3)
+	expect_equal(sort(unique(buf$row)), c(1, 2))
+	expect_true(all(is.na(buf$strip)))
+
+	# Strip 1 (cols 1-2) unchanged; strip 2 (cols 3-4) shifts to 4-5
+	expect_equal(out[out$treatments == "T1", "col"], 1)
+	expect_equal(out[out$treatments == "T2", "col"], 2)
+	expect_equal(out[out$treatments == "T3", "col"], 4)
+	expect_equal(out[out$treatments == "T4", "col"], 5)
+})
+
+test_that("row buffers with `by` add nothing when the group never changes", {
+	design <- wholeplot_4x2()
+	design$wholeplot <- 1 # single group everywhere
+
+	out <- create_buffers(design, type = "row", by = "wholeplot")
+
+	expect_false(any(out$treatments == "buffer"))
+	expect_equal(out$row, design$row)
+	expect_equal(out$col, design$col)
+})
+
+test_that("row/col `by` errors when the column is missing", {
+	expect_error(
+		create_buffers(simple_2x2(), type = "row", by = "nope"),
+		"must name a column"
+	)
+	expect_error(
+		create_buffers(simple_2x2(), type = "col", by = "nope"),
+		"must name a column"
+	)
+})
+
+test_that("add_buffers keeps every-row buffers on a blocked design (by stays opt-in)", {
+	# Regression guard: defaulting `by` to "block" must NOT change row/col buffers.
+	design_obj <- design(
+		type = "rcbd",
+		treatments = LETTERS[1:4],
+		reps = 2,
+		nrows = 4,
+		ncols = 2,
+		brows = 2,
+		bcols = 2,
+		seed = 42,
+		quiet = TRUE
+	)
+	out <- add_buffers(design_obj, type = "row")
+
+	# Buffers between every pair of rows (doubling), not just block boundaries
+	buf_rows <- sort(unique(
+		out$design$row[out$design$treatments == "buffer"]
+	))
+	expect_equal(buf_rows, seq(1, max(out$design$row), by = 2))
+})

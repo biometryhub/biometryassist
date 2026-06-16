@@ -13,11 +13,14 @@ create_buffers(design, type, by = NULL)
 double column, blocks (internal boundaries only), or double
 block/entire block/full block (buffers fully surrounding each block).}
 
-\item{by}{The name of the grouping column used by the block-based buffer
-types (e.g. \code{"block"}). Required for \code{type = "block"} and the
-\code{"double block"} family; ignored by the simple types. The simple types
-still assign buffer cells to blocks by position when the design has a
-\code{"block"} column.}
+\item{by}{The name of a grouping column. Required for \code{type = "block"} and the
+\code{"double block"} family (buffers are placed at the boundaries of this
+column's groups). Optional for \code{type = "row"}/\code{"col"}: when supplied, a
+buffer is inserted only where the \code{by} group changes between adjacent
+rows/columns (rather than between every pair); when \code{NULL}, a buffer is
+inserted between every pair. Ignored by \code{edge}, \verb{double row}, and
+\verb{double col}. The \code{edge}/\code{row}/\code{col} (and double) types still assign buffer
+cells to blocks by position when the design has a \code{"block"} column.}
 }
 \value{
 The original data frame, updated to include buffers

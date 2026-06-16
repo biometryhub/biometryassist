@@ -188,7 +188,11 @@ design <- function(
 
 	# Add buffers if requested
 	if (!is.null(buffer)) {
-		by <- if ("block" %in% names(des)) "block" else NULL
+		by <- if (is_block_buffer_type(buffer) && "block" %in% names(des)) {
+			"block"
+		} else {
+			NULL
+		}
 		des <- create_buffers(des, type = buffer, by = by)
 		output$design <- des
 	}
@@ -386,7 +390,11 @@ des_info <- function(
 
 	# Add buffers if requested
 	if (!is.null(buffer)) {
-		by <- if ("block" %in% names(des)) "block" else NULL
+		by <- if (is_block_buffer_type(buffer) && "block" %in% names(des)) {
+			"block"
+		} else {
+			NULL
+		}
 		des <- create_buffers(des, type = buffer, by = by)
 		output$design <- des
 	}
