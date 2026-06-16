@@ -45,3 +45,21 @@ test_that("note_ci_padjust_mismatch: emits a message and returns TRUE when CI an
 	)
 	expect_true(result)
 })
+
+test_that("dunnett_adjust errors when mvtnorm is not available", {
+	skip_if_not_installed("mockery")
+	fn <- biometryassist:::dunnett_adjust
+	mockery::stub(fn, "requireNamespace", function(pkg, quietly = FALSE) FALSE)
+	expect_error(
+		fn(
+			i_idx = 1L,
+			j_idx = 2L,
+			se = 1.0,
+			df_ij = 10L,
+			tstat = 2.0,
+			vcov = matrix(c(1, 0, 0, 1), 2, 2),
+			sig = 0.05
+		),
+		"Package 'mvtnorm' is required"
+	)
+})
