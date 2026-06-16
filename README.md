@@ -152,11 +152,9 @@ following in R to get the citation details:
 citation("biometryassist")
 ```
 
-    #> Warning in citation("biometryassist", ): could not determine year for
-    #> 'biometryassist' from package DESCRIPTION file
     #> To cite package 'biometryassist' in publications use:
     #> 
-    #>   Nielsen S, Rogers S, Conway A (????). _biometryassist: Functions to
+    #>   Nielsen S, Rogers S, Conway A (2026). _biometryassist: Functions to
     #>   Assist Design and Analysis of Agronomic Experiments_. R package
     #>   version 1.5.0, <https://biometryhub.github.io/biometryassist/>.
     #> 
@@ -165,6 +163,7 @@ citation("biometryassist")
     #>   @Manual{,
     #>     title = {biometryassist: Functions to Assist Design and Analysis of Agronomic Experiments},
     #>     author = {Sharon Nielsen and Sam Rogers and Annie Conway},
+    #>     year = {2026},
     #>     note = {R package version 1.5.0},
     #>     url = {https://biometryhub.github.io/biometryassist/},
     #>   }
