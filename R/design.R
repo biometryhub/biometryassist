@@ -12,6 +12,7 @@
 #' @param fac.names Allows renaming of the `A` level of factorial designs by passing (optionally named) vectors of new labels to be applied to the factors within a list. See examples and details for more information.
 #' @param fac.sep The separator used by `fac.names`. Used to combine factorial design levels. If a vector of 2 levels is supplied, the first separates factor levels and label, and the second separates the different factors.
 #' @param buffer A string specifying the buffer plots to include for plotting. Default is `NULL` (no buffers plotted). Other options are "edge" (outer edge of trial area), "rows" (between rows), "columns" (between columns), "double row" (a buffer row each side of a treatment row), "double column" (a buffer row each side of a treatment column), "blocks" (buffers at internal boundaries between adjacent blocks), or "double block"/"entire block"/"full block" (buffers fully surrounding each block).
+#' @param plot_numbers One of `FALSE` (default), `TRUE`/`"sequential"`, or `"serpentine"`. Controls whether a `plot_number` column is added to the design. `"sequential"` (or `TRUE`) numbers plots row-by-row from top-left to bottom-right; `"serpentine"` reverses direction on alternate rows, following typical field navigation paths. Plot numbers are assigned after any buffers are added, so buffer plots are numbered alongside treatment plots.
 #' @param plot Logical (default `TRUE`). If `TRUE`, display a plot of the generated design. A plot can always be produced later using [autoplot()].
 #' @param rotation Rotate the text output as Treatments within the plot. Allows for easier reading of long treatment labels. Takes positive and negative values being number of degrees of rotation from horizontal.
 #' @param size Increase or decrease the text size within the plot for treatment labels. Numeric with default value of 4.
@@ -99,6 +100,7 @@ design <- function(
 	fac.names = NULL,
 	fac.sep = c("", " "),
 	buffer = NULL,
+	plot_numbers = FALSE,
 	plot = TRUE,
 	rotation = 0,
 	size = 4,
@@ -186,8 +188,14 @@ design <- function(
 
 	# Add buffers if requested
 	if (!is.null(buffer)) {
-		has_blocks <- any(grepl("block", tolower(names(des))))
-		des <- create_buffers(des, type = buffer, blocks = has_blocks)
+		by <- if ("block" %in% names(des)) "block" else NULL
+		des <- create_buffers(des, type = buffer, by = by)
+		output$design <- des
+	}
+
+	# Add plot numbers if requested (after buffers so buffer plots are included)
+	if (!isFALSE(plot_numbers)) {
+		des <- add_plot_numbers(des, plot_numbers)
 		output$design <- des
 	}
 
@@ -378,8 +386,8 @@ des_info <- function(
 
 	# Add buffers if requested
 	if (!is.null(buffer)) {
-		has_blocks <- any(grepl("block", tolower(names(des))))
-		des <- create_buffers(des, type = buffer, blocks = has_blocks)
+		by <- if ("block" %in% names(des)) "block" else NULL
+		des <- create_buffers(des, type = buffer, by = by)
 		output$design <- des
 	}
 
@@ -818,4 +826,50 @@ normalise_agricolae_book <- function(design_book, design_info) {
 	}
 
 	design_book
+}
+
+
+#' Add plot numbers to a design data frame
+#'
+#' Assigns a unique sequential field plot number to every row, in row-major
+#' order from the top-left corner. For `"serpentine"` the direction reverses on
+#' alternate rows, matching how a person or machine traverses a field.
+#'
+#' @param des A design data frame with `row` and `col` columns.
+#' @param plot_numbers `TRUE`/`"sequential"` or `"serpentine"`.
+#' @return `des` with a `plot_number` integer column inserted after `col`.
+#' @noRd
+add_plot_numbers <- function(des, plot_numbers) {
+	if (isTRUE(plot_numbers)) {
+		plot_numbers <- "sequential"
+	}
+	plot_numbers <- match.arg(plot_numbers, c("sequential", "serpentine"))
+
+	rows <- sort(unique(des$row))
+	pnum <- integer(nrow(des))
+	counter <- 1L
+
+	for (i in seq_along(rows)) {
+		row_idx <- which(des$row == rows[i])
+		row_idx <- row_idx[order(des$col[row_idx])]
+		if (plot_numbers == "serpentine" && i %% 2 == 0) {
+			row_idx <- rev(row_idx)
+		}
+		pnum[row_idx] <- seq(counter, counter + length(row_idx) - 1L)
+		counter <- counter + length(row_idx)
+	}
+
+	# Insert plot_number immediately after the col column
+	col_pos <- which(names(des) == "col")
+	if (length(col_pos) == 1L) {
+		des <- cbind(
+			des[, seq_len(col_pos), drop = FALSE],
+			plot_number = pnum,
+			des[, seq(col_pos + 1L, ncol(des)), drop = FALSE]
+		)
+	} else {
+		des$plot_number <- pnum
+	}
+
+	des
 }

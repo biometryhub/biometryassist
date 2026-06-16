@@ -2158,6 +2158,136 @@ test_that("Arbitrary unquoted column names for plotting works", {
 })
 
 
+# plot_numbers tests ----
+
+test_that("plot_numbers = FALSE adds no plot_number column", {
+	out <- design(
+		"crd",
+		treatments = c("A", "B", "C"),
+		reps = 3,
+		nrows = 3,
+		ncols = 3,
+		seed = 42,
+		plot_numbers = FALSE,
+		plot = FALSE,
+		quiet = TRUE
+	)
+	expect_false("plot_number" %in% names(out$design))
+})
+
+test_that("plot_numbers = 'sequential' numbers plots row-by-row left to right", {
+	out <- design(
+		"crd",
+		treatments = c("A", "B", "C"),
+		reps = 3,
+		nrows = 3,
+		ncols = 3,
+		seed = 42,
+		plot_numbers = "sequential",
+		plot = FALSE,
+		quiet = TRUE
+	)
+	des <- out$design[order(out$design$row, out$design$col), ]
+	expect_equal(des$plot_number, 1:9)
+})
+
+test_that("plot_numbers = TRUE is equivalent to 'sequential'", {
+	out_true <- design(
+		"crd",
+		treatments = c("A", "B", "C"),
+		reps = 3,
+		nrows = 3,
+		ncols = 3,
+		seed = 42,
+		plot_numbers = TRUE,
+		plot = FALSE,
+		quiet = TRUE
+	)
+	out_seq <- design(
+		"crd",
+		treatments = c("A", "B", "C"),
+		reps = 3,
+		nrows = 3,
+		ncols = 3,
+		seed = 42,
+		plot_numbers = "sequential",
+		plot = FALSE,
+		quiet = TRUE
+	)
+	expect_equal(out_true$design$plot_number, out_seq$design$plot_number)
+})
+
+test_that("plot_numbers = 'serpentine' reverses direction on even rows", {
+	out <- design(
+		"crd",
+		treatments = c("A", "B", "C"),
+		reps = 3,
+		nrows = 3,
+		ncols = 3,
+		seed = 42,
+		plot_numbers = "serpentine",
+		plot = FALSE,
+		quiet = TRUE
+	)
+	des <- out$design[order(out$design$row, out$design$col), ]
+	# Row 1 (odd):  1  2  3  left-to-right
+	# Row 2 (even): 6  5  4  right-to-left
+	# Row 3 (odd):  7  8  9  left-to-right
+	expect_equal(des$plot_number, c(1, 2, 3, 6, 5, 4, 7, 8, 9))
+})
+
+test_that("plot_number column is inserted immediately after col", {
+	out <- design(
+		"crd",
+		treatments = c("A", "B", "C"),
+		reps = 3,
+		nrows = 3,
+		ncols = 3,
+		seed = 42,
+		plot_numbers = "sequential",
+		plot = FALSE,
+		quiet = TRUE
+	)
+	col_pos <- which(names(out$design) == "col")
+	pn_pos <- which(names(out$design) == "plot_number")
+	expect_equal(pn_pos, col_pos + 1L)
+})
+
+test_that("plot numbers are assigned after buffers and cover all plots", {
+	out <- design(
+		"crd",
+		treatments = c("A", "B", "C"),
+		reps = 3,
+		nrows = 3,
+		ncols = 3,
+		seed = 42,
+		buffer = "edge",
+		plot_numbers = "sequential",
+		plot = FALSE,
+		quiet = TRUE
+	)
+	n <- nrow(out$design)
+	expect_equal(sort(out$design$plot_number), seq_len(n))
+})
+
+test_that("invalid plot_numbers value gives an informative error", {
+	expect_error(
+		design(
+			"crd",
+			treatments = c("A", "B", "C"),
+			reps = 3,
+			nrows = 3,
+			ncols = 3,
+			seed = 42,
+			plot_numbers = "boustrophedon",
+			plot = FALSE,
+			quiet = TRUE
+		),
+		"'arg' should be one of"
+	)
+})
+
+
 # des_info() (deprecated) tests ----
 
 test_that("des_info() returns a CRD design without plotting", {
@@ -2489,12 +2619,12 @@ test_that("normalise_agricolae_book() returns input unchanged for NULL book", {
 	expect_null(out)
 })
 
-test_that("des_info() adds buffers and passes blocks = FALSE for non-block designs", {
+test_that("des_info() adds buffers and passes by = NULL for non-block designs", {
 	crd_obj <- agricolae::design.crd(trt = c(1, 5, 10, 20), r = 2, seed = 42)
 
 	testthat::local_mocked_bindings(
-		create_buffers = function(des, type, blocks) {
-			attr(des, "blocks_arg") <- blocks
+		create_buffers = function(des, type, by) {
+			attr(des, "by_arg") <- if (is.null(by)) NA_character_ else by
 			des
 		},
 		.package = "biometryassist"
@@ -2513,10 +2643,10 @@ test_that("des_info() adds buffers and passes blocks = FALSE for non-block desig
 		"des_info\\(\\) is deprecated"
 	)
 
-	expect_identical(attr(out$design, "blocks_arg"), FALSE)
+	expect_identical(attr(out$design, "by_arg"), NA_character_)
 })
 
-test_that("des_info() adds buffers and passes blocks = TRUE for block designs", {
+test_that("des_info() adds buffers and passes by = 'block' for block designs", {
 	rcbd_obj <- agricolae::design.rcbd(
 		trt = c("T1", "T2", "T3"),
 		r = 2,
@@ -2524,8 +2654,8 @@ test_that("des_info() adds buffers and passes blocks = TRUE for block designs", 
 	)
 
 	testthat::local_mocked_bindings(
-		create_buffers = function(des, type, blocks) {
-			attr(des, "blocks_arg") <- blocks
+		create_buffers = function(des, type, by) {
+			attr(des, "by_arg") <- if (is.null(by)) NA_character_ else by
 			des
 		},
 		.package = "biometryassist"
@@ -2546,7 +2676,7 @@ test_that("des_info() adds buffers and passes blocks = TRUE for block designs", 
 		"des_info\\(\\) is deprecated"
 	)
 
-	expect_identical(attr(out$design, "blocks_arg"), TRUE)
+	expect_identical(attr(out$design, "by_arg"), "block")
 })
 
 test_that("des_info() creates a plot and prints output when quiet = FALSE", {
