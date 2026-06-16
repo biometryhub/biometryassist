@@ -2360,3 +2360,66 @@ test_that("autoplot.mct HSD bar handles a non-factor classify column", {
 	expect_length(eb, 1)
 	expect_equal(nrow(eb[[1]]$data), 1)
 })
+
+test_that("process_aliased uses count summary warning when more than 6 levels are aliased", {
+	pp <- data.frame(
+		trt = LETTERS[1:8],
+		predicted.value = c(1.0, NA, NA, NA, NA, NA, NA, NA),
+		std.error = c(0.1, NA, NA, NA, NA, NA, NA, NA),
+		stringsAsFactors = FALSE
+	)
+	sed <- matrix(NA_real_, 8, 8)
+	expect_warning(
+		result <- biometryassist:::process_aliased(pp, sed, "trt"),
+		"7 levels"
+	)
+	expect_equal(nrow(result$predictions), 1)
+})
+
+test_that("print.mct prints non-tukey header with adjustment method", {
+	out <- multiple_comparisons(
+		dat.aov,
+		classify = "Species",
+		adjust = "bonferroni"
+	)
+	printed <- capture.output(print(out))
+	expect_true(any(grepl("p-value adjustment = bonferroni", printed)))
+	expect_true(any(grepl("Significance level", printed)))
+	expect_false(any(grepl("HSD value", printed)))
+})
+
+test_that("calculate_raw_pvalue_matrix: n=1 returns 1x1 identity early", {
+	pp <- data.frame(Names = "A", predicted.value = 5.0)
+	result <- biometryassist:::calculate_raw_pvalue_matrix(
+		pp,
+		sed = 0.5,
+		ndf = 10L
+	)
+	expect_equal(result, matrix(1, 1, 1, dimnames = list("A", "A")))
+})
+
+test_that("calculate_raw_pvalue_matrix: scalar sed produces correct p-values", {
+	pp <- data.frame(Names = c("A", "B"), predicted.value = c(10.0, 12.0))
+	result <- biometryassist:::calculate_raw_pvalue_matrix(
+		pp,
+		sed = 1.0,
+		ndf = 20L
+	)
+	expect_true(is.matrix(result))
+	expect_equal(result["A", "B"], 2 * stats::pt(-2, 20), tolerance = 1e-8)
+	expect_equal(result["B", "A"], result["A", "B"])
+})
+
+test_that("calculate_raw_pvalue_matrix: matrix ndf extracts per-pair degrees of freedom", {
+	pp <- data.frame(Names = c("A", "B"), predicted.value = c(10.0, 12.0))
+	sed <- matrix(c(NA_real_, 1.0, 1.0, NA_real_), nrow = 2)
+	ndf <- matrix(c(20L, 18L, 18L, 20L), nrow = 2)
+	result <- biometryassist:::calculate_raw_pvalue_matrix(pp, sed, ndf)
+	expect_true(is.matrix(result))
+	expect_equal(result["A", "B"], 2 * stats::pt(-2, 18), tolerance = 1e-8)
+})
+
+test_that("back_transform: NULL offset is treated as zero", {
+	expect_equal(biometryassist:::back_transform(4, "sqrt", offset = NULL), 16)
+	expect_equal(biometryassist:::back_transform(0, "log", offset = NULL), 1)
+})

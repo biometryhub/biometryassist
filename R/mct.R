@@ -747,8 +747,8 @@ calculate_raw_pvalue_matrix <- function(pp, sed, ndf) {
 
 #' Determine significant differences from a p-value matrix
 #'
-#' Replaces `get_diffs()` as the source of the `diffs` named logical vector
-#' consumed by [multcompView::multcompLetters3()].
+#' Source of the `diffs` named logical vector consumed by
+#' [multcompView::multcompLetters3()].
 #'
 #' For `adjust = "tukey"`, `pval_matrix` is expected to already contain
 #' Tukey-adjusted p-values (no further adjustment is applied). For any other
@@ -993,26 +993,6 @@ process_treatment_names <- function(pp, vars) {
 	}
 
 	return(pp)
-}
-
-
-#' @noRd
-get_diffs <- function(pp, sed, ndf, sig) {
-	# Calculate the critical value
-	crit_val <- 1 / sqrt(2) * stats::qtukey((1 - sig), nrow(pp), ndf) * sed
-
-	# Determine pairs that are significantly different
-	diffs <- abs(outer(pp$predicted.value, pp$predicted.value, "-")) > crit_val
-	diffs <- diffs[lower.tri(diffs)]
-
-	# Create a vector of treatment comparison names
-	m <- outer(pp$Names, pp$Names, paste, sep = "-")
-	m <- m[lower.tri(m)]
-
-	names(diffs) <- m
-
-	# Return both the critical value and the differences
-	return(list(crit_val = crit_val, diffs = diffs))
 }
 
 

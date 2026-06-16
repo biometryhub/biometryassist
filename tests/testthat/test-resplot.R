@@ -148,6 +148,30 @@ test_that("Residual plots work for multi-stratum aov (aovlist)", {
 	)
 })
 
+test_that("resplot includes call text for aovlist when call = TRUE", {
+	p1 <- resplot(oats.aov, call = TRUE)
+	expect_equal(length(p1), 3)
+	expect_contains(class(p1[[1]]), "ggplot")
+})
+
+test_that("extract_model_info.asreml covers single-facet else branch and call = TRUE gsub", {
+	fake_asr <- structure(
+		list(
+			R.param = list(units = list(variance = list(size = 10))),
+			residual = rnorm(10),
+			residuals = rnorm(10),
+			linear.predictors = rnorm(10),
+			call = quote(asreml(y ~ x, data = dat))
+		),
+		class = "asreml"
+	)
+	result <- biometryassist:::extract_model_info(fake_asr, call = TRUE)
+	expect_equal(result$facet, 1)
+	expect_null(result$facet_name)
+	expect_equal(result$k, 10)
+	expect_false(is.null(result$model_call))
+})
+
 test_that("Residual plots work for lme4", {
 	skip_if_not_installed("lme4")
 	p1 <- resplot(dat.lme4, call = TRUE)
@@ -285,7 +309,9 @@ test_that("Residual plots work for glmmTMB (Gaussian); non-Gaussian errors to DH
 		family = gaussian()
 	)
 	p1 <- resplot(g_gauss)
+	p1_call <- resplot(g_gauss, call = TRUE)
 	expect_contains(class(p1), "ggplot")
+	expect_contains(class(p1_call), "ggplot")
 
 	vdiffr::expect_doppelganger(
 		title = "Resplot for glmmTMB gaussian",
