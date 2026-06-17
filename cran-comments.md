@@ -3,8 +3,8 @@
 Updating package with several new features and bug-fixes.
 
 ## Test environments
-* Local Windows 10 install, R 4.5.2
-* Ubuntu 24.04 (Virtual Machine), R 4.5.2
+* Local Windows 11 install, R 4.6.0
+* Ubuntu 24.04 (Virtual Machine), R 4.6.0
 * Github Actions:
     - macOS: r-release
     - windows: r-devel, r-release, r-oldrel
