@@ -8,7 +8,8 @@ process_aliased(
   pp,
   sed,
   classify,
-  exclude_cols = c("predicted.value", "std.error", "df", "Names")
+  exclude_cols = c("predicted.value", "std.error", "df", "Names"),
+  vcov = NULL
 )
 }
 \arguments{
@@ -19,9 +20,13 @@ process_aliased(
 \item{classify}{Name of predictor variable}
 
 \item{exclude_cols}{Column names to exclude when processing aliased names}
+
+\item{vcov}{Optional variance-covariance matrix of the predictions, subset to
+the estimable rows/columns alongside \code{sed} when supplied (\code{NULL} otherwise).}
 }
 \value{
-List containing processed predictions, sed matrix and aliased names
+List containing processed predictions, sed matrix, aliased names and
+(when supplied) the subset \code{vcov}.
 }
 \description{
 Process aliased treatments in predictions

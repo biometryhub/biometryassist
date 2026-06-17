@@ -353,31 +353,434 @@ test_that("p-value matrix with transformations", {
 
 
 # ============================================================================
-# ORIGINAL TESTS (Updated to work with new structure)
+# TESTS FOR adjust / by ARGUMENTS
 # ============================================================================
 
-test_that("mct produces output", {
-	tmp <- withr::local_tempdir()
-	withr::with_dir(tmp, {
-		withr::local_file("Rplots.pdf")
-
-		output <- multiple_comparisons(
-			dat.aov,
-			classify = "Species",
-			plot = TRUE
-		)
-		while (grDevices::dev.cur() > 1) {
-			grDevices::dev.off()
-		}
-
-		expect_equal(
-			output$predictions$predicted.value,
-			c(0.25, 1.33, 2.03),
-			tolerance = 5e-2
-		)
-		vdiffr::expect_doppelganger("mct output", autoplot(output))
-	})
+test_that("default adjust is tukey and adds comparison_method", {
+	output <- multiple_comparisons(dat.aov, classify = "Species")
+	expect_equal(output$comparison_method, "tukey")
+	expect_type(output$hsd, "double")
+	# Only a single p-value object is returned
+	expect_false("raw_pvalues" %in% names(output))
+	expect_true("pairwise_pvalues" %in% names(output))
+	# Backwards-compatible positional access preserved
+	expect_identical(output$predictions, output[[1]])
+	expect_identical(output$pairwise_pvalues, output[[2]])
+	expect_identical(output$hsd, output[[3]])
+	expect_identical(output$sig_level, output[[4]])
 })
+
+test_that("invalid adjust method errors", {
+	expect_error(
+		multiple_comparisons(dat.aov, classify = "Species", adjust = "nope"),
+		"Invalid `adjust` method"
+	)
+})
+
+test_that("non-tukey adjust sets hsd NULL and returns a single p-value matrix", {
+	output <- multiple_comparisons(
+		dat.aov,
+		classify = "Species",
+		adjust = "bonferroni"
+	)
+	expect_equal(output$comparison_method, "bonferroni")
+	expect_null(output$hsd)
+	# A single adjusted p-value object, no separate raw_pvalues
+	expect_false("raw_pvalues" %in% names(output))
+	expect_true(is.matrix(output$pairwise_pvalues))
+	expect_true(isSymmetric(output$pairwise_pvalues))
+	expect_equal(diag(output$pairwise_pvalues), rep(1, 3), ignore_attr = TRUE)
+})
+
+test_that("adjust does not double-adjust p-values", {
+	# Build data with non-trivial (non-zero) p-values
+	set.seed(42)
+	d <- data.frame(
+		Trt = factor(rep(c("A", "B", "C", "D"), each = 8)),
+		y = rnorm(32)
+	)
+	d$y[d$Trt == "A"] <- d$y[d$Trt == "A"] + 1.2
+	m <- aov(y ~ Trt, data = d)
+
+	out_bonf <- multiple_comparisons(m, classify = "Trt", adjust = "bonferroni")
+	out_none <- multiple_comparisons(m, classify = "Trt", adjust = "none")
+
+	# adjust = "none" returns the raw (unadjusted) p-values, so Bonferroni
+	# should equal those raw values * (number of comparisons), capped at 1.
+	raw <- out_none$pairwise_pvalues
+	adj <- out_bonf$pairwise_pvalues
+	manual <- pmin(raw * choose(4, 2), 1)
+	expect_equal(adj[lower.tri(adj)], manual[lower.tri(manual)])
+})
+
+test_that("adjust = none returns raw two-sided t-test p-values", {
+	output <- multiple_comparisons(
+		dat.aov,
+		classify = "Species",
+		adjust = "none"
+	)
+	expect_true(is.matrix(output$pairwise_pvalues))
+	expect_equal(diag(output$pairwise_pvalues), rep(1, 3), ignore_attr = TRUE)
+	expect_true(isSymmetric(output$pairwise_pvalues))
+})
+
+test_that("by splits comparisons into per-group families", {
+	set.seed(1)
+	d <- expand.grid(
+		Trt = factor(c("A", "B", "C")),
+		Grp = factor(c("G1", "G2")),
+		rep = 1:6
+	)
+	d$y <- rnorm(
+		nrow(d),
+		mean = as.numeric(d$Trt) * ifelse(d$Grp == "G1", 5, 1)
+	)
+	m <- aov(y ~ Trt * Grp, data = d)
+
+	output <- multiple_comparisons(m, classify = "Trt:Grp", by = "Grp")
+
+	# pairwise_pvalues and hsd are per-group lists
+	expect_type(output$pairwise_pvalues, "list")
+	expect_equal(sort(names(output$pairwise_pvalues)), c("G1", "G2"))
+	expect_type(output$hsd, "list")
+
+	# Each group's matrix only contains that group's treatments
+	expect_equal(
+		sort(rownames(output$pairwise_pvalues$G1)),
+		c("A_G1", "B_G1", "C_G1")
+	)
+
+	# Letter groupings restart within each group
+	expect_true("groups" %in% names(output$predictions))
+
+	# `by` is recorded as an attribute for autoplot faceting
+	expect_equal(attr(output, "by"), "Grp")
+})
+
+test_that("by uses per-group nmeans for Tukey comparison intervals", {
+	# Regression: with `by`, `int.type = "tukey"` intervals must use each
+	# subgroup's mean count (here 3), not the total across subgroups (6), so the
+	# intervals stay consistent with the per-group letter groupings.
+	set.seed(1)
+	d <- expand.grid(
+		Trt = factor(c("A", "B", "C")),
+		Grp = factor(c("G1", "G2")),
+		rep = 1:6
+	)
+	d$y <- rnorm(nrow(d), mean = as.numeric(d$Trt))
+	m <- aov(y ~ Trt * Grp, data = d)
+
+	output <- multiple_comparisons(
+		m,
+		classify = "Trt:Grp",
+		by = "Grp",
+		int.type = "tukey"
+	)
+
+	df_res <- m$df.residual
+	se1 <- output$predictions$std.error[1]
+	ci_pergroup <- qtukey(0.95, nmeans = 3, df = df_res) / sqrt(2) * se1
+	ci_total <- qtukey(0.95, nmeans = 6, df = df_res) / sqrt(2) * se1
+
+	expect_equal(output$predictions$ci[1], ci_pergroup)
+	expect_false(isTRUE(all.equal(ci_pergroup, ci_total)))
+})
+
+test_that("check_ci_consistency detects shared letters with disjoint CIs", {
+	# Detection-only helper: TRUE iff a non-overlapping CI pair shares a letter.
+	inconsistent <- data.frame(
+		predicted.value = c(0, 5),
+		ci = c(1, 1), # CIs [-1,1] and [4,6] do not overlap ...
+		groups = c("a", "a") # ... yet they share letter "a"
+	)
+	expect_true(check_ci_consistency(inconsistent))
+
+	consistent <- data.frame(
+		predicted.value = c(0, 5),
+		ci = c(1, 1),
+		groups = c("a", "b") # disjoint CIs, different letters -> no conflict
+	)
+	expect_false(check_ci_consistency(consistent))
+
+	overlapping <- data.frame(
+		predicted.value = c(0, 1),
+		ci = c(1, 1), # CIs [-1,1] and [0,2] overlap
+		groups = c("a", "a")
+	)
+	expect_false(check_ci_consistency(overlapping))
+})
+
+test_that("CI/letter inconsistency note is emitted under `by`", {
+	# Regression: the consistency note must also fire for grouped comparisons,
+	# not only the single-group case. The note can only arise with enough means
+	# per group that the regular-CI half-widths sum to less than the HSD, so use
+	# 10 levels with deterministic, exactly-spaced means (zero-sum residuals give
+	# exact cell means and a fixed residual SD, so this is not a flaky knife-edge).
+	k <- 10
+	n <- 8
+	df <- 2 * k * (n - 1)
+	# Place adjacent means midway through the window
+	# (2*qt(0.975) < gap/se < qtukey) so adjacent pairs share a letter yet have
+	# non-overlapping regular CIs.
+	gap <- (2 * qt(0.975, df) + qtukey(0.95, k, df)) / 2
+	sigma <- sqrt(n) # makes the per-cell std error equal to 1
+	resid <- scale(seq_len(n), center = TRUE, scale = FALSE)[, 1]
+	resid <- resid / sd(resid) * sigma
+
+	d <- data.frame(
+		Trt = factor(rep(LETTERS[1:k], each = n * 2)),
+		Grp = factor(rep(rep(c("G1", "G2"), each = n), times = k)),
+		y = rep((0:(k - 1)) * gap, each = n * 2) + rep(resid, times = k * 2)
+	)
+	m <- aov(y ~ Trt * Grp, data = d)
+
+	expect_message(
+		multiple_comparisons(m, classify = "Trt:Grp", by = "Grp", int.type = "ci"),
+		"non-overlapping confidence intervals"
+	)
+})
+
+test_that("by with a missing column errors", {
+	expect_error(
+		multiple_comparisons(dat.aov, classify = "Species", by = "NotAColumn"),
+		"are not present in the predictions"
+	)
+})
+
+test_that("by with a single-factor classify errors", {
+	# Only one factor in classify leaves nothing to compare within groups
+	expect_error(
+		multiple_comparisons(dat.aov, classify = "Species", by = "Species"),
+		"cannot include all of the `classify` variable"
+	)
+})
+
+test_that("by errors when it consumes all classify factors", {
+	set.seed(1)
+	d <- expand.grid(
+		Trt = factor(c("A", "B", "C")),
+		Grp = factor(c("G1", "G2")),
+		rep = 1:6
+	)
+	d$y <- rnorm(nrow(d))
+	m <- aov(y ~ Trt * Grp, data = d)
+
+	expect_error(
+		multiple_comparisons(m, classify = "Trt:Grp", by = c("Trt", "Grp")),
+		"cannot include all of the `classify` variable"
+	)
+})
+
+test_that("autoplot facets by the `by` variable", {
+	set.seed(1)
+	d <- expand.grid(
+		Trt = factor(c("A", "B", "C")),
+		Grp = factor(c("G1", "G2")),
+		rep = 1:6
+	)
+	d$y <- rnorm(
+		nrow(d),
+		mean = as.numeric(d$Trt) * ifelse(d$Grp == "G1", 5, 1)
+	)
+	m <- aov(y ~ Trt * Grp, data = d)
+	output <- multiple_comparisons(m, classify = "Trt:Grp", by = "Grp")
+
+	p <- autoplot(output)
+	facet_vars <- names(p$facet$params$facets)
+	expect_true("Grp" %in% facet_vars)
+	expect_false("Trt" %in% facet_vars) # Trt is the x-axis, not a facet
+})
+
+test_that("autoplot.mct type, errorbar and lettering options behave", {
+	has_geom <- function(p, cls) {
+		any(vapply(p$layers, function(l) inherits(l$geom, cls), logical(1)))
+	}
+
+	dat.aov <- aov(Petal.Width ~ Species, data = iris)
+	out <- multiple_comparisons(dat.aov, classify = "Species")
+
+	# type = "line" adds a line layer; "bar" is an alias for a column graph
+	expect_true(has_geom(autoplot(out, type = "line"), "GeomLine"))
+	expect_true(has_geom(autoplot(out, type = "bar"), "GeomCol"))
+
+	# Toggles remove the relevant layers
+	expect_false(has_geom(
+		autoplot(out, include_errorbar = FALSE),
+		"GeomErrorbar"
+	))
+	expect_false(has_geom(autoplot(out, include_lettering = FALSE), "GeomText"))
+
+	# Invalid type errors cleanly rather than silently producing an empty plot
+	expect_error(autoplot(out, type = "wiggle"), "should be one of")
+})
+
+test_that("autoplot.mct HSD reference bar works without a transformation", {
+	# Regression: requesting an HSD bar on an untransformed model previously
+	# errored via a forced back-transformation path.
+	dat.aov <- aov(Petal.Width ~ Species, data = iris)
+	out <- multiple_comparisons(dat.aov, classify = "Species")
+
+	p <- autoplot(out, errorbar_type = "hsd")
+	expect_s3_class(p, "ggplot")
+	expect_silent(ggplot2::ggplot_build(p))
+
+	# The HSD bar is a single reference bar, so its layer carries one row of data
+	eb <- Filter(function(l) inherits(l$geom, "GeomErrorbar"), p$layers)
+	expect_length(eb, 1)
+	expect_equal(nrow(eb[[1]]$data), 1)
+})
+
+test_that("autoplot.mct errors for an HSD bar when no single HSD is available", {
+	dat.aov <- aov(Petal.Width ~ Species, data = iris)
+	# Non-Tukey adjustment => $hsd is NULL
+	out <- multiple_comparisons(
+		dat.aov,
+		classify = "Species",
+		adjust = "bonferroni"
+	)
+	expect_error(
+		autoplot(out, errorbar_type = "hsd"),
+		"Honest Significant"
+	)
+})
+
+test_that("autoplot.mct adds a back-transformed secondary axis on the model scale", {
+	has_sec_axis <- function(p) {
+		any(vapply(
+			p$scales$scales,
+			function(s) inherits(s$secondary.axis, "AxisSecondary"),
+			logical(1)
+		))
+	}
+
+	m_log <- aov(log(Petal.Width) ~ Species, data = iris)
+	out_log <- multiple_comparisons(
+		m_log,
+		classify = "Species",
+		trans = "log",
+		offset = 0
+	)
+
+	# Default plots on the (interpretable) back-transformed scale: no second axis
+	expect_false(has_sec_axis(autoplot(out_log)))
+	# Model scale shows the back-transformed secondary axis
+	expect_true(has_sec_axis(autoplot(out_log, trans_scale = TRUE)))
+	# HSD forces the model scale, so it also gets the secondary axis
+	expect_true(has_sec_axis(autoplot(out_log, errorbar_type = "hsd")))
+
+	# The transform metadata is recorded on the object for the axis
+	expect_equal(attr(out_log, "trans"), "log")
+	expect_equal(attr(out_log, "offset"), 0)
+})
+
+test_that("back_transform is the inverse used to build PredictedValue", {
+	x <- c(0.5, 1, 1.5, 2)
+	expect_equal(biometryassist:::back_transform(x, "log", 0), exp(x))
+	expect_equal(biometryassist:::back_transform(x, "sqrt", 0), x^2)
+	expect_equal(biometryassist:::back_transform(x, "power", 0, 2), x^(1 / 2))
+	expect_equal(biometryassist:::back_transform(x, "inverse"), 1 / x)
+	expect_error(biometryassist:::back_transform(x, "nonsense"), "Invalid trans")
+})
+
+test_that("autoplot.mct new options render as expected", {
+	dat.aov <- aov(Petal.Width ~ Species, data = iris)
+	out <- multiple_comparisons(dat.aov, classify = "Species")
+
+	expect_local_doppelganger("mct line plot", autoplot(out, type = "line"))
+	expect_local_doppelganger(
+		"mct hsd bar",
+		autoplot(out, errorbar_type = "hsd")
+	)
+	expect_local_doppelganger(
+		"mct no errorbar",
+		autoplot(out, include_errorbar = FALSE)
+	)
+	expect_local_doppelganger(
+		"mct no lettering",
+		autoplot(out, include_lettering = FALSE)
+	)
+})
+
+test_that("autoplot.mct transformed-scale options render as expected", {
+	dat.aov.log <- aov(log(Petal.Width) ~ Species, data = iris)
+	output.log <- multiple_comparisons(
+		dat.aov.log,
+		classify = "Species",
+		trans = "log",
+		offset = 0
+	)
+
+	# Model scale with the back-transformed secondary axis
+	expect_local_doppelganger(
+		"mct log transformed scale",
+		autoplot(output.log, trans_scale = TRUE)
+	)
+	# HSD bar forces the model scale and adds the secondary axis
+	expect_local_doppelganger(
+		"mct log hsd bar",
+		autoplot(output.log, errorbar_type = "hsd")
+	)
+})
+
+test_that("calculate_raw_pvalue_matrix matches a direct t-test", {
+	pp <- data.frame(
+		predicted.value = c(10, 11, 15),
+		Names = c("A", "B", "C")
+	)
+	sed_mat <- matrix(
+		0.5,
+		nrow = 3,
+		ncol = 3,
+		dimnames = list(pp$Names, pp$Names)
+	)
+	diag(sed_mat) <- NA_real_
+
+	pvals <- biometryassist:::calculate_raw_pvalue_matrix(pp, sed_mat, ndf = 10)
+
+	expect_true(isSymmetric(pvals))
+	expect_equal(diag(pvals), rep(1, 3), ignore_attr = TRUE)
+
+	t_ab <- abs(10 - 11) / 0.5
+	expected_ab <- 2 * stats::pt(-abs(t_ab), df = 10)
+	expect_equal(pvals["A", "B"], expected_ab, tolerance = 1e-12)
+})
+
+test_that("get_diffs_from_pvalues flags significant pairs and adjusts", {
+	pmat <- matrix(
+		c(1, 0.001, 0.5, 0.001, 1, 0.5, 0.5, 0.5, 1),
+		nrow = 3,
+		dimnames = list(c("A", "B", "C"), c("A", "B", "C"))
+	)
+
+	# adjust = "none": diffs follow the raw matrix directly
+	res <- biometryassist:::get_diffs_from_pvalues(
+		pmat,
+		sig = 0.05,
+		adjust = "none"
+	)
+	expect_true(res$diffs[["B-A"]]) # 0.001 < 0.05
+	expect_false(res$diffs[["C-A"]]) # 0.5 not < 0.05
+	expect_false(res$diffs[["C-B"]])
+	# adjusted matrix is symmetric with diagonal 1 and no NAs (all pairs tested)
+	expect_equal(diag(res$adjusted_matrix), rep(1, 3), ignore_attr = TRUE)
+	expect_false(anyNA(res$adjusted_matrix))
+
+	# adjust = "bonferroni": p-values scaled by number of comparisons
+	res_bonf <- biometryassist:::get_diffs_from_pvalues(
+		pmat,
+		sig = 0.05,
+		adjust = "bonferroni"
+	)
+	expect_equal(
+		unname(res_bonf$adjusted_pvalues),
+		pmin(c(0.001, 0.5, 0.5) * 3, 1)
+	)
+})
+
+
+# ============================================================================
+# ORIGINAL TESTS (Updated to work with new structure)
+# ============================================================================
 
 test_that("mct ylab handles call/language labels", {
 	pp <- data.frame(
@@ -470,7 +873,9 @@ test_that("mct transformation: log", {
 		c(0.25, 1.41, 2.17),
 		tolerance = 5e-2
 	)
-	vdiffr::expect_doppelganger("mct log output", autoplot(output.log))
+	ap <- autoplot(output.log)
+	expect_autoplot_data(ap, output.log)
+	expect_local_doppelganger("mct log output", ap)
 })
 
 test_that("mct transformation: sqrt", {
@@ -512,39 +917,32 @@ test_that("mct transformation: sqrt", {
 		c(0.27, 1.38, 2.09),
 		tolerance = 5e-2
 	)
-	vdiffr::expect_doppelganger("mct sqrt output", autoplot(output.sqrt))
+	ap <- autoplot(output.sqrt)
+	expect_autoplot_data(ap, output.sqrt)
+	expect_local_doppelganger("mct sqrt output", ap)
 })
 
 test_that("mct transformation: logit", {
 	dat.aov.logit <- aov(logit(1 / Petal.Width) ~ Species, data = iris)
-	expect_warning(
-		output.logit <- multiple_comparisons(
-			dat.aov.logit,
-			classify = "Species",
-			trans = "logit",
-			offset = 0
-		),
-		"Some standard errors are very small and would round to zero with 2 decimal places"
+	output.logit <- multiple_comparisons(
+		dat.aov.logit,
+		classify = "Species",
+		trans = "logit",
+		offset = 0
 	)
-	expect_warning(
-		output.logit2 <- multiple_comparisons(
-			dat.aov.logit,
-			classify = "Species",
-			trans = "logit",
-			offset = 0,
-			int.type = "1se"
-		),
-		"Some standard errors are very small and would round to zero with 2 decimal places"
+	output.logit2 <- multiple_comparisons(
+		dat.aov.logit,
+		classify = "Species",
+		trans = "logit",
+		offset = 0,
+		int.type = "1se"
 	)
-	expect_warning(
-		output.logit3 <- multiple_comparisons(
-			dat.aov.logit,
-			classify = "Species",
-			trans = "logit",
-			offset = 0,
-			int.type = "2se"
-		),
-		"Some standard errors are very small and would round to zero with 2 decimal places"
+	output.logit3 <- multiple_comparisons(
+		dat.aov.logit,
+		classify = "Species",
+		trans = "logit",
+		offset = 0,
+		int.type = "2se"
 	)
 
 	expect_identical(attr(output.logit, "ylab"), "1/Petal.Width")
@@ -563,7 +961,9 @@ test_that("mct transformation: logit", {
 		c(0.01, 0.01, 0.05),
 		tolerance = 5e-2
 	)
-	vdiffr::expect_doppelganger("mct logit output", autoplot(output.logit))
+	ap <- autoplot(output.logit)
+	expect_autoplot_data(ap, output.logit)
+	expect_local_doppelganger("mct logit output", ap)
 })
 
 test_that("mct transformation: inverse", {
@@ -605,7 +1005,9 @@ test_that("mct transformation: inverse", {
 		c(1.20, 0.90, 0.20),
 		tolerance = 5e-2
 	)
-	vdiffr::expect_doppelganger("mct inverse output", autoplot(output.inverse))
+	ap <- autoplot(output.inverse)
+	expect_autoplot_data(ap, output.inverse)
+	expect_local_doppelganger("mct inverse output", ap)
 })
 
 test_that("mct transformation: power", {
@@ -652,7 +1054,9 @@ test_that("mct transformation: power", {
 		c(0.49, 1.42, 2.10),
 		tolerance = 5e-2
 	)
-	vdiffr::expect_doppelganger("mct power output", autoplot(output.power))
+	ap <- autoplot(output.power)
+	expect_autoplot_data(ap, output.power)
+	expect_local_doppelganger("mct power output", ap)
 })
 
 test_that("mct transformation: arcsin", {
@@ -868,12 +1272,16 @@ test_that("apply_transformation arcsin warning and bounds", {
 })
 
 test_that("apply_transformation arcsin warns when back-transformation is outside [0,1]", {
-	# This branch is numerically very hard to reach with real sin() output because sin(x)^2
-	# should be in [0,1]. Here we temporarily override `sin()` and `sqrt()` in the
-	# apply_transformation() function environment to force an out-of-bounds value.
+	# This branch is numerically very hard to reach because back_transform()'s
+	# arcsin (sin(x)^2) is always in [0,1]. Here we temporarily override
+	# `back_transform()` (which now computes PredictedValue) and `sqrt()` (used
+	# for ApproxSE) in the apply_transformation() function environment to force an
+	# out-of-bounds value and exercise the bounds-check warning.
 	fn2 <- biometryassist:::apply_transformation
 	fn2_env <- new.env(parent = environment(fn2))
-	fn2_env$sin <- function(x) rep(2, length(x))
+	fn2_env$back_transform <- function(x, trans, offset = 0, power = NULL) {
+		rep(2, length(x))
+	}
 	fn2_env$sqrt <- function(x) rep(0, length(x))
 	environment(fn2) <- fn2_env
 
@@ -933,8 +1341,21 @@ test_that("ordering output works", {
 		tolerance = 5e-2
 	)
 
-	vdiffr::expect_doppelganger("mct ascending order", autoplot(output1))
-	vdiffr::expect_doppelganger("mct descending output", autoplot(output2))
+	# Plot content (runs on every platform, incl. CI): the autoplot draws the
+	# right means, interval bounds and letters. expect_autoplot_data() compares
+	# as sets, so we additionally assert the ascending/descending ordering that
+	# this test is specifically about.
+	asc <- autoplot(output1)
+	desc <- autoplot(output2)
+	expect_autoplot_data(asc, output1)
+	expect_autoplot_data(desc, output2)
+	# Ordering: ascending rises left-to-right, descending falls.
+	expect_false(is.unsorted(layer_data_for(asc, "GeomPoint")$y))
+	expect_false(is.unsorted(rev(layer_data_for(desc, "GeomPoint")$y)))
+
+	# Pixel-exact visual regression: local only (see expect_local_doppelganger).
+	expect_local_doppelganger("mct ascending order", asc)
+	expect_local_doppelganger("mct descending output", desc)
 })
 
 test_that("different interval types work", {
@@ -953,42 +1374,69 @@ test_that("different interval types work", {
 	expect_equal(output2$predictions$low, c(0.19, 1.27, 1.97), tolerance = 5e-2)
 	expect_equal(output2$predictions$up, c(0.31, 1.39, 2.09), tolerance = 5e-2)
 
-	vdiffr::expect_doppelganger("mct output 1se", autoplot(output1))
-	vdiffr::expect_doppelganger("mct output 2se", autoplot(output2))
+	ap1 <- autoplot(output1)
+	ap2 <- autoplot(output2)
+	expect_autoplot_data(ap1, output1)
+	expect_autoplot_data(ap2, output2)
+	expect_local_doppelganger("mct output 1se", ap1)
+	expect_local_doppelganger("mct output 2se", ap2)
 })
 
 test_that("Testing asreml predictions", {
+	skip_if_not_installed("asreml")
 	skip_if_not_installed("Matrix")
+	suppressPackageStartupMessages(library(asreml))
 	load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
-	expect_warning(
-		output <- multiple_comparisons(
-			model.asr,
-			classify = "Nitrogen",
-			pred.obj = pred.asr,
-			dendf = dendf
-		),
-		"Argument `pred\\.obj` has been deprecated and will be removed in a future version\\. Predictions are now performed internally in the function\\."
-	)
+	output <- suppressWarnings(multiple_comparisons(
+		model.asr,
+		classify = "Nitrogen"
+	))
 	expect_equal(
 		output$predictions$predicted.value,
 		c(77.76, 100.15, 114.41, 123.23),
 		tolerance = 5e-2
 	)
 	expect_snapshot_output(output)
-	vdiffr::expect_doppelganger("asreml predictions", autoplot(output))
+	ap <- autoplot(output)
+	expect_autoplot_data(ap, output)
+	expect_local_doppelganger("asreml predictions", ap)
 })
 
 test_that("save produces output", {
 	withr::local_file("pred_vals.csv")
-	output <- multiple_comparisons(
+	output <- suppressWarnings(multiple_comparisons(
 		dat.aov,
 		classify = "Species",
 		save = TRUE,
 		savename = "pred_vals"
-	)
+	))
 	expect_snapshot_output(output)
 
+	# CSV contains full precision values
 	expect_csv_matches_df(output$predictions, "pred_vals.csv")
+})
+
+test_that("plot, save and savename arguments are deprecated", {
+	tmp <- withr::local_tempdir()
+	withr::with_dir(tmp, {
+		expect_warning(
+			multiple_comparisons(dat.aov, classify = "Species", plot = TRUE),
+			"`plot` has been deprecated"
+		)
+		while (grDevices::dev.cur() > 1) {
+			grDevices::dev.off()
+		}
+	})
+	withr::with_dir(tmp, {
+		expect_warning(
+			multiple_comparisons(dat.aov, classify = "Species", save = TRUE),
+			"`save` has been deprecated"
+		)
+	})
+	expect_warning(
+		multiple_comparisons(dat.aov, classify = "Species", savename = "test"),
+		"`savename` has been deprecated"
+	)
 })
 
 test_that("Interaction terms work", {
@@ -1019,14 +1467,15 @@ test_that("Interaction terms work", {
 		tolerance = 5e-2
 	)
 
-	vdiffr::expect_doppelganger("Interactions work", autoplot(output))
+	ap <- autoplot(output)
+	expect_autoplot_data(ap, output)
+	expect_local_doppelganger("Interactions work", ap)
 })
 
-test_that("order argument is deprecated", {
-	# dat.aov <- aov(Petal.Width ~ Species, data = iris)
-	expect_warning(
+test_that("order argument was removed in 1.5.0", {
+	expect_error(
 		multiple_comparisons(dat.aov, classify = "Species", order = "xyz"),
-		"Argument `order` has been deprecated and will be removed in a future version. Please use `descending` instead."
+		"`order` was removed in biometryassist 1.5.0. Use `descending` instead."
 	)
 })
 
@@ -1064,7 +1513,9 @@ test_that("dashes are handled", {
 	)
 
 	# skip_if(interactive())
-	vdiffr::expect_doppelganger("mct dashes output", autoplot(output2))
+	ap <- autoplot(output2)
+	expect_autoplot_data(ap, output2)
+	expect_local_doppelganger("mct dashes output", ap)
 })
 
 test_that("mct removes aliased treatments in aov", {
@@ -1077,7 +1528,9 @@ test_that("mct removes aliased treatments in aov", {
 	)
 	expect_snapshot_output(output1$predictions$predicted.value)
 	# skip_if(interactive())
-	vdiffr::expect_doppelganger("aov aliased output", autoplot(output1))
+	ap <- autoplot(output1)
+	expect_autoplot_data(ap, output1)
+	expect_local_doppelganger("aov aliased output", ap)
 })
 
 
@@ -1139,11 +1592,10 @@ test_that("Significance values that are too high give a warning or error", {
 	)
 })
 
-test_that("Use of pred argument gives warning", {
-	# dat.aov <- aov(Petal.Width ~ Species, data = iris)
-	expect_warning(
+test_that("pred argument was removed in 1.5.0", {
+	expect_error(
 		multiple_comparisons(dat.aov, classify = "Species", pred = "Species"),
-		"Argument `pred` has been deprecated and will be removed in a future version. Please use `classify` instead."
+		"`pred` was removed in biometryassist 1.5.0. Use `classify` instead."
 	)
 })
 
@@ -1165,17 +1617,15 @@ test_that("Invalid column name causes an error", {
 	)
 })
 
-test_that("Including pred.obj object causes warning", {
-	skip_if_not_installed("asreml")
-	quiet(library(asreml))
+test_that("pred.obj argument was removed in 1.5.0", {
 	load(test_path("data", "asreml_model.Rdata"), envir = .GlobalEnv)
-	expect_warning(
+	expect_error(
 		multiple_comparisons(
 			model.asr,
 			pred.obj = pred.asr,
 			classify = "Nitrogen"
 		),
-		"Argument \\`pred.obj\\` has been deprecated and will be removed in a future version\\. Predictions are now performed internally in the function\\."
+		"`pred.obj` was removed in biometryassist 1.5.0."
 	)
 })
 
@@ -1209,7 +1659,9 @@ test_that("lme4 model works", {
 		c(79.39, 98.89, 114.22, 123.39),
 		tolerance = 5e-2
 	)
-	vdiffr::expect_doppelganger("lme4 output", autoplot(output))
+	ap <- autoplot(output)
+	expect_autoplot_data(ap, output)
+	expect_local_doppelganger("lme4 output", ap)
 })
 
 test_that("3 way interaction works", {
@@ -1229,11 +1681,13 @@ test_that("3 way interaction works", {
 	dat.aov <- aov(response ~ A * B * C, data = des$design)
 	output <- multiple_comparisons(dat.aov, classify = "A:B:C")
 	expect_snapshot_output(output$predictions$predicted.value)
-	expect_equal(output$predictions$std.error, rep(0.63, 27))
+	expect_equal(output$predictions$std.error, rep(0.63, 27), tolerance = 5e-2)
 	# skip_if(interactive())
-	vdiffr::expect_doppelganger(
+	ap <- autoplot(output)
+	expect_autoplot_data(ap, output)
+	expect_local_doppelganger(
 		"3 way interaction",
-		autoplot(output),
+		ap,
 		variant = ggplot2_variant()
 	)
 })
@@ -1260,11 +1714,11 @@ test_that("plots are produced when requested", {
 		withr::local_file("Rplots.pdf")
 
 		expect_snapshot_output(
-			output <- multiple_comparisons(
+			output <- suppressWarnings(multiple_comparisons(
 				dat.aov,
 				classify = "A:B:C",
 				plot = TRUE
-			)
+			))
 		)
 		while (grDevices::dev.cur() > 1) {
 			grDevices::dev.off()
@@ -1272,17 +1726,17 @@ test_that("plots are produced when requested", {
 
 		expect_s3_class(output, "mct")
 		expect_equal(nrow(output$predictions), 27)
-		expect_equal(output$predictions$std.error, rep(0.63, 27))
+		expect_equal(output$predictions$std.error, rep(0.63, 27), tolerance = 5e-2)
 
 		skip_if(interactive())
-		vdiffr::expect_doppelganger(
+		expect_local_doppelganger(
 			"3 way interaction internal",
 			function() {
-				invisible(multiple_comparisons(
+				suppressWarnings(invisible(multiple_comparisons(
 					dat.aov,
 					classify = "A:B:C",
 					plot = TRUE
-				))
+				)))
 			},
 			variant = ggplot2_variant()
 		)
@@ -1292,7 +1746,7 @@ test_that("plots are produced when requested", {
 	})
 })
 
-test_that("nlme model produces an error", {
+test_that("nlme/lme model is supported", {
 	skip_if_not_installed("nlme")
 	suppressPackageStartupMessages(library(nlme))
 	load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
@@ -1318,7 +1772,114 @@ test_that("nlme model produces an error", {
 		c(79.39, 98.89, 114.22, 123.39),
 		tolerance = 5e-2
 	)
-	vdiffr::expect_doppelganger("nlme output", autoplot(output))
+	ap <- autoplot(output)
+	expect_autoplot_data(ap, output)
+	expect_local_doppelganger("nlme output", ap)
+})
+
+test_that("afex (afex_aov) model is supported", {
+	skip_if_not_installed("afex")
+	data(obk.long, package = "afex")
+
+	# Between-subjects factorial design.
+	afex_b <- afex::aov_ez(
+		id = "id",
+		dv = "value",
+		between = c("treatment", "gender"),
+		data = obk.long,
+		fun_aggregate = mean
+	)
+	output <- multiple_comparisons(afex_b, classify = "treatment")
+
+	expect_s3_class(output, "mct")
+	expect_equal(
+		output$predictions$predicted.value,
+		c(4.22, 6.03, 6.25),
+		tolerance = 5e-2
+	)
+	# No significant treatment differences here, so all share a single letter group.
+	expect_equal(unique(output$predictions$groups), "a")
+
+	ap <- autoplot(output)
+	expect_autoplot_data(ap, output)
+	expect_local_doppelganger("afex output", ap)
+})
+
+test_that("glmmTMB model is supported", {
+	skip_if_not_installed("glmmTMB")
+	data(Salamanders, package = "glmmTMB")
+
+	g <- glmmTMB::glmmTMB(
+		count ~ spp + mined + (1 | site),
+		data = Salamanders,
+		family = gaussian()
+	)
+	output <- multiple_comparisons(g, classify = "mined")
+
+	expect_s3_class(output, "mct")
+	expect_equal(
+		output$predictions$predicted.value,
+		c(0.30, 2.26),
+		tolerance = 5e-2
+	)
+	expect_equal(output$predictions$groups, c("a", "b"))
+
+	ap <- autoplot(output)
+	expect_autoplot_data(ap, output)
+	expect_local_doppelganger("glmmTMB output", ap)
+})
+
+test_that("sommer mmes model is supported", {
+	skip_if_not_installed("sommer")
+	load(test_path("data", "sommer_models.Rdata"), .GlobalEnv)
+
+	output <- multiple_comparisons(model_mmes, classify = "Env")
+
+	expect_s3_class(output, "mct")
+	# Env effect: CA.2011 separates from the CA.2012/CA.2013 group.
+	expect_setequal(
+		round(output$predictions$predicted.value, 2),
+		c(10.12, 10.72, 16.50)
+	)
+
+	ap <- autoplot(output)
+	expect_autoplot_data(ap, output)
+	expect_local_doppelganger("sommer mmes output", ap)
+})
+
+test_that("lme4breeding (lmebreed) model is supported", {
+	skip_if_not_installed("lme4breeding")
+	# lmebreed() relies on lme4 internals being attached (lme4 is in its Depends).
+	suppressPackageStartupMessages(library(lme4breeding))
+	load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+
+	# lmebreed() objects carry class `lmerMod` and use the existing lmerMod method.
+	# An identity relationship matrix gives an exact lme4::lmer() reference.
+	blocks <- levels(factor(dat$Blocks))
+	A <- diag(length(blocks))
+	dimnames(A) <- list(blocks, blocks)
+
+	m_lmb <- suppressMessages(suppressWarnings(lmebreed(
+		yield ~ Nitrogen + (1 | Blocks),
+		relmat = list(Blocks = A),
+		data = dat,
+		verbose = FALSE,
+		dateWarning = FALSE
+	)))
+	output <- suppressMessages(multiple_comparisons(m_lmb, classify = "Nitrogen"))
+
+	expect_s3_class(output, "mct")
+	expect_equal(nrow(output$predictions), 4)
+
+	out_lmer <- multiple_comparisons(
+		lme4::lmer(yield ~ Nitrogen + (1 | Blocks), data = dat),
+		classify = "Nitrogen"
+	)
+	expect_equal(
+		output$predictions$predicted.value,
+		out_lmer$predictions$predicted.value,
+		tolerance = 1e-4
+	)
 })
 
 test_that("invalid model types give a clear error", {
@@ -1361,7 +1922,9 @@ test_that("Setting groups to FALSE disables letter groups", {
 	)
 	expect_false("groups" %in% colnames(output$predictions))
 
-	vdiffr::expect_doppelganger("No letter groups", autoplot(output))
+	ap <- autoplot(output)
+	expect_autoplot_data(ap, output)
+	expect_local_doppelganger("No letter groups", ap)
 })
 
 test_that("Check for letters as an alias of groups", {
@@ -1398,27 +1961,29 @@ test_that("autoplot supports legacy mct data.frame objects", {
 
 test_that("autoplot can rotate axis and labels independently", {
 	output <- multiple_comparisons(dat.aov, classify = "Species")
-	vdiffr::expect_doppelganger(
+	# The plotted data is identical regardless of rotation; check it once.
+	expect_autoplot_data(autoplot(output), output)
+	expect_local_doppelganger(
 		"label rotation",
 		autoplot(output, label_rotation = 90)
 	)
-	vdiffr::expect_doppelganger(
+	expect_local_doppelganger(
 		"axis rotation",
 		autoplot(output, axis_rotation = 90)
 	)
-	vdiffr::expect_doppelganger(
+	expect_local_doppelganger(
 		"axis rotation -90",
 		autoplot(output, axis_rotation = -90)
 	)
-	vdiffr::expect_doppelganger(
+	expect_local_doppelganger(
 		"axis and label rotation",
 		autoplot(output, axis_rotation = 45, label_rotation = 90)
 	)
-	vdiffr::expect_doppelganger(
+	expect_local_doppelganger(
 		"rotation and axis rotation",
 		autoplot(output, rotation = 45, axis_rotation = 90)
 	)
-	vdiffr::expect_doppelganger(
+	expect_local_doppelganger(
 		"rotation and label rotation",
 		autoplot(output, rotation = 45, label_rotation = 90)
 	)
@@ -1431,7 +1996,7 @@ test_that("Autoplot can output column graphs", {
 	expect_in("GeomCol", class(p1$layers[[1]]$geom))
 	expect_in("GeomCol", class(p2$layers[[1]]$geom))
 	expect_true(equivalent_ggplot2(p1, p2))
-	vdiffr::expect_doppelganger("autoplot column", p1)
+	expect_local_doppelganger("autoplot column", p1)
 })
 
 test_that("A warning is printed if a transformation is detected with no trans argument provided", {
@@ -1472,7 +2037,7 @@ Please specify the 'trans' argument if you want back-transformed predictions\\."
 # Test aliased output prints
 test_that("print.mct with no aliased attribute", {
 	dat.aov <- aov(Petal.Width ~ Species, data = iris)
-	output <- multiple_comparisons(dat.aov, classify = "Species", plot = FALSE)
+	output <- multiple_comparisons(dat.aov, classify = "Species")
 
 	# Manually set aliased for testing (in new structure)
 	output$aliased <- "ABC"
@@ -1497,7 +2062,7 @@ test_that("print.mct with no aliased attribute", {
 	expect_output(print(output), "Aliased levels are: ABC, DEF and GHI")
 })
 
-test_that("Standard error rounding preserves error bars", {
+test_that("Full precision values are stored in predictions", {
 	# Create data with very small standard errors
 	set.seed(123)
 
@@ -1515,32 +2080,28 @@ test_that("Standard error rounding preserves error bars", {
 
 	dat.aov <- aov(response ~ treatment, data = precise_data)
 
-	# Test with default decimals (2) - should trigger warning
-	expect_warning(
-		output <- multiple_comparisons(
-			dat.aov,
-			classify = "treatment",
-			decimals = 2
-		),
-		"Some standard errors are very small and would round to zero with 2 decimal places"
+	# Values are stored at full precision
+	output <- multiple_comparisons(
+		dat.aov,
+		classify = "treatment"
 	)
 
-	# Check that standard errors are preserved (not rounded to 0)
+	# Check that standard errors are preserved at full precision (not rounded to 0)
 	expect_true(all(output$predictions$std.error > 0))
 	expect_false(any(output$predictions$std.error == 0))
 
-	# Check that other columns are still rounded to 2 decimal places
-	expect_true(all(
+	# Full precision predicted values should have more than 2 decimal places
+	expect_true(any(
 		nchar(sub(
 			".*\\.",
 			"",
 			as.character(output$predictions$predicted.value)
-		)) <=
+		)) >
 			2
 	))
 })
 
-test_that("Standard error rounding works with transformed data", {
+test_that("Full precision values stored with transformed data", {
 	# Create data that will have small standard errors on the transformed scale
 	set.seed(456)
 	# Use data that's already on log scale with very small differences
@@ -1558,53 +2119,44 @@ test_that("Standard error rounding works with transformed data", {
 	# Apply log transformation - the model is on log scale, transform back to original
 	dat.aov <- aov(log_response ~ treatment, data = transform_data)
 
-	# Test with transformation - should handle both std.error and ApproxSE
-	expect_warning(
-		output <- multiple_comparisons(
-			dat.aov,
-			classify = "treatment",
-			trans = "log",
-			offset = 0,
-			decimals = 3
-		),
-		"Some standard errors are very small"
+	# No rounding warning - full precision stored
+	output <- multiple_comparisons(
+		dat.aov,
+		classify = "treatment",
+		trans = "log",
+		offset = 0
 	)
 
-	# Check that both standard error columns are preserved
+	# Check that both standard error columns are preserved at full precision
 	expect_true(all(output$predictions$std.error > 0))
 	expect_true(all(output$predictions$ApproxSE > 0))
 	expect_false(any(output$predictions$std.error == 0))
 	expect_false(any(output$predictions$ApproxSE == 0))
 })
 
-test_that("Normal rounding works when standard errors are not too small", {
+test_that("Decimals argument in print.mct controls rounding", {
 	# Use the standard iris data which has reasonable standard errors
 	dat.aov <- aov(Petal.Width ~ Species, data = iris)
 
-	# Should not trigger warning with normal data
-	expect_no_warning(
-		output <- multiple_comparisons(
-			dat.aov,
-			classify = "Species",
-			decimals = 2
-		)
+	output <- multiple_comparisons(
+		dat.aov,
+		classify = "Species"
 	)
 
-	# Check that all numeric columns are properly rounded
-	expect_true(all(
-		nchar(sub(
-			".*\\.",
-			"",
-			as.character(output$predictions$predicted.value)
-		)) <=
-			2
-	))
-	expect_true(all(
-		nchar(sub(".*\\.", "", as.character(output$predictions$std.error))) <= 2
-	))
+	# Full precision values are stored
+	expect_true(is.numeric(output$predictions$predicted.value))
+	expect_true(is.numeric(output$predictions$std.error))
+
+	# Print output with decimals = 2 should show rounded values
+	printed <- capture.output(print(output, decimals = 2))
+	expect_true(any(grepl("0\\.25|0\\.246", printed)))
+
+	# Print output with decimals = 4 should show more precision
+	printed4 <- capture.output(print(output, decimals = 4))
+	expect_true(any(grepl("0\\.246", printed4)))
 })
 
-test_that("Standard error rounding works with different decimal settings", {
+test_that("Decimals parameter in multiple_comparisons is deprecated", {
 	# Create data with moderately small standard errors
 	set.seed(789)
 	moderate_data <- data.frame(
@@ -1614,32 +2166,19 @@ test_that("Standard error rounding works with different decimal settings", {
 
 	dat.aov <- aov(response ~ treatment, data = moderate_data)
 
-	# Test with decimals = 4 (should not trigger warning)
-	expect_no_warning(
-		output4 <- multiple_comparisons(
-			dat.aov,
-			classify = "treatment",
-			decimals = 4
-		)
-	)
-
-	# Test with decimals = 1 (might trigger warning depending on actual SE values)
+	# Using decimals in multiple_comparisons should produce a deprecation warning
 	expect_warning(
-		output1 <- multiple_comparisons(
-			dat.aov,
-			classify = "treatment",
-			decimals = 1
-		),
-		"Some standard errors are very small and would round to zero with 1 decimal places"
+		multiple_comparisons(dat.aov, classify = "treatment", decimals = 4),
+		"decimals.*deprecated"
 	)
 
-	# Ensure standard errors are never exactly 0
-	expect_true(all(output1$predictions$std.error > 0))
-	expect_true(all(output4$predictions$std.error > 0))
+	# Full precision standard errors are always stored
+	output <- multiple_comparisons(dat.aov, classify = "treatment")
+	expect_true(all(output$predictions$std.error > 0))
 })
 
 
-test_that("ApproxSE column is also preserved during rounding", {
+test_that("ApproxSE column preserves full precision", {
 	# Create data that will trigger the standard error preservation
 	set.seed(111)
 	# Create data with extremely small values to get tiny standard errors after log transformation
@@ -1653,19 +2192,15 @@ test_that("ApproxSE column is also preserved during rounding", {
 	# Use log transformation to create ApproxSE column
 	dat.aov <- aov(log(response) ~ treatment, data = precise_data)
 
-	# Should trigger warning and preserve both std.error and ApproxSE
-	expect_warning(
-		output <- multiple_comparisons(
-			dat.aov,
-			classify = "treatment",
-			trans = "log",
-			offset = 0,
-			decimals = 2
-		),
-		"Some standard errors are very small"
+	# No rounding warning - full precision stored
+	output <- multiple_comparisons(
+		dat.aov,
+		classify = "treatment",
+		trans = "log",
+		offset = 0
 	)
 
-	# Both standard error columns should be preserved
+	# Both standard error columns should be preserved at full precision
 	expect_true(all(output$predictions$std.error > 0))
 	expect_true(all(output$predictions$ApproxSE > 0))
 	expect_false(any(output$predictions$std.error == 0))
@@ -1750,4 +2285,141 @@ test_that("Multiple comparisons for lmerTest objects provides the same results a
 	expect_equal(pred.lmet$hsd, 11.833, tolerance = 5e-2)
 	# check p-values matrix
 	expect_equal(pred.lmet$pairwise_pvalues[3, 4], 0.180, tolerance = 5e-2)
+})
+
+test_that("get_predictions() returns exact SED for unbalanced marginal means", {
+	skip_if_not_installed("emmeans")
+	# Unbalanced two-factor design: predicting the `tension` margin averages over
+	# an unbalanced `wool`, where the old sigma * sqrt(1/w_i + 1/w_j) form was
+	# wrong. The SED must equal emmeans' exact pairwise SE (sqrt(V_ii+V_jj-2V_ij)).
+	set.seed(1)
+	wb <- warpbreaks[-sample(which(warpbreaks$wool == "A"), 10), ]
+	m <- aov(breaks ~ wool * tension, data = wb)
+
+	res <- get_predictions(m, "tension")
+	sed <- sort(res$sed[upper.tri(res$sed)])
+
+	emm <- emmeans::emmeans(m, ~tension)
+	exact <- sort(
+		as.data.frame(
+			emmeans::contrast(emm, method = "pairwise")
+		)$SE
+	)
+
+	expect_equal(sed, exact, tolerance = 1e-8)
+})
+
+test_that("autoplot.mct sets hjust = 1 for axis_rotation = 90 and hjust = 0 for 270/-90", {
+	output <- multiple_comparisons(dat.aov, classify = "Species")
+
+	# axis_rotation = 90: hjust_value branch returns 1 (line 155)
+	p90 <- autoplot(output, axis_rotation = 90)
+	expect_s3_class(p90, "ggplot")
+	expect_equal(p90$theme$axis.text.x$hjust, 1)
+
+	# axis_rotation = 270: hjust_value branch returns 0 (line 157)
+	p270 <- autoplot(output, axis_rotation = 270)
+	expect_s3_class(p270, "ggplot")
+	expect_equal(p270$theme$axis.text.x$hjust, 0)
+
+	# axis_rotation = -90: in R, -90 %% 360 == 270, so same branch -> hjust = 0
+	p_neg90 <- autoplot(output, axis_rotation = -90)
+	expect_s3_class(p_neg90, "ggplot")
+	expect_equal(p_neg90$theme$axis.text.x$hjust, 0)
+})
+
+test_that("autoplot.mct HSD bar handles a non-factor classify column", {
+	# Construct a legacy mct object whose classify column is a plain character
+	# vector (not a factor), exercising the else-branch at line 231 where
+	# x_levels is built via sort(unique(as.character(...))).
+	pred_df <- data.frame(
+		trt = c("C", "B", "A"),
+		predicted.value = c(3.0, 2.0, 1.0),
+		std.error = c(0.1, 0.1, 0.1),
+		ci = c(0.2, 0.2, 0.2),
+		low = c(2.8, 1.8, 0.8),
+		up = c(3.2, 2.2, 1.2),
+		groups = c("c", "b", "a"),
+		stringsAsFactors = FALSE
+	)
+	out <- list(
+		predictions = pred_df,
+		hsd = 0.5,
+		sig_level = 0.05,
+		comparison_method = "tukey"
+	)
+	class(out) <- "mct"
+	attr(out, "ylab") <- "y"
+	attr(out, "HSD") <- 0.5
+
+	p <- autoplot(out, errorbar_type = "hsd")
+	expect_s3_class(p, "ggplot")
+
+	# One errorbar layer for the HSD reference bar, with one row of data
+	eb <- Filter(function(l) inherits(l$geom, "GeomErrorbar"), p$layers)
+	expect_length(eb, 1)
+	expect_equal(nrow(eb[[1]]$data), 1)
+})
+
+test_that("process_aliased uses count summary warning when more than 6 levels are aliased", {
+	pp <- data.frame(
+		trt = LETTERS[1:8],
+		predicted.value = c(1.0, NA, NA, NA, NA, NA, NA, NA),
+		std.error = c(0.1, NA, NA, NA, NA, NA, NA, NA),
+		stringsAsFactors = FALSE
+	)
+	sed <- matrix(NA_real_, 8, 8)
+	expect_warning(
+		result <- biometryassist:::process_aliased(pp, sed, "trt"),
+		"7 levels"
+	)
+	expect_equal(nrow(result$predictions), 1)
+})
+
+test_that("print.mct prints non-tukey header with adjustment method", {
+	out <- multiple_comparisons(
+		dat.aov,
+		classify = "Species",
+		adjust = "bonferroni"
+	)
+	printed <- capture.output(print(out))
+	expect_true(any(grepl("p-value adjustment = bonferroni", printed)))
+	expect_true(any(grepl("Significance level", printed)))
+	expect_false(any(grepl("HSD value", printed)))
+})
+
+test_that("calculate_raw_pvalue_matrix: n=1 returns 1x1 identity early", {
+	pp <- data.frame(Names = "A", predicted.value = 5.0)
+	result <- biometryassist:::calculate_raw_pvalue_matrix(
+		pp,
+		sed = 0.5,
+		ndf = 10L
+	)
+	expect_equal(result, matrix(1, 1, 1, dimnames = list("A", "A")))
+})
+
+test_that("calculate_raw_pvalue_matrix: scalar sed produces correct p-values", {
+	pp <- data.frame(Names = c("A", "B"), predicted.value = c(10.0, 12.0))
+	result <- biometryassist:::calculate_raw_pvalue_matrix(
+		pp,
+		sed = 1.0,
+		ndf = 20L
+	)
+	expect_true(is.matrix(result))
+	expect_equal(result["A", "B"], 2 * stats::pt(-2, 20), tolerance = 1e-8)
+	expect_equal(result["B", "A"], result["A", "B"])
+})
+
+test_that("calculate_raw_pvalue_matrix: matrix ndf extracts per-pair degrees of freedom", {
+	pp <- data.frame(Names = c("A", "B"), predicted.value = c(10.0, 12.0))
+	sed <- matrix(c(NA_real_, 1.0, 1.0, NA_real_), nrow = 2)
+	ndf <- matrix(c(20L, 18L, 18L, 20L), nrow = 2)
+	result <- biometryassist:::calculate_raw_pvalue_matrix(pp, sed, ndf)
+	expect_true(is.matrix(result))
+	expect_equal(result["A", "B"], 2 * stats::pt(-2, 18), tolerance = 1e-8)
+})
+
+test_that("back_transform: NULL offset is treated as zero", {
+	expect_equal(biometryassist:::back_transform(4, "sqrt", offset = NULL), 16)
+	expect_equal(biometryassist:::back_transform(0, "log", offset = NULL), 1)
 })

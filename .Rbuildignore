@@ -2,6 +2,8 @@
 ^\.Rproj\.user$
 ^README\.Rmd$
 ^README\.md$
+^CODE_OF_CONDUCT\.md$
+^CONTRIBUTING\.md$
 ^codecov\.yml$
 ^\.covrignore$
 ^_pkgdown\.yml$
@@ -35,3 +37,7 @@ inst/manifest.json
 ^\.claude$
 ^air\.toml$
 ^\.vscode$
+CLAUDE\.md
+.env
+context.md
+.quarto

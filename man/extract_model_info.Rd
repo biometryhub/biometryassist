@@ -2,16 +2,57 @@
 % Please edit documentation in R/resplot_methods.R
 \name{extract_model_info}
 \alias{extract_model_info}
-\title{Extract model information using S3 dispatch}
+\title{Internal model-information extraction for resplot()}
 \usage{
 extract_model_info(model.obj, call = FALSE)
 }
 \arguments{
-\item{model.obj}{Model object}
+\item{model.obj}{A fitted model object of a supported class (see
+\emph{Supported model types} below).}
 
-\item{call}{Logical, whether to extract model call}
+\item{call}{Logical; whether to extract the model call for display.}
+}
+\value{
+A list with elements \code{facet}, \code{facet_name}, \code{resids}, \code{fits}, \code{k}
+and \code{model_call}.
 }
 \description{
-Extract model information using S3 dispatch
+\code{extract_model_info()} is the internal generic that \code{\link[=resplot]{resplot()}} uses to pull
+the residuals, fitted values and (optionally) the model call from a fitted
+model. It dispatches on the class of \code{model.obj}. It is not exported and is
+not called directly by users; support for a new model engine is added by
+writing a new \code{extract_model_info()} method.
+}
+\section{Supported model types}{
+
+\code{\link[=resplot]{resplot()}} produces residual diagnostics for any model with an
+\code{extract_model_info()} method. These are currently:\tabular{lll}{
+   Model class \tab Fitted by \tab Notes \cr
+   \code{aov}, \code{lm} \tab \code{\link[stats:aov]{stats::aov()}}, \code{\link[stats:lm]{stats::lm()}} \tab Fixed-effects linear models. \cr
+   \code{aovlist} \tab \code{\link[stats:aov]{stats::aov()}} with an \code{Error()} term \tab Multi-stratum aov; each error stratum (except the intercept) is shown as a separate plot. \cr
+   \code{lme} \tab \code{\link[nlme:lme]{nlme::lme()}} \tab Linear mixed model. \cr
+   \code{lmerMod} \tab \code{\link[lme4:lmer]{lme4::lmer()}}, \code{lme4breeding::lmebreed()} \tab Linear mixed model. \code{lmebreed()} (relationship-based) models also carry class \code{lmerMod}; their residuals/fitted values are on the response scale, so the diagnostics are valid. \cr
+   \code{lmerModLmerTest} \tab \code{\link[lmerTest:lmer]{lmerTest::lmer()}} \tab As \code{lmerMod}. \cr
+   \code{asreml} \tab ASReml-R \code{asreml()} \tab Linear mixed model (commercial; not on CRAN). Residual strata are shown as separate plots. \cr
+   \code{mmer}, \code{mmes} \tab sommer \code{mmer()} / \code{mmes()} \tab Linear mixed model. \cr
+   \code{art} \tab \code{ARTool::art()} \tab Aligned rank transform model. \cr
+   \code{afex_aov} \tab afex \code{aov_car()} / \code{aov_ez()} / \code{aov_4()} \tab Factorial / repeated-measures ANOVA; a single diagnostic panel from the model residuals. \cr
+   \code{glmmTMB} \tab glmmTMB \code{glmmTMB()} \tab \strong{Gaussian family only.} Non-Gaussian families error with a pointer to \code{DHARMa::simulateResiduals()}, since a normal Q-Q plot is not a valid diagnostic for them. \cr
+}
+
+
+This set differs slightly from the comparison functions (see
+\code{\link[=get_predictions]{get_predictions()}}): \code{resplot()} additionally supports ARTool (\code{art}) models and
+sommer's legacy \code{mmer} interface. Neither is available for the comparison
+functions — ART uses aligned ranks (use \code{ARTool::art.con()}), and current sommer
+provides no \code{predict()} for \code{mmer} (refit with \code{sommer::mmes()}).
+
+To add a new engine, write an \verb{extract_model_info.<class>()} method returning
+a list with elements \code{facet}, \code{facet_name}, \code{resids}, \code{fits}, \code{k} and
+\code{model_call}, and add a row to the table above.
+}
+
+\seealso{
+\code{\link[=resplot]{resplot()}}
 }
 \keyword{internal}

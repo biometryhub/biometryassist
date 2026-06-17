@@ -15,19 +15,18 @@ multiple_comparisons(
   decimals = 2,
   descending = FALSE,
   groups = TRUE,
+  adjust = "tukey",
+  by = NULL,
   plot = FALSE,
   label_height = 0.1,
   rotation = 0,
   save = FALSE,
   savename = "predicted_values",
-  order,
-  pred.obj,
-  pred,
   ...
 )
 }
 \arguments{
-\item{model.obj}{An ASReml-R or aov model object. Will likely also work with \code{lme} (\code{\link[nlme:lme]{nlme::lme()}}), \code{lmerMod} (\code{\link[lme4:lmer]{lme4::lmer()}}) models as well.}
+\item{model.obj}{An \code{asreml}, \code{aov}, \code{lm}, \code{lme} (\code{\link[nlme:lme]{nlme::lme()}}) or \code{lmerMod} (\code{\link[lme4:lmer]{lme4::lmer()}}) model object.}
 
 \item{classify}{Name of predictor variable as string.}
 
@@ -41,11 +40,15 @@ multiple_comparisons(
 
 \item{power}{Numeric power applied to response variable with power transformation. Default is \code{NULL}. See Details for more information.}
 
-\item{decimals}{Controls rounding of decimal places in output. Default is 2 decimal places.}
+\item{decimals}{Deprecated. Rounding is now controlled via the \code{decimals} argument of \code{\link[=print.mct]{print.mct()}}.}
 
 \item{descending}{Logical (default \code{FALSE}). Order of the output sorted by the predicted value. If \code{TRUE}, largest will be first, through to smallest last.}
 
 \item{groups}{Logical (default \code{TRUE}). If \code{TRUE}, the significance letter groupings will be calculated and displayed. This can get overwhelming for large numbers of comparisons, so can be turned off by setting to \code{FALSE}.}
+
+\item{adjust}{The method used to adjust p-values for multiple comparisons. Either \code{"tukey"} (default, Tukey's HSD) or any method accepted by \code{\link[stats:p.adjust]{stats::p.adjust()}} (\code{"bonferroni"}, \code{"holm"}, \code{"hochberg"}, \code{"hommel"}, \code{"BH"} (or \code{"fdr"}), \code{"BY"}, or \code{"none"}). See Details.}
+
+\item{by}{A character vector of column name(s) in the predictions over which to split comparisons. Comparisons are run independently within each level (or combination of levels) of the \code{by} variable(s); no p-values are pooled or adjusted across groups. Default \code{NULL}. See Details.}
 
 \item{plot}{Automatically produce a plot of the output of the multiple comparison test? Default is \code{FALSE}. This is maintained for backwards compatibility, but the preferred method now is to use \verb{autoplot(<multiple_comparisons output>)}. See \code{\link[=autoplot.mct]{autoplot.mct()}} for more details.}
 
@@ -57,27 +60,26 @@ multiple_comparisons(
 
 \item{savename}{A file name for the predicted values to be saved to. Default is \code{predicted_values}.}
 
-\item{order}{Deprecated. Use \code{descending} instead.}
-
-\item{pred.obj}{Deprecated. Predicted values are calculated within the function from version 1.0.1 onwards.}
-
-\item{pred}{Deprecated. Use \code{classify} instead.}
-
-\item{...}{Other arguments passed through to \code{\link[=get_predictions]{get_predictions()}}.}
+\item{...}{Other arguments passed internally to model-specific prediction methods.}
 }
 \value{
 An object of class \code{mct} (a list with class attributes) containing:
 \item{predictions}{A data frame with predicted means, standard errors,
 confidence interval upper and lower bounds, and significant group
 allocations}
-\item{pairwise_pvalues}{A symmetric matrix of p-values for all pairwise
-comparisons using Tukey's HSD test}
-\item{hsd}{The Honest Significant Difference value(s) used in the comparisons.
-Either a single numeric value (if constant across comparisons) or a matrix
-(if varies by comparison)}
+\item{pairwise_pvalues}{A symmetric matrix of adjusted p-values for all
+pairwise comparisons (Tukey's HSD by default, otherwise adjusted by the
+\code{adjust} method). When \code{by} is supplied, a named list of such matrices,
+one per subgroup}
+\item{hsd}{The Honest Significant Difference value(s) used in the comparisons
+when \code{adjust = "tukey"}. Either a single numeric value (if constant across
+comparisons) or a matrix (if it varies by comparison). \code{NULL} when \code{adjust}
+is not \code{"tukey"}}
+\item{sig_level}{The significance level used (default 0.05)}
+\item{comparison_method}{The p-value adjustment method used (the value of
+\code{adjust})}
 \item{aliased}{Character vector of aliased treatment levels (only present if
 some predictions are aliased)}
-\item{sig_level}{The significance level used (default 0.05)}
 }
 \description{
 A function for comparing and ranking predicted means with Tukey's Honest Significant Difference (HSD) Test.
@@ -101,6 +103,36 @@ transformation, add 0.1 in the \code{offset} argument.
 The power argument allows the specification of arbitrary powers to be
 back transformed, if they have been used to attempt to improve normality of
 residuals.
+}
+
+\subsection{P-value adjustment (\code{adjust})}{
+
+By default (\code{adjust = "tukey"}) the function uses Tukey's HSD, which is exact
+for the complete set of all pairwise comparisons. Alternatively, \code{adjust} may
+be any method accepted by \code{\link[stats:p.adjust]{stats::p.adjust()}}. In that case a matrix of \emph{raw}
+two-sided t-test p-values is computed first and the chosen adjustment is
+applied to the lower-triangle vector of those raw p-values, avoiding the
+double-adjustment that would occur if Tukey-adjusted p-values were passed to
+\code{p.adjust()}. Bonferroni and Holm control the family-wise error rate and are
+valid under arbitrary dependence; BH/BY (FDR) are valid under positive
+dependence, which pairwise comparisons satisfy. The returned
+\verb{$pairwise_pvalues} always holds the adjusted p-values for the chosen method
+(the Tukey p-values when \code{adjust = "tukey"}). When \code{adjust} is not \code{"tukey"},
+\verb{$hsd} is \code{NULL}, as an HSD value is only meaningful for Tukey's test.
+}
+
+\subsection{Grouped comparisons (\code{by})}{
+
+When \code{by} is supplied, the predictions are split into subgroups defined by
+the level(s) of the \code{by} variable(s) and the comparison procedure is run
+independently within each subgroup. Each subgroup is treated as a separate
+family of comparisons: there is no pooling and no cross-group p-value
+adjustment, and letter groupings restart within each subgroup. When \code{by} is
+used, \verb{$pairwise_pvalues} (and \verb{$hsd} where applicable) are returned as named
+lists with one element per subgroup, and \code{autoplot()} facets the plot by the
+\code{by} variable(s) by default. \code{by} must leave at least one \code{classify} factor
+to compare within each subgroup, so a single-factor \code{classify} cannot be
+split with \code{by}.
 }
 
 \subsection{Confidence Intervals & Comparison Intervals}{
@@ -139,6 +171,38 @@ the use of Tukey intervals for clearer interpretation.
 For multiple comparison contexts, Tukey comparison intervals are recommended as they provide visual consistency with the statistical test being performed and avoid the common confusion where traditional confidence intervals don't overlap but groups share the same significance letter.
 }
 }
+\section{Supported model types}{
+
+The comparison functions (\code{\link[=multiple_comparisons]{multiple_comparisons()}}, \code{\link[=pairwise_comparisons]{pairwise_comparisons()}}
+and \code{\link[=reference_comparisons]{reference_comparisons()}}) work with any model for which a
+\code{get_predictions()} method is defined. These are currently:\tabular{lll}{
+   Model class \tab Fitted by \tab Notes \cr
+   \code{aov}, \code{lm} \tab \code{\link[stats:aov]{stats::aov()}}, \code{\link[stats:lm]{stats::lm()}} \tab Fixed-effects linear models. \cr
+   \code{aovlist} \tab \code{\link[stats:aov]{stats::aov()}} with an \code{Error()} term \tab Multi-stratum aov; gives comparison-specific (matrix) degrees of freedom. \cr
+   \code{lme} \tab \code{\link[nlme:lme]{nlme::lme()}} \tab Linear mixed model. \cr
+   \code{lmerMod} \tab \code{\link[lme4:lmer]{lme4::lmer()}}, \code{lme4breeding::lmebreed()} \tab Linear mixed model. \code{lmebreed()} (relationship-based) models also carry class \code{lmerMod}; comparisons target the fixed-effect means with Kenward-Roger degrees of freedom, and correctly reflect the relationship structure (validated against ASReml-R). \cr
+   \code{lmerModLmerTest} \tab \code{\link[lmerTest:lmer]{lmerTest::lmer()}} \tab As \code{lmerMod}, with Satterthwaite degrees of freedom. \cr
+   \code{asreml} \tab ASReml-R \code{asreml()} \tab Linear mixed model (commercial; not on CRAN). \cr
+   \code{afex_aov} \tab afex \code{aov_car()} / \code{aov_ez()} / \code{aov_4()} \tab Factorial / repeated-measures ANOVA; gives comparison-specific (matrix) degrees of freedom. \cr
+   \code{glmmTMB} \tab glmmTMB \code{glmmTMB()} \tab Generalized linear mixed model. Predictions are on the link scale with asymptotic (infinite) degrees of freedom; supply \code{trans} to back-transform. \cr
+   \code{mmes} \tab sommer \code{mmes()} \tab Linear mixed model, via sommer's native \code{predict()}. SED from the prediction covariance; asymptotic (infinite) degrees of freedom (sommer provides none). \cr
+}
+
+
+ARTool (\code{art}) models are supported by \code{\link[=resplot]{resplot()}} but \strong{not} by the comparison
+functions: the aligned rank transform makes mean-based comparisons inappropriate.
+Use \code{ARTool::art.con()} for contrasts on ART models instead.
+
+sommer \code{mmer} models (the legacy interface) are supported by \code{\link[=resplot]{resplot()}} but
+\strong{not} by the comparison functions: current sommer provides no \code{predict()} method
+for \code{mmer}. Refit with \code{sommer::mmes()} to use the comparison functions.
+
+To add a new engine, write a \verb{get_predictions.<class>()} method returning a
+list with elements \code{predictions}, \code{sed}, \code{df}, \code{ylab} and \code{aliased_names}
+(plus \code{emmeans_grid} for engines backed by \code{\link[emmeans:emmeans]{emmeans::emmeans()}}), and add a
+row to the table above.
+}
+
 \examples{
 # Fit aov model
 model <- aov(Petal.Length ~ Species, data = iris)
@@ -169,6 +233,16 @@ pred.out.ci
 pred.out.none <- multiple_comparisons(model, classify = "Species", int.type = "none")
 autoplot(pred.out.none)
 
+# Use a different p-value adjustment instead of Tukey's HSD
+multiple_comparisons(model, classify = "Species", adjust = "fdr")
+
+# `by`: run the comparisons independently within each level of another factor.
+# Here a 2 x 3 factorial - compare tension levels within each wool type.
+m_wb <- aov(breaks ~ wool * tension, data = warpbreaks)
+mc_by <- multiple_comparisons(m_wb, classify = "wool:tension", by = "wool")
+mc_by
+autoplot(mc_by) # faceted by wool
+
 # AOV model example with transformation
 my_iris <- iris
 my_iris$Petal.Length <- exp(my_iris$Petal.Length) # Create exponential response
@@ -198,7 +272,7 @@ autoplot(pred.out, label_height = 15)
 # ASReml-R Example
 library(asreml)
 
-#Fit ASReml Model
+# Fit ASReml-R model
 model.asr <- asreml(yield ~ Nitrogen + Variety + Nitrogen:Variety,
                     random = ~ Blocks + Blocks:Wplots,
                     residual = ~ units,
@@ -208,9 +282,9 @@ wald(model.asr) # Nitrogen main effect significant
 
 #Determine ranking and groups according to Tukey's Test
 pred.out <- multiple_comparisons(model.obj = model.asr, classify = "Nitrogen",
-                    descending = TRUE, decimals = 5)
+                    descending = TRUE)
 
-pred.out
+print(pred.out, decimals = 5)
 
 # Example using a box-cox transformation
 set.seed(42) # See the seed for reproducibility
@@ -249,4 +323,11 @@ autoplot(pred.out, label_height = 0.5)
 \references{
 Jørgensen, E. & Pedersen, A. R. (1997). How to Obtain Those Nasty
 Standard Errors From Transformed Data - and Why They Should Not Be Used.
+}
+\seealso{
+\code{\link[=pairwise_comparisons]{pairwise_comparisons()}} for testing a chosen subset of pairwise
+differences as a tidy table, or \code{\link[=reference_comparisons]{reference_comparisons()}} for testing
+treatments against a chosen reference or control. For guidance on choosing
+between the two and on multiplicity adjustments, see
+\code{vignette("choosing-multiple-comparisons", "biometryassist")}.
 }

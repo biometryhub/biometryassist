@@ -57,6 +57,77 @@ ggplot2_variant <- function() {
 	}
 }
 
+##### Helpers for plot regression tests (test-all-w2.R, test-mct.R) ----
+#
+# Plots are guarded in two complementary layers:
+#
+#   * Plot *content* - that autoplot() draws the right means, intervals and
+#     letters - is checked with expect_autoplot_data() below, via
+#     ggplot2::layer_data(). It depends only on data (no pixels/fonts), so it
+#     runs on every platform, including CI.
+#
+#   * Plot *rendering* (pixel-exact vdiffr snapshots) is checked with
+#     expect_local_doppelganger(). vdiffr SVGs are platform-specific, so these
+#     run locally only (skipped on CI) - giving fast local confirmation that a
+#     figure is unchanged, with the package released to CRAN from a local run.
+#
+# (In the workshop suite, test-all-w2.R, numeric and printed output is likewise
+# checked at *display* precision via print.mct(), so it too is OS-stable.)
+
+# Pixel-exact visual regression check. Skipped on CI (see above), under coverage
+# and on older {grid}.
+expect_local_doppelganger <- function(title, plot, variant = NULL) {
+	testthat::skip_on_ci()
+	testthat::skip_on_covr()
+	testthat::skip_if(packageVersion("grid") < "4.2.1")
+	vdiffr::expect_doppelganger(title, plot, variant = variant)
+}
+
+# Return the computed data for the single plot layer drawn by `geom` (a Geom
+# class name, e.g. "GeomPoint"). Errors if the layer is absent or ambiguous.
+layer_data_for <- function(plot, geom) {
+	idx <- which(vapply(
+		plot$layers,
+		function(l) inherits(l$geom, geom),
+		logical(1)
+	))
+	testthat::expect_length(idx, 1)
+	ggplot2::layer_data(plot, idx)
+}
+
+# Content-level check for a default autoplot.mct figure (point + error bars +
+# letters). Confirms the plot draws the object's own predictions - the means
+# (points), interval bounds (error bars) and significance-group letters - with
+# no dependence on rendered pixels, so it is safe to run on every OS and on CI.
+# Compared against the object's own `predictions`, the values are internally
+# consistent, so the (tiny) tolerance only guards floating-point noise; the
+# cross-OS correctness of the values themselves is covered separately by the
+# expect_equal() checks in each test. Not suitable for the column/HSD-bar/
+# no-errorbar/no-lettering variants, which have their own structural checks.
+expect_autoplot_data <- function(plot, pred, tolerance = 1e-6) {
+	preds <- pred$predictions
+	# autoplot() plots the back-transformed PredictedValue when a transformation
+	# was applied (default, interpretable scale); otherwise predicted.value.
+	yval <- if ("PredictedValue" %in% names(preds)) {
+		preds$PredictedValue
+	} else {
+		preds$predicted.value
+	}
+	pts <- layer_data_for(plot, "GeomPoint")
+	testthat::expect_equal(sort(pts$y), sort(yval), tolerance = tolerance)
+	bars <- layer_data_for(plot, "GeomErrorbar")
+	testthat::expect_equal(
+		sort(bars$ymin),
+		sort(preds$low),
+		tolerance = tolerance
+	)
+	testthat::expect_equal(sort(bars$ymax), sort(preds$up), tolerance = tolerance)
+	if ("groups" %in% names(preds)) {
+		txt <- layer_data_for(plot, "GeomText")
+		testthat::expect_equal(sort(as.character(txt$label)), sort(preds$groups))
+	}
+}
+
 ##### Helpers for design() tests ----
 
 expect_design_output <- function(

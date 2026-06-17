@@ -76,43 +76,9 @@ variogram <- function(
 			column <- names(points)[1]
 			orig_col <- FALSE
 		}
-		row_vals <- unique(points[, 2]) # x
-		col_vals <- unique(points[, 1]) # y
+		gdat <- vario_interp(points)
 
-		z <- matrix(points$gamma, nrow = length(row_vals), byrow = TRUE)
-
-		interp_rows <- seq(min(row_vals), max(row_vals), length = 40)
-		interp_cols <- seq(min(col_vals), max(col_vals), length = 40)
-		gdat <- expand.grid(x = interp_rows, y = interp_cols)
-
-		pr <- pracma::interp2(
-			x = col_vals,
-			y = row_vals,
-			Z = z,
-			xp = gdat$y,
-			yp = gdat$x
-		)
-		pr <- matrix(pr, nrow = length(interp_rows), byrow = F)
-		gdat <- cbind(gdat, z = as.vector(pr))
-
-		a <- ggplot2::ggplot(gdat, ggplot2::aes(x = y, y = x, z = z)) +
-			ggplot2::geom_tile(alpha = 0.6, ggplot2::aes(fill = z)) +
-			ggplot2::coord_equal() +
-			ggplot2::geom_contour(colour = "white", alpha = 0.5) +
-			ggplot2::theme_bw(base_size = 8) +
-			ggplot2::scale_y_continuous(
-				expand = c(0, 0),
-				breaks = seq(1, max(gdat$x), 2)
-			) +
-			ggplot2::scale_x_continuous(
-				expand = c(0, 0),
-				breaks = seq(1, max(gdat$y), 2)
-			) +
-			ggplot2::theme(legend.position = "none", aspect.ratio = 0.3) +
-			ggplot2::labs(
-				y = paste(row, "Lag", sep = " "),
-				x = paste(column, "Lag", sep = " ")
-			)
+		a <- vario_ggplot(gdat, row, column, palette)
 
 		# First adjust the lattice spacing
 		oldpar <- lattice::trellis.par.get()
@@ -159,8 +125,6 @@ variogram <- function(
 		#     base_wireframe,
 
 		# )
-
-		a <- a + ggplot2::scale_fill_gradientn(colours = col_regions)
 
 		lattice_grob <- grid::grid.grabExpr(
 			print(b, newpage = FALSE)
@@ -241,6 +205,87 @@ variogram <- function(
 	} else {
 		return(output[[1]])
 	}
+}
+
+#' Interpolate variogram points onto a regular grid
+#'
+#' Internal helper for [variogram()]. Takes the variogram points for a single
+#' group (as produced by [vario_df()]) and interpolates the `gamma` surface onto
+#' a regular `n` by `n` grid using [pracma::interp2()]. The returned grid is the
+#' shared input to both the 2D heatmap ([vario_ggplot()]) and the 3D wireframe.
+#'
+#' @param points A data frame of variogram points for a single group. The
+#'   spatial coordinates are expected in the first two columns (column 1 maps to
+#'   `y`, column 2 to `x`) and the semivariance in a `gamma` column.
+#' @param n The number of grid points along each axis (default `40`).
+#'
+#' @returns A data frame with columns `x`, `y` and `z` (the interpolated
+#'   `gamma`), containing `n * n` rows.
+#' @keywords internal
+#'
+#' @importFrom pracma interp2
+#'
+vario_interp <- function(points, n = 40) {
+	row_vals <- unique(points[, 2]) # x
+	col_vals <- unique(points[, 1]) # y
+
+	z <- matrix(points$gamma, nrow = length(row_vals), byrow = TRUE)
+
+	interp_rows <- seq(min(row_vals), max(row_vals), length = n)
+	interp_cols <- seq(min(col_vals), max(col_vals), length = n)
+	gdat <- expand.grid(x = interp_rows, y = interp_cols)
+
+	pr <- pracma::interp2(
+		x = col_vals,
+		y = row_vals,
+		Z = z,
+		xp = gdat$y,
+		yp = gdat$x
+	)
+	pr <- matrix(pr, nrow = length(interp_rows), byrow = FALSE)
+	gdat <- cbind(gdat, z = as.vector(pr))
+
+	return(gdat)
+}
+
+#' Build the 2D variogram heatmap
+#'
+#' Internal helper for [variogram()]. Builds the deterministic 2D
+#' heatmap/contour `ggplot2` panel from an interpolated grid (see
+#' [vario_interp()]). This is the lower panel of the composite variogram plot.
+#'
+#' @param gdat An interpolated grid data frame with columns `x`, `y` and `z`, as
+#'   returned by [vario_interp()].
+#' @param row,column Axis labels for the row and column lag directions.
+#' @param palette A colour palette string (see [variogram()]).
+#'
+#' @returns A `ggplot2` object.
+#' @keywords internal
+#'
+#' @importFrom ggplot2 ggplot aes geom_tile coord_equal geom_contour scale_fill_gradientn theme_bw scale_x_continuous scale_y_continuous theme labs
+#'
+vario_ggplot <- function(gdat, row, column, palette) {
+	col_regions <- setup_colour_palette(palette, n = 100)
+
+	ggplot2::ggplot(gdat, ggplot2::aes(x = y, y = x, z = z)) +
+		ggplot2::geom_tile(alpha = 0.6, ggplot2::aes(fill = z)) +
+		ggplot2::coord_equal() +
+		ggplot2::geom_contour(colour = "white", alpha = 0.5) +
+		ggplot2::theme_bw(base_size = 8) +
+		ggplot2::scale_y_continuous(
+			expand = c(0, 0),
+			breaks = seq(1, max(gdat$x), 2)
+		) +
+		ggplot2::scale_x_continuous(
+			expand = c(0, 0),
+			breaks = seq(1, max(gdat$y), 2)
+		) +
+		ggplot2::theme(legend.position = "none", aspect.ratio = 0.3) +
+		ggplot2::labs(
+			y = paste(row, "Lag", sep = " "),
+			x = paste(column, "Lag", sep = " ")
+		) +
+		ggplot2::scale_fill_gradientn(colours = col_regions)
 }
 
 #' Calculate the variogram data frame for a model

@@ -27,11 +27,11 @@ heat_map(
 
 \item{grouping}{An optional grouping variable to facet the plot by.}
 
-\item{raster}{Logical (default: \code{TRUE}). If \code{TRUE} uses \code{\link[ggplot2:geom_tile]{ggplot2::geom_raster()}} for speed. Will not work if the grid is irregular.}
+\item{raster}{Logical (default: \code{TRUE}). If \code{TRUE} uses \code{\link[ggplot2:geom_raster]{ggplot2::geom_raster()}} for speed. Will not work if the grid is irregular.}
 
 \item{smooth}{Logical (default: \code{FALSE}). If \code{raster} is \code{TRUE}, interpolation can be applied across the grid to obtain a smoothed grid. Ignored if \code{raster} is \code{FALSE}.}
 
-\item{palette}{Colour palette to use. By default it will use the \code{viridis} (colour-blind friendly) palette. Other palettes available can be seen with \code{\link[grDevices:palettes]{grDevices::hcl.pals()}}.}
+\item{palette}{Colour palette to use. By default it will use the \code{viridis} (colour-blind friendly) palette. Other palettes available can be seen with \code{\link[grDevices:hcl.pals]{grDevices::hcl.pals()}}.}
 
 \item{...}{Other arguments passed to \code{\link[ggplot2:facet_wrap]{ggplot2::facet_wrap()}}}
 }

@@ -1,10 +1,11 @@
 ---
 title: "Adding Orientation Arrows and Annotations to Field Layout Plots"
-output: rmarkdown::html_vignette
+format: html
 vignette: >
   %\VignetteIndexEntry{Adding Orientation Arrows and Annotations to Field Layout Plots}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{quarto::html}
   %\VignetteEncoding{UTF-8}
+engine: knitr
 ---
 
 ```{r, include = FALSE}

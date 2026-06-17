@@ -13,6 +13,8 @@ load(test_path("data", "large_data.Rdata"), envir = .GlobalEnv)
 dat_large.aov <- aov(y ~ x, data = large_dat)
 dat_med.aov <- aov(y ~ x, data = med_dat)
 
+load(test_path("data", "oats_aov.Rdata"), envir = .GlobalEnv)
+
 # Start testing
 test_that("Residual plots work for aov", {
 	p1 <- resplot(dat.aov, shapiro = FALSE)
@@ -39,7 +41,7 @@ test_that("resplt is deprecated and produces a warning", {
 test_that("resplot produces an error for invalid data types", {
 	expect_error(
 		resplot(1:10),
-		"model\\.obj must be a linear \\(mixed\\) model object\\. Currently supported model types are: aov, lm, lme, lmerMod, lmerModLmerTest, asreml, mmer, mmes, art"
+		"model\\.obj must be a linear \\(mixed\\) model object\\. Currently supported model types are: aov, lm, aovlist, lme, lmerMod, lmerModLmerTest, asreml, mmer, mmes, art, afex_aov, glmmTMB"
 	)
 })
 
@@ -120,6 +122,56 @@ test_that("Residual plots work for asreml", {
 })
 
 
+test_that("Residual plots work for multi-stratum aov (aovlist)", {
+	p1 <- resplot(oats.aov)
+
+	# Three error strata remain after dropping the intercept-only stratum:
+	# Blocks, Blocks:Wplots and Within. resplot() returns one plot per stratum.
+	expect_equal(length(p1), 3)
+	expect_equal(names(p1), c("Blocks", "Blocks:Wplots", "Within"))
+	expect_contains(class(p1[[1]]), "ggplot")
+
+	vdiffr::expect_doppelganger(
+		title = "Resplot for aovlist Blocks",
+		p1[["Blocks"]],
+		variant = ggplot2_variant()
+	)
+	vdiffr::expect_doppelganger(
+		title = "Resplot for aovlist Blocks-Wplots",
+		p1[["Blocks:Wplots"]],
+		variant = ggplot2_variant()
+	)
+	vdiffr::expect_doppelganger(
+		title = "Resplot for aovlist Within",
+		p1[["Within"]],
+		variant = ggplot2_variant()
+	)
+})
+
+test_that("resplot includes call text for aovlist when call = TRUE", {
+	p1 <- resplot(oats.aov, call = TRUE)
+	expect_equal(length(p1), 3)
+	expect_contains(class(p1[[1]]), "ggplot")
+})
+
+test_that("extract_model_info.asreml covers single-facet else branch and call = TRUE gsub", {
+	fake_asr <- structure(
+		list(
+			R.param = list(units = list(variance = list(size = 10))),
+			residual = rnorm(10),
+			residuals = rnorm(10),
+			linear.predictors = rnorm(10),
+			call = quote(asreml(y ~ x, data = dat))
+		),
+		class = "asreml"
+	)
+	result <- biometryassist:::extract_model_info(fake_asr, call = TRUE)
+	expect_equal(result$facet, 1)
+	expect_null(result$facet_name)
+	expect_equal(result$k, 10)
+	expect_false(is.null(result$model_call))
+})
+
 test_that("Residual plots work for lme4", {
 	skip_if_not_installed("lme4")
 	p1 <- resplot(dat.lme4, call = TRUE)
@@ -161,6 +213,38 @@ test_that("Residual plots work for sommer", {
 	)
 })
 
+test_that("Residual plots work for lme4breeding (lmebreed) models", {
+	skip_if_not_installed("lme4breeding")
+	# lmebreed() relies on lme4 internals being attached (lme4 is in its Depends).
+	suppressPackageStartupMessages(library(lme4breeding))
+	load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
+
+	# lmebreed() objects carry class `lmerMod` and use the existing extract_model_info
+	# method. Residuals/fitted values are on the response scale, so the diagnostic is
+	# valid. An identity relationship matrix gives an exact lme4::lmer() reference.
+	blocks <- levels(factor(dat$Blocks))
+	A <- diag(length(blocks))
+	dimnames(A) <- list(blocks, blocks)
+
+	m_lmb <- suppressMessages(suppressWarnings(lmebreed(
+		yield ~ Nitrogen + (1 | Blocks),
+		relmat = list(Blocks = A),
+		data = dat,
+		verbose = FALSE,
+		dateWarning = FALSE
+	)))
+
+	p <- resplot(m_lmb, shapiro = FALSE)
+	expect_contains(class(p), "ggplot")
+
+	m_lmer <- lme4::lmer(yield ~ Nitrogen + (1 | Blocks), data = dat)
+	expect_equal(
+		unname(residuals(m_lmb)),
+		unname(residuals(m_lmer)),
+		tolerance = 1e-4
+	)
+})
+
 test_that("Residual plots display call for aov and lm", {
 	p1 <- resplot(dat.aov, call = TRUE)
 	p2 <- resplot(dat.aov, call = TRUE, call.size = 7)
@@ -174,6 +258,79 @@ test_that("Residual plots display call for aov and lm", {
 		title = "Resplot with smaller call",
 		p2,
 		variant = ggplot2_variant()
+	)
+})
+
+test_that("Residual plots work for afex (afex_aov) models", {
+	skip_if_not_installed("afex")
+	data(obk.long, package = "afex")
+
+	afex_b <- afex::aov_ez(
+		id = "id",
+		dv = "value",
+		between = c("treatment", "gender"),
+		data = obk.long,
+		fun_aggregate = mean
+	)
+	afex_w <- afex::aov_ez(
+		id = "id",
+		dv = "value",
+		within = c("phase", "hour"),
+		data = obk.long
+	)
+
+	p1 <- resplot(afex_b)
+	p2 <- resplot(afex_w, call = TRUE)
+
+	expect_contains(class(p1), "ggplot")
+	expect_contains(class(p2), "ggplot")
+
+	vdiffr::expect_doppelganger(
+		title = "Resplot for afex between",
+		p1,
+		variant = ggplot2_variant()
+	)
+	vdiffr::expect_doppelganger(
+		title = "Resplot for afex within",
+		p2,
+		variant = ggplot2_variant()
+	)
+})
+
+test_that("Residual plots work for glmmTMB (Gaussian); non-Gaussian errors to DHARMa", {
+	skip_if_not_installed("glmmTMB")
+
+	# Use the well-behaved oats data (continuous yield) for the Gaussian diagnostic,
+	# consistent with the asreml/lme4/aovlist oats models used elsewhere.
+	load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
+	g_gauss <- glmmTMB::glmmTMB(
+		yield ~ Nitrogen * Variety + (1 | Blocks / Wplots),
+		data = dat,
+		family = gaussian()
+	)
+	p1 <- resplot(g_gauss)
+	p1_call <- resplot(g_gauss, call = TRUE)
+	expect_contains(class(p1), "ggplot")
+	expect_contains(class(p1_call), "ggplot")
+
+	vdiffr::expect_doppelganger(
+		title = "Resplot for glmmTMB gaussian",
+		p1,
+		variant = ggplot2_variant()
+	)
+
+	# Non-Gaussian families are not valid for a normal-QQ diagnostic and must error
+	# with a pointer to DHARMa rather than drawing a misleading plot. Salamanders is
+	# genuine count data, so a Poisson fit is the natural non-Gaussian example.
+	data(Salamanders, package = "glmmTMB")
+	g_pois <- glmmTMB::glmmTMB(
+		count ~ spp + mined + (1 | site),
+		data = Salamanders,
+		family = poisson()
+	)
+	expect_error(
+		resplot(g_pois),
+		"DHARMa::simulateResiduals\\(\\)"
 	)
 })
 

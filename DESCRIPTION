@@ -1,7 +1,7 @@
 Type: Package
 Package: biometryassist
 Title: Functions to Assist Design and Analysis of Agronomic Experiments
-Version: 1.4.1
+Version: 1.5.0
 Authors@R: 
     c(person(given = "Sharon",
              family = "Nielsen",
@@ -15,6 +15,9 @@ Authors@R:
              family = "Conway",
              role = "aut",
              email = "biometrytraining@adelaide.edu.au"),
+      person(given = "Michael",
+             family = "Mumford",
+             role = "ctb"),
       person(given = "University of Adelaide",
              role = c("cph", "fnd"),
              comment = "https://adelaide.edu.au/"),
@@ -28,7 +31,7 @@ Description: Provides functions to aid in the design and analysis of
     this package enhances the `asreml` package which provides a 
     computationally efficient algorithm for fitting mixed models 
     using Residual Maximum Likelihood. It is a commercial package 
-    that can be purchased as 'asreml-R' from 'VSNi' 
+    that can be purchased as 'ASReml-R' from 'VSNi' 
     <https://vsni.co.uk/>, who will supply a zip file for local 
     installation/updating (see <https://asreml.kb.vsni.co.uk/>). 
 License: MIT + file LICENSE
@@ -56,15 +59,20 @@ Suggests:
     knitr,
     Matrix,
     mockery,
+    mvtnorm,
     openxlsx2,
+    quarto,
     rmarkdown,
     testthat,
     vdiffr,
     withr
-Enhances: 
-    asreml,
+Enhances:
+    afex,
     ARTool,
+    asreml,
+    glmmTMB,
     lme4,
+    lme4breeding,
     lmerTest,
     nlme,
     sommer
@@ -72,5 +80,5 @@ Config/testthat/edition: 3
 Config/testthat/parallel: true
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
-VignetteBuilder: knitr
+VignetteBuilder: quarto
+Config/roxygen2/version: 8.0.0

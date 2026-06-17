@@ -57,7 +57,11 @@ install.packages("biometryassist")
 Use the following code to install the latest development version of this package.
 
 ```{r eval=F}
-if(!require("remotes")) install.packages("remotes") 
+if(!require("pak")) install.packages("pak")
+pak::pak("biometryhub/biometryassist@dev")
+
+# Alternatively
+if(!require("remotes")) install.packages("remotes")
 remotes::install_github("biometryhub/biometryassist@dev")
 ```
 
@@ -70,9 +74,99 @@ Load the package and start using it with:
 library(biometryassist)
 ```
 
-If you find this package useful, please cite it! Type `citation("biometryassist")` on the R console to find out how.
+The package supports two main workflows:
+
+**Experimental design** — generate and visualise trial layouts:
+
+- `design()` — create CRD, RCBD, Latin Square, split-plot, strip-plot, and factorial designs, with a plot of the layout and a skeletal ANOVA table
+- `add_buffers()` — add buffer plots around treatment plots, blocks, or the trial perimeter
+- `export_design_to_excel()` — write a design to a formatted Excel workbook
+
+**Post-model analysis and visualisation** — works with models from `aov`, `lme4`, `nlme`, `asreml`, `sommer`, `glmmTMB`, `afex`, and more:
+
+- `multiple_comparisons()` — Tukey HSD and other multiple comparison tests with letter groupings
+- `pairwise_comparisons()` — selected pairwise differences or general linear contrasts
+- `reference_comparisons()` — compare all levels against a reference (Dunnett-style)
+- `resplot()` — diagnostic residual plots
+- `heat_map()` — spatial heat maps of trial data or residuals
+- `variogram()` — spatial variograms for ASReml-R models
+
+The package optionally enhances the commercial [ASReml-R](https://vsni.co.uk/software/asreml-r) package. If you have a licence, `install_asreml()` and `update_asreml()` make it easy to install and keep up to date.
+
+For details on recent changes, see [NEWS.md](NEWS.md).
+
+### Example
+
+```{r example, message=FALSE}
+library(biometryassist)
+
+# Generate a Randomised Complete Block Design with 11 treatments and 4 reps
+des.out <- design(
+    type = "rcbd",
+    treatments = LETTERS[1:11],
+    reps = 4,
+    nrows = 11,
+    ncols = 4,
+    brows = 11,
+    bcols = 1,
+    seed = 42,
+    quiet = TRUE
+)
+```
+
+```{r example-plot, echo=FALSE}
+autoplot(des.out)
+```
+
+The `$satab` element gives the skeletal ANOVA table for the design:
+
+```{r example-satab}
+cat(des.out$satab)
+```
+
 
 ## Troubleshooting Installation
 
 - If you receive an error that the package could not install because `rlang` or another package could not be upgraded, the easiest way to deal with this is to uninstall the package(s) that could not be updated (`remove.packages("rlang")`). Then restart R, re-install with `install.packages("rlang")` and then try installing `biometryassist` again.
 
+
+## Citation
+
+If you find this package useful in your work, please cite it. Run the following in R to get the citation details:
+
+```{r citation, eval = FALSE}
+citation("biometryassist")
+```
+
+```{r citation_run, echo=FALSE, warning=FALSE}
+# CRAN populates the publication date automatically, so DESCRIPTION
+# deliberately has no Date field. Without one, citation() can't determine a
+# year and warns, printing "(????)". To render a tidy citation here, copy the
+# installed DESCRIPTION into a temporary library with the current date added
+# and cite from there, leaving the committed DESCRIPTION untouched.
+local({
+  tmp_lib <- file.path(tempdir(), "cite_lib")
+  pkg_dir <- file.path(tmp_lib, "biometryassist")
+  dir.create(pkg_dir, recursive = TRUE, showWarnings = FALSE)
+  desc <- readLines(system.file("DESCRIPTION", package = "biometryassist"))
+  writeLines(
+    c(desc, paste0("Date: ", Sys.Date())),
+    file.path(pkg_dir, "DESCRIPTION")
+  )
+  citation("biometryassist", lib.loc = tmp_lib)
+})
+```
+
+## Code of Conduct
+
+Please note that the biometryassist project is released with a [Contributor Code of Conduct](CODE_OF_CONDUCT.md). By contributing to this project, you agree to abide by its terms.
+
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to get involved.
+
+
+## Licence
+
+MIT © University of Adelaide Biometry Hub. See [LICENSE.md](LICENSE.md) for details.

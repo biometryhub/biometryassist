@@ -26,7 +26,7 @@
 
 # mct removes aliased treatments in aov
 
-    [1] 15.81 25.95 31.75
+    [1] 15.81429 25.95238 31.75238
 
 # mct handles aliased results in asreml with a warning
 
@@ -49,7 +49,7 @@
     10  0.6_cwt Golden_rain          121.48      8.92     de 18.16 103.32 139.64
     11  0.6_cwt  Marvellous          128.10      8.77      e 17.85 110.25 145.95
     
-    Aliased level is: 0.2_cwt:Golden_rain 
+    Aliased level is: 0.2_cwt:Golden_rain
 
 ---
 
@@ -71,13 +71,14 @@
     9   0.6_cwt     Victory          116.85      9.34      c 19.03  97.81 135.88
     10  0.6_cwt  Marvellous          128.99      9.20      c 18.74 110.25 147.73
     
-    Aliased levels are: 0.2_cwt:Golden_rain and 0.2_cwt:Victory 
+    Aliased levels are: 0.2_cwt:Golden_rain and 0.2_cwt:Victory
 
 # 3 way interaction works
 
-     [1]  99.08  99.26  99.57  99.73  99.73  99.73  99.77  99.79  99.90  99.94
-    [11] 100.01 100.04 100.07 100.19 100.21 100.22 100.31 100.32 100.37 100.46
-    [21] 100.48 100.48 100.49 100.64 100.68 100.72 101.23
+     [1]  99.08452  99.25642  99.57432  99.72519  99.72747  99.73010  99.76752
+     [8]  99.79236  99.89994  99.93726 100.01109 100.03696 100.07116 100.18720
+    [15] 100.21337 100.21685 100.30933 100.31683 100.37290 100.45963 100.47787
+    [22] 100.48185 100.48939 100.63646 100.68461 100.71678 101.23229
 
 # plots are produced when requested
 

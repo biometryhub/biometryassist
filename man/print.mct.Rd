@@ -4,10 +4,12 @@
 \alias{print.mct}
 \title{Print output of multiple_comparisons}
 \usage{
-\method{print}{mct}(x, ...)
+\method{print}{mct}(x, decimals = 2, ...)
 }
 \arguments{
 \item{x}{An mct object to print to the console.}
+
+\item{decimals}{Number of decimal places to display. Default is 2.}
 
 \item{...}{Other arguments passed to print.data.frame}
 }
@@ -21,6 +23,7 @@ Print output of multiple_comparisons
 dat.aov <- aov(Petal.Width ~ Species, data = iris)
 output <- multiple_comparisons(dat.aov, classify = "Species")
 print(output)
+print(output, decimals = 4)
 }
 \seealso{
 \code{\link[=multiple_comparisons]{multiple_comparisons()}}

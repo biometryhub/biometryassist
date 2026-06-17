@@ -47,35 +47,77 @@ check_classify_in_terms <- function(classify, model_terms) {
 	)
 }
 
-#' Get Predictions for Statistical Models
+#' Internal prediction extraction for the comparison functions
 #'
-#' A generic function to get predictions for statistical models.
+#' `get_predictions()` is the internal generic that [multiple_comparisons()],
+#' [pairwise_comparisons()] and [reference_comparisons()] use to obtain the
+#' predicted means, the standard-error-of-differences (SED) matrix and the
+#' degrees of freedom from a fitted model. It dispatches on the class of
+#' `model.obj`. It is not exported and is not called directly by users; support
+#' for a new model engine is added by writing a new `get_predictions()` method.
 #'
-#' @param model.obj A model object. Currently supported model objects are asreml, aov/lm, lmerMod/lmerModLmerTest.
-#' @param classify Name of predictor variable as a string.
-#' @param pred.obj Optional precomputed prediction object.
-#' @param ... Additional arguments passed to specific methods.
+#' @param model.obj A fitted model object of a supported class (see
+#'   *Supported model types* below).
+#' @param classify Name of the predictor variable(s) as a string.
+#' @param pred.obj Optional precomputed prediction object (`asreml` only;
+#'   otherwise predictions are computed internally).
+#' @param ... Additional arguments passed to the class-specific method (e.g.
+#'   ASReml-R `predict()` arguments).
 #'
-#' @name predictions
+#' @section Supported model types:
+#' The comparison functions ([multiple_comparisons()], [pairwise_comparisons()]
+#' and [reference_comparisons()]) work with any model for which a
+#' `get_predictions()` method is defined. These are currently:
 #'
-#' @return A list containing predictions, standard errors, degrees of freedom,
-#' response variable label, and aliased names.
+#' | Model class | Fitted by | Notes |
+#' | --- | --- | --- |
+#' | `aov`, `lm` | [stats::aov()], [stats::lm()] | Fixed-effects linear models. |
+#' | `aovlist` | [stats::aov()] with an `Error()` term | Multi-stratum aov; gives comparison-specific (matrix) degrees of freedom. |
+#' | `lme` | [nlme::lme()] | Linear mixed model. |
+#' | `lmerMod` | [lme4::lmer()], `lme4breeding::lmebreed()` | Linear mixed model. `lmebreed()` (relationship-based) models also carry class `lmerMod`; comparisons target the fixed-effect means with Kenward-Roger degrees of freedom, and correctly reflect the relationship structure (validated against ASReml-R). |
+#' | `lmerModLmerTest` | [lmerTest::lmer()] | As `lmerMod`, with Satterthwaite degrees of freedom. |
+#' | `asreml` | ASReml-R `asreml()` | Linear mixed model (commercial; not on CRAN). |
+#' | `afex_aov` | afex `aov_car()` / `aov_ez()` / `aov_4()` | Factorial / repeated-measures ANOVA; gives comparison-specific (matrix) degrees of freedom. |
+#' | `glmmTMB` | glmmTMB `glmmTMB()` | Generalized linear mixed model. Predictions are on the link scale with asymptotic (infinite) degrees of freedom; supply `trans` to back-transform. |
+#' | `mmes` | sommer `mmes()` | Linear mixed model, via sommer's native `predict()`. SED from the prediction covariance; asymptotic (infinite) degrees of freedom (sommer provides none). |
+#'
+#' ARTool (`art`) models are supported by [resplot()] but **not** by the comparison
+#' functions: the aligned rank transform makes mean-based comparisons inappropriate.
+#' Use `ARTool::art.con()` for contrasts on ART models instead.
+#'
+#' sommer `mmer` models (the legacy interface) are supported by [resplot()] but
+#' **not** by the comparison functions: current sommer provides no `predict()` method
+#' for `mmer`. Refit with `sommer::mmes()` to use the comparison functions.
+#'
+#' To add a new engine, write a `get_predictions.<class>()` method returning a
+#' list with elements `predictions`, `sed`, `df`, `ylab` and `aliased_names`
+#' (plus `emmeans_grid` for engines backed by [emmeans::emmeans()]), and add a
+#' row to the table above.
+#'
+#' @returns A list with elements `predictions`, `sed`, `df`, `ylab` and
+#'   `aliased_names` (and `emmeans_grid` for emmeans-backed engines).
+#'
+#' @seealso [multiple_comparisons()], [pairwise_comparisons()],
+#'   [reference_comparisons()]
 #' @keywords internal
 get_predictions <- function(model.obj, classify, pred.obj = NULL, ...) {
 	UseMethod("get_predictions")
 }
 
-#' @rdname predictions
-#'
-#' @keywords internal
+#' @noRd
+#' @exportS3Method get_predictions default
 get_predictions.default <- function(model.obj, ...) {
 	supported_types <- c(
 		"aov",
 		"lm",
+		"aovlist",
 		"lmerMod",
 		"lmerModLmerTest",
 		"lme",
-		"asreml"
+		"asreml",
+		"afex_aov",
+		"glmmTMB",
+		"mmes"
 	)
 	stop(
 		"model.obj must be a linear (mixed) model object. Currently supported model types are: ",
@@ -84,9 +126,8 @@ get_predictions.default <- function(model.obj, ...) {
 	)
 }
 
-#' @rdname predictions
-#'
-#' @keywords internal
+#' @noRd
+#' @exportS3Method get_predictions asreml
 get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 	args <- list(...)
 	# asr_args <- args[names(args) %in% names(formals(asreml::predict.asreml))]
@@ -97,12 +138,16 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 	)
 	classify <- check_classify_in_terms(classify, model_terms)
 
-	# Generate predictions if not provided
+	# Generate predictions if not provided. `vcov = TRUE` returns the exact
+	# variance-covariance of the predicted means, used directly by
+	# pairwise_comparisons()/reference_comparisons() for contrasts and the
+	# Dunnett correlation (no reconstruction from SEDs needed).
 	if (missing(pred.obj) || is.null(pred.obj)) {
 		pred.obj <- quiet(asreml::predict.asreml(
 			object = model.obj,
 			classify = classify,
 			sed = TRUE,
+			vcov = TRUE,
 			trace = FALSE,
 			...
 		))
@@ -122,16 +167,22 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 	# For use with asreml 4+
 	pp <- pred.obj$pvals
 	sed <- pred.obj$sed
+	# Exact prediction vcov (NULL on the deprecated `pred.obj` path if it was
+	# generated without `vcov = TRUE`; only multiple_comparisons() uses that path,
+	# and it relies on `sed`, not `vcov`).
+	vcov <- if (!is.null(pred.obj$vcov)) as.matrix(pred.obj$vcov) else NULL
 
 	# Process aliased treatments with asreml-specific exclude columns
 	aliased_result <- process_aliased(
 		pp,
 		sed,
 		classify,
-		exclude_cols = c("predicted.value", "std.error", "status")
+		exclude_cols = c("predicted.value", "std.error", "status"),
+		vcov = vcov
 	)
 	pp <- aliased_result$predictions
 	sed <- aliased_result$sed
+	vcov <- aliased_result$vcov
 	aliased_names <- aliased_result$aliased_names
 
 	# Remove status column if present
@@ -156,7 +207,9 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 		grepl(classify, dendf$Source) &
 			nchar(classify) == nchar(as.character(dendf$Source))
 	]
-	if (rlang::is_empty(ndf)) {
+	# Fall back to the residual df when wald() returns no usable denominator df
+	# for the term (term absent, or an NA denDF).
+	if (rlang::is_empty(ndf) || all(is.na(ndf))) {
 		ndf <- model.obj$nedf
 		rand_terms <- vars[
 			vars %in%
@@ -178,15 +231,14 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 		sed = sed,
 		df = ndf,
 		ylab = ylab,
-		aliased_names = aliased_names
+		aliased_names = aliased_names,
+		vcov = vcov
 	))
 }
 
-#' @rdname predictions
-#'
+#' @noRd
+#' @exportS3Method get_predictions lm
 #' @importFrom emmeans emmeans
-#'
-#' @keywords internal
 get_predictions.lm <- function(model.obj, classify, ...) {
 	# Check if classify is in model terms (handles reversed interaction order)
 	model_terms <- attr(stats::terms(model.obj), 'term.labels')
@@ -196,13 +248,24 @@ get_predictions.lm <- function(model.obj, classify, ...) {
 	on.exit(options(emmeans = emmeans::emm_defaults))
 	emmeans::emm_options("msg.interaction" = FALSE, "msg.nesting" = FALSE)
 
-	# Generate predictions
-	pred.out <- emmeans::emmeans(model.obj, as.formula(paste("~", classify)))
+	# Generate predictions (keep the reference grid for exact contrast df later)
+	emm <- emmeans::emmeans(model.obj, as.formula(paste("~", classify)))
 
-	# Extract standard errors and predictions
-	sed <- pred.out@misc$sigma *
-		sqrt(outer(1 / pred.out@grid$.wgt., 1 / pred.out@grid$.wgt., "+"))
-	pred.out <- as.data.frame(pred.out)
+	# Exact variance-covariance of the predicted means, ordered as the grid.
+	# Used directly by pairwise_comparisons()/reference_comparisons(), and to
+	# build the SED matrix below.
+	vcov <- as.matrix(stats::vcov(emm))
+
+	# SED matrix from the prediction vcov: SED_ij = sqrt(V_ii + V_jj - 2 V_ij).
+	# Exact for all designs, including unbalanced marginal means. The earlier
+	# sigma * sqrt(1/w_i + 1/w_j) form was only exact for balanced or one-way
+	# predictions and was wrong when averaging over an unbalanced factor.
+	vd <- diag(vcov)
+	sed <- outer(vd, vd, "+") - 2 * vcov
+	sed[sed < 0] <- 0 # guard tiny negatives from rounding
+	sed <- sqrt(sed)
+
+	pred.out <- as.data.frame(emm)
 	pred.out <- pred.out[, !grepl("CL", names(pred.out))]
 
 	# Rename columns for consistency
@@ -216,9 +279,10 @@ get_predictions.lm <- function(model.obj, classify, ...) {
 	}
 
 	# Process aliased treatments
-	aliased_result <- process_aliased(pp, sed, classify)
+	aliased_result <- process_aliased(pp, sed, classify, vcov = vcov)
 	pp <- aliased_result$predictions
 	sed <- aliased_result$sed
+	vcov <- aliased_result$vcov
 	aliased_names <- aliased_result$aliased_names
 
 	# Get degrees of freedom
@@ -234,57 +298,62 @@ get_predictions.lm <- function(model.obj, classify, ...) {
 		sed = sed,
 		df = ndf,
 		ylab = ylab,
-		aliased_names = aliased_names
+		aliased_names = aliased_names,
+		emmeans_grid = emm,
+		vcov = vcov
 	))
 }
 
 
-#' @rdname predictions
+#' Build predictions, SED and df from an emmeans-backed model
 #'
-#' @importFrom emmeans emmeans
+#' Shared core for the emmeans-backed `get_predictions()` methods (`aovlist`,
+#' `afex_aov`, ...). Given the emmeans reference grid for `classify`, it builds the
+#' predicted means, the comparison-specific (matrix) SED and degrees of freedom from
+#' the pairwise contrasts, and processes aliased levels. The terms check and `ylab`
+#' are computed by the caller (these differ per engine) and passed in.
 #'
+#' @param model.obj A fitted model object with an `emmeans::emmeans()` method.
+#' @param classify Name of the predictor variable(s) as a string.
+#' @param model_terms Character vector of model term labels (for the classify check).
+#' @param ylab Response variable label for the plot.
+#'
+#' @return A list with elements `predictions`, `sed`, `df`, `ylab`, `aliased_names`
+#'   and `emmeans_grid`.
 #' @keywords internal
-get_predictions.aovlist <- function(model.obj, classify, ...) {
-	# Check if classify is in model terms
-	if (classify %!in% attr(stats::terms(model.obj), 'term.labels')) {
-		stop(
-			classify,
-			" is not a term in the model. Please check model specification.",
-			call. = FALSE
-		)
-	}
+predictions_from_emmeans <- function(model.obj, classify, model_terms, ylab) {
+	# Check if classify is in model terms (handles reversed interaction order)
+	classify <- check_classify_in_terms(classify, model_terms)
 
 	# Set emmeans options
 	on.exit(options(emmeans = emmeans::emm_defaults))
 	emmeans::emm_options("msg.interaction" = FALSE, "msg.nesting" = FALSE)
 
-	# Generate predictions
-	pred.out <- emmeans::emmeans(
+	# Generate predictions (keep the reference grid for exact contrast df later)
+	emm <- emmeans::emmeans(
 		model.obj,
 		as.formula(paste("~", classify)),
 		method = "pairwise"
 	)
 
 	# Use emmeans embedded function for multiple comparisons
-	aov_compare <- as.data.frame(pairs(pred.out))
+	aov_compare <- as.data.frame(emmeans::contrast(emm, method = "pairwise"))
 
 	# Convert emmeans predictions to a data frame
-	pred.out <- as.data.frame(pred.out)
+	pred.out <- as.data.frame(emm)
 
 	# Extract standard errors
-	# define SED matrix
-	sed <- matrix(NA, nrow = dim(pred.out)[1], ncol = dim(pred.out)[1])
+	# define SED matrix (vectorised fill of upper triangle then mirror)
+	n <- nrow(pred.out)
+	sed <- matrix(NA_real_, nrow = n, ncol = n)
 	# obtain residual degrees of freedom matrix
-	ndf <- matrix(NA, nrow = dim(pred.out)[1], ncol = dim(pred.out)[1])
-	k <- 1 # define counter k
-	for (i in 1:(dim(pred.out)[1] - 1)) {
-		for (j in (i + 1):dim(pred.out)[1]) {
-			sed[i, j] <- aov_compare$SE[k]
-			sed[j, i] <- sed[i, j]
-			ndf[i, j] <- aov_compare$df[k]
-			ndf[j, i] <- ndf[i, j]
-			k <- k + 1
-		}
+	ndf <- matrix(NA_real_, nrow = n, ncol = n)
+	if (n > 1) {
+		upper_idx <- upper.tri(sed)
+		sed[upper_idx] <- aov_compare$SE
+		ndf[upper_idx] <- aov_compare$df
+		sed[lower.tri(sed)] <- t(sed)[lower.tri(sed)]
+		ndf[lower.tri(ndf)] <- t(ndf)[lower.tri(ndf)]
 	}
 
 	# Remove columns with upper and lower confidence intervals
@@ -297,49 +366,141 @@ get_predictions.aovlist <- function(model.obj, classify, ...) {
 	names(pp)[names(pp) == "emmean"] <- "predicted.value"
 	names(pp)[names(pp) == "SE"] <- "std.error"
 
-	# Set diagonals to NA
-	#diag(sed) <- NA
+	# Exact variance-covariance of the predicted means, ordered as the grid.
+	# Used directly by pairwise_comparisons()/reference_comparisons().
+	vcov <- as.matrix(stats::vcov(emm))
 
 	# Process aliased treatments
-	aliased_result <- process_aliased(pp, sed, classify)
+	aliased_result <- process_aliased(pp, sed, classify, vcov = vcov)
 	pp <- aliased_result$predictions
 	sed <- aliased_result$sed
+	vcov <- aliased_result$vcov
 	aliased_names <- aliased_result$aliased_names
-
-	# Get denominator degrees of freedom
-	#ndf <- pp$df[1]
-
-	# Get response variable for plot label
-	if (class(model.obj)[1] %in% c("lmerMod", "lmerModLmerTest")) {
-		formula_text <- deparse(stats::formula(model.obj))
-		ylab <- strsplit(formula_text, "~")[[1]][1]
-		ylab <- trimws(ylab)
-	} else {
-		formula_text <- deparse(stats::formula(model.obj[[1]]))
-		ylab <- strsplit(formula_text, "~")[[1]][1]
-		ylab <- trimws(ylab)
-	}
 
 	return(list(
 		predictions = pp,
 		sed = sed,
 		df = ndf,
 		ylab = ylab,
-		aliased_names = aliased_names
+		aliased_names = aliased_names,
+		emmeans_grid = emm,
+		vcov = vcov
 	))
 }
 
-#' @rdname predictions
-#'
-#' @keywords internal
+#' @noRd
+#' @exportS3Method get_predictions aovlist
+#' @importFrom emmeans emmeans
+get_predictions.aovlist <- function(model.obj, classify, ...) {
+	model_terms <- attr(stats::terms(model.obj), 'term.labels')
+
+	# Get response variable for plot label
+	if (class(model.obj)[1] %in% c("lmerMod", "lmerModLmerTest")) {
+		formula_text <- deparse(stats::formula(model.obj))
+	} else {
+		formula_text <- deparse(stats::formula(model.obj[[1]]))
+	}
+	ylab <- trimws(strsplit(formula_text, "~")[[1]][1])
+
+	predictions_from_emmeans(model.obj, classify, model_terms, ylab)
+}
+
+#' @noRd
+#' @exportS3Method get_predictions afex_aov
+#' @importFrom emmeans emmeans
+get_predictions.afex_aov <- function(model.obj, classify, ...) {
+	# afex_aov has no terms() method; the model effects are the rows of the ANOVA
+	# table and the response is stored in the "dv" attribute. emmeans() dispatches
+	# directly on afex_aov objects, so the shared emmeans core does the rest.
+	model_terms <- rownames(model.obj$anova_table)
+	ylab <- attr(model.obj, "dv")
+
+	predictions_from_emmeans(model.obj, classify, model_terms, ylab)
+}
+
+#' @noRd
+#' @exportS3Method get_predictions glmmTMB
+#' @importFrom emmeans emmeans
+get_predictions.glmmTMB <- function(model.obj, classify, ...) {
+	# emmeans() supports glmmTMB natively (conditional component, link scale by
+	# default), and the pairwise-contrast SEs in the shared core give the correct SED
+	# from the full coefficient covariance. Degrees of freedom are asymptotic (Inf).
+	# For non-Gaussian families predictions are on the link scale; supply `trans` to
+	# multiple_comparisons() to back-transform.
+	model_terms <- attr(stats::terms(model.obj), 'term.labels')
+	formula_text <- deparse(stats::formula(model.obj))
+	ylab <- trimws(strsplit(formula_text, "~")[[1]][1])
+
+	predictions_from_emmeans(model.obj, classify, model_terms, ylab)
+}
+
+#' @noRd
+#' @exportS3Method get_predictions mmes
+get_predictions.mmes <- function(model.obj, classify, ...) {
+	# sommer has no emmeans support, so use its native predict() with D = classify
+	# to obtain predicted means and their covariance matrix. The pairwise SED is then
+	# built from that covariance. Fixed model terms come from the Dtable, and the
+	# response (ylab) from the stored fixed formula.
+	model_terms <- model.obj$Dtable$term[model.obj$Dtable$type == "fixed"]
+	model_terms <- setdiff(model_terms, c("1", "(Intercept)"))
+	classify <- check_classify_in_terms(classify, model_terms)
+
+	pred <- predict(model.obj, D = classify)
+	pp <- pred$pvals
+
+	# Build the SED matrix from the prediction covariance:
+	# SED_ij = sqrt(V_ii + V_jj - 2 * V_ij).
+	vcov <- as.matrix(pred$vcov)
+	sed <- sqrt(outer(diag(vcov), diag(vcov), "+") - 2 * vcov)
+	diag(sed) <- NA
+
+	# Process aliased treatments (levels with NA predictions), reusing shared helper.
+	aliased_result <- process_aliased(pp, sed, classify)
+	pp <- aliased_result$predictions
+	sed <- aliased_result$sed
+	aliased_names <- aliased_result$aliased_names
+
+	# sommer provides no denominator degrees of freedom; use asymptotic (z-based)
+	# inference, as for glmmTMB.
+	ndf <- Inf
+
+	ylab <- model.obj$args$fixed[[2]]
+
+	return(list(
+		predictions = pp,
+		sed = sed,
+		df = ndf,
+		ylab = ylab,
+		aliased_names = aliased_names,
+		emmeans_grid = NULL
+	))
+}
+
+#' @noRd
+#' @exportS3Method get_predictions mmer
+get_predictions.mmer <- function(model.obj, classify, ...) {
+	# sommer's legacy `mmer` interface has no predict() method in current sommer, so
+	# mean-based comparisons are not available. Point users at the mmes() interface.
+	# resplot() still supports `mmer` models.
+	stop(
+		"sommer `mmer` models are not supported for multiple comparisons ",
+		"(sommer no longer provides a predict() method for the legacy `mmer` ",
+		"interface).\n",
+		"  Refit the model with sommer::mmes() to use the comparison functions.\n",
+		"  (`mmer` models are still supported by resplot().)",
+		call. = FALSE
+	)
+}
+
+#' @noRd
+#' @exportS3Method get_predictions listof
 get_predictions.listof <- function(model.obj, classify, ...) {
 	get_predictions.aovlist(model.obj, classify, ...)
 }
 
 
-#' @rdname predictions
-#'
-#' @keywords internal
+#' @noRd
+#' @exportS3Method get_predictions lmerMod
 get_predictions.lmerMod <- function(model.obj, classify, ...) {
 	# Reuse lm method for common functionality
 	#result <- get_predictions.lm(model.obj, classify, ...)
@@ -352,16 +513,31 @@ get_predictions.lmerMod <- function(model.obj, classify, ...) {
 	return(result)
 }
 
-#' @rdname predictions
-#' @keywords internal
+#' @noRd
+#' @exportS3Method get_predictions lmerModLmerTest
 get_predictions.lmerModLmerTest <- function(model.obj, classify, ...) {
 	get_predictions.lmerMod(model.obj, classify, ...)
 }
 
-#' @rdname predictions
-#' @keywords internal
+#' @noRd
+#' @exportS3Method get_predictions lme
 get_predictions.lme <- function(model.obj, classify, ...) {
 	get_predictions.lm(model.obj, classify, ...)
+}
+
+#' @noRd
+#' @exportS3Method get_predictions art
+get_predictions.art <- function(model.obj, classify, ...) {
+	# ARTool models are deliberately unsupported for mean-based comparisons: the
+	# aligned-rank transform means Tukey-style contrasts on the predicted means are
+	# not statistically appropriate. resplot() still supports `art` models.
+	stop(
+		"ARTool (`art`) models use an aligned rank transform, so mean-based ",
+		"multiple comparisons are not appropriate.\n",
+		"  Use `ARTool::art.con()` for contrasts on ART models.\n",
+		"  (`art` models are still supported by resplot().)",
+		call. = FALSE
+	)
 }
 
 #' Process aliased treatments in predictions
@@ -370,14 +546,18 @@ get_predictions.lme <- function(model.obj, classify, ...) {
 #' @param sed Standard error of differences matrix
 #' @param classify Name of predictor variable
 #' @param exclude_cols Column names to exclude when processing aliased names
+#' @param vcov Optional variance-covariance matrix of the predictions, subset to
+#'   the estimable rows/columns alongside `sed` when supplied (`NULL` otherwise).
 #'
-#' @return List containing processed predictions, sed matrix and aliased names
+#' @return List containing processed predictions, sed matrix, aliased names and
+#'   (when supplied) the subset `vcov`.
 #' @keywords internal
 process_aliased <- function(
 	pp,
 	sed,
 	classify,
-	exclude_cols = c("predicted.value", "std.error", "df", "Names")
+	exclude_cols = c("predicted.value", "std.error", "df", "Names"),
+	vcov = NULL
 ) {
 	aliased_names <- NULL
 
@@ -391,8 +571,19 @@ process_aliased <- function(
 			aliased_names <- apply(aliased_names, 1, paste, collapse = ":")
 		}
 
-		# Create warning message
-		if (length(aliased_names) > 1) {
+		# Create warning message. Listed when few; collapsed to a count once there
+		# are more than 6, to avoid a very large warning block.
+		if (length(aliased_names) == 1) {
+			warn_string <- paste0(
+				"A level of ",
+				classify,
+				" is aliased. It has been removed from predicted output.\n",
+				"  Aliased level is: ",
+				aliased_names,
+				".\n  This level is saved as an attribute of the output object."
+			)
+		} else if (length(aliased_names) <= 6) {
+			# cap the listing at 6 to avoid a very large warning block
 			warn_string <- paste0(
 				"Some levels of ",
 				classify,
@@ -403,12 +594,12 @@ process_aliased <- function(
 			)
 		} else {
 			warn_string <- paste0(
-				"A level of ",
+				"Some levels of ",
 				classify,
-				" is aliased. It has been removed from predicted output.\n",
-				"  Aliased level is: ",
-				aliased_names,
-				".\n  This level is saved as an attribute of the output object."
+				" are aliased (",
+				length(aliased_names),
+				" levels). They have been removed from predicted output and saved ",
+				"in the \"aliased\" attribute of the output object."
 			)
 		}
 
@@ -416,12 +607,16 @@ process_aliased <- function(
 		pp <- pp[!is.na(pp$predicted.value), ]
 		pp <- droplevels(pp)
 		sed <- sed[-aliased, -aliased]
+		if (!is.null(vcov)) {
+			vcov <- vcov[-aliased, -aliased, drop = FALSE]
+		}
 		warning(warn_string, call. = FALSE)
 	}
 
 	return(list(
 		predictions = pp,
 		sed = sed,
-		aliased_names = aliased_names
+		aliased_names = aliased_names,
+		vcov = vcov
 	))
 }

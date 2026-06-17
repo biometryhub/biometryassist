@@ -1,25 +1,10 @@
-# Copilot Instructions for biometryassist
+# Copilot Instructions
 
-This file provides guidance to GitHub Copilot when working in this repository. Prioritize clear structure, minimal surprises, and changes that fit the existing package conventions.
+This file provides guidance to GitHub Copilot when working in this repository.
 
 ## Overview
 
-`biometryassist` is a CRAN-published R package that provides functions to aid in the design and analysis of agronomic and agricultural experiments. It is a renamed successor to the unmaintained `BiometryTraining` package. The package optionally enhances the commercial `asreml` package but does not require it.
-
-**Key information**
-- Language: R, requires R >= 4.1.0
-- Package type: Standard R package with roxygen2 documentation
-- License: MIT
-- Primary purpose: Design and analysis tools for agronomic experiments
-
-## Repository Structure
-
-- `R/` - Main R source files
-- `tests/testthat/` - testthat test files
-- `man/` - auto-generated documentation, do not edit manually
-- `vignettes/` - package vignettes
-- `inst/` - installed files and templates
-- `.github/workflows/` - CI/CD workflows for checks, coverage, pkgdown, and manifest updates
+`biometryassist` is an R package (CRAN-published) providing functions to aid in the design and analysis of agronomic/agricultural experiments. It is a renamed successor to the unmaintained `BiometryTraining` package. Many functions are designed to be approachable for users learning experimental design and mixed-model analysis. The package optionally enhances the commercial `asreml` package but does not require it.
 
 ## Common Commands
 
@@ -112,27 +97,8 @@ The package is formatted with [Air](https://posit-dev.github.io/air/), configure
 
 ## Conventions
 
-- Use roxygen2 with markdown enabled for documentation.
-- Always run `devtools::document()` after changing roxygen blocks, `@export`, or `@importFrom` tags.
-- Add tests for new behavior and bug fixes before or alongside code changes.
-- Keep exported functions well documented and include examples where appropriate.
-- Prefer minimal, backward-compatible changes because this package is released on CRAN.
-- Keep dependencies small and place them in the appropriate DESCRIPTION fields (`Imports`, `Suggests`, or `Enhances`).
-- Follow the existing file organization: one main function per file when practical, with helpers grouped logically.
-
-## When Making Changes
-
-1. Identify the smallest code path that controls the behavior.
-2. Make the minimal change needed to fix the issue.
-3. Update or add tests when behavior changes.
-4. Run `devtools::document()` if roxygen or exports changed.
-5. Run `devtools::test()` or a narrower test target when possible.
-6. Run `devtools::check()` before considering the work complete.
-
-## Notes For Copilot
-
-- Prefer clarity over cleverness.
-- Preserve the repository's existing R style and conventions.
-- Avoid editing generated files by hand unless the task specifically requires it.
-- Treat `NAMESPACE` and `man/` as generated artifacts.
-- The development branch is `dev`; CRAN releases come from `main`.
+- Roxygen2 with markdown enabled (`Roxygen: list(markdown = TRUE)`). Always run `devtools::document()` after editing roxygen blocks so `NAMESPACE` and `man/` stay in sync.
+- New exported functions need an `@export` tag and `@importFrom` declarations for any external functions used (the package avoids bare `library()`/`require()` and full imports).
+- `R/` filenames use mixed casing/extensions (`.R` and `.r`); match the existing file when adding to it.
+- Loose `.R` scripts in the repo root (for example, `*SamVariogram.R`, `sommer_vs_asreml*.R`, `asreml_*.R`) are scratch/research files, not package code. They are listed in `.Rbuildignore` and excluded from the build.
+- The development branch is `dev`; CRAN releases come from `main`. CI (`.github/workflows/`) runs R-CMD-check, test-coverage, pkgdown, and manifest updates.

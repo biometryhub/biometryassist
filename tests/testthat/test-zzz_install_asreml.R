@@ -1912,3 +1912,94 @@ test_that("find_package treats other strings (e.g. '0') as ARM=FALSE", {
 	result <- find_package(manifest, os_ver)
 	expect_equal(result$slug, "mac-14-44")
 })
+
+test_that("prev_r_ver returns NULL when ver is shorter than 2 characters", {
+	# nchar("4") < 2 -> the minor-digit extraction is undefined, so prev_r_ver
+	# returns NULL immediately and no previous-R-version fallback is attempted.
+	manifest <- list(
+		packages = list(
+			list(slug = "win-44", os = "win", r_ver = "44", url = "x")
+		)
+	)
+	os_ver <- list(
+		os = "win",
+		os_ver = "win-4",
+		os_major = NULL,
+		ver = "4",
+		arm = FALSE
+	)
+	expect_warning(
+		result <- find_package(manifest, os_ver),
+		"No ASReml-R build found"
+	)
+	expect_null(result)
+})
+
+test_that("prev_r_ver returns NULL when the minor digit is 0", {
+	# A ver ending in "0" (e.g. "40") has no previous minor in the same major,
+	# so prev_r_ver returns NULL and the prev-R-version fallback is skipped.
+	manifest <- list(
+		packages = list(
+			list(slug = "win-44", os = "win", r_ver = "44", url = "x")
+		)
+	)
+	os_ver <- list(
+		os = "win",
+		os_ver = "win-40",
+		os_major = NULL,
+		ver = "40",
+		arm = FALSE
+	)
+	expect_warning(
+		result <- find_package(manifest, os_ver),
+		"No ASReml-R build found"
+	)
+	expect_null(result)
+})
+
+test_that("find_for_r_ver returns NULL for non-Windows OS with empty os_major", {
+	# When os_major is "" (e.g. Debian with no VERSION_ID), find_for_r_ver
+	# cannot do an OS-version-aware lookup and returns NULL immediately.
+	# This path is reached via the prev-R-version fallback when the outer guard
+	# skips the current-ver call because os_major is empty.
+	manifest <- list(
+		packages = list(
+			list(
+				slug = "ubuntu-22-45",
+				os = "ubuntu",
+				os_ver = "22",
+				r_ver = "45",
+				arm = FALSE,
+				url = "x"
+			)
+		)
+	)
+	os_ver <- list(
+		os = "ubuntu",
+		os_ver = "ubuntu-46",
+		os_major = "",
+		ver = "46",
+		arm = FALSE
+	)
+	# No exact match; current-ver fallback skipped (os_major = "");
+	# prev_r_ver("46") = "45"; find_for_r_ver("45") hits the NULL return
+	# because os_major is still ""; warn_no_build fires.
+	expect_warning(
+		result <- find_package(manifest, os_ver),
+		"No ASReml-R build found"
+	)
+	expect_null(result)
+})
+
+test_that("fetch_manifest stops with a clear message on network error", {
+	skip_on_cran()
+	mockery::stub(
+		fetch_manifest,
+		"jsonlite::fromJSON",
+		function(...) stop("connection refused")
+	)
+	expect_error(
+		fetch_manifest("http://fake.url"),
+		"Could not fetch package manifest"
+	)
+})
