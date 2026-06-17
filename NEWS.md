@@ -1,3 +1,33 @@
+# biometryassist 1.5.0
+
+## Major changes
+
+- `multiple_comparisons()`: the `plot`, `label_height`, `rotation`, `save`, and `savename` arguments are now **deprecated** and will be removed in a future version. Use `autoplot(<result>)` for plotting (pass `label_height` and `rotation` there), and `write.csv(result$predictions, "file.csv")` for saving. The `pred`, `order`, and `pred.obj` arguments were deprecated in 1.1.0 or earlier and have now been **removed**.
+- `multiple_comparisons()` gains an `adjust` argument to choose the p-value adjustment method (any `stats::p.adjust()` method, in addition to the default Tukey's HSD), and a `by` argument to run comparisons independently within groups.
+- Added support for `aovlist` and `nlme::lme()` models in `multiple_comparisons()` (#107).
+- Broadened model-engine support across both workflows to bring `resplot()` and the comparison functions (`multiple_comparisons()`, `pairwise_comparisons()`, `reference_comparisons()`) closer to parity:
+    - The comparison functions now support `afex` (`afex_aov`), `glmmTMB`, and sommer's `mmes()` models. `glmmTMB` predictions are on the link scale with asymptotic degrees of freedom (supply `trans` to back-transform); sommer `mmes()` predictions and SEDs come from sommer's native `predict()`, also with asymptotic degrees of freedom.
+    - `resplot()` now supports multi-stratum `aov` models fitted with `Error()` (`aovlist`, one panel per error stratum), `afex_aov` models, and Gaussian-family `glmmTMB` models.
+    - `lme4breeding::lmebreed()` (relationship-based mixed) models are supported by both workflows: they carry class `lmerMod` and are handled by the existing `lmerMod` methods. Comparisons correctly reflect the relationship structure (validated against ASReml-R), using Kenward-Roger degrees of freedom.
+    - Deliberate boundaries (with informative errors): ARTool (`art`) and sommer's legacy `mmer` models are not available for the comparison functions (ART uses aligned ranks — use `ARTool::art.con()`; refit `mmer` with `sommer::mmes()`), though both remain supported by `resplot()`. Non-Gaussian `glmmTMB` models are not valid for `resplot()`'s normal-Q-Q diagnostic and point to `DHARMa::simulateResiduals()` instead.
+- New function `pairwise_comparisons()` to test selected pairwise differences (or general linear contrasts) between predicted means, returning a tidy table of estimates, predicted means and multiplicity-adjusted p-values, with a forest plot via `autoplot()`.
+- New function `reference_comparisons()` to compare every level against a single reference (control) level, using an exact Dunnett test by default. It returns a means-centric table (each level's mean, the reference mean and the adjusted difference) and a means plot via `autoplot()`.
+
+
+## Minor changes
+
+- Added the ability to add buffers or double buffers around blocks. (#169)
+- `autoplot()` for `multiple_comparisons()` output gains several new options (thanks to Michael Mumford, #161): `type = "line"` joins the means with a line; `include_errorbar` and `include_lettering` toggle the error bars and significance letters; `errorbar_type = "hsd"` draws a single Tukey's HSD reference bar instead of per-mean intervals; and `trans_scale = TRUE` plots back-transformed means on the model (transformed) scale with an exact back-transformed secondary axis.
+- Added a vignette, "Choosing and interpreting multiple comparisons", introducing `pairwise_comparisons()` and `reference_comparisons()` alongside `multiple_comparisons()` and giving guidance on choosing a multiplicity adjustment.
+
+## Bug Fixes
+
+- Fixed an issue where asreml doesn't install properly on macOS because the link isn't constructed properly. (#163)
+- Fixed Skeletal ANOVA table not showing 2 way interactions for 3 way factorials (#171)
+- Colours are now consistent between the output of designs printed with `autoplot()` and the `export_design_to_excel()` function. (#170)
+- The `export_design_to_excel()` function is now less fragile. It can handle design objects and data frames as input, and alternative names for the row and column columns. (#168 and #172)
+- Fixed a bug where asreml models didn't report the correct number of residual points in `resplot()`. (#167)
+
 # biometryassist 1.4.0
 
 ## Major changes
@@ -13,7 +43,7 @@
 
 - Add interval type 'none' for `multiple_comparisons()` (#125).
 - Added a print method for `satab()` to reliably get the same output (#133).
-- Switched from cowplot to patchwork to speed up resplot (and variogram) (#29).
+- Switched from `cowplot` to `patchwork` to speed up `resplot()` (and `variogram()`) (#29).
 - Added and refactored numerous tests throughout to achieve 100% test coverage and speed up tests (#104, #143, #144, #135, #148)
 - Added asreml downloads for more operating systems and versions (#158).
 
@@ -22,7 +52,7 @@
 - Fixed a bug where hex colours don't work with `export_design_to_excel()` (#124).
 - Fixed a bug where buffers weren't added to the plot if they are added after initial design creation (#123).
 - Fixed a bug in `install_asreml()` where it threw an error with more than one new version (#122).
-- Fixed a bug where calculate_differences clashed with package "MuMIn" (#131).
+- Fixed a bug where `calculate_differences()` clashed with package "MuMIn" (#131).
 
 # biometryassist 1.3.3
 

@@ -8,4 +8,3 @@
 #' @keywords internal
 #' @returns No return value.
 NULL
-

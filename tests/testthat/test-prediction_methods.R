@@ -1,592 +1,1081 @@
 test_that("get_predictions.asreml uses provided pred.obj when supplied", {
-    skip_if_not_installed("mockery")
+	skip_if_not_installed("mockery")
 
-    # Create mock model object
-    mock_model <- list(
-        formulae = list(
-            fixed = as.formula("yield ~ Nitrogen"),
-            random = as.formula("~Blocks")
-        ),
-        nedf = 10
-    )
-    class(mock_model) <- "asreml"
+	# Create mock model object
+	mock_model <- list(
+		formulae = list(
+			fixed = as.formula("yield ~ Nitrogen"),
+			random = as.formula("~Blocks")
+		),
+		nedf = 10
+	)
+	class(mock_model) <- "asreml"
 
-    # Create mock pred.obj that would be passed in
-    mock_pred_obj <- list(
-        pvals = data.frame(
-            Nitrogen = c("0", "0.2", "0.4", "0.6"),
-            predicted.value = c(100, 110, 120, 130),
-            std.error = c(5, 5, 5, 5),
-            status = c("Estimable", "Estimable", "Estimable", "Estimable")
-        ),
-        sed = matrix(c(NA, 7, 8, 9,
-                      7, NA, 8, 9,
-                      8, 8, NA, 9,
-                      9, 9, 9, NA), nrow = 4, ncol = 4)
-    )
+	# Create mock pred.obj that would be passed in
+	mock_pred_obj <- list(
+		pvals = data.frame(
+			Nitrogen = c("0", "0.2", "0.4", "0.6"),
+			predicted.value = c(100, 110, 120, 130),
+			std.error = c(5, 5, 5, 5),
+			status = c("Estimable", "Estimable", "Estimable", "Estimable")
+		),
+		sed = matrix(
+			c(NA, 7, 8, 9, 7, NA, 8, 9, 8, 8, NA, 9, 9, 9, 9, NA),
+			nrow = 4,
+			ncol = 4
+		)
+	)
 
-    # Mock the asreml functions to ensure they're NOT called when pred.obj is provided
-    mock_predict <- mockery::mock()
-    mock_wald <- mockery::mock(list(Wald = data.frame(
-        denDF = c(10),
-        row.names = c("Nitrogen")
-    )))
+	# Mock the asreml functions to ensure they're NOT called when pred.obj is provided
+	mock_predict <- mockery::mock()
+	mock_wald <- mockery::mock(list(
+		Wald = data.frame(
+			denDF = c(10),
+			row.names = c("Nitrogen")
+		)
+	))
 
-    mockery::stub(get_predictions.asreml, 'asreml::predict.asreml', mock_predict)
-    mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
+	mockery::stub(
+		get_predictions.asreml,
+		'asreml::predict.asreml',
+		mock_predict
+	)
+	mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
 
-    # Call the function with pred.obj provided
-    result <- get_predictions.asreml(mock_model, classify = "Nitrogen", pred.obj = mock_pred_obj)
+	# Call the function with pred.obj provided
+	result <- get_predictions.asreml(
+		mock_model,
+		classify = "Nitrogen",
+		pred.obj = mock_pred_obj
+	)
 
-    # Verify predict.asreml was NOT called (because pred.obj was provided)
-    mockery::expect_called(mock_predict, 0)
+	# Verify predict.asreml was NOT called (because pred.obj was provided)
+	mockery::expect_called(mock_predict, 0)
 
-    # Verify the result uses the provided pred.obj
-    expect_equal(result$predictions$predicted.value, c(100, 110, 120, 130))
-    expect_equal(result$predictions$std.error, c(5, 5, 5, 5))
+	# Verify the result uses the provided pred.obj
+	expect_equal(result$predictions$predicted.value, c(100, 110, 120, 130))
+	expect_equal(result$predictions$std.error, c(5, 5, 5, 5))
 })
 
 test_that("get_predictions.asreml generates predictions when pred.obj is NULL", {
-    skip_if_not_installed("mockery")
+	skip_if_not_installed("mockery")
 
-    # Create mock model object
-    mock_model <- list(
-        formulae = list(
-            fixed = as.formula("yield ~ Nitrogen"),
-            random = as.formula("~Blocks")
-        ),
-        nedf = 10
-    )
-    class(mock_model) <- "asreml"
+	# Create mock model object
+	mock_model <- list(
+		formulae = list(
+			fixed = as.formula("yield ~ Nitrogen"),
+			random = as.formula("~Blocks")
+		),
+		nedf = 10
+	)
+	class(mock_model) <- "asreml"
 
-    # Mock prediction result that would be generated
-    mock_pred_result <- list(
-        pvals = data.frame(
-            Nitrogen = c("0", "0.2", "0.4", "0.6"),
-            predicted.value = c(100, 110, 120, 130),
-            std.error = c(5, 5, 5, 5),
-            status = c("Estimable", "Estimable", "Estimable", "Estimable")
-        ),
-        sed = matrix(c(NA, 7, 8, 9,
-                      7, NA, 8, 9,
-                      8, 8, NA, 9,
-                      9, 9, 9, NA), nrow = 4, ncol = 4)
-    )
+	# Mock prediction result that would be generated
+	mock_pred_result <- list(
+		pvals = data.frame(
+			Nitrogen = c("0", "0.2", "0.4", "0.6"),
+			predicted.value = c(100, 110, 120, 130),
+			std.error = c(5, 5, 5, 5),
+			status = c("Estimable", "Estimable", "Estimable", "Estimable")
+		),
+		sed = matrix(
+			c(NA, 7, 8, 9, 7, NA, 8, 9, 8, 8, NA, 9, 9, 9, 9, NA),
+			nrow = 4,
+			ncol = 4
+		)
+	)
 
-    # Mock the asreml functions
-    mock_predict <- mockery::mock(mock_pred_result)
-    mock_wald <- mockery::mock(list(Wald = data.frame(
-        denDF = c(10),
-        row.names = c("Nitrogen")
-    )))
+	# Mock the asreml functions
+	mock_predict <- mockery::mock(mock_pred_result)
+	mock_wald <- mockery::mock(list(
+		Wald = data.frame(
+			denDF = c(10),
+			row.names = c("Nitrogen")
+		)
+	))
 
-    mockery::stub(get_predictions.asreml, 'asreml::predict.asreml', mock_predict)
-    mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
+	mockery::stub(
+		get_predictions.asreml,
+		'asreml::predict.asreml',
+		mock_predict
+	)
+	mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
 
-    # Call the function without pred.obj (NULL by default)
-    result <- get_predictions.asreml(mock_model, classify = "Nitrogen")
+	# Call the function without pred.obj (NULL by default)
+	result <- get_predictions.asreml(mock_model, classify = "Nitrogen")
 
-    # Verify predict.asreml WAS called (because pred.obj was NULL)
-    mockery::expect_called(mock_predict, 1)
+	# Verify predict.asreml WAS called (because pred.obj was NULL)
+	mockery::expect_called(mock_predict, 1)
 
-    # Verify the correct arguments were passed to predict.asreml
-    call_args <- mockery::mock_args(mock_predict)[[1]]
-    expect_equal(call_args$object, mock_model)
-    expect_equal(call_args$classify, "Nitrogen")
-    expect_equal(call_args$sed, TRUE)
-    expect_equal(call_args$trace, FALSE)
+	# Verify the correct arguments were passed to predict.asreml
+	call_args <- mockery::mock_args(mock_predict)[[1]]
+	expect_equal(call_args$object, mock_model)
+	expect_equal(call_args$classify, "Nitrogen")
+	expect_equal(call_args$sed, TRUE)
+	expect_equal(call_args$trace, FALSE)
 
-    # Verify the result contains the generated predictions
-    expect_equal(result$predictions$predicted.value, c(100, 110, 120, 130))
+	# Verify the result contains the generated predictions
+	expect_equal(result$predictions$predicted.value, c(100, 110, 120, 130))
 })
 
 test_that("get_predictions.asreml generates predictions when pred.obj is missing", {
-    skip_if_not_installed("mockery")
+	skip_if_not_installed("mockery")
 
-    # Create mock model object
-    mock_model <- list(
-        formulae = list(
-            fixed = as.formula("yield ~ Nitrogen"),
-            random = as.formula("~Blocks")
-        ),
-        nedf = 10
-    )
-    class(mock_model) <- "asreml"
+	# Create mock model object
+	mock_model <- list(
+		formulae = list(
+			fixed = as.formula("yield ~ Nitrogen"),
+			random = as.formula("~Blocks")
+		),
+		nedf = 10
+	)
+	class(mock_model) <- "asreml"
 
-    # Mock prediction result
-    mock_pred_result <- list(
-        pvals = data.frame(
-            Nitrogen = c("0", "0.2"),
-            predicted.value = c(100, 110),
-            std.error = c(5, 5),
-            status = c("Estimable", "Estimable")
-        ),
-        sed = matrix(c(NA, 7, 7, NA), nrow = 2, ncol = 2)
-    )
+	# Mock prediction result
+	mock_pred_result <- list(
+		pvals = data.frame(
+			Nitrogen = c("0", "0.2"),
+			predicted.value = c(100, 110),
+			std.error = c(5, 5),
+			status = c("Estimable", "Estimable")
+		),
+		sed = matrix(c(NA, 7, 7, NA), nrow = 2, ncol = 2)
+	)
 
-    # Mock the asreml functions
-    mock_predict <- mockery::mock(mock_pred_result)
-    mock_wald <- mockery::mock(list(Wald = data.frame(
-        denDF = c(10),
-        row.names = c("Nitrogen")
-    )))
+	# Mock the asreml functions
+	mock_predict <- mockery::mock(mock_pred_result)
+	mock_wald <- mockery::mock(list(
+		Wald = data.frame(
+			denDF = c(10),
+			row.names = c("Nitrogen")
+		)
+	))
 
-    mockery::stub(get_predictions.asreml, 'asreml::predict.asreml', mock_predict)
-    mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
+	mockery::stub(
+		get_predictions.asreml,
+		'asreml::predict.asreml',
+		mock_predict
+	)
+	mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
 
-    # Call without specifying pred.obj at all
-    result <- get_predictions.asreml(mock_model, classify = "Nitrogen")
+	# Call without specifying pred.obj at all
+	result <- get_predictions.asreml(mock_model, classify = "Nitrogen")
 
-    # Verify predict.asreml WAS called
-    mockery::expect_called(mock_predict, 1)
-    expect_equal(result$predictions$predicted.value, c(100, 110))
+	# Verify predict.asreml WAS called
+	mockery::expect_called(mock_predict, 1)
+	expect_equal(result$predictions$predicted.value, c(100, 110))
 })
 
 test_that("get_predictions.asreml errors when all predicted values are aliased", {
-    skip_if_not_installed("mockery")
+	skip_if_not_installed("mockery")
 
-    # Create mock model object with interaction term
-    mock_model <- list(
-        formulae = list(
-            fixed = as.formula("yield ~ Nitrogen + Variety + Nitrogen:Variety"),
-            random = as.formula("~Blocks")
-        ),
-        nedf = 10
-    )
-    class(mock_model) <- "asreml"
+	# Create mock model object with interaction term
+	mock_model <- list(
+		formulae = list(
+			fixed = as.formula("yield ~ Nitrogen + Variety + Nitrogen:Variety"),
+			random = as.formula("~Blocks")
+		),
+		nedf = 10
+	)
+	class(mock_model) <- "asreml"
 
-    # Mock prediction result with ALL NA values (all aliased)
-    mock_pred_result <- list(
-        pvals = data.frame(
-            Nitrogen = c("0", "0.2", "0.4"),
-            Variety = c("A", "B", "C"),
-            predicted.value = c(NA, NA, NA),
-            std.error = c(NA, NA, NA),
-            status = c("Aliased", "Aliased", "Aliased")
-        ),
-        sed = matrix(c(NA, NA, NA,
-                      NA, NA, NA,
-                      NA, NA, NA), nrow = 3, ncol = 3)
-    )
+	# Mock prediction result with ALL NA values (all aliased)
+	mock_pred_result <- list(
+		pvals = data.frame(
+			Nitrogen = c("0", "0.2", "0.4"),
+			Variety = c("A", "B", "C"),
+			predicted.value = c(NA, NA, NA),
+			std.error = c(NA, NA, NA),
+			status = c("Aliased", "Aliased", "Aliased")
+		),
+		sed = matrix(c(NA, NA, NA, NA, NA, NA, NA, NA, NA), nrow = 3, ncol = 3)
+	)
 
-    # Mock the asreml functions
-    mock_predict <- mockery::mock(mock_pred_result)
+	# Mock the asreml functions
+	mock_predict <- mockery::mock(mock_pred_result)
 
-    mockery::stub(get_predictions.asreml, 'asreml::predict.asreml', mock_predict)
+	mockery::stub(
+		get_predictions.asreml,
+		'asreml::predict.asreml',
+		mock_predict
+	)
 
-    # Expect error when all values are aliased
-    expect_error(
-        get_predictions.asreml(mock_model, classify = "Nitrogen:Variety"),
-        "All predicted values are aliased. Perhaps you need the `present` argument?"
-    )
+	# Expect error when all values are aliased
+	expect_error(
+		get_predictions.asreml(mock_model, classify = "Nitrogen:Variety"),
+		"All predicted values are aliased. Perhaps you need the `present` argument?"
+	)
 })
 
 test_that("get_predictions.asreml errors when all std.errors are NA but predicted values exist", {
-    skip_if_not_installed("mockery")
+	skip_if_not_installed("mockery")
 
-    # Create mock model object
-    mock_model <- list(
-        formulae = list(
-            fixed = as.formula("yield ~ Treatment"),
-            random = as.formula("~Blocks")
-        ),
-        nedf = 10
-    )
-    class(mock_model) <- "asreml"
+	# Create mock model object
+	mock_model <- list(
+		formulae = list(
+			fixed = as.formula("yield ~ Treatment"),
+			random = as.formula("~Blocks")
+		),
+		nedf = 10
+	)
+	class(mock_model) <- "asreml"
 
-    # Mock prediction result with predicted values but ALL NA std.errors
-    mock_pred_result <- list(
-        pvals = data.frame(
-            Treatment = c("A", "B", "C"),
-            predicted.value = c(NA, NA, NA),
-            std.error = c(NA, NA, NA),
-            status = c("Aliased", "Aliased", "Aliased")
-        ),
-        sed = matrix(c(NA, NA, NA,
-                      NA, NA, NA,
-                      NA, NA, NA), nrow = 3, ncol = 3)
-    )
+	# Mock prediction result with predicted values but ALL NA std.errors
+	mock_pred_result <- list(
+		pvals = data.frame(
+			Treatment = c("A", "B", "C"),
+			predicted.value = c(NA, NA, NA),
+			std.error = c(NA, NA, NA),
+			status = c("Aliased", "Aliased", "Aliased")
+		),
+		sed = matrix(c(NA, NA, NA, NA, NA, NA, NA, NA, NA), nrow = 3, ncol = 3)
+	)
 
-    # Mock the asreml functions
-    mock_predict <- mockery::mock(mock_pred_result)
+	# Mock the asreml functions
+	mock_predict <- mockery::mock(mock_pred_result)
 
-    mockery::stub(get_predictions.asreml, 'asreml::predict.asreml', mock_predict)
+	mockery::stub(
+		get_predictions.asreml,
+		'asreml::predict.asreml',
+		mock_predict
+	)
 
-    # Expect error when all std.errors are NA
-    expect_error(
-        get_predictions.asreml(mock_model, classify = "Treatment"),
-        "All predicted values are aliased. Perhaps you need the `present` argument?"
-    )
+	# Expect error when all std.errors are NA
+	expect_error(
+		get_predictions.asreml(mock_model, classify = "Treatment"),
+		"All predicted values are aliased. Perhaps you need the `present` argument?"
+	)
 })
 
 test_that("get_predictions.asreml handles partial aliasing correctly", {
-    skip_if_not_installed("mockery")
+	skip_if_not_installed("mockery")
 
-    # Create mock model object
-    mock_model <- list(
-        formulae = list(
-            fixed = as.formula("yield ~ Treatment"),
-            random = as.formula("~Blocks")
-        ),
-        nedf = 10
-    )
-    class(mock_model) <- "asreml"
+	# Create mock model object
+	mock_model <- list(
+		formulae = list(
+			fixed = as.formula("yield ~ Treatment"),
+			random = as.formula("~Blocks")
+		),
+		nedf = 10
+	)
+	class(mock_model) <- "asreml"
 
-    # Mock prediction result with SOME aliased values (not all)
-    mock_pred_result <- list(
-        pvals = data.frame(
-            Treatment = c("A", "B", "C", "D"),
-            predicted.value = c(100, 110, NA, 130),
-            std.error = c(5, 5, NA, 5),
-            status = c("Estimable", "Estimable", "Aliased", "Estimable")
-        ),
-        sed = matrix(c(NA, 7, 8, 9,
-                      7, NA, 8, 9,
-                      8, 8, NA, 9,
-                      9, 9, 9, NA), nrow = 4, ncol = 4)
-    )
+	# Mock prediction result with SOME aliased values (not all)
+	mock_pred_result <- list(
+		pvals = data.frame(
+			Treatment = c("A", "B", "C", "D"),
+			predicted.value = c(100, 110, NA, 130),
+			std.error = c(5, 5, NA, 5),
+			status = c("Estimable", "Estimable", "Aliased", "Estimable")
+		),
+		sed = matrix(
+			c(NA, 7, 8, 9, 7, NA, 8, 9, 8, 8, NA, 9, 9, 9, 9, NA),
+			nrow = 4,
+			ncol = 4
+		)
+	)
 
-    # Mock the asreml functions
-    mock_predict <- mockery::mock(mock_pred_result)
-    mock_wald <- mockery::mock(list(Wald = data.frame(
-        denDF = c(10),
-        row.names = c("Treatment")
-    )))
+	# Mock the asreml functions
+	mock_predict <- mockery::mock(mock_pred_result)
+	mock_wald <- mockery::mock(list(
+		Wald = data.frame(
+			denDF = c(10),
+			row.names = c("Treatment")
+		)
+	))
 
-    mockery::stub(get_predictions.asreml, 'asreml::predict.asreml', mock_predict)
-    mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
+	mockery::stub(
+		get_predictions.asreml,
+		'asreml::predict.asreml',
+		mock_predict
+	)
+	mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
 
-    # Should NOT error with partial aliasing (only error when ALL are aliased)
-    expect_warning(
-        result <- get_predictions.asreml(mock_model, classify = "Treatment"),
-        "A level of Treatment is aliased"
-    )
+	# Should NOT error with partial aliasing (only error when ALL are aliased)
+	expect_warning(
+		result <- get_predictions.asreml(mock_model, classify = "Treatment"),
+		"A level of Treatment is aliased"
+	)
 
-    # Result should only contain non-aliased values
-    expect_equal(nrow(result$predictions), 3)
-    expect_equal(result$predictions$predicted.value, c(100, 110, 130))
-    expect_false("C" %in% result$predictions$Treatment)
+	# Result should only contain non-aliased values
+	expect_equal(nrow(result$predictions), 3)
+	expect_equal(result$predictions$predicted.value, c(100, 110, 130))
+	expect_false("C" %in% result$predictions$Treatment)
 })
 
 test_that("get_predictions.asreml passes additional arguments to predict.asreml", {
-    skip_if_not_installed("mockery")
+	skip_if_not_installed("mockery")
 
-    # Create mock model object
-    mock_model <- list(
-        formulae = list(
-            fixed = as.formula("yield ~ Nitrogen"),
-            random = as.formula("~Blocks")
-        ),
-        nedf = 10
-    )
-    class(mock_model) <- "asreml"
+	# Create mock model object
+	mock_model <- list(
+		formulae = list(
+			fixed = as.formula("yield ~ Nitrogen"),
+			random = as.formula("~Blocks")
+		),
+		nedf = 10
+	)
+	class(mock_model) <- "asreml"
 
-    # Mock prediction result
-    mock_pred_result <- list(
-        pvals = data.frame(
-            Nitrogen = c("0", "0.2"),
-            predicted.value = c(100, 110),
-            std.error = c(5, 5),
-            status = c("Estimable", "Estimable")
-        ),
-        sed = matrix(c(NA, 7, 7, NA), nrow = 2, ncol = 2)
-    )
+	# Mock prediction result
+	mock_pred_result <- list(
+		pvals = data.frame(
+			Nitrogen = c("0", "0.2"),
+			predicted.value = c(100, 110),
+			std.error = c(5, 5),
+			status = c("Estimable", "Estimable")
+		),
+		sed = matrix(c(NA, 7, 7, NA), nrow = 2, ncol = 2)
+	)
 
-    # Mock the asreml functions
-    mock_predict <- mockery::mock(mock_pred_result)
-    mock_wald <- mockery::mock(list(Wald = data.frame(
-        denDF = c(10),
-        row.names = c("Nitrogen")
-    )))
+	# Mock the asreml functions
+	mock_predict <- mockery::mock(mock_pred_result)
+	mock_wald <- mockery::mock(list(
+		Wald = data.frame(
+			denDF = c(10),
+			row.names = c("Nitrogen")
+		)
+	))
 
-    mockery::stub(get_predictions.asreml, 'asreml::predict.asreml', mock_predict)
-    mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
+	mockery::stub(
+		get_predictions.asreml,
+		'asreml::predict.asreml',
+		mock_predict
+	)
+	mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
 
-    # Call with additional arguments
-    result <- get_predictions.asreml(mock_model, classify = "Nitrogen",
-                                    present = c("Nitrogen", "Blocks"),
-                                    aliasing.scheme = TRUE)
+	# Call with additional arguments
+	result <- get_predictions.asreml(
+		mock_model,
+		classify = "Nitrogen",
+		present = c("Nitrogen", "Blocks"),
+		aliasing.scheme = TRUE
+	)
 
-    # Verify additional arguments were passed through
-    call_args <- mockery::mock_args(mock_predict)[[1]]
-    expect_equal(call_args$present, c("Nitrogen", "Blocks"))
-    expect_equal(call_args$aliasing.scheme, TRUE)
+	# Verify additional arguments were passed through
+	call_args <- mockery::mock_args(mock_predict)[[1]]
+	expect_equal(call_args$present, c("Nitrogen", "Blocks"))
+	expect_equal(call_args$aliasing.scheme, TRUE)
 })
 
 test_that("get_predictions.asreml uses provided dendf when supplied in args", {
-    skip_if_not_installed("mockery")
+	skip_if_not_installed("mockery")
 
-    # Create mock model object
-    mock_model <- list(
-        formulae = list(
-            fixed = as.formula("yield ~ Nitrogen"),
-            random = as.formula("~Blocks")
-        ),
-        nedf = 10
-    )
-    class(mock_model) <- "asreml"
+	# Create mock model object
+	mock_model <- list(
+		formulae = list(
+			fixed = as.formula("yield ~ Nitrogen"),
+			random = as.formula("~Blocks")
+		),
+		nedf = 10
+	)
+	class(mock_model) <- "asreml"
 
-    # Mock prediction result
-    mock_pred_result <- list(
-        pvals = data.frame(
-            Nitrogen = c("0", "0.2", "0.4"),
-            predicted.value = c(100, 110, 120),
-            std.error = c(5, 5, 5),
-            status = c("Estimable", "Estimable", "Estimable")
-        ),
-        sed = matrix(c(NA, 7, 8,
-                      7, NA, 8,
-                      8, 8, NA), nrow = 3, ncol = 3)
-    )
+	# Mock prediction result
+	mock_pred_result <- list(
+		pvals = data.frame(
+			Nitrogen = c("0", "0.2", "0.4"),
+			predicted.value = c(100, 110, 120),
+			std.error = c(5, 5, 5),
+			status = c("Estimable", "Estimable", "Estimable")
+		),
+		sed = matrix(c(NA, 7, 8, 7, NA, 8, 8, 8, NA), nrow = 3, ncol = 3)
+	)
 
-    # Create custom dendf data frame
-    custom_dendf <- data.frame(
-        Source = c("Nitrogen", "Blocks"),
-        denDF = c(25, 5)
-    )
+	# Create custom dendf data frame
+	custom_dendf <- data.frame(
+		Source = c("Nitrogen", "Blocks"),
+		denDF = c(25, 5)
+	)
 
-    # Mock the asreml functions
-    mock_predict <- mockery::mock(mock_pred_result)
-    mock_wald <- mockery::mock()  # Should NOT be called when dendf is provided
+	# Mock the asreml functions
+	mock_predict <- mockery::mock(mock_pred_result)
+	mock_wald <- mockery::mock() # Should NOT be called when dendf is provided
 
-    mockery::stub(get_predictions.asreml, 'asreml::predict.asreml', mock_predict)
-    mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
+	mockery::stub(
+		get_predictions.asreml,
+		'asreml::predict.asreml',
+		mock_predict
+	)
+	mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
 
-    # Call with dendf provided in args
-    result <- get_predictions.asreml(mock_model, classify = "Nitrogen", dendf = custom_dendf)
+	# Call with dendf provided in args
+	result <- get_predictions.asreml(
+		mock_model,
+		classify = "Nitrogen",
+		dendf = custom_dendf
+	)
 
-    # Verify wald was NOT called (because dendf was provided)
-    mockery::expect_called(mock_wald, 0)
+	# Verify wald was NOT called (because dendf was provided)
+	mockery::expect_called(mock_wald, 0)
 
-    # Verify the custom dendf was used (should be 25, not the default from wald)
-    expect_equal(result$df, 25)
+	# Verify the custom dendf was used (should be 25, not the default from wald)
+	expect_equal(result$df, 25)
 })
 
 test_that("get_predictions.asreml uses residual df when classify not found in wald output", {
-    skip_if_not_installed("mockery")
+	skip_if_not_installed("mockery")
 
-    # Create mock model object with random term
-    mock_model <- list(
-        formulae = list(
-            fixed = as.formula("yield ~ Variety"),
-            random = as.formula("~Blocks")
-        ),
-        nedf = 15
-    )
-    class(mock_model) <- "asreml"
+	# Create mock model object with random term
+	mock_model <- list(
+		formulae = list(
+			fixed = as.formula("yield ~ Variety"),
+			random = as.formula("~Blocks")
+		),
+		nedf = 15
+	)
+	class(mock_model) <- "asreml"
 
-    # Mock prediction result
-    mock_pred_result <- list(
-        pvals = data.frame(
-            Blocks = c("B1", "B2", "B3"),
-            predicted.value = c(100, 105, 110),
-            std.error = c(5, 5, 5),
-            status = c("Estimable", "Estimable", "Estimable")
-        ),
-        sed = matrix(c(NA, 7, 8,
-                      7, NA, 8,
-                      8, 8, NA), nrow = 3, ncol = 3)
-    )
+	# Mock prediction result
+	mock_pred_result <- list(
+		pvals = data.frame(
+			Blocks = c("B1", "B2", "B3"),
+			predicted.value = c(100, 105, 110),
+			std.error = c(5, 5, 5),
+			status = c("Estimable", "Estimable", "Estimable")
+		),
+		sed = matrix(c(NA, 7, 8, 7, NA, 8, 8, 8, NA), nrow = 3, ncol = 3)
+	)
 
-    # Mock wald output that doesn't include Blocks (since it's a random term)
-    mock_wald <- mockery::mock(list(Wald = data.frame(
-        denDF = c(10),
-        row.names = c("Variety")  # Only fixed term, not Blocks
-    )))
+	# Mock wald output that doesn't include Blocks (since it's a random term)
+	mock_wald <- mockery::mock(list(
+		Wald = data.frame(
+			denDF = c(10),
+			row.names = c("Variety") # Only fixed term, not Blocks
+		)
+	))
 
-    # Mock the asreml functions
-    mock_predict <- mockery::mock(mock_pred_result)
+	# Mock the asreml functions
+	mock_predict <- mockery::mock(mock_pred_result)
 
-    mockery::stub(get_predictions.asreml, 'asreml::predict.asreml', mock_predict)
-    mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
+	mockery::stub(
+		get_predictions.asreml,
+		'asreml::predict.asreml',
+		mock_predict
+	)
+	mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
 
-    # Call with Blocks (a random term not in wald output)
-    expect_warning(
-        result <- get_predictions.asreml(mock_model, classify = "Blocks"),
-        "Blocks is not a fixed term in the model. The denominator degrees of freedom are estimated using the residual degrees of freedom. This may be inaccurate."
-    )
+	# Call with Blocks (a random term not in wald output)
+	expect_warning(
+		result <- get_predictions.asreml(mock_model, classify = "Blocks"),
+		"Blocks is not a fixed term in the model. The denominator degrees of freedom are estimated using the residual degrees of freedom. This may be inaccurate."
+	)
 
-    # Verify it falls back to model.obj$nedf (residual df)
-    expect_equal(result$df, 15)
+	# Verify it falls back to model.obj$nedf (residual df)
+	expect_equal(result$df, 15)
 })
 
 test_that("get_predictions.lmerModLmerTest delegates to lmerMod method", {
-    skip_if_not_installed("mockery")
+	skip_if_not_installed("mockery")
 
-    # Create a mock lmerModLmerTest object
-    mock_model <- structure(
-        list(
-            frame = data.frame(
-                yield = c(100, 110, 120, 105, 115, 125),
-                Treatment = factor(rep(c("A", "B"), each = 3))
-            )
-        ),
-        class = c("lmerModLmerTest", "lmerMod")
-    )
+	# Create a mock lmerModLmerTest object
+	mock_model <- structure(
+		list(
+			frame = data.frame(
+				yield = c(100, 110, 120, 105, 115, 125),
+				Treatment = factor(rep(c("A", "B"), each = 3))
+			)
+		),
+		class = c("lmerModLmerTest", "lmerMod")
+	)
 
-    # Create a mock result that would be returned by get_predictions.lm
-    mock_result <- list(
-        predictions = data.frame(
-            Treatment = c("A", "B"),
-            predicted.value = c(105, 120),
-            std.error = c(5, 5),
-            df = c(4, 4)
-        ),
-        sed = matrix(c(NA, 7, 7, NA), nrow = 2, ncol = 2),
-        df = 4,
-        ylab = "yield",
-        aliased_names = NULL
-    )
+	# Create a mock result that would be returned by get_predictions.lm
+	mock_result <- list(
+		predictions = data.frame(
+			Treatment = c("A", "B"),
+			predicted.value = c(105, 120),
+			std.error = c(5, 5),
+			df = c(4, 4)
+		),
+		sed = matrix(c(NA, 7, 7, NA), nrow = 2, ncol = 2),
+		df = 4,
+		ylab = "yield",
+		aliased_names = NULL
+	)
 
-    # Mock get_predictions.lmerMod to return the mock result
-    mock_lmerMod_method <- mockery::mock(mock_result)
+	# Mock get_predictions.lmerMod to return the mock result
+	mock_lmerMod_method <- mockery::mock(mock_result)
 
-    # Stub the lmerMod method
-    mockery::stub(get_predictions.lmerModLmerTest, 'get_predictions.lmerMod', mock_lmerMod_method)
+	# Stub the lmerMod method
+	mockery::stub(
+		get_predictions.lmerModLmerTest,
+		'get_predictions.lmerMod',
+		mock_lmerMod_method
+	)
 
-    # Call get_predictions.lmerModLmerTest
-    result <- get_predictions.lmerModLmerTest(mock_model, classify = "Treatment")
+	# Call get_predictions.lmerModLmerTest
+	result <- get_predictions.lmerModLmerTest(
+		mock_model,
+		classify = "Treatment"
+	)
 
-    # Verify that get_predictions.lmerMod was called with correct arguments
-    mockery::expect_called(mock_lmerMod_method, 1)
-    call_args <- mockery::mock_args(mock_lmerMod_method)[[1]]
-    expect_equal(call_args[[1]], mock_model)
-    expect_equal(call_args[[2]], "Treatment")
+	# Verify that get_predictions.lmerMod was called with correct arguments
+	mockery::expect_called(mock_lmerMod_method, 1)
+	call_args <- mockery::mock_args(mock_lmerMod_method)[[1]]
+	expect_equal(call_args[[1]], mock_model)
+	expect_equal(call_args[[2]], "Treatment")
 
-    # Verify the result is what was returned by the lmerMod method
-    expect_equal(result$predictions$predicted.value, c(105, 120))
-    expect_equal(result$df, 4)
-    expect_equal(result$ylab, "yield")
+	# Verify the result is what was returned by the lmerMod method
+	expect_equal(result$predictions$predicted.value, c(105, 120))
+	expect_equal(result$df, 4)
+	expect_equal(result$ylab, "yield")
 })
 
 test_that("get_predictions.asreml handles multiple aliased values with plural warning", {
-    skip_if_not_installed("mockery")
+	skip_if_not_installed("mockery")
 
-    # Create mock model object with interaction term
-    mock_model <- list(
-        formulae = list(
-            fixed = as.formula("yield ~ Nitrogen + Variety + Nitrogen:Variety"),
-            random = as.formula("~Blocks")
-        ),
-        nedf = 10
-    )
-    class(mock_model) <- "asreml"
+	# Create mock model object with interaction term
+	mock_model <- list(
+		formulae = list(
+			fixed = as.formula("yield ~ Nitrogen + Variety + Nitrogen:Variety"),
+			random = as.formula("~Blocks")
+		),
+		nedf = 10
+	)
+	class(mock_model) <- "asreml"
 
-    # Mock prediction result with MULTIPLE aliased values (not all)
-    mock_pred_result <- list(
-        pvals = data.frame(
-            Nitrogen = c("0", "0.2", "0.4", "0.6", "0.8"),
-            Variety = c("A", "B", "C", "D", "E"),
-            predicted.value = c(100, 110, NA, 130, NA),
-            std.error = c(5, 5, NA, 5, NA),
-            status = c("Estimable", "Estimable", "Aliased", "Estimable", "Aliased")
-        ),
-        sed = matrix(c(NA, 7, 8, 9, 10,
-                      7, NA, 8, 9, 10,
-                      8, 8, NA, 9, 10,
-                      9, 9, 9, NA, 10,
-                      10, 10, 10, 10, NA), nrow = 5, ncol = 5)
-    )
+	# Mock prediction result with MULTIPLE aliased values (not all)
+	mock_pred_result <- list(
+		pvals = data.frame(
+			Nitrogen = c("0", "0.2", "0.4", "0.6", "0.8"),
+			Variety = c("A", "B", "C", "D", "E"),
+			predicted.value = c(100, 110, NA, 130, NA),
+			std.error = c(5, 5, NA, 5, NA),
+			status = c(
+				"Estimable",
+				"Estimable",
+				"Aliased",
+				"Estimable",
+				"Aliased"
+			)
+		),
+		sed = matrix(
+			c(
+				NA,
+				7,
+				8,
+				9,
+				10,
+				7,
+				NA,
+				8,
+				9,
+				10,
+				8,
+				8,
+				NA,
+				9,
+				10,
+				9,
+				9,
+				9,
+				NA,
+				10,
+				10,
+				10,
+				10,
+				10,
+				NA
+			),
+			nrow = 5,
+			ncol = 5
+		)
+	)
 
-    # Mock the asreml functions
-    mock_predict <- mockery::mock(mock_pred_result)
-    mock_wald <- mockery::mock(list(Wald = data.frame(
-        denDF = c(10),
-        row.names = c("Nitrogen:Variety")
-    )))
+	# Mock the asreml functions
+	mock_predict <- mockery::mock(mock_pred_result)
+	mock_wald <- mockery::mock(list(
+		Wald = data.frame(
+			denDF = c(10),
+			row.names = c("Nitrogen:Variety")
+		)
+	))
 
-    mockery::stub(get_predictions.asreml, 'asreml::predict.asreml', mock_predict)
-    mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
+	mockery::stub(
+		get_predictions.asreml,
+		'asreml::predict.asreml',
+		mock_predict
+	)
+	mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
 
-    # Expect warning with plural message for multiple aliased values
-    expect_warning(
-        result <- get_predictions.asreml(mock_model, classify = "Nitrogen:Variety"),
-        "Some levels of Nitrogen:Variety are aliased. They have been removed from predicted output.
+	# Expect warning with plural message for multiple aliased values
+	expect_warning(
+		result <- get_predictions.asreml(
+			mock_model,
+			classify = "Nitrogen:Variety"
+		),
+		"Some levels of Nitrogen:Variety are aliased. They have been removed from predicted output.
   Aliased levels are: 0\\.4:C, 0\\.8:E.
   These levels are saved in the output object."
-    )
+	)
 
-    # Result should only contain non-aliased values
-    expect_equal(nrow(result$predictions), 3)
-    expect_equal(result$predictions$predicted.value, c(100, 110, 130))
-    expect_true(all(c("0.4:C", "0.8:E") %in% result$aliased_names))
-    expect_equal(length(result$aliased_names), 2)
+	# Result should only contain non-aliased values
+	expect_equal(nrow(result$predictions), 3)
+	expect_equal(result$predictions$predicted.value, c(100, 110, 130))
+	expect_true(all(c("0.4:C", "0.8:E") %in% result$aliased_names))
+	expect_equal(length(result$aliased_names), 2)
 })
 
 test_that("get_predictions.lm handles reversed two-way interaction order", {
-    skip_if_not_installed("emmeans")
+	skip_if_not_installed("emmeans")
 
-    # Simple model with two-way interaction
-    set.seed(123)
-    dat <- data.frame(
-        y = rnorm(12),
-        A = factor(rep(c("A1", "A2"), each = 6)),
-        B = factor(rep(c("B1", "B2", "B3"), 4))
-    )
-    model <- lm(y ~ A * B, data = dat)
+	# Simple model with two-way interaction
+	set.seed(123)
+	dat <- data.frame(
+		y = rnorm(12),
+		A = factor(rep(c("A1", "A2"), each = 6)),
+		B = factor(rep(c("B1", "B2", "B3"), 4))
+	)
+	model <- lm(y ~ A * B, data = dat)
 
-    # Get predictions with correct order (A:B)
-    result1 <- get_predictions.lm(model, classify = "A:B")
+	# Get predictions with correct order (A:B)
+	result1 <- get_predictions.lm(model, classify = "A:B")
 
-    # Get predictions with reversed order (B:A)
-    result2 <- get_predictions.lm(model, classify = "B:A")
+	# Get predictions with reversed order (B:A)
+	result2 <- get_predictions.lm(model, classify = "B:A")
 
-    # Both should succeed and return same predictions
-    expect_equal(result1$predictions$predicted.value, result2$predictions$predicted.value)
-    expect_equal(nrow(result1$predictions), nrow(result2$predictions))
+	# Both should succeed and return same predictions
+	expect_equal(
+		result1$predictions$predicted.value,
+		result2$predictions$predicted.value
+	)
+	expect_equal(nrow(result1$predictions), nrow(result2$predictions))
 })
 
 test_that("get_predictions.lm handles three-way interaction in any order", {
-    skip_if_not_installed("emmeans")
+	skip_if_not_installed("emmeans")
 
-    # Simple model with three-way interaction
-    set.seed(456)
-    dat <- data.frame(
-        y = rnorm(16),
-        A = factor(rep(c("A1", "A2"), each = 8)),
-        B = factor(rep(c("B1", "B2"), 8)),
-        C = factor(rep(c("C1", "C2"), each = 4, times = 2))
-    )
-    model <- lm(y ~ A * B * C, data = dat)
+	# Simple model with three-way interaction
+	set.seed(456)
+	dat <- data.frame(
+		y = rnorm(16),
+		A = factor(rep(c("A1", "A2"), each = 8)),
+		B = factor(rep(c("B1", "B2"), 8)),
+		C = factor(rep(c("C1", "C2"), each = 4, times = 2))
+	)
+	model <- lm(y ~ A * B * C, data = dat)
 
-    # Get predictions with different orderings
-    result_abc <- get_predictions.lm(model, classify = "A:B:C")
-    result_cba <- get_predictions.lm(model, classify = "C:B:A")
-    result_bac <- get_predictions.lm(model, classify = "B:A:C")
+	# Get predictions with different orderings
+	result_abc <- get_predictions.lm(model, classify = "A:B:C")
+	result_cba <- get_predictions.lm(model, classify = "C:B:A")
+	result_bac <- get_predictions.lm(model, classify = "B:A:C")
 
-    # All should succeed and return same number of predictions
-    expect_equal(nrow(result_abc$predictions), nrow(result_cba$predictions))
-    expect_equal(nrow(result_abc$predictions), nrow(result_bac$predictions))
+	# All should succeed and return same number of predictions
+	expect_equal(nrow(result_abc$predictions), nrow(result_cba$predictions))
+	expect_equal(nrow(result_abc$predictions), nrow(result_bac$predictions))
 
-    # Predicted values should be the same (may be in different order)
-    expect_setequal(result_abc$predictions$predicted.value, result_cba$predictions$predicted.value)
-    expect_setequal(result_abc$predictions$predicted.value, result_bac$predictions$predicted.value)
+	# Predicted values should be the same (may be in different order)
+	expect_setequal(
+		result_abc$predictions$predicted.value,
+		result_cba$predictions$predicted.value
+	)
+	expect_setequal(
+		result_abc$predictions$predicted.value,
+		result_bac$predictions$predicted.value
+	)
 })
 
 test_that("check_classify_in_terms works correctly", {
-    # Simple terms match directly
-    model_terms <- c("A", "B", "C", "A:B", "A:C", "B:C", "A:B:C")
+	# Simple terms match directly
+	model_terms <- c("A", "B", "C", "A:B", "A:C", "B:C", "A:B:C")
 
-    # Direct matches
-    expect_equal(check_classify_in_terms("A", model_terms), "A")
-    expect_equal(check_classify_in_terms("A:B", model_terms), "A:B")
-    expect_equal(check_classify_in_terms("A:B:C", model_terms), "A:B:C")
+	# Direct matches
+	expect_equal(check_classify_in_terms("A", model_terms), "A")
+	expect_equal(check_classify_in_terms("A:B", model_terms), "A:B")
+	expect_equal(check_classify_in_terms("A:B:C", model_terms), "A:B:C")
 
-    # Reversed two-way interactions
-    expect_equal(check_classify_in_terms("B:A", model_terms), "A:B")
-    expect_equal(check_classify_in_terms("C:A", model_terms), "A:C")
-    expect_equal(check_classify_in_terms("C:B", model_terms), "B:C")
+	# Reversed two-way interactions
+	expect_equal(check_classify_in_terms("B:A", model_terms), "A:B")
+	expect_equal(check_classify_in_terms("C:A", model_terms), "A:C")
+	expect_equal(check_classify_in_terms("C:B", model_terms), "B:C")
 
-    # Three-way interactions in different orders
-    expect_equal(check_classify_in_terms("B:A:C", model_terms), "A:B:C")
-    expect_equal(check_classify_in_terms("C:B:A", model_terms), "A:B:C")
-    expect_equal(check_classify_in_terms("B:C:A", model_terms), "A:B:C")
+	# Three-way interactions in different orders
+	expect_equal(check_classify_in_terms("B:A:C", model_terms), "A:B:C")
+	expect_equal(check_classify_in_terms("C:B:A", model_terms), "A:B:C")
+	expect_equal(check_classify_in_terms("B:C:A", model_terms), "A:B:C")
 
-    # Non-existent terms error
-    expect_error(check_classify_in_terms("D", model_terms), "not a term in the model")
-    expect_error(check_classify_in_terms("A:D", model_terms), "not a term in the model")
+	# Non-existent terms error
+	expect_error(
+		check_classify_in_terms("D", model_terms),
+		"not a term in the model"
+	)
+	expect_error(
+		check_classify_in_terms("A:D", model_terms),
+		"not a term in the model"
+	)
 
-    # Wrong number of components doesn't match
-    model_terms2 <- c("A", "B", "A:B")
-    expect_error(check_classify_in_terms("A:B:C", model_terms2), "not a term in the model")
+	# Wrong number of components doesn't match
+	model_terms2 <- c("A", "B", "A:B")
+	expect_error(
+		check_classify_in_terms("A:B:C", model_terms2),
+		"not a term in the model"
+	)
+})
+
+test_that("Testing pred.obj removal for asreml predictions", {
+	skip_if_not_installed("Matrix")
+	load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
+	expect_error(
+		output <- multiple_comparisons(
+			model.asr,
+			classify = "Nitrogen",
+			pred.obj = pred.asr,
+			dendf = dendf
+		),
+		"`pred.obj` was removed in biometryassist 1\\.5\\.0\\. Predictions are now performed internally in the function\\."
+	)
+})
+
+test_that("Testing asreml predictions", {
+	skip_if_not_installed("asreml")
+	skip_if_not_installed("Matrix")
+	suppressPackageStartupMessages(library(asreml))
+	load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
+	output <- suppressWarnings(multiple_comparisons(
+		model.asr,
+		classify = "Nitrogen"
+	))
+	expect_equal(
+		output$predictions$predicted.value,
+		c(77.76, 100.15, 114.41, 123.23),
+		tolerance = 5e-2
+	)
+	expect_snapshot_output(output)
+	vdiffr::expect_doppelganger("asreml predictions", autoplot(output))
+})
+
+test_that("Test that aov works when using Error() to including experimental design terms", {
+	load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+	oats.aov <- aov(
+		yield ~ Variety * Nitrogen + Error(Blocks / Wplots),
+		data = dat
+	)
+	pred.aov <- get_predictions.aovlist(
+		model.obj = oats.aov,
+		classify = "Nitrogen"
+	)
+
+	expect_equal(
+		pred.aov$predictions$predicted.value,
+		c(79.389, 98.889, 114.222, 123.389),
+		tolerance = 5e-2
+	)
+	expect_equal(mean(pred.aov$sed, na.rm = TRUE), 4.436, tolerance = 5e-2)
+	expect_equal(mean(pred.aov$df, na.rm = TRUE), 45, tolerance = 5e-2)
+	# sed and df should be matrices for aovlist objects
+	expect_equal(is.matrix(pred.aov$sed), TRUE)
+	expect_equal(is.matrix(pred.aov$df), TRUE)
+})
+
+test_that("get_predictions.aovlist errors when classify is not in model terms", {
+	load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+
+	oats.aov <- aov(
+		yield ~ Variety * Nitrogen + Error(Blocks / Wplots),
+		data = dat
+	)
+
+	expect_error(
+		get_predictions.aovlist(model.obj = oats.aov, classify = "NotATerm"),
+		"NotATerm is not a term in the model"
+	)
+})
+
+test_that("get_predictions.listof delegates to get_predictions.aovlist", {
+	load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+
+	oats.aov <- aov(
+		yield ~ Variety * Nitrogen + Error(Blocks / Wplots),
+		data = dat
+	)
+	pred.aov <- get_predictions.aovlist(
+		model.obj = oats.aov,
+		classify = "Nitrogen"
+	)
+
+	# Call the listof method directly to cover the delegation lines without
+	# changing the object's class order (which can affect emmeans dispatch).
+	pred.listof <- get_predictions.listof(
+		model.obj = oats.aov,
+		classify = "Nitrogen"
+	)
+
+	expect_equal(
+		pred.listof$predictions$predicted.value,
+		pred.aov$predictions$predicted.value
+	)
+	expect_equal(pred.listof$ylab, pred.aov$ylab)
+	expect_equal(is.matrix(pred.listof$sed), TRUE)
+	expect_equal(is.matrix(pred.listof$df), TRUE)
+})
+
+test_that("get_predictions errors informatively for ARTool (art) models", {
+	skip_if_not_installed("ARTool")
+	load(test_path("data", "ARTool_model.Rdata"), .GlobalEnv)
+
+	# ART models are deliberately unsupported for mean-based comparisons; the error
+	# should point users at ARTool::art.con() rather than the generic default error.
+	expect_error(
+		get_predictions.art(model.art, classify = "name"),
+		"ARTool::art\\.con\\(\\)"
+	)
+	expect_error(
+		multiple_comparisons(model.art, classify = "name"),
+		"ARTool::art\\.con\\(\\)"
+	)
+})
+
+test_that("get_predictions works for afex (afex_aov) models", {
+	skip_if_not_installed("afex")
+	data(obk.long, package = "afex")
+
+	# Between-subjects design: the backing aov is a single stratum, so emmeans gives
+	# a scalar df, replicated across the (matrix) df like other emmeans engines.
+	afex_b <- afex::aov_ez(
+		id = "id",
+		dv = "value",
+		between = c("treatment", "gender"),
+		data = obk.long,
+		fun_aggregate = mean
+	)
+	pred_b <- get_predictions.afex_aov(afex_b, classify = "treatment")
+
+	expect_equal(
+		pred_b$predictions$predicted.value,
+		c(4.222222, 6.250000, 6.027778),
+		tolerance = 1e-4
+	)
+	expect_equal(pred_b$ylab, "value")
+	expect_true(is.matrix(pred_b$sed))
+	expect_true(is.matrix(pred_b$df))
+	expect_equal(mean(pred_b$df, na.rm = TRUE), 10)
+
+	# Within-subjects design: the backing aov is multi-stratum (aovlist), so the
+	# comparison-specific (matrix) degrees of freedom path is exercised.
+	afex_w <- afex::aov_ez(
+		id = "id",
+		dv = "value",
+		within = c("phase", "hour"),
+		data = obk.long
+	)
+	pred_w <- get_predictions.afex_aov(afex_w, classify = "phase")
+
+	expect_setequal(
+		round(pred_w$predictions$predicted.value, 3),
+		c(6.375, 5.750, 4.375)
+	)
+	expect_true(is.matrix(pred_w$sed))
+	expect_equal(mean(pred_w$df, na.rm = TRUE), 15)
+})
+
+test_that("get_predictions.afex_aov errors when classify is not in model terms", {
+	skip_if_not_installed("afex")
+	data(obk.long, package = "afex")
+
+	afex_b <- afex::aov_ez(
+		id = "id",
+		dv = "value",
+		between = c("treatment", "gender"),
+		data = obk.long,
+		fun_aggregate = mean
+	)
+
+	expect_error(
+		get_predictions.afex_aov(afex_b, classify = "NotATerm"),
+		"NotATerm is not a term in the model"
+	)
+})
+
+test_that("get_predictions works for glmmTMB models", {
+	skip_if_not_installed("glmmTMB")
+	data(Salamanders, package = "glmmTMB")
+
+	# Gaussian family: predictions on the response scale.
+	g_gauss <- glmmTMB::glmmTMB(
+		count ~ spp + mined + (1 | site),
+		data = Salamanders,
+		family = gaussian()
+	)
+	pred <- get_predictions.glmmTMB(g_gauss, classify = "mined")
+
+	expect_equal(
+		pred$predictions$predicted.value,
+		c(0.2954544, 2.2648810),
+		tolerance = 1e-4
+	)
+	expect_equal(pred$ylab, "count")
+	expect_true(is.matrix(pred$sed))
+	expect_true(is.matrix(pred$df))
+	# glmmTMB uses asymptotic (infinite) degrees of freedom.
+	expect_true(all(is.infinite(pred$df[!is.na(pred$df)])))
+
+	# Non-Gaussian families predict on the link (here log) scale.
+	g_pois <- glmmTMB::glmmTMB(
+		count ~ spp + mined + (1 | site),
+		data = Salamanders,
+		family = poisson()
+	)
+	pred_p <- get_predictions.glmmTMB(g_pois, classify = "mined")
+	expect_equal(
+		pred_p$predictions$predicted.value,
+		c(-1.7028112, 0.5616248),
+		tolerance = 1e-4
+	)
+})
+
+test_that("get_predictions works for sommer mmes models", {
+	skip_if_not_installed("sommer")
+	load(test_path("data", "sommer_models.Rdata"), .GlobalEnv)
+
+	pred <- get_predictions.mmes(model_mmes, classify = "Env")
+
+	# Predictions match the equivalent lme4 fit on the same data.
+	expect_equal(
+		pred$predictions$predicted.value,
+		c(16.49635, 10.71959, 10.11587),
+		tolerance = 1e-4
+	)
+	expect_equal(as.character(pred$ylab), "Yield")
+	expect_true(is.matrix(pred$sed))
+	# SED is built from the prediction covariance matrix.
+	expect_equal(mean(pred$sed, na.rm = TRUE), 0.736, tolerance = 1e-2)
+	# sommer provides no denominator df, so asymptotic (z-based) inference is used.
+	expect_equal(pred$df, Inf)
+	expect_null(pred$emmeans_grid)
+})
+
+test_that("get_predictions errors informatively for sommer mmer models", {
+	skip_if_not_installed("sommer")
+	load(test_path("data", "sommer_models.Rdata"), .GlobalEnv)
+
+	# mmer has no predict() method in current sommer; point users to mmes().
+	expect_error(
+		get_predictions.mmer(model_mmer, classify = "Env"),
+		"sommer::mmes\\(\\)"
+	)
+	expect_error(
+		multiple_comparisons(model_mmer, classify = "Env"),
+		"sommer::mmes\\(\\)"
+	)
+})
+
+test_that("get_predictions handles lme4breeding (lmebreed) models via lmerMod", {
+	skip_if_not_installed("lme4breeding")
+	# lmebreed() relies on lme4 internals being attached (lme4 is in its Depends).
+	suppressPackageStartupMessages(library(lme4breeding))
+	load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+
+	# An identity relationship matrix makes lmebreed() exactly equivalent to
+	# lme4::lmer(), giving a deterministic reference. lmebreed() objects carry class
+	# `lmerMod`, so they dispatch to the existing get_predictions.lmerMod method.
+	blocks <- levels(factor(dat$Blocks))
+	A <- diag(length(blocks))
+	dimnames(A) <- list(blocks, blocks)
+
+	m_lmb <- suppressMessages(suppressWarnings(lmebreed(
+		yield ~ Nitrogen + (1 | Blocks),
+		relmat = list(Blocks = A),
+		data = dat,
+		verbose = FALSE,
+		dateWarning = FALSE
+	)))
+	expect_true(methods::is(m_lmb, "lmerMod"))
+
+	pred_lmb <- suppressMessages(get_predictions(m_lmb, classify = "Nitrogen"))
+	pred_lmer <- get_predictions(
+		lme4::lmer(yield ~ Nitrogen + (1 | Blocks), data = dat),
+		classify = "Nitrogen"
+	)
+
+	# Under an identity relationship matrix the two fits coincide exactly.
+	expect_equal(
+		pred_lmb$predictions$predicted.value,
+		pred_lmer$predictions$predicted.value,
+		tolerance = 1e-4
+	)
+	expect_equal(
+		mean(pred_lmb$sed, na.rm = TRUE),
+		mean(pred_lmer$sed, na.rm = TRUE),
+		tolerance = 1e-4
+	)
+})
+
+# check that predictions from asreml are the same as a aovlist object
+test_that("Test that asreml provides the same results as multi-stratum ANOVA for oats data", {
+	skip_if_not_installed("asreml")
+	load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+	library(asreml)
+	oats.asr <- asreml(
+		yield ~ Variety * Nitrogen,
+		random = ~ Blocks / Wplots,
+		residual = ~units,
+		data = dat,
+		trace = FALSE
+	)
+	pred.asr <- get_predictions.asreml(
+		model.obj = oats.asr,
+		classify = "Nitrogen"
+	)
+	expect_equal(
+		pred.asr$predictions$predicted.value,
+		c(79.389, 98.889, 114.222, 123.389),
+		tolerance = 5e-2
+	)
+	sed_mat <- as.matrix(pred.asr$sed)
+	expect_equal(mean(sed_mat, na.rm = TRUE), 4.436, tolerance = 5e-2)
+	expect_equal(pred.asr$df, 45)
+	# These should be false for asreml objects
+	expect_equal(is.matrix(pred.asr$sed), FALSE)
+	expect_equal(class(pred.asr$sed)[1], "dspMatrix")
+	# This will result of very slight differences in the sed values for
+	#   predictions where the denominator df is not the same for all comparisons
+	expect_equal(is.matrix(pred.asr$df), FALSE)
+})
+
+# check that predictions from asreml are the same as a aovlist object
+test_that("Test that lmer provides the same results as multi-stratum ANOVA for oats data", {
+	skip_if_not_installed("lme4")
+	load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+	oats.lme <- lme4::lmer(
+		yield ~ Variety * Nitrogen + (1 | Blocks / Wplots),
+		data = dat
+	)
+	pred.lme <- get_predictions.lmerMod(
+		model.obj = oats.lme,
+		classify = "Nitrogen"
+	)
+	expect_equal(
+		pred.lme$predictions$predicted.value,
+		c(79.389, 98.889, 114.222, 123.389),
+		tolerance = 5e-2
+	)
+	expect_equal(mean(pred.lme$sed, na.rm = TRUE), 4.436, tolerance = 5e-2)
+	expect_equal(mean(pred.lme$df, na.rm = TRUE), 45)
+	# sed and df should be matrices for lme objects
+	expect_equal(is.matrix(pred.lme$sed), TRUE)
+	expect_equal(is.matrix(pred.lme$df), TRUE)
+})
+
+# check that predictions from asreml are the same as a aovlist object
+test_that("Test that lmerTest provides the same results as multi-stratum ANOVA for oats data", {
+	load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+	skip_if_not_installed("lme4")
+	skip_if_not_installed("lmerTest")
+	oats.lmet <- lmerTest::lmer(
+		yield ~ Variety * Nitrogen + (1 | Blocks / Wplots),
+		data = dat
+	)
+	pred.lmet <- get_predictions.lmerModLmerTest(
+		model.obj = oats.lmet,
+		classify = "Nitrogen"
+	)
+	expect_equal(
+		pred.lmet$predictions$predicted.value,
+		c(79.389, 98.889, 114.222, 123.389),
+		tolerance = 5e-2
+	)
+	expect_equal(mean(pred.lmet$sed, na.rm = TRUE), 4.436, tolerance = 5e-2)
+	expect_equal(mean(pred.lmet$df, na.rm = TRUE), 45)
+	# sed and df should be matrices for lme objects
+	expect_equal(is.matrix(pred.lmet$sed), TRUE)
+	expect_equal(is.matrix(pred.lmet$df), TRUE)
 })

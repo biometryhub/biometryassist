@@ -14,7 +14,7 @@ coverage](https://codecov.io/gh/biometryhub/biometryassist/branch/main/graph/bad
 status](https://github.com/biometryhub/biometryassist/workflows/R-CMD-check/badge.svg)](https://github.com/biometryhub/biometryassist/actions)
 [![minimal R
 version](https://img.shields.io/badge/R%3E%3D-4.1.0-6666ff.svg)](https://cran.r-project.org/)
-[![packageversion](https://img.shields.io/badge/Package%20version-1.4.0-orange.svg?style=flat-square)](https://github.com/biometryhub/biometryassist/commits/main)
+[![packageversion](https://img.shields.io/badge/Package%20version-1.5.0-orange.svg?style=flat-square)](https://github.com/biometryhub/biometryassist/commits/main)
 [![Licence](https://img.shields.io/github/license/mashape/apistatus.svg)](https://choosealicense.com/licenses/mit/)
 [![](https://cranlogs.r-pkg.org/badges/biometryassist)](https://cran.r-project.org/package=biometryassist)
 ![Badge](https://hitscounter.dev/api/hit?url=https%3A%2F%2Fbiometryhub.github.io%2Fbiometryassist&label=Hits&icon=arrow-down-circle&color=%23198754)
@@ -51,7 +51,11 @@ Use the following code to install the latest development version of this
 package.
 
 ``` r
-if(!require("remotes")) install.packages("remotes") 
+if(!require("pak")) install.packages("pak")
+pak::pak("biometryhub/biometryassist@dev")
+
+# Alternatively
+if(!require("remotes")) install.packages("remotes")
 remotes::install_github("biometryhub/biometryassist@dev")
 ```
 
@@ -63,8 +67,72 @@ Load the package and start using it with:
 library(biometryassist)
 ```
 
-If you find this package useful, please cite it! Type
-`citation("biometryassist")` on the R console to find out how.
+The package supports two main workflows:
+
+**Experimental design** — generate and visualise trial layouts:
+
+- `design()` — create CRD, RCBD, Latin Square, split-plot, strip-plot,
+  and factorial designs, with a plot of the layout and a skeletal ANOVA
+  table
+- `add_buffers()` — add buffer plots around treatment plots, blocks, or
+  the trial perimeter
+- `export_design_to_excel()` — write a design to a formatted Excel
+  workbook
+
+**Post-model analysis and visualisation** — works with models from
+`aov`, `lme4`, `nlme`, `asreml`, `sommer`, `glmmTMB`, `afex`, and more:
+
+- `multiple_comparisons()` — Tukey HSD and other multiple comparison
+  tests with letter groupings
+- `pairwise_comparisons()` — selected pairwise differences or general
+  linear contrasts
+- `reference_comparisons()` — compare all levels against a reference
+  (Dunnett-style)
+- `resplot()` — diagnostic residual plots
+- `heat_map()` — spatial heat maps of trial data or residuals
+- `variogram()` — spatial variograms for ASReml-R models
+
+The package optionally enhances the commercial
+[ASReml-R](https://vsni.co.uk/software/asreml-r) package. If you have a
+licence, `install_asreml()` and `update_asreml()` make it easy to
+install and keep up to date.
+
+For details on recent changes, see [NEWS.md](NEWS.md).
+
+### Example
+
+``` r
+library(biometryassist)
+
+# Generate a Randomised Complete Block Design with 11 treatments and 4 reps
+des.out <- design(
+    type = "rcbd",
+    treatments = LETTERS[1:11],
+    reps = 4,
+    nrows = 11,
+    ncols = 4,
+    brows = 11,
+    bcols = 1,
+    seed = 42,
+    quiet = TRUE
+)
+```
+
+<img src="man/figures/README-example-plot-1.png" alt="" width="100%" />
+
+The `$satab` element gives the skeletal ANOVA table for the design:
+
+``` r
+cat(des.out$satab)
+#> Source of Variation                     df
+#>  =============================================
+#>  Block stratum                           3
+#>  ---------------------------------------------
+#>  treatments                              10
+#>  Residual                                30
+#>  =============================================
+#>  Total                                   43
+```
 
 ## Troubleshooting Installation
 
@@ -74,3 +142,44 @@ If you find this package useful, please cite it! Type
   updated (`remove.packages("rlang")`). Then restart R, re-install with
   `install.packages("rlang")` and then try installing `biometryassist`
   again.
+
+## Citation
+
+If you find this package useful in your work, please cite it. Run the
+following in R to get the citation details:
+
+``` r
+citation("biometryassist")
+```
+
+    #> To cite package 'biometryassist' in publications use:
+    #> 
+    #>   Nielsen S, Rogers S, Conway A (2026). _biometryassist: Functions to
+    #>   Assist Design and Analysis of Agronomic Experiments_. R package
+    #>   version 1.5.0, <https://biometryhub.github.io/biometryassist/>.
+    #> 
+    #> A BibTeX entry for LaTeX users is
+    #> 
+    #>   @Manual{,
+    #>     title = {biometryassist: Functions to Assist Design and Analysis of Agronomic Experiments},
+    #>     author = {Sharon Nielsen and Sam Rogers and Annie Conway},
+    #>     year = {2026},
+    #>     note = {R package version 1.5.0},
+    #>     url = {https://biometryhub.github.io/biometryassist/},
+    #>   }
+
+## Code of Conduct
+
+Please note that the biometryassist project is released with a
+[Contributor Code of Conduct](CODE_OF_CONDUCT.md). By contributing to
+this project, you agree to abide by its terms.
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md)
+for guidelines on how to get involved.
+
+## Licence
+
+MIT © University of Adelaide Biometry Hub. See [LICENSE.md](LICENSE.md)
+for details.

@@ -13,196 +13,474 @@ load(test_path("data", "large_data.Rdata"), envir = .GlobalEnv)
 dat_large.aov <- aov(y ~ x, data = large_dat)
 dat_med.aov <- aov(y ~ x, data = med_dat)
 
+load(test_path("data", "oats_aov.Rdata"), envir = .GlobalEnv)
+
 # Start testing
 test_that("Residual plots work for aov", {
-    p1 <- resplot(dat.aov, shapiro = FALSE)
+	p1 <- resplot(dat.aov, shapiro = FALSE)
 
-    vdiffr::expect_doppelganger(title = "Resplot for aov without shapiro", p1, variant = ggplot2_variant())
+	vdiffr::expect_doppelganger(
+		title = "Resplot for aov without shapiro",
+		p1,
+		variant = ggplot2_variant()
+	)
 })
 
 test_that("resplt is deprecated and produces a warning", {
-    expect_warning(p1 <- resplt(dat.aov), "resplt has been deprecated in version 1\\.0\\.1 and will be removed in a future version\\.\\nPlease use resplot\\(\\) instead\\.")
-    vdiffr::expect_doppelganger(title = "Resplot for aov", p1, variant = ggplot2_variant())
+	expect_warning(
+		p1 <- resplt(dat.aov),
+		"resplt has been deprecated in version 1\\.0\\.1 and will be removed in a future version\\.\\nPlease use resplot\\(\\) instead\\."
+	)
+	vdiffr::expect_doppelganger(
+		title = "Resplot for aov",
+		p1,
+		variant = ggplot2_variant()
+	)
 })
 
 test_that("resplot produces an error for invalid data types", {
-    expect_error(resplot(1:10),
-                 "model\\.obj must be a linear \\(mixed\\) model object\\. Currently supported model types are: aov, lm, lme, lmerMod, lmerModLmerTest, asreml, mmer, mmes, art")
+	expect_error(
+		resplot(1:10),
+		"model\\.obj must be a linear \\(mixed\\) model object\\. Currently supported model types are: aov, lm, aovlist, lme, lmerMod, lmerModLmerTest, asreml, mmer, mmes, art, afex_aov, glmmTMB"
+	)
 })
 
 test_that("Old mod.obj argument produces a warning", {
-    expect_warning(p <- resplot(model.obj = dat.aov, mod.obj = dat.aov),
-                   "Argument `mod\\.obj` has been deprecated and will be removed in a future version\\. Please use `model\\.obj` instead\\.")
-    vdiffr::expect_doppelganger(title = "Resplot after warning", p, variant = ggplot2_variant())
+	expect_warning(
+		p <- resplot(model.obj = dat.aov, mod.obj = dat.aov),
+		"Argument `mod\\.obj` has been deprecated and will be removed in a future version\\. Please use `model\\.obj` instead\\."
+	)
+	vdiffr::expect_doppelganger(
+		title = "Resplot after warning",
+		p,
+		variant = ggplot2_variant()
+	)
 })
 
 test_that("resplot sets stdres to NA when denominator is non-finite", {
-    testthat::local_mocked_bindings(
-        extract_model_info = function(model.obj, call = FALSE) {
-            list(
-                resids = c(1, NA_real_, NA_real_),
-                fits = c(1, 2, 3),
-                facet = 1,
-                k = 3,
-                facet_name = NULL,
-                model_call = NULL
-            )
-        },
-        .package = "biometryassist"
-    )
+	testthat::local_mocked_bindings(
+		extract_model_info = function(model.obj, call = FALSE) {
+			list(
+				resids = c(1, NA_real_, NA_real_),
+				fits = c(1, 2, 3),
+				facet = 1,
+				k = 3,
+				facet_name = NULL,
+				model_call = NULL
+			)
+		},
+		.package = "biometryassist"
+	)
 
-    # With only one non-missing residual, sd() is NA and denom is non-finite,
-    # so stdres is set via: rep(NA_real_, nrow(group_residuals))
-    expect_warning(p <- resplot(dat.aov, shapiro = FALSE),
-                   "no non-missing arguments to max; returning -Inf")
-    expect_true(inherits(p, c("patchwork", "ggplot")))
-    expect_silent(print(p))
+	# With only one non-missing residual, sd() is NA and denom is non-finite,
+	# so stdres is set via: rep(NA_real_, nrow(group_residuals))
+	expect_warning(
+		p <- resplot(dat.aov, shapiro = FALSE),
+		"no non-missing arguments to max; returning -Inf"
+	)
+	expect_true(inherits(p, c("patchwork", "ggplot")))
+	expect_silent(print(p))
 })
 
 test_that("Residual plots work for asreml", {
-    skip_on_cran()
+	skip_on_cran()
 
-    p1_single <- resplot(model.asr, shapiro = FALSE, call = TRUE)
-    expect_contains(class(p1_single), "ggplot")
+	p1_single <- resplot(model.asr, shapiro = FALSE, call = TRUE)
+	expect_contains(class(p1_single), "ggplot")
 
-    # expect_warning(
-        # expect_warning(
-            # expect_warning(
-                # expect_warning(
-                    p1_multi <- resplot(complex_model.asr)
-                    # ,
-                               # "Removed 1 row containing non-finite outside the scale range"),
-                # "Removed 1 row containing non-finite outside the scale range"),
-            # "Removed 1 row containing non-finite outside the scale range"),
-        # "Removed 1 row containing missing values or values outside the scale range")
+	# expect_warning(
+	# expect_warning(
+	# expect_warning(
+	# expect_warning(
+	p1_multi <- resplot(complex_model.asr)
+	# ,
+	# "Removed 1 row containing non-finite outside the scale range"),
+	# "Removed 1 row containing non-finite outside the scale range"),
+	# "Removed 1 row containing non-finite outside the scale range"),
+	# "Removed 1 row containing missing values or values outside the scale range")
 
-    vdiffr::expect_doppelganger(title = "Resplot for asreml single", p1_single, variant = ggplot2_variant())
-    vdiffr::expect_doppelganger(title = "Resplot for asreml pt 1", p1_multi[[1]], variant = ggplot2_variant())
-    vdiffr::expect_doppelganger(title = "Resplot for asreml pt 2", p1_multi[[2]], variant = ggplot2_variant())
-    vdiffr::expect_doppelganger(title = "Resplot for asreml pt 3", p1_multi[[3]], variant = ggplot2_variant())
+	vdiffr::expect_doppelganger(
+		title = "Resplot for asreml single",
+		p1_single,
+		variant = ggplot2_variant()
+	)
+	vdiffr::expect_doppelganger(
+		title = "Resplot for asreml pt 1",
+		p1_multi[[1]],
+		variant = ggplot2_variant()
+	)
+	vdiffr::expect_doppelganger(
+		title = "Resplot for asreml pt 2",
+		p1_multi[[2]],
+		variant = ggplot2_variant()
+	)
+	vdiffr::expect_doppelganger(
+		title = "Resplot for asreml pt 3",
+		p1_multi[[3]],
+		variant = ggplot2_variant()
+	)
 })
 
 
+test_that("Residual plots work for multi-stratum aov (aovlist)", {
+	p1 <- resplot(oats.aov)
+
+	# Three error strata remain after dropping the intercept-only stratum:
+	# Blocks, Blocks:Wplots and Within. resplot() returns one plot per stratum.
+	expect_equal(length(p1), 3)
+	expect_equal(names(p1), c("Blocks", "Blocks:Wplots", "Within"))
+	expect_contains(class(p1[[1]]), "ggplot")
+
+	vdiffr::expect_doppelganger(
+		title = "Resplot for aovlist Blocks",
+		p1[["Blocks"]],
+		variant = ggplot2_variant()
+	)
+	vdiffr::expect_doppelganger(
+		title = "Resplot for aovlist Blocks-Wplots",
+		p1[["Blocks:Wplots"]],
+		variant = ggplot2_variant()
+	)
+	vdiffr::expect_doppelganger(
+		title = "Resplot for aovlist Within",
+		p1[["Within"]],
+		variant = ggplot2_variant()
+	)
+})
+
+test_that("resplot includes call text for aovlist when call = TRUE", {
+	p1 <- resplot(oats.aov, call = TRUE)
+	expect_equal(length(p1), 3)
+	expect_contains(class(p1[[1]]), "ggplot")
+})
+
+test_that("extract_model_info.asreml covers single-facet else branch and call = TRUE gsub", {
+	fake_asr <- structure(
+		list(
+			R.param = list(units = list(variance = list(size = 10))),
+			residual = rnorm(10),
+			residuals = rnorm(10),
+			linear.predictors = rnorm(10),
+			call = quote(asreml(y ~ x, data = dat))
+		),
+		class = "asreml"
+	)
+	result <- biometryassist:::extract_model_info(fake_asr, call = TRUE)
+	expect_equal(result$facet, 1)
+	expect_null(result$facet_name)
+	expect_equal(result$k, 10)
+	expect_false(is.null(result$model_call))
+})
+
 test_that("Residual plots work for lme4", {
-    skip_if_not_installed("lme4")
-    p1 <- resplot(dat.lme4, call = TRUE)
-    vdiffr::expect_doppelganger(title = "Resplot for lme4", p1, variant = ggplot2_variant())
+	skip_if_not_installed("lme4")
+	p1 <- resplot(dat.lme4, call = TRUE)
+	vdiffr::expect_doppelganger(
+		title = "Resplot for lme4",
+		p1,
+		variant = ggplot2_variant()
+	)
 })
 
 
 test_that("Residual plots work for nlme", {
-    skip_if_not_installed("nlme")
-    p1 <- resplot(dat.nlme, call = TRUE)
-    vdiffr::expect_doppelganger(title = "Resplot for nlme", p1, variant = ggplot2_variant())
+	skip_if_not_installed("nlme")
+	p1 <- resplot(dat.nlme, call = TRUE)
+	vdiffr::expect_doppelganger(
+		title = "Resplot for nlme",
+		p1,
+		variant = ggplot2_variant()
+	)
 })
 
 test_that("Residual plots work for sommer", {
-    p1 <- resplot(model_mmer, call = TRUE)
-    p2 <- resplot(model_mmes, call = TRUE)
+	p1 <- resplot(model_mmer, call = TRUE)
+	p2 <- resplot(model_mmes, call = TRUE)
 
-    expect_contains(class(p1), "ggplot")
-    expect_contains(class(p2), "ggplot")
+	expect_contains(class(p1), "ggplot")
+	expect_contains(class(p2), "ggplot")
 
-    skip_on_os("linux")
-    vdiffr::expect_doppelganger(title = "Resplot for sommer mmer", p1, variant = ggplot2_variant())
-    vdiffr::expect_doppelganger(title = "Resplot for sommer mmes", p2, variant = ggplot2_variant())
+	skip_on_os("linux")
+	vdiffr::expect_doppelganger(
+		title = "Resplot for sommer mmer",
+		p1,
+		variant = ggplot2_variant()
+	)
+	vdiffr::expect_doppelganger(
+		title = "Resplot for sommer mmes",
+		p2,
+		variant = ggplot2_variant()
+	)
+})
+
+test_that("Residual plots work for lme4breeding (lmebreed) models", {
+	skip_if_not_installed("lme4breeding")
+	# lmebreed() relies on lme4 internals being attached (lme4 is in its Depends).
+	suppressPackageStartupMessages(library(lme4breeding))
+	load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
+
+	# lmebreed() objects carry class `lmerMod` and use the existing extract_model_info
+	# method. Residuals/fitted values are on the response scale, so the diagnostic is
+	# valid. An identity relationship matrix gives an exact lme4::lmer() reference.
+	blocks <- levels(factor(dat$Blocks))
+	A <- diag(length(blocks))
+	dimnames(A) <- list(blocks, blocks)
+
+	m_lmb <- suppressMessages(suppressWarnings(lmebreed(
+		yield ~ Nitrogen + (1 | Blocks),
+		relmat = list(Blocks = A),
+		data = dat,
+		verbose = FALSE,
+		dateWarning = FALSE
+	)))
+
+	p <- resplot(m_lmb, shapiro = FALSE)
+	expect_contains(class(p), "ggplot")
+
+	m_lmer <- lme4::lmer(yield ~ Nitrogen + (1 | Blocks), data = dat)
+	expect_equal(
+		unname(residuals(m_lmb)),
+		unname(residuals(m_lmer)),
+		tolerance = 1e-4
+	)
 })
 
 test_that("Residual plots display call for aov and lm", {
-    p1 <- resplot(dat.aov, call = TRUE)
-    p2 <- resplot(dat.aov, call = TRUE, call.size = 7)
+	p1 <- resplot(dat.aov, call = TRUE)
+	p2 <- resplot(dat.aov, call = TRUE, call.size = 7)
 
-    vdiffr::expect_doppelganger(title = "Resplot with call", p1, variant = ggplot2_variant())
-    vdiffr::expect_doppelganger(title = "Resplot with smaller call", p2, variant = ggplot2_variant())
+	vdiffr::expect_doppelganger(
+		title = "Resplot with call",
+		p1,
+		variant = ggplot2_variant()
+	)
+	vdiffr::expect_doppelganger(
+		title = "Resplot with smaller call",
+		p2,
+		variant = ggplot2_variant()
+	)
+})
+
+test_that("Residual plots work for afex (afex_aov) models", {
+	skip_if_not_installed("afex")
+	data(obk.long, package = "afex")
+
+	afex_b <- afex::aov_ez(
+		id = "id",
+		dv = "value",
+		between = c("treatment", "gender"),
+		data = obk.long,
+		fun_aggregate = mean
+	)
+	afex_w <- afex::aov_ez(
+		id = "id",
+		dv = "value",
+		within = c("phase", "hour"),
+		data = obk.long
+	)
+
+	p1 <- resplot(afex_b)
+	p2 <- resplot(afex_w, call = TRUE)
+
+	expect_contains(class(p1), "ggplot")
+	expect_contains(class(p2), "ggplot")
+
+	vdiffr::expect_doppelganger(
+		title = "Resplot for afex between",
+		p1,
+		variant = ggplot2_variant()
+	)
+	vdiffr::expect_doppelganger(
+		title = "Resplot for afex within",
+		p2,
+		variant = ggplot2_variant()
+	)
+})
+
+test_that("Residual plots work for glmmTMB (Gaussian); non-Gaussian errors to DHARMa", {
+	skip_if_not_installed("glmmTMB")
+
+	# Use the well-behaved oats data (continuous yield) for the Gaussian diagnostic,
+	# consistent with the asreml/lme4/aovlist oats models used elsewhere.
+	load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
+	g_gauss <- glmmTMB::glmmTMB(
+		yield ~ Nitrogen * Variety + (1 | Blocks / Wplots),
+		data = dat,
+		family = gaussian()
+	)
+	p1 <- resplot(g_gauss)
+	p1_call <- resplot(g_gauss, call = TRUE)
+	expect_contains(class(p1), "ggplot")
+	expect_contains(class(p1_call), "ggplot")
+
+	vdiffr::expect_doppelganger(
+		title = "Resplot for glmmTMB gaussian",
+		p1,
+		variant = ggplot2_variant()
+	)
+
+	# Non-Gaussian families are not valid for a normal-QQ diagnostic and must error
+	# with a pointer to DHARMa rather than drawing a misleading plot. Salamanders is
+	# genuine count data, so a Poisson fit is the natural non-Gaussian example.
+	data(Salamanders, package = "glmmTMB")
+	g_pois <- glmmTMB::glmmTMB(
+		count ~ spp + mined + (1 | site),
+		data = Salamanders,
+		family = poisson()
+	)
+	expect_error(
+		resplot(g_pois),
+		"DHARMa::simulateResiduals\\(\\)"
+	)
 })
 
 test_that("Residual plots work for ARTool models", {
-    p1 <- resplot(model.art)
-    p2 <- resplot(model.art, call = TRUE)
+	p1 <- resplot(model.art)
+	p2 <- resplot(model.art, call = TRUE)
 
-    vdiffr::expect_doppelganger(title = "ARTool resplot", p1, variant = ggplot2_variant())
-    vdiffr::expect_doppelganger(title = "ARTool resplot with call", p2, variant = ggplot2_variant())
+	vdiffr::expect_doppelganger(
+		title = "ARTool resplot",
+		p1,
+		variant = ggplot2_variant()
+	)
+	vdiffr::expect_doppelganger(
+		title = "ARTool resplot with call",
+		p2,
+		variant = ggplot2_variant()
+	)
 })
 
 test_that("Shapiro-Wilk test produces a warning with large numbers of observations.", {
-    expect_warning(p1 <- resplot(dat_large.aov, shapiro = TRUE),
-                   "Shapiro-Wilk test p-values are unreliable for more than 5000 observations and has not been performed")
-    expect_warning(p2 <- resplot(dat_med.aov, shapiro = TRUE),
-                   "Shapiro-Wilk test p-values are unreliable for large numbers of observations")
+	expect_warning(
+		p1 <- resplot(dat_large.aov, shapiro = TRUE),
+		"Shapiro-Wilk test p-values are unreliable for more than 5000 observations and has not been performed"
+	)
+	expect_warning(
+		p2 <- resplot(dat_med.aov, shapiro = TRUE),
+		"Shapiro-Wilk test p-values are unreliable for large numbers of observations"
+	)
 
-    vdiffr::expect_doppelganger(title = "Medium data shapiro", p2, variant = ggplot2_variant())
-    skip_on_os("linux")
-    vdiffr::expect_doppelganger(title = "Large data shapiro", p1, variant = ggplot2_variant())
+	vdiffr::expect_doppelganger(
+		title = "Medium data shapiro",
+		p2,
+		variant = ggplot2_variant()
+	)
+	skip_on_os("linux")
+	vdiffr::expect_doppelganger(
+		title = "Large data shapiro",
+		p1,
+		variant = ggplot2_variant()
+	)
 })
 
 test_that("onepage is ignored for single plots", {
-    p1 <- resplot(dat.aov)
-    p2 <- resplot(dat.aov, onepage = TRUE)
-    expect_contains(class(p1), "ggplot")
-    expect_contains(class(p2), "ggplot")
+	p1 <- resplot(dat.aov)
+	p2 <- resplot(dat.aov, onepage = TRUE)
+	expect_contains(class(p1), "ggplot")
+	expect_contains(class(p2), "ggplot")
 
-    expect_true(equivalent_ggplot2(p1, p2))
-    vdiffr::expect_doppelganger(title = "resplot_onepage_false", p1, variant = ggplot2_variant())
-    vdiffr::expect_doppelganger(title = "resplot_onepage_true", p2, variant = ggplot2_variant())
+	expect_true(equivalent_ggplot2(p1, p2))
+	vdiffr::expect_doppelganger(
+		title = "resplot_onepage_false",
+		p1,
+		variant = ggplot2_variant()
+	)
+	vdiffr::expect_doppelganger(
+		title = "resplot_onepage_true",
+		p2,
+		variant = ggplot2_variant()
+	)
 })
 
 test_that("onepage produces plots with up to 6 on a page and column changes work", {
-    # Test basic onepage functionality
-    p1 <- suppressWarnings(resplot(complex_model.asr))
+	# Test basic onepage functionality
+	p1 <- suppressWarnings(resplot(complex_model.asr))
 
-    # Avoid recomputing the same underlying diagnostic plots multiple times.
-    # `onepage` is only a formatting step (see internal `format_output_resplot()`).
-    p2 <- biometryassist:::format_output_resplot(
-        output = p1,
-        facet = length(p1),
-        facet_name = names(p1),
-        onepage = TRUE,
-        onepage_cols = 3,
-        label.size = 10
-    )
-    p3 <- resplot(model_dsum, onepage = TRUE)
+	# Avoid recomputing the same underlying diagnostic plots multiple times.
+	# `onepage` is only a formatting step (see internal `format_output_resplot()`).
+	p2 <- biometryassist:::format_output_resplot(
+		output = p1,
+		facet = length(p1),
+		facet_name = names(p1),
+		onepage = TRUE,
+		onepage_cols = 3,
+		label.size = 10
+	)
+	p3 <- resplot(model_dsum, onepage = TRUE)
 
-    expect_equal(length(p1), 3)
-    expect_equal(length(p2), 1)
-    expect_equal(length(p3), 2)
+	expect_equal(length(p1), 3)
+	expect_equal(length(p2), 1)
+	expect_equal(length(p3), 2)
 
-    expect_equal(names(p1), c("2018", "2019", "2020"))
-    expect_null(names(p2))
-    expect_null(names(p3))
+	expect_equal(names(p1), c("2018", "2019", "2020"))
+	expect_null(names(p2))
+	expect_null(names(p3))
 
-    expect_equal(class(p1), "list")
-    expect_equal(class(p2), "list")
-    expect_equal(class(p3), "list")
+	expect_equal(class(p1), "list")
+	expect_equal(class(p2), "list")
+	expect_equal(class(p3), "list")
 
-    expect_false(equivalent_ggplot2(p1[[1]], p2[[1]]))
+	expect_false(equivalent_ggplot2(p1[[1]], p2[[1]]))
 
-    # Test column changes in same test to avoid redundant model loading
-    p4 <- biometryassist:::format_output_resplot(
-        output = p1,
-        facet = length(p1),
-        facet_name = names(p1),
-        onepage = TRUE,
-        onepage_cols = 3,
-        label.size = 10
-    )
-    p5 <- biometryassist:::format_output_resplot(
-        output = p1,
-        facet = length(p1),
-        facet_name = names(p1),
-        onepage = TRUE,
-        onepage_cols = 2,
-        label.size = 10
-    )
+	# Test column changes in same test to avoid redundant model loading
+	p4 <- biometryassist:::format_output_resplot(
+		output = p1,
+		facet = length(p1),
+		facet_name = names(p1),
+		onepage = TRUE,
+		onepage_cols = 3,
+		label.size = 10
+	)
+	p5 <- biometryassist:::format_output_resplot(
+		output = p1,
+		facet = length(p1),
+		facet_name = names(p1),
+		onepage = TRUE,
+		onepage_cols = 2,
+		label.size = 10
+	)
 
-    expect_equal(length(p4), length(p5))
-    expect_false(equivalent_ggplot2(p4[[1]], p5[[1]]))
+	expect_equal(length(p4), length(p5))
+	expect_false(equivalent_ggplot2(p4[[1]], p5[[1]]))
 
-    vdiffr::expect_doppelganger(title = "Onepage_off_1", p1[[1]], variant = ggplot2_variant())
-    vdiffr::expect_doppelganger(title = "Onepage_off_2", p1[[2]], variant = ggplot2_variant())
-    vdiffr::expect_doppelganger(title = "Onepage_off_3", p1[[3]], variant = ggplot2_variant())
-    vdiffr::expect_doppelganger(title = "Onepage_on", p2, variant = ggplot2_variant())
-    vdiffr::expect_doppelganger(title = "Onepage_on_page_1", p3[[1]], variant = ggplot2_variant())
-    vdiffr::expect_doppelganger(title = "Onepage_on_page_2", p3[[2]], variant = ggplot2_variant())
-    vdiffr::expect_doppelganger(title = "Onepage_cols_3", p4, variant = ggplot2_variant())
-    vdiffr::expect_doppelganger(title = "Onepage_cols_2", p5, variant = ggplot2_variant())
+	vdiffr::expect_doppelganger(
+		title = "Onepage_off_1",
+		p1[[1]],
+		variant = ggplot2_variant()
+	)
+	vdiffr::expect_doppelganger(
+		title = "Onepage_off_2",
+		p1[[2]],
+		variant = ggplot2_variant()
+	)
+	vdiffr::expect_doppelganger(
+		title = "Onepage_off_3",
+		p1[[3]],
+		variant = ggplot2_variant()
+	)
+	vdiffr::expect_doppelganger(
+		title = "Onepage_on",
+		p2,
+		variant = ggplot2_variant()
+	)
+	vdiffr::expect_doppelganger(
+		title = "Onepage_on_page_1",
+		p3[[1]],
+		variant = ggplot2_variant()
+	)
+	vdiffr::expect_doppelganger(
+		title = "Onepage_on_page_2",
+		p3[[2]],
+		variant = ggplot2_variant()
+	)
+	vdiffr::expect_doppelganger(
+		title = "Onepage_cols_3",
+		p4,
+		variant = ggplot2_variant()
+	)
+	vdiffr::expect_doppelganger(
+		title = "Onepage_cols_2",
+		p5,
+		variant = ggplot2_variant()
+	)
 })

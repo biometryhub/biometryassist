@@ -2,15 +2,14 @@
 % Please edit documentation in R/install_asreml.R
 \name{detect_linux}
 \alias{detect_linux}
-\title{Detect Linux distro, base OS, and version}
+\title{Detect Linux distribution and version}
 \usage{
 detect_linux()
 }
 \value{
-A list with base OS name and major version
+list(id, like, major)
 }
 \description{
-Reads /etc/os-release and extracts the minimal information needed
-to identify the base OS (e.g. ubuntu, rhel) and major version.
+Reads /etc/os-release and extracts distro ID and major version.
 }
 \keyword{internal}

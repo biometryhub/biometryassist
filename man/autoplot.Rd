@@ -2,101 +2,28 @@
 % Please edit documentation in R/autoplot.R
 \name{autoplot}
 \alias{autoplot}
-\alias{autoplot.mct}
-\alias{autoplot.design}
 \title{Generate automatic plots for objects generated in biometryassist}
 \usage{
 autoplot(object, ...)
-
-\method{autoplot}{mct}(
-  object,
-  size = 4,
-  label_height = 0.1,
-  rotation = 0,
-  axis_rotation = rotation,
-  label_rotation = rotation,
-  type = "point",
-  ...
-)
-
-\method{autoplot}{design}(
-  object,
-  rotation = 0,
-  size = 4,
-  margin = FALSE,
-  palette = "default",
-  row = NULL,
-  column = NULL,
-  block = NULL,
-  treatments = NULL,
-  legend = TRUE,
-  ...
-)
 }
 \arguments{
-\item{object}{An object to create a plot for. Currently objects from the \code{\link[=multiple_comparisons]{multiple_comparisons()}} or \code{\link[=design]{design()}} functions with class "mct" or "design" respectively are supported.}
+\item{object}{An object created by \code{biometryassist}. Methods are provided for
+the \code{mct}, \code{design}, \code{pairwise_comparisons} and \code{reference_comparisons}
+classes.}
 
-\item{...}{Arguments passed to methods.}
-
-\item{size}{Increase or decrease the text size within the plot for treatment labels. Numeric with default value of 4.}
-
-\item{label_height}{Height of the text labels above the upper error bar on the plot. Default is 0.1 (10\%) of the difference between upper and lower error bars above the top error bar. Values > 1 are interpreted as the actual value above the upper error bar.}
-
-\item{rotation}{Rotate the x axis labels and the treatment group labels within the plot. Allows for easier reading of long axis or treatment labels. Number between 0 and 360 (inclusive) - default 0}
-
-\item{axis_rotation}{Enables rotation of the x axis independently of the group labels within the plot.}
-
-\item{label_rotation}{Enables rotation of the treatment group labels independently of the x axis labels within the plot.}
-
-\item{type}{A string specifying the type of plot to display. The default of 'point' will display a point estimate with error bars. The alternative, 'column' (or 'col'), will display a column graph with error bars.}
-
-\item{margin}{Logical (default \code{FALSE}). A value of \code{FALSE} will expand the plot to the edges of the plotting area i.e. remove white space between plot and axes.}
-
-\item{palette}{A string specifying the colour scheme to use for plotting or a vector of custom colours to use as the palette. Default is equivalent to "Spectral". Colour blind friendly palettes can also be provided via options \code{"colour blind"} (or \code{"colour blind"}, both equivalent to \code{"viridis"}), \code{"magma"}, \code{"inferno"}, \code{"plasma"}, \code{"cividis"}, \code{"rocket"}, \code{"mako"} or \code{"turbo"}. Other palettes from \code{\link[scales:pal_brewer]{scales::brewer_pal()}} are also possible.}
-
-\item{row}{A variable to plot a column from \code{object} as rows.}
-
-\item{column}{A variable to plot a column from \code{object} as columns.}
-
-\item{block}{A variable to plot a column from \code{object} as blocks.}
-
-\item{treatments}{A variable to plot a column from \code{object} as treatments.}
-
-\item{legend}{Logical (default \code{TRUE}). If \code{TRUE}, displays the legend for treatment colours.}
+\item{...}{Arguments passed to the individual \code{autoplot} methods.}
 }
 \value{
 A \code{ggplot2} object.
 }
 \description{
-Generate automatic plots for objects generated in biometryassist
-}
-\examples{
-dat.aov <- aov(Petal.Width ~ Species, data = iris)
-output <- multiple_comparisons(dat.aov, classify = "Species")
-autoplot(output, label_height = 0.5)
-des.out <- design(type = "crd", treatments = c(1, 5, 10, 20),
-                  reps = 5, nrows = 4, ncols = 5, seed = 42, plot = FALSE)
-autoplot(des.out)
-
-# Colour blind friendly colours
-autoplot(des.out, palette = "colour-blind")
-
-# Alternative colour scheme
-autoplot(des.out, palette = "plasma")
-
-# Custom colour palette
-autoplot(des.out, palette = c("#ef746a", "#3fbfc5", "#81ae00", "#c37cff"))
-
-# Visualise different components of a split plot design
-des.out <- design(type = "split", treatments = c("A", "B"), sub_treatments = 1:4,
-reps = 4, nrows = 8, ncols = 4, brows = 4, bcols = 2, seed = 42)
-
-# Show the wholeplot components
-autoplot(des.out, treatments = wholeplots)
-
-# Display block level
-autoplot(des.out, treatments = block)
+\code{\link[ggplot2:autoplot]{ggplot2::autoplot()}} methods are provided for the objects created by
+\code{biometryassist}. See the per-class methods for the available options:
+\code{\link[=autoplot.mct]{autoplot.mct()}} for \code{\link[=multiple_comparisons]{multiple_comparisons()}} output, \code{\link[=autoplot.design]{autoplot.design()}} for
+\code{\link[=design]{design()}} output, and \code{\link[=autoplot.pairwise_comparisons]{autoplot.pairwise_comparisons()}} /
+\code{\link[=autoplot.reference_comparisons]{autoplot.reference_comparisons()}}, which are documented alongside their
+respective functions.
 }
 \seealso{
-\code{\link[=multiple_comparisons]{multiple_comparisons()}} and \code{\link[=design]{design()}}
+\code{\link[=autoplot.mct]{autoplot.mct()}}, \code{\link[=autoplot.design]{autoplot.design()}}, \code{\link[=multiple_comparisons]{multiple_comparisons()}} and \code{\link[=design]{design()}}
 }
