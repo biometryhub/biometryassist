@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">biometryassist</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -25,6 +25,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/installing-asreml-r.html">Installing ASReml-R</a></li>
+    <li><a class="dropdown-item" href="../articles/choosing-multiple-comparisons.html">Choosing and interpreting multiple comparisons</a></li>
     <li><a class="dropdown-item" href="../articles/plot_annotation.html">Adding Orientation Arrows and Annotations to Field Layout Plots</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -68,7 +69,9 @@
 
 
 <dl><dt id="arg-model-obj">model.obj<a class="anchor" aria-label="anchor" href="#arg-model-obj"></a></dt>
-<dd><p>An <code>aov</code>, <code>lm</code>, <code>lme</code> (<code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme()</a></code>), <code>lmerMod</code> (<code><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lme4::lmer()</a></code>), <code>asreml</code> or <code>mmer</code> (sommer) model object.</p></dd>
+<dd><p>A fitted model object of a supported class (<code>aov</code>, <code>lm</code>,
+<code>lme</code> (<code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme()</a></code>), <code>lmerMod</code> (<code><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lme4::lmer()</a></code>), <code>asreml</code>, <code>mmer</code>/<code>mmes</code>
+(sommer) or <code>art</code> (ARTool)). See the <em>Supported model types</em> section.</p></dd>
 
 
 <dt id="arg-shapiro">shapiro<a class="anchor" aria-label="anchor" href="#arg-shapiro"></a></dt>
@@ -106,6 +109,20 @@
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A ggplot2 object containing the diagnostic plots.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="supported-model-types">Supported model types<a class="anchor" aria-label="anchor" href="#supported-model-types"></a></h2>
+
+
+<p><code>resplot()</code> produces residual diagnostics for any model with an
+<code><a href="extract_model_info.html">extract_model_info()</a></code> method. These are currently:</p><table class="table table"><tr><td>Model class</td><td>Fitted by</td><td>Notes</td></tr><tr><td><code>aov</code>, <code>lm</code></td><td><code><a href="https://rdrr.io/r/stats/aov.html" class="external-link">stats::aov()</a></code>, <code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">stats::lm()</a></code></td><td>Fixed-effects linear models.</td></tr><tr><td><code>aovlist</code></td><td><code><a href="https://rdrr.io/r/stats/aov.html" class="external-link">stats::aov()</a></code> with an <code>Error()</code> term</td><td>Multi-stratum aov; each error stratum (except the intercept) is shown as a separate plot.</td></tr><tr><td><code>lme</code></td><td><code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme()</a></code></td><td>Linear mixed model.</td></tr><tr><td><code>lmerMod</code></td><td><code><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lme4::lmer()</a></code>, <code><a href="https://rdrr.io/pkg/lme4breeding/man/lmeb.html" class="external-link">lme4breeding::lmebreed()</a></code></td><td>Linear mixed model. <code>lmebreed()</code> (relationship-based) models also carry class <code>lmerMod</code>; their residuals/fitted values are on the response scale, so the diagnostics are valid.</td></tr><tr><td><code>lmerModLmerTest</code></td><td><code><a href="https://rdrr.io/pkg/lmerTest/man/lmer.html" class="external-link">lmerTest::lmer()</a></code></td><td>As <code>lmerMod</code>.</td></tr><tr><td><code>asreml</code></td><td>ASReml-R <code>asreml()</code></td><td>Linear mixed model (commercial; not on CRAN). Residual strata are shown as separate plots.</td></tr><tr><td><code>mmer</code>, <code>mmes</code></td><td>sommer <code>mmer()</code> / <code>mmes()</code></td><td>Linear mixed model.</td></tr><tr><td><code>art</code></td><td><code><a href="https://rdrr.io/pkg/ARTool/man/art.html" class="external-link">ARTool::art()</a></code></td><td>Aligned rank transform model.</td></tr><tr><td><code>afex_aov</code></td><td>afex <code>aov_car()</code> / <code>aov_ez()</code> / <code>aov_4()</code></td><td>Factorial / repeated-measures ANOVA; a single diagnostic panel from the model residuals.</td></tr><tr><td><code>glmmTMB</code></td><td>glmmTMB <code>glmmTMB()</code></td><td><strong>Gaussian family only.</strong> Non-Gaussian families error with a pointer to <code>DHARMa::simulateResiduals()</code>, since a normal Q-Q plot is not a valid diagnostic for them.</td></tr></table><p>This set differs slightly from the comparison functions (see
+<code><a href="get_predictions.html">get_predictions()</a></code>): <code>resplot()</code> additionally supports ARTool (<code>art</code>) models and
+sommer's legacy <code>mmer</code> interface. Neither is available for the comparison
+functions — ART uses aligned ranks (use <code><a href="https://rdrr.io/pkg/ARTool/man/art.con.html" class="external-link">ARTool::art.con()</a></code>), and current sommer
+provides no <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> for <code>mmer</code> (refit with <code><a href="https://rdrr.io/pkg/sommer/man/mmes.html" class="external-link">sommer::mmes()</a></code>).</p>
+<p>To add a new engine, write an <code>extract_model_info.&lt;class&gt;()</code> method returning
+a list with elements <code>facet</code>, <code>facet_name</code>, <code>resids</code>, <code>fits</code>, <code>k</code> and
+<code>model_call</code>, and add a row to the table above.</p>
     </div>
 
     <div class="section level2">

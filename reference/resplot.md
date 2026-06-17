@@ -23,10 +23,11 @@ resplot(
 
 - model.obj:
 
-  An `aov`, `lm`, `lme`
+  A fitted model object of a supported class (`aov`, `lm`, `lme`
   ([`nlme::lme()`](https://rdrr.io/pkg/nlme/man/lme.html)), `lmerMod`
-  ([`lme4::lmer()`](https://rdrr.io/pkg/lme4/man/lmer.html)), `asreml`
-  or `mmer` (sommer) model object.
+  ([`lme4::lmer()`](https://rdrr.io/pkg/lme4/man/lmer.html)), `asreml`,
+  `mmer`/`mmes` (sommer) or `art` (ARTool)). See the *Supported model
+  types* section.
 
 - shapiro:
 
@@ -68,6 +69,40 @@ resplot(
 ## Value
 
 A ggplot2 object containing the diagnostic plots.
+
+## Supported model types
+
+`resplot()` produces residual diagnostics for any model with an
+[`extract_model_info()`](https://biometryhub.github.io/biometryassist/reference/extract_model_info.md)
+method. These are currently:
+
+|  |  |  |
+|----|----|----|
+| Model class | Fitted by | Notes |
+| `aov`, `lm` | [`stats::aov()`](https://rdrr.io/r/stats/aov.html), [`stats::lm()`](https://rdrr.io/r/stats/lm.html) | Fixed-effects linear models. |
+| `aovlist` | [`stats::aov()`](https://rdrr.io/r/stats/aov.html) with an `Error()` term | Multi-stratum aov; each error stratum (except the intercept) is shown as a separate plot. |
+| `lme` | [`nlme::lme()`](https://rdrr.io/pkg/nlme/man/lme.html) | Linear mixed model. |
+| `lmerMod` | [`lme4::lmer()`](https://rdrr.io/pkg/lme4/man/lmer.html), [`lme4breeding::lmebreed()`](https://rdrr.io/pkg/lme4breeding/man/lmeb.html) | Linear mixed model. `lmebreed()` (relationship-based) models also carry class `lmerMod`; their residuals/fitted values are on the response scale, so the diagnostics are valid. |
+| `lmerModLmerTest` | [`lmerTest::lmer()`](https://rdrr.io/pkg/lmerTest/man/lmer.html) | As `lmerMod`. |
+| `asreml` | ASReml-R `asreml()` | Linear mixed model (commercial; not on CRAN). Residual strata are shown as separate plots. |
+| `mmer`, `mmes` | sommer `mmer()` / `mmes()` | Linear mixed model. |
+| `art` | [`ARTool::art()`](https://rdrr.io/pkg/ARTool/man/art.html) | Aligned rank transform model. |
+| `afex_aov` | afex `aov_car()` / `aov_ez()` / `aov_4()` | Factorial / repeated-measures ANOVA; a single diagnostic panel from the model residuals. |
+| `glmmTMB` | glmmTMB `glmmTMB()` | **Gaussian family only.** Non-Gaussian families error with a pointer to `DHARMa::simulateResiduals()`, since a normal Q-Q plot is not a valid diagnostic for them. |
+
+This set differs slightly from the comparison functions (see
+[`get_predictions()`](https://biometryhub.github.io/biometryassist/reference/get_predictions.md)):
+`resplot()` additionally supports ARTool (`art`) models and sommer's
+legacy `mmer` interface. Neither is available for the comparison
+functions — ART uses aligned ranks (use
+[`ARTool::art.con()`](https://rdrr.io/pkg/ARTool/man/art.con.html)), and
+current sommer provides no
+[`predict()`](https://rdrr.io/r/stats/predict.html) for `mmer` (refit
+with [`sommer::mmes()`](https://rdrr.io/pkg/sommer/man/mmes.html)).
+
+To add a new engine, write an `extract_model_info.<class>()` method
+returning a list with elements `facet`, `facet_name`, `resids`, `fits`,
+`k` and `model_call`, and add a row to the table above.
 
 ## Examples
 

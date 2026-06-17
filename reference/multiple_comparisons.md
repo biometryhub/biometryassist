@@ -17,14 +17,13 @@ multiple_comparisons(
   decimals = 2,
   descending = FALSE,
   groups = TRUE,
+  adjust = "tukey",
+  by = NULL,
   plot = FALSE,
   label_height = 0.1,
   rotation = 0,
   save = FALSE,
   savename = "predicted_values",
-  order,
-  pred.obj,
-  pred,
   ...
 )
 ```
@@ -33,10 +32,10 @@ multiple_comparisons(
 
 - model.obj:
 
-  An ASReml-R or aov model object. Will likely also work with `lme`
-  ([`nlme::lme()`](https://rdrr.io/pkg/nlme/man/lme.html)), `lmerMod`
-  ([`lme4::lmer()`](https://rdrr.io/pkg/lme4/man/lmer.html)) models as
-  well.
+  An `asreml`, `aov`, `lm`, `lme`
+  ([`nlme::lme()`](https://rdrr.io/pkg/nlme/man/lme.html)) or `lmerMod`
+  ([`lme4::lmer()`](https://rdrr.io/pkg/lme4/man/lmer.html)) model
+  object.
 
 - classify:
 
@@ -70,8 +69,8 @@ multiple_comparisons(
 
 - decimals:
 
-  Controls rounding of decimal places in output. Default is 2 decimal
-  places.
+  Deprecated. Rounding is now controlled via the `decimals` argument of
+  [`print.mct()`](https://biometryhub.github.io/biometryassist/reference/print.mct.md).
 
 - descending:
 
@@ -84,13 +83,28 @@ multiple_comparisons(
   will be calculated and displayed. This can get overwhelming for large
   numbers of comparisons, so can be turned off by setting to `FALSE`.
 
+- adjust:
+
+  The method used to adjust p-values for multiple comparisons. Either
+  `"tukey"` (default, Tukey's HSD) or any method accepted by
+  [`stats::p.adjust()`](https://rdrr.io/r/stats/p.adjust.html)
+  (`"bonferroni"`, `"holm"`, `"hochberg"`, `"hommel"`, `"BH"` (or
+  `"fdr"`), `"BY"`, or `"none"`). See Details.
+
+- by:
+
+  A character vector of column name(s) in the predictions over which to
+  split comparisons. Comparisons are run independently within each level
+  (or combination of levels) of the `by` variable(s); no p-values are
+  pooled or adjusted across groups. Default `NULL`. See Details.
+
 - plot:
 
   Automatically produce a plot of the output of the multiple comparison
   test? Default is `FALSE`. This is maintained for backwards
   compatibility, but the preferred method now is to use
   `autoplot(<multiple_comparisons output>)`. See
-  [`autoplot.mct()`](https://biometryhub.github.io/biometryassist/reference/autoplot.md)
+  [`autoplot.mct()`](https://biometryhub.github.io/biometryassist/reference/autoplot.mct.md)
   for more details.
 
 - label_height:
@@ -114,23 +128,10 @@ multiple_comparisons(
   A file name for the predicted values to be saved to. Default is
   `predicted_values`.
 
-- order:
-
-  Deprecated. Use `descending` instead.
-
-- pred.obj:
-
-  Deprecated. Predicted values are calculated within the function from
-  version 1.0.1 onwards.
-
-- pred:
-
-  Deprecated. Use `classify` instead.
-
 - ...:
 
-  Other arguments passed through to
-  [`get_predictions()`](https://biometryhub.github.io/biometryassist/reference/predictions.md).
+  Other arguments passed internally to model-specific prediction
+  methods.
 
 ## Value
 
@@ -143,23 +144,29 @@ An object of class `mct` (a list with class attributes) containing:
 
 - pairwise_pvalues:
 
-  A symmetric matrix of p-values for all pairwise comparisons using
-  Tukey's HSD test
+  A symmetric matrix of adjusted p-values for all pairwise comparisons
+  (Tukey's HSD by default, otherwise adjusted by the `adjust` method).
+  When `by` is supplied, a named list of such matrices, one per subgroup
 
 - hsd:
 
-  The Honest Significant Difference value(s) used in the comparisons.
-  Either a single numeric value (if constant across comparisons) or a
-  matrix (if varies by comparison)
+  The Honest Significant Difference value(s) used in the comparisons
+  when `adjust = "tukey"`. Either a single numeric value (if constant
+  across comparisons) or a matrix (if it varies by comparison). `NULL`
+  when `adjust` is not `"tukey"`
+
+- sig_level:
+
+  The significance level used (default 0.05)
+
+- comparison_method:
+
+  The p-value adjustment method used (the value of `adjust`)
 
 - aliased:
 
   Character vector of aliased treatment levels (only present if some
   predictions are aliased)
-
-- sig_level:
-
-  The significance level used (default 0.05)
 
 ## Details
 
@@ -180,6 +187,38 @@ values for a log transformation, add 0.1 in the `offset` argument.
 The power argument allows the specification of arbitrary powers to be
 back transformed, if they have been used to attempt to improve normality
 of residuals.
+
+### P-value adjustment (`adjust`)
+
+By default (`adjust = "tukey"`) the function uses Tukey's HSD, which is
+exact for the complete set of all pairwise comparisons. Alternatively,
+`adjust` may be any method accepted by
+[`stats::p.adjust()`](https://rdrr.io/r/stats/p.adjust.html). In that
+case a matrix of *raw* two-sided t-test p-values is computed first and
+the chosen adjustment is applied to the lower-triangle vector of those
+raw p-values, avoiding the double-adjustment that would occur if
+Tukey-adjusted p-values were passed to
+[`p.adjust()`](https://rdrr.io/r/stats/p.adjust.html). Bonferroni and
+Holm control the family-wise error rate and are valid under arbitrary
+dependence; BH/BY (FDR) are valid under positive dependence, which
+pairwise comparisons satisfy. The returned `$pairwise_pvalues` always
+holds the adjusted p-values for the chosen method (the Tukey p-values
+when `adjust = "tukey"`). When `adjust` is not `"tukey"`, `$hsd` is
+`NULL`, as an HSD value is only meaningful for Tukey's test.
+
+### Grouped comparisons (`by`)
+
+When `by` is supplied, the predictions are split into subgroups defined
+by the level(s) of the `by` variable(s) and the comparison procedure is
+run independently within each subgroup. Each subgroup is treated as a
+separate family of comparisons: there is no pooling and no cross-group
+p-value adjustment, and letter groupings restart within each subgroup.
+When `by` is used, `$pairwise_pvalues` (and `$hsd` where applicable) are
+returned as named lists with one element per subgroup, and
+[`autoplot()`](https://biometryhub.github.io/biometryassist/reference/autoplot.md)
+facets the plot by the `by` variable(s) by default. `by` must leave at
+least one `classify` factor to compare within each subgroup, so a
+single-factor `classify` cannot be split with `by`.
 
 ### Confidence Intervals & Comparison Intervals
 
@@ -237,10 +276,63 @@ statistical test being performed and avoid the common confusion where
 traditional confidence intervals don't overlap but groups share the same
 significance letter.
 
+## Supported model types
+
+The comparison functions (`multiple_comparisons()`,
+[`pairwise_comparisons()`](https://biometryhub.github.io/biometryassist/reference/pairwise_comparisons.md)
+and
+[`reference_comparisons()`](https://biometryhub.github.io/biometryassist/reference/reference_comparisons.md))
+work with any model for which a
+[`get_predictions()`](https://biometryhub.github.io/biometryassist/reference/get_predictions.md)
+method is defined. These are currently:
+
+|  |  |  |
+|----|----|----|
+| Model class | Fitted by | Notes |
+| `aov`, `lm` | [`stats::aov()`](https://rdrr.io/r/stats/aov.html), [`stats::lm()`](https://rdrr.io/r/stats/lm.html) | Fixed-effects linear models. |
+| `aovlist` | [`stats::aov()`](https://rdrr.io/r/stats/aov.html) with an `Error()` term | Multi-stratum aov; gives comparison-specific (matrix) degrees of freedom. |
+| `lme` | [`nlme::lme()`](https://rdrr.io/pkg/nlme/man/lme.html) | Linear mixed model. |
+| `lmerMod` | [`lme4::lmer()`](https://rdrr.io/pkg/lme4/man/lmer.html), [`lme4breeding::lmebreed()`](https://rdrr.io/pkg/lme4breeding/man/lmeb.html) | Linear mixed model. `lmebreed()` (relationship-based) models also carry class `lmerMod`; comparisons target the fixed-effect means with Kenward-Roger degrees of freedom, and correctly reflect the relationship structure (validated against ASReml-R). |
+| `lmerModLmerTest` | [`lmerTest::lmer()`](https://rdrr.io/pkg/lmerTest/man/lmer.html) | As `lmerMod`, with Satterthwaite degrees of freedom. |
+| `asreml` | ASReml-R `asreml()` | Linear mixed model (commercial; not on CRAN). |
+| `afex_aov` | afex `aov_car()` / `aov_ez()` / `aov_4()` | Factorial / repeated-measures ANOVA; gives comparison-specific (matrix) degrees of freedom. |
+| `glmmTMB` | glmmTMB `glmmTMB()` | Generalized linear mixed model. Predictions are on the link scale with asymptotic (infinite) degrees of freedom; supply `trans` to back-transform. |
+| `mmes` | sommer `mmes()` | Linear mixed model, via sommer's native [`predict()`](https://rdrr.io/r/stats/predict.html). SED from the prediction covariance; asymptotic (infinite) degrees of freedom (sommer provides none). |
+
+ARTool (`art`) models are supported by
+[`resplot()`](https://biometryhub.github.io/biometryassist/reference/resplot.md)
+but **not** by the comparison functions: the aligned rank transform
+makes mean-based comparisons inappropriate. Use
+[`ARTool::art.con()`](https://rdrr.io/pkg/ARTool/man/art.con.html) for
+contrasts on ART models instead.
+
+sommer `mmer` models (the legacy interface) are supported by
+[`resplot()`](https://biometryhub.github.io/biometryassist/reference/resplot.md)
+but **not** by the comparison functions: current sommer provides no
+[`predict()`](https://rdrr.io/r/stats/predict.html) method for `mmer`.
+Refit with [`sommer::mmes()`](https://rdrr.io/pkg/sommer/man/mmes.html)
+to use the comparison functions.
+
+To add a new engine, write a `get_predictions.<class>()` method
+returning a list with elements `predictions`, `sed`, `df`, `ylab` and
+`aliased_names` (plus `emmeans_grid` for engines backed by
+[`emmeans::emmeans()`](https://rvlenth.github.io/emmeans/reference/emmeans.html)),
+and add a row to the table above.
+
 ## References
 
 Jørgensen, E. & Pedersen, A. R. (1997). How to Obtain Those Nasty
 Standard Errors From Transformed Data - and Why They Should Not Be Used.
+
+## See also
+
+[`pairwise_comparisons()`](https://biometryhub.github.io/biometryassist/reference/pairwise_comparisons.md)
+for testing a chosen subset of pairwise differences as a tidy table, or
+[`reference_comparisons()`](https://biometryhub.github.io/biometryassist/reference/reference_comparisons.md)
+for testing treatments against a chosen reference or control. For
+guidance on choosing between the two and on multiplicity adjustments,
+see
+[`vignette("choosing-multiple-comparisons", "biometryassist")`](https://biometryhub.github.io/biometryassist/articles/choosing-multiple-comparisons.md).
 
 ## Examples
 
@@ -307,6 +399,38 @@ pred.out.none <- multiple_comparisons(model, classify = "Species", int.type = "n
 autoplot(pred.out.none)
 
 
+# Use a different p-value adjustment instead of Tukey's HSD
+multiple_comparisons(model, classify = "Species", adjust = "fdr")
+#> Multiple Comparisons of Means: p-value adjustment = fdr 
+#> Significance level: 0.05 
+#> 
+#> Predicted values:
+#>      Species predicted.value std.error  df groups   ci  low   up
+#> 1     setosa            1.46      0.06 147      a 0.12 1.34 1.58
+#> 2 versicolor            4.26      0.06 147      b 0.12 4.14 4.38
+#> 3  virginica            5.55      0.06 147      c 0.12 5.43 5.67
+
+# `by`: run the comparisons independently within each level of another factor.
+# Here a 2 x 3 factorial - compare tension levels within each wool type.
+m_wb <- aov(breaks ~ wool * tension, data = warpbreaks)
+mc_by <- multiple_comparisons(m_wb, classify = "wool:tension", by = "wool")
+mc_by
+#> Multiple Comparisons of Means: Tukey's HSD Test
+#> Significance level: 0.05 
+#> HSD value: varies by comparison (see $hsd)
+#>  
+#> 
+#> Predicted values:
+#>   wool tension predicted.value std.error df groups   ci   low    up
+#> 1    A       M           24.00      3.65 48      a 7.33 16.67 31.33
+#> 2    A       H           24.56      3.65 48      a 7.33 17.22 31.89
+#> 3    A       L           44.56      3.65 48      b 7.33 37.22 51.89
+#> 4    B       H           18.78      3.65 48      a 7.33 11.45 26.11
+#> 5    B       L           28.22      3.65 48      a 7.33 20.89 35.55
+#> 6    B       M           28.78      3.65 48      a 7.33 21.45 36.11
+autoplot(mc_by) # faceted by wool
+
+
 # AOV model example with transformation
 my_iris <- iris
 my_iris$Petal.Length <- exp(my_iris$Petal.Length) # Create exponential response
@@ -361,7 +485,7 @@ if (FALSE) { # \dontrun{
 # ASReml-R Example
 library(asreml)
 
-#Fit ASReml Model
+# Fit ASReml-R model
 model.asr <- asreml(yield ~ Nitrogen + Variety + Nitrogen:Variety,
                     random = ~ Blocks + Blocks:Wplots,
                     residual = ~ units,
@@ -371,9 +495,9 @@ wald(model.asr) # Nitrogen main effect significant
 
 #Determine ranking and groups according to Tukey's Test
 pred.out <- multiple_comparisons(model.obj = model.asr, classify = "Nitrogen",
-                    descending = TRUE, decimals = 5)
+                    descending = TRUE)
 
-pred.out
+print(pred.out, decimals = 5)
 
 # Example using a box-cox transformation
 set.seed(42) # See the seed for reproducibility

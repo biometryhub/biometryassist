@@ -1,189 +1,190 @@
-# Copilot Instructions for biometryassist
+# Copilot Instructions
 
-## Repository Overview
+This file provides guidance to GitHub Copilot when working in this
+repository.
 
-This is an R package called `biometryassist` that provides functions to
-assist in the design and analysis of agronomic and agricultural
-experiments. The package is on CRAN and is actively maintained.
+## Overview
 
-**Key Information:** - Language: R (requires R \>= 4.1.0) - Package
-type: Standard R package with documentation via roxygen2 - License:
-MIT - Main purpose: Design and analysis tools for agronomic experiments
+`biometryassist` is an R package (CRAN-published) providing functions to
+aid in the design and analysis of agronomic/agricultural experiments. It
+is a renamed successor to the unmaintained `BiometryTraining` package.
+Many functions are designed to be approachable for users learning
+experimental design and mixed-model analysis. The package optionally
+enhances the commercial `asreml` package but does not require it.
 
-## Repository Structure
+## Common Commands
 
-- `R/` - Main R source code files
-- `tests/testthat/` - Test files using testthat framework
-- `man/` - Auto-generated documentation (do not edit manually)
-- `vignettes/` - Package vignettes
-- `inst/` - Installed files
-- `.github/workflows/` - CI/CD workflows (R-CMD-check, test coverage)
-
-## Development Setup
-
-### Prerequisites
-
-- R \>= 4.1.0
-- Recommended: RStudio or similar R IDE
-- System dependencies may be required for some packages (e.g., pandoc
-  for vignettes)
-
-### Installing Dependencies
+This is a standard R package. There is no build/lint toolchain beyond
+R’s own. Use `R CMD` and the `devtools`/`testthat` ecosystem.
 
 ``` r
+# Load the package for interactive development (from the package root)
+devtools::load_all()
 
-# Install development dependencies
-install.packages("devtools")
-devtools::install_deps(dependencies = TRUE)
-```
+# Regenerate NAMESPACE and man/*.Rd from roxygen2 comments - REQUIRED after
+# changing any roxygen block, @export, or @importFrom tag
+devtools::document()
 
-## Building and Testing
-
-### Running Tests
-
-Tests use the testthat framework (edition 3) with parallel execution
-enabled:
-
-``` r
-
-# Run all tests
+# Run the full test suite
 devtools::test()
 
-# Or using testthat directly
-testthat::test_dir("tests/testthat")
-```
+# Run a single test file
+testthat::test_file("tests/testthat/test-mct.R")
 
-### Building the Package
+# Run tests matching a name filter within the testthat harness
+devtools::test(filter = "design")   # runs test-design.R
 
-``` r
-
-# Build and check the package (standard R CMD check)
+# Full R CMD check (what CI runs; must pass clean for CRAN)
 devtools::check()
 
-# Load the package for development
-devtools::load_all()
-```
+# Format R code with Air (run from a shell, not the R console).
+# CI enforces formatting - code that isn't Air-formatted fails the build.
+air format .          # format the whole package in place
+air format --check .  # check only (what the format-check CI job runs)
 
-### Code Coverage
+# Build README.md from README.Rmd (never edit README.md directly)
+devtools::build_readme()
 
-``` r
-
-# Generate coverage report
+# Test coverage
 covr::package_coverage()
 ```
 
-### Documentation
+## Architecture
 
-Documentation is generated using roxygen2:
+The package centers on two workflows: **experimental design generation**
+and **post-model analysis/visualisation**. Exported functions are listed
+in `NAMESPACE` (auto-generated - do not hand-edit).
 
-``` r
+### Design workflow (`design()`)
 
-# Update documentation
-devtools::document()
-```
+`R/design.R` -\>
+[`design()`](https://biometryhub.github.io/biometryassist/reference/design.md)
+is the main entry point. It dispatches by `type` (`crd`, `rcbd`, `lsd`,
+`split`, `strip`, or `crossed:<base>`) to the underlying `agricolae`
+design generators, then enriches the result.
 
-## Code Style and Conventions
+- `R/design_helpers.R` - internal helpers (`des_info`,
+  `get_design_info`, etc.) that augment the raw `agricolae` design
+  object with row/column layout.
+- `R/satab.R` - builds the skeletal ANOVA table (`satab` object, an S3
+  class with a `print` method) describing the design’s sources of
+  variation.
+- `R/create_buffers.R` (`add_buffers`) - adds buffer plots
+  (edge/rows/columns/blocks) to a design layout.
+- `R/export_excel.R` (`export_design_to_excel`) - writes a design to a
+  styled workbook.
+- [`design()`](https://biometryhub.github.io/biometryassist/reference/design.md)
+  returns a list of class `design` containing `$design` (data frame),
+  `$plot.des` (ggplot/patchwork), `$satab`, and optionally `$seed`.
+  Plotting is done via the `autoplot.design` S3 method.
 
-### General Guidelines
+### Analysis and visualisation workflow
 
-- Follow standard R package development practices
-- Use roxygen2 for all function documentation
-- Include examples in function documentation where appropriate
-- Write informative commit messages
+These functions operate on already-fitted model objects (`aov`,
+`asreml`, `lme`/`nlme`, `lmerMod`/`lme4`, `sommer`, `ARTool`). The
+package is model-engine-agnostic via S3 dispatch and the
+`Enhances`/`Suggests` packages.
 
-### Documentation Style
+- `R/mct.R` (`multiple_comparisons`) - Tukey HSD / multiple comparison
+  on predicted means, with letter groupings (`multcompView`),
+  back-transformation support, and confidence/comparison intervals.
+  Returns an `mct` S3 object (with `print` and `autoplot` methods).
+- `R/prediction_methods.R` -
+  [`get_predictions()`](https://biometryhub.github.io/biometryassist/reference/get_predictions.md)
+  generics that extract predicted means from each supported model class;
+  this is the abstraction layer that lets `multiple_comparisons` work
+  across engines.
+- `R/resplot.R` + `R/resplot_methods.R` (`resplot`/`resplt`) -
+  diagnostic residual plots, dispatched per model class.
+- `R/heatmap.R` (`heat_map`) - spatial heat maps of trial data/residuals
+  by row/column.
+- `R/variogram.r` (`variogram`) - spatial variograms for ASReml-R models
+  (see the two reference PDFs in the repo root: Stefanova 2009, Gilmour
+  1997).
+- `R/summary_graph.R` (`summary_graph`), `R/logltest.R` (`logl_test`) -
+  additional analysis helpers.
+- `R/autoplot.R` - S3 `autoplot` methods (`autoplot.design`,
+  `autoplot.mct`) built on ggplot2; `patchwork` composes multi-panel
+  output.
 
-- Use roxygen2 markdown format (`@details`, `@param`, `@returns`, etc.)
-- Note: Both `@return` and `@returns` are used in the codebase; either
-  is acceptable
-- Include type information in parameter descriptions
-- Provide clear examples that demonstrate function usage
-- Document all exported functions thoroughly
+### ASReml-R installation helpers
 
-### Testing Conventions
+`R/install_asreml.R` (`install_asreml`, `update_asreml`) downloads and
+installs the correct ASReml-R binary for the user’s OS/R version from a
+shortlink. ASReml is commercial and not on CRAN, so these are
+installation conveniences, not dependencies.
 
-- Test files in `tests/testthat/` should be named `test-<module>.R` (or
-  `.r` - both extensions are used)
-- Use descriptive test names:
-  `test_that("description of what is being tested", { ... })`
-- Use `expect_*()` functions for assertions
-- For plots, use
-  [`vdiffr::expect_doppelganger()`](https://vdiffr.r-lib.org/reference/expect_doppelganger.html)
-  for visual regression testing
-- Use `expect_snapshot_output()` for text output that should remain
-  consistent
+### Templates
 
-### Code Organization
+`inst/templates/` holds analysis script templates (`aov_template.R`,
+`mixed_model_template.R`). `R/use_template.R` exposes
+[`use_template()`](https://biometryhub.github.io/biometryassist/reference/use_template.md),
+[`list_templates()`](https://biometryhub.github.io/biometryassist/reference/list_templates.md),
+`list_templates` to copy them into a user’s working directory.
+`inst/build_manifest.R` generates `inst/manifest.json` (the template
+index).
 
-- One main function per file when possible
-- Helper/utility functions can be in `utils.R`
-- Methods for S3 generics should be in separate files (e.g.,
-  `autoplot.R`, `prediction_methods.R`)
-- Keep related functionality together
+### Cross-cutting
 
-### Dependencies
+- `R/utils.R` - shared internal utilities.
+- `R/biometryassist-package.R` - package doc +
+  [`utils::globalVariables()`](https://rdrr.io/r/utils/globalVariables.html)
+  declaration to suppress R CMD check NOTEs for NSE (non-standard
+  evaluation) column names used in ggplot2/data-frame code.
+- `R/biometryassist-deprecated.R` - deprecated function shims.
 
-- Main dependencies in `Imports:` section of DESCRIPTION
-- Optional dependencies in `Suggests:`
-- Enhanced packages (like asreml) in `Enhances:`
-- Minimize new dependencies when possible
+## Testing Notes
 
-## Special Considerations
+- Uses `testthat` edition 3 with parallel execution enabled
+  (`Config/testthat/edition: 3`, `Config/testthat/parallel: true`).
+- Visual/plot regression tests rely on snapshot SVGs under
+  `tests/testthat/_snaps/`.
+- Snapshots are split by ggplot2 version (`ggplot2-new` vs
+  `ggplot2-old`) - see `ggplot2_variant()` in
+  `tests/testthat/helper-expectations.R`.
+- When a plot’s appearance intentionally changes, update snapshots with
+  [`testthat::snapshot_review()`](https://testthat.r-lib.org/reference/snapshot_accept.html)
+  / `snapshot_accept()`.
+- `tests/testthat/helper-expectations.R` defines custom expectations
+  (for example, `expect_design_output`, `equivalent_ggplot2`) and
+  helpers; reuse these rather than re-asserting structure inline.
+- `tests/testthat/data/*.Rdata` are pre-fitted model objects for each
+  supported engine, so tests do not need the (commercial/heavy)
+  modelling packages installed at test time.
+- `setup-*.R` / `teardown-*.R` files manage per-suite fixtures (for
+  example, `teardown-install_asreml.R`).
 
-### Package-Specific Notes
+## Code Formatting (Air)
 
-- This package enhances the commercial `asreml` package but does not
-  require it
-- Some functions work with multiple modeling packages (asreml, lme4,
-  nlme, sommer, ARTool)
-- The package is designed for teaching, so clarity and ease of use are
-  priorities
-- Many functions return list objects with multiple components (design,
-  plot, seed, etc.)
+The package is formatted with [Air](https://posit-dev.github.io/air/),
+Posit’s R formatter, configured in `air.toml` (line width 80, 4-space
+indent).
 
-### When Making Changes
+- Formatting is enforced in CI via `.github/workflows/format-check.yaml`
+  (`air format --check .` on PRs and pushes to `main`). Run
+  `air format .` before committing or the check will fail.
+- `.vscode/settings.json` enables format-on-save for R files using the
+  `Posit.air-vscode` extension (recommended in
+  `.vscode/extensions.json`), so edits in VS Code are auto-formatted.
+- The scratch/research `.R` scripts in the repo root are excluded from
+  formatting via the `exclude` list in `air.toml`, mirroring their
+  `.Rbuildignore` entries. Add new scratch scripts to both lists.
 
-- Always run `devtools::check()` before submitting changes
-- Update NEWS.md for user-facing changes
-- Ensure all tests pass
-- Update documentation if function signatures or behavior changes
-- Consider backward compatibility - this package is on CRAN
+## Conventions
 
-### CI/CD
-
-The repository uses GitHub Actions for: - R CMD check across multiple
-platforms (macOS, Windows, Ubuntu) - Multiple R versions (devel,
-release, oldrel) - Test coverage reporting via codecov - Package
-documentation via pkgdown
-
-## Common Tasks
-
-### Adding a New Function
-
-1.  Create or modify the appropriate R file in `R/`
-2.  Add roxygen2 documentation above the function
-3.  Export the function with `@export` if it should be user-facing
-4.  Run `devtools::document()` to update NAMESPACE and man files
-5.  Add tests in `tests/testthat/test-<module>.R`
-6.  Run `devtools::check()` to ensure no issues
-
-### Fixing a Bug
-
-1.  Add a test that reproduces the bug (if possible)
-2.  Fix the bug in the appropriate R file
-3.  Verify the test now passes
-4.  Run `devtools::check()` to ensure no regressions
-5.  Update NEWS.md with bug fix description
-
-### Updating Documentation
-
-1.  Edit roxygen2 comments in the R source file
-2.  Run `devtools::document()` to regenerate man files
-3.  Preview with `?function_name` after `devtools::load_all()`
-4.  For vignettes, edit the .Rmd file in `vignettes/`
-
-## Resources
-
-- Package documentation: <https://biometryhub.github.io/biometryassist/>
-- Issue tracker: <https://github.com/biometryhub/biometryassist/issues>
-- CRAN page: <https://cran.r-project.org/package=biometryassist>
+- Roxygen2 with markdown enabled (`Roxygen: list(markdown = TRUE)`).
+  Always run `devtools::document()` after editing roxygen blocks so
+  `NAMESPACE` and `man/` stay in sync.
+- New exported functions need an `@export` tag and `@importFrom`
+  declarations for any external functions used (the package avoids bare
+  [`library()`](https://rdrr.io/r/base/library.html)/[`require()`](https://rdrr.io/r/base/library.html)
+  and full imports).
+- `R/` filenames use mixed casing/extensions (`.R` and `.r`); match the
+  existing file when adding to it.
+- Loose `.R` scripts in the repo root (for example, `*SamVariogram.R`,
+  `sommer_vs_asreml*.R`, `asreml_*.R`) are scratch/research files, not
+  package code. They are listed in `.Rbuildignore` and excluded from the
+  build.
+- The development branch is `dev`; CRAN releases come from `main`. CI
+  (`.github/workflows/`) runs R-CMD-check, test-coverage, pkgdown, and
+  manifest updates.

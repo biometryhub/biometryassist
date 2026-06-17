@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">biometryassist</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -25,6 +25,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/installing-asreml-r.html">Installing ASReml-R</a></li>
+    <li><a class="dropdown-item" href="../articles/choosing-multiple-comparisons.html">Choosing and interpreting multiple comparisons</a></li>
     <li><a class="dropdown-item" href="../articles/plot_annotation.html">Adding Orientation Arrows and Annotations to Field Layout Plots</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -54,7 +55,8 @@
 <span>  <span class="va">pp</span>,</span>
 <span>  <span class="va">sed</span>,</span>
 <span>  <span class="va">classify</span>,</span>
-<span>  exclude_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"predicted.value"</span>, <span class="st">"std.error"</span>, <span class="st">"df"</span>, <span class="st">"Names"</span><span class="op">)</span></span>
+<span>  exclude_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"predicted.value"</span>, <span class="st">"std.error"</span>, <span class="st">"df"</span>, <span class="st">"Names"</span><span class="op">)</span>,</span>
+<span>  vcov <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -77,10 +79,16 @@
 <dt id="arg-exclude-cols">exclude_cols<a class="anchor" aria-label="anchor" href="#arg-exclude-cols"></a></dt>
 <dd><p>Column names to exclude when processing aliased names</p></dd>
 
+
+<dt id="arg-vcov">vcov<a class="anchor" aria-label="anchor" href="#arg-vcov"></a></dt>
+<dd><p>Optional variance-covariance matrix of the predictions, subset to
+the estimable rows/columns alongside <code>sed</code> when supplied (<code>NULL</code> otherwise).</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>List containing processed predictions, sed matrix and aliased names</p>
+    <p>List containing processed predictions, sed matrix, aliased names and
+(when supplied) the subset <code>vcov</code>.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

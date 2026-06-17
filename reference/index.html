@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">biometryassist</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -25,6 +25,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/installing-asreml-r.html">Installing ASReml-R</a></li>
+    <li><a class="dropdown-item" href="../articles/choosing-multiple-comparisons.html">Choosing and interpreting multiple comparisons</a></li>
     <li><a class="dropdown-item" href="../articles/plot_annotation.html">Adding Orientation Arrows and Annotations to Field Layout Plots</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -72,6 +73,13 @@
 
         </dt>
         <dd>Export Experimental Design Layout to Excel</dd>
+
+        <dt>
+
+          <code><a href="autoplot.design.html">autoplot(<i>&lt;design&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Plot the layout of an experimental design</dd>
       </dl></div><div class="section level2">
       <h2 id="analysis">Analysis<a class="anchor" aria-label="anchor" href="#analysis"></a></h2>
 
@@ -95,6 +103,34 @@
 
         </dt>
         <dd>Perform Multiple Comparison Tests on a statistical model</dd>
+
+        <dt>
+
+          <code><a href="autoplot.mct.html">autoplot(<i>&lt;mct&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Plot the predicted means from a multiple comparisons test</dd>
+
+        <dt>
+
+          <code><a href="print.mct.html">print(<i>&lt;mct&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Print output of multiple_comparisons</dd>
+
+        <dt>
+
+          <code><a href="pairwise_comparisons.html">autoplot(<i>&lt;pairwise_comparisons&gt;</i>)</a></code> <code><a href="pairwise_comparisons.html">pairwise_comparisons()</a></code> <code><a href="pairwise_comparisons.html">print(<i>&lt;pairwise_comparisons&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Pairwise comparisons of predicted means</dd>
+
+        <dt>
+
+          <code><a href="reference_comparisons.html">autoplot(<i>&lt;reference_comparisons&gt;</i>)</a></code> <code><a href="reference_comparisons.html">reference_comparisons()</a></code> <code><a href="reference_comparisons.html">print(<i>&lt;reference_comparisons&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Compare predicted means against a single reference (control) level</dd>
 
         <dt>
 
@@ -132,13 +168,6 @@
 
         </dt>
         <dd>Produce a heatmap of variables in a grid layout.</dd>
-
-        <dt>
-
-          <code><a href="print.mct.html">print(<i>&lt;mct&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Print output of multiple_comparisons</dd>
 
         <dt>
 

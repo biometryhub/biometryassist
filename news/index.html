@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">biometryassist</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -25,6 +25,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/installing-asreml-r.html">Installing ASReml-R</a></li>
+    <li><a class="dropdown-item" href="../articles/choosing-multiple-comparisons.html">Choosing and interpreting multiple comparisons</a></li>
     <li><a class="dropdown-item" href="../articles/plot_annotation.html">Adding Orientation Arrows and Annotations to Field Layout Plots</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -44,6 +45,42 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.5.0" id="biometryassist-150">biometryassist 1.5.0<a class="anchor" aria-label="anchor" href="#biometryassist-150"></a></h2>
+<div class="section level3">
+<h3 id="major-changes-1-5-0">Major changes<a class="anchor" aria-label="anchor" href="#major-changes-1-5-0"></a></h3>
+<ul><li>
+<code><a href="../reference/multiple_comparisons.html">multiple_comparisons()</a></code>: the <code>plot</code>, <code>label_height</code>, <code>rotation</code>, <code>save</code>, and <code>savename</code> arguments are now <strong>deprecated</strong> and will be removed in a future version. Use <code>autoplot(&lt;result&gt;)</code> for plotting (pass <code>label_height</code> and <code>rotation</code> there), and <code>write.csv(result$predictions, "file.csv")</code> for saving. The <code>pred</code>, <code>order</code>, and <code>pred.obj</code> arguments were deprecated in 1.1.0 or earlier and have now been <strong>removed</strong>.</li>
+<li>
+<code><a href="../reference/multiple_comparisons.html">multiple_comparisons()</a></code> gains an <code>adjust</code> argument to choose the p-value adjustment method (any <code><a href="https://rdrr.io/r/stats/p.adjust.html" class="external-link">stats::p.adjust()</a></code> method, in addition to the default Tukey’s HSD), and a <code>by</code> argument to run comparisons independently within groups.</li>
+<li>Added support for <code>aovlist</code> and <code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme()</a></code> models in <code><a href="../reference/multiple_comparisons.html">multiple_comparisons()</a></code> (<a href="https://github.com/biometryhub/biometryassist/issues/107" class="external-link">#107</a>).</li>
+<li>Broadened model-engine support across both workflows to bring <code><a href="../reference/resplot.html">resplot()</a></code> and the comparison functions (<code><a href="../reference/multiple_comparisons.html">multiple_comparisons()</a></code>, <code><a href="../reference/pairwise_comparisons.html">pairwise_comparisons()</a></code>, <code><a href="../reference/reference_comparisons.html">reference_comparisons()</a></code>) closer to parity:
+<ul><li>The comparison functions now support <code>afex</code> (<code>afex_aov</code>), <code>glmmTMB</code>, and sommer’s <code>mmes()</code> models. <code>glmmTMB</code> predictions are on the link scale with asymptotic degrees of freedom (supply <code>trans</code> to back-transform); sommer <code>mmes()</code> predictions and SEDs come from sommer’s native <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code>, also with asymptotic degrees of freedom.</li>
+<li>
+<code><a href="../reference/resplot.html">resplot()</a></code> now supports multi-stratum <code>aov</code> models fitted with <code>Error()</code> (<code>aovlist</code>, one panel per error stratum), <code>afex_aov</code> models, and Gaussian-family <code>glmmTMB</code> models.</li>
+<li>
+<code><a href="https://rdrr.io/pkg/lme4breeding/man/lmeb.html" class="external-link">lme4breeding::lmebreed()</a></code> (relationship-based mixed) models are supported by both workflows: they carry class <code>lmerMod</code> and are handled by the existing <code>lmerMod</code> methods. Comparisons correctly reflect the relationship structure (validated against ASReml-R), using Kenward-Roger degrees of freedom.</li>
+<li>Deliberate boundaries (with informative errors): ARTool (<code>art</code>) and sommer’s legacy <code>mmer</code> models are not available for the comparison functions (ART uses aligned ranks — use <code><a href="https://rdrr.io/pkg/ARTool/man/art.con.html" class="external-link">ARTool::art.con()</a></code>; refit <code>mmer</code> with <code><a href="https://rdrr.io/pkg/sommer/man/mmes.html" class="external-link">sommer::mmes()</a></code>), though both remain supported by <code><a href="../reference/resplot.html">resplot()</a></code>. Non-Gaussian <code>glmmTMB</code> models are not valid for <code><a href="../reference/resplot.html">resplot()</a></code>’s normal-Q-Q diagnostic and point to <code>DHARMa::simulateResiduals()</code> instead.</li>
+</ul></li>
+<li>New function <code><a href="../reference/pairwise_comparisons.html">pairwise_comparisons()</a></code> to test selected pairwise differences (or general linear contrasts) between predicted means, returning a tidy table of estimates, predicted means and multiplicity-adjusted p-values, with a forest plot via <code><a href="../reference/autoplot.html">autoplot()</a></code>.</li>
+<li>New function <code><a href="../reference/reference_comparisons.html">reference_comparisons()</a></code> to compare every level against a single reference (control) level, using an exact Dunnett test by default. It returns a means-centric table (each level’s mean, the reference mean and the adjusted difference) and a means plot via <code><a href="../reference/autoplot.html">autoplot()</a></code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="minor-changes-1-5-0">Minor changes<a class="anchor" aria-label="anchor" href="#minor-changes-1-5-0"></a></h3>
+<ul><li>Added the ability to add buffers or double buffers around blocks. (<a href="https://github.com/biometryhub/biometryassist/issues/169" class="external-link">#169</a>)</li>
+<li>
+<code><a href="../reference/autoplot.html">autoplot()</a></code> for <code><a href="../reference/multiple_comparisons.html">multiple_comparisons()</a></code> output gains several new options (thanks to Michael Mumford, <a href="https://github.com/biometryhub/biometryassist/issues/161" class="external-link">#161</a>): <code>type = "line"</code> joins the means with a line; <code>include_errorbar</code> and <code>include_lettering</code> toggle the error bars and significance letters; <code>errorbar_type = "hsd"</code> draws a single Tukey’s HSD reference bar instead of per-mean intervals; and <code>trans_scale = TRUE</code> plots back-transformed means on the model (transformed) scale with an exact back-transformed secondary axis.</li>
+<li>Added a vignette, “Choosing and interpreting multiple comparisons”, introducing <code><a href="../reference/pairwise_comparisons.html">pairwise_comparisons()</a></code> and <code><a href="../reference/reference_comparisons.html">reference_comparisons()</a></code> alongside <code><a href="../reference/multiple_comparisons.html">multiple_comparisons()</a></code> and giving guidance on choosing a multiplicity adjustment.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-1-5-0">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-5-0"></a></h3>
+<ul><li>Fixed an issue where asreml doesn’t install properly on macOS because the link isn’t constructed properly. (<a href="https://github.com/biometryhub/biometryassist/issues/163" class="external-link">#163</a>)</li>
+<li>Fixed Skeletal ANOVA table not showing 2 way interactions for 3 way factorials (<a href="https://github.com/biometryhub/biometryassist/issues/171" class="external-link">#171</a>)</li>
+<li>Colours are now consistent between the output of designs printed with <code><a href="../reference/autoplot.html">autoplot()</a></code> and the <code><a href="../reference/export_design_to_excel.html">export_design_to_excel()</a></code> function. (<a href="https://github.com/biometryhub/biometryassist/issues/170" class="external-link">#170</a>)</li>
+<li>The <code><a href="../reference/export_design_to_excel.html">export_design_to_excel()</a></code> function is now less fragile. It can handle design objects and data frames as input, and alternative names for the row and column columns. (<a href="https://github.com/biometryhub/biometryassist/issues/168" class="external-link">#168</a> and <a href="https://github.com/biometryhub/biometryassist/issues/172" class="external-link">#172</a>)</li>
+<li>Fixed a bug where asreml models didn’t report the correct number of residual points in <code><a href="../reference/resplot.html">resplot()</a></code>. (<a href="https://github.com/biometryhub/biometryassist/issues/167" class="external-link">#167</a>)</li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.4.0" id="biometryassist-140">biometryassist 1.4.0<a class="anchor" aria-label="anchor" href="#biometryassist-140"></a></h2><p class="text-muted">CRAN release: 2026-02-03</p>
 <div class="section level3">
 <h3 id="major-changes-1-4-0">Major changes<a class="anchor" aria-label="anchor" href="#major-changes-1-4-0"></a></h3>
@@ -58,7 +95,7 @@
 <h3 id="minor-changes-1-4-0">Minor changes<a class="anchor" aria-label="anchor" href="#minor-changes-1-4-0"></a></h3>
 <ul><li>Add interval type ‘none’ for <code><a href="../reference/multiple_comparisons.html">multiple_comparisons()</a></code> (<a href="https://github.com/biometryhub/biometryassist/issues/125" class="external-link">#125</a>).</li>
 <li>Added a print method for <code><a href="../reference/satab.html">satab()</a></code> to reliably get the same output (<a href="https://github.com/biometryhub/biometryassist/issues/133" class="external-link">#133</a>).</li>
-<li>Switched from cowplot to patchwork to speed up resplot (and variogram) (<a href="https://github.com/biometryhub/biometryassist/issues/29" class="external-link">#29</a>).</li>
+<li>Switched from <code>cowplot</code> to <code>patchwork</code> to speed up <code><a href="../reference/resplot.html">resplot()</a></code> (and <code><a href="../reference/variogram.html">variogram()</a></code>) (<a href="https://github.com/biometryhub/biometryassist/issues/29" class="external-link">#29</a>).</li>
 <li>Added and refactored numerous tests throughout to achieve 100% test coverage and speed up tests (<a href="https://github.com/biometryhub/biometryassist/issues/104" class="external-link">#104</a>, <a href="https://github.com/biometryhub/biometryassist/issues/143" class="external-link">#143</a>, <a href="https://github.com/biometryhub/biometryassist/issues/144" class="external-link">#144</a>, <a href="https://github.com/biometryhub/biometryassist/issues/135" class="external-link">#135</a>, <a href="https://github.com/biometryhub/biometryassist/issues/148" class="external-link">#148</a>)</li>
 <li>Added asreml downloads for more operating systems and versions (<a href="https://github.com/biometryhub/biometryassist/issues/158" class="external-link">#158</a>).</li>
 </ul></div>
@@ -67,7 +104,7 @@
 <ul><li>Fixed a bug where hex colours don’t work with <code><a href="../reference/export_design_to_excel.html">export_design_to_excel()</a></code> (<a href="https://github.com/biometryhub/biometryassist/issues/124" class="external-link">#124</a>).</li>
 <li>Fixed a bug where buffers weren’t added to the plot if they are added after initial design creation (<a href="https://github.com/biometryhub/biometryassist/issues/123" class="external-link">#123</a>).</li>
 <li>Fixed a bug in <code><a href="../reference/install_asreml.html">install_asreml()</a></code> where it threw an error with more than one new version (<a href="https://github.com/biometryhub/biometryassist/issues/122" class="external-link">#122</a>).</li>
-<li>Fixed a bug where calculate_differences clashed with package “MuMIn” (<a href="https://github.com/biometryhub/biometryassist/issues/131" class="external-link">#131</a>).</li>
+<li>Fixed a bug where <code>calculate_differences()</code> clashed with package “MuMIn” (<a href="https://github.com/biometryhub/biometryassist/issues/131" class="external-link">#131</a>).</li>
 </ul></div>
 </div>
     <div class="section level2">
@@ -147,13 +184,13 @@
 <div class="section level3">
 <h3 id="major-changes-1-2-0">Major changes<a class="anchor" aria-label="anchor" href="#major-changes-1-2-0"></a></h3>
 <ul><li>Introduced the <code><a href="../reference/summary_graph.html">summary_graph()</a></code> (<a href="https://github.com/biometryhub/biometryassist/issues/75" class="external-link">#75</a>) and <code><a href="../reference/heat_map.html">heat_map()</a></code> (<a href="https://github.com/biometryhub/biometryassist/issues/19" class="external-link">#19</a>) functions</li>
-<li>Enabled arbitrary <code>row</code>, <code>column</code>, <code>block</code> and <code>treatment</code> columns to be provided in the <code><a href="../reference/autoplot.html">autoplot.design()</a></code> function, to enable more general plotting of designs. (<a href="https://github.com/biometryhub/biometryassist/issues/28" class="external-link">#28</a>)</li>
+<li>Enabled arbitrary <code>row</code>, <code>column</code>, <code>block</code> and <code>treatment</code> columns to be provided in the <code><a href="../reference/autoplot.design.html">autoplot.design()</a></code> function, to enable more general plotting of designs. (<a href="https://github.com/biometryhub/biometryassist/issues/28" class="external-link">#28</a>)</li>
 </ul></div>
 <div class="section level3">
 <h3 id="minor-changes-1-2-0">Minor changes<a class="anchor" aria-label="anchor" href="#minor-changes-1-2-0"></a></h3>
 <ul><li>Implemented the ability to plot designs with buffer plots. (<a href="https://github.com/biometryhub/biometryassist/issues/68" class="external-link">#68</a>)</li>
 <li>Changed <code><a href="../reference/install_asreml.html">install_asreml()</a></code> to check if there is a later version before downloading.</li>
-<li>Enabled non-standard evaluation input of column names in <code><a href="../reference/autoplot.html">autoplot.design()</a></code>.</li>
+<li>Enabled non-standard evaluation input of column names in <code><a href="../reference/autoplot.design.html">autoplot.design()</a></code>.</li>
 </ul></div>
 </div>
     <div class="section level2">
@@ -190,7 +227,7 @@
 <div class="section level3">
 <h3 id="bug-fixes-1-1-1">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-1-1"></a></h3>
 <ul><li>Updated the required version of rlang (&gt;=1.0.0)</li>
-<li>Fixed a bug that didn’t allow labels and the x axis to be rotated independently for <code><a href="../reference/autoplot.html">autoplot.mct()</a></code> (<a href="https://github.com/biometryhub/biometryassist/issues/35" class="external-link">#35</a>)</li>
+<li>Fixed a bug that didn’t allow labels and the x axis to be rotated independently for <code><a href="../reference/autoplot.mct.html">autoplot.mct()</a></code> (<a href="https://github.com/biometryhub/biometryassist/issues/35" class="external-link">#35</a>)</li>
 <li>Fixed an issue where treatment columns were not determined correctly in <code><a href="../reference/multiple_comparisons.html">multiple_comparisons()</a></code> (<a href="https://github.com/biometryhub/biometryassist/issues/33" class="external-link">#33</a>)</li>
 <li>Fixed a problem with variograms displaying grey values where <code>NA</code>s have been produced. (<a href="https://github.com/biometryhub/biometryassist/issues/24" class="external-link">#24</a> and <a href="https://github.com/biometryhub/biometryassist/issues/25" class="external-link">#25</a>)</li>
 <li>Fixed some warnings that would be introduced with the forthcoming version of ggplot2 (<a href="https://github.com/biometryhub/biometryassist/issues/42" class="external-link">#42</a>)</li>

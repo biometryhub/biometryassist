@@ -79,7 +79,8 @@ des_info(
 - buffer:
 
   The type of buffer. One of edge, row, column, double row, double
-  column, or block (coming soon).
+  column, blocks (internal boundaries between blocks), or double
+  block/entire block/full block.
 
 - plot:
 

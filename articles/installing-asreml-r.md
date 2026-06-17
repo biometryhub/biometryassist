@@ -40,7 +40,7 @@ the Analytics for the Australian Grains Industry (AAGI) project.
 
 To access the University of Adelaide licence key, please complete this
 form:
-<https://forms.office.com/Pages/ResponsePage.aspx?id=QN_Ns1SWJkqGoXecUfacSFFynOaV3gFMjBxPWBG-lVFUMzIyMjc3MjExVVk3WUFFOUkyNEJNMllaTC4u>
+https://forms.office.com/Pages/ResponsePage.aspx?id=QN_Ns1SWJkqGoXecUfacSFFynOaV3gFMjBxPWBG-lVFUMzIyMjc3MjExVVk3WUFFOUkyNEJNMllaTC4u
 
 You will receive an email with a licence key if you hold a valid
 University of Adelaide account.
@@ -91,7 +91,7 @@ you close R, you will need to run the line above again to enable use of
 the function. Note this requires the packages `rlang` and `curl` to be
 installed, which is accomplished in the first line above if necessary.
 
-## Installing ASReml-R
+## Installing The ASReml-R Package
 
 Once the install function is available, simply run it and wait for it to
 finish:

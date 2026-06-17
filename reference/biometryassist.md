@@ -6,7 +6,7 @@ functions, especially for users who are learning these concepts. While
 not required for most functionality, this package enhances the
 \`asreml\` package which provides a computationally efficient algorithm
 for fitting mixed models using Residual Maximum Likelihood. It is a
-commercial package that can be purchased as 'asreml-R' from 'VSNi'
+commercial package that can be purchased as 'ASReml-R' from 'VSNi'
 <https://vsni.co.uk/>, who will supply a zip file for local
 installation/updating (see <https://asreml.kb.vsni.co.uk/>).
 
@@ -24,11 +24,15 @@ Useful links:
 
 Authors:
 
+- Sam Rogers <biometrytraining@adelaide.edu.au>
+
 - Sharon Nielsen <biometrytraining@adelaide.edu.au>
 
 - Annie Conway <biometrytraining@adelaide.edu.au>
 
 Other contributors:
+
+- Michael Mumford \[contributor\]
 
 - University of Adelaide (https://adelaide.edu.au/) \[copyright holder,
   funder\]

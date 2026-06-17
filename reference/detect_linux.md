@@ -1,7 +1,6 @@
-# Detect Linux distro, base OS, and version
+# Detect Linux distribution and version
 
-Reads /etc/os-release and extracts the minimal information needed to
-identify the base OS (e.g. ubuntu, rhel) and major version.
+Reads /etc/os-release and extracts distro ID and major version.
 
 ## Usage
 
@@ -11,4 +10,4 @@ detect_linux()
 
 ## Value
 
-A list with base OS name and major version
+list(id, like, major)

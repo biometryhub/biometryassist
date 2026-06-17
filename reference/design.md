@@ -19,6 +19,7 @@ design(
   fac.names = NULL,
   fac.sep = c("", " "),
   buffer = NULL,
+  plot_numbers = FALSE,
   plot = TRUE,
   rotation = 0,
   size = 4,
@@ -101,10 +102,21 @@ design(
   A string specifying the buffer plots to include for plotting. Default
   is `NULL` (no buffers plotted). Other options are "edge" (outer edge
   of trial area), "rows" (between rows), "columns" (between columns),
-  "double row" (a buffer row each side of a treatment row) or "double
-  column" (a buffer row each side of a treatment column). "blocks" (a
-  buffer around each treatment block) will be implemented in a future
-  release.
+  "double row" (a buffer row each side of a treatment row), "double
+  column" (a buffer row each side of a treatment column), "blocks"
+  (buffers at internal boundaries between adjacent blocks), or "double
+  block"/"entire block"/"full block" (buffers fully surrounding each
+  block).
+
+- plot_numbers:
+
+  One of `FALSE` (default), `TRUE`/`"sequential"`, or `"serpentine"`.
+  Controls whether a `plot_number` column is added to the design.
+  `"sequential"` (or `TRUE`) numbers plots row-by-row from top-left to
+  bottom-right; `"serpentine"` reverses direction on alternate rows,
+  following typical field navigation paths. Plot numbers are assigned
+  after any buffers are added, so buffer plots are numbered alongside
+  treatment plots.
 
 - plot:
 
@@ -339,17 +351,22 @@ des.out <- design(type = "split", treatments = c("A", "B"), sub_treatments = 1:4
 # Strip plot design
 des.out <- design(type = "strip", treatments = c("A", "B", "C"), sub_treatments = 1:4,
                   reps = 4, nrows = 12, ncols = 4, brows = 3, bcols = 4, seed = 42)
-#> Source of Variation                     df
-#> =============================================
-#> Block stratum                           3
-#> ---------------------------------------------
-#> treatments                              2
-#> treatments Residual                     6
-#> sub_treatments                          3
-#> sub_treatments Residual                 9
-#> treatments:sub_treatments               6
-#> Interaction Residual                    18
-#> =============================================
-#> Total                                   47
+#> Source of Variation                          df
+#> ==================================================
+#> Block stratum                                3
+#> --------------------------------------------------
+#> Row strip stratum
+#>          treatments                          2
+#> treatments Residual                          6
+#> ==================================================
+#> Column strip stratum
+#>          sub_treatments                      3
+#> sub_treatments Residual                      9
+#> ==================================================
+#> Observational unit stratum
+#>          treatments:sub_treatments           6
+#> Interaction Residual                        18
+#> ==================================================
+#> Total                                       47
 
 ```

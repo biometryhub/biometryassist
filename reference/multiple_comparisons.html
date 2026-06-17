@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">biometryassist</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -25,6 +25,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/installing-asreml-r.html">Installing ASReml-R</a></li>
+    <li><a class="dropdown-item" href="../articles/choosing-multiple-comparisons.html">Choosing and interpreting multiple comparisons</a></li>
     <li><a class="dropdown-item" href="../articles/plot_annotation.html">Adding Orientation Arrows and Annotations to Field Layout Plots</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -61,14 +62,13 @@
 <span>  decimals <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  descending <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  groups <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  adjust <span class="op">=</span> <span class="st">"tukey"</span>,</span>
+<span>  by <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  plot <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  label_height <span class="op">=</span> <span class="fl">0.1</span>,</span>
 <span>  rotation <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  save <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  savename <span class="op">=</span> <span class="st">"predicted_values"</span>,</span>
-<span>  <span class="va">order</span>,</span>
-<span>  <span class="va">pred.obj</span>,</span>
-<span>  <span class="va">pred</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -78,7 +78,7 @@
 
 
 <dl><dt id="arg-model-obj">model.obj<a class="anchor" aria-label="anchor" href="#arg-model-obj"></a></dt>
-<dd><p>An ASReml-R or aov model object. Will likely also work with <code>lme</code> (<code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme()</a></code>), <code>lmerMod</code> (<code><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lme4::lmer()</a></code>) models as well.</p></dd>
+<dd><p>An <code>asreml</code>, <code>aov</code>, <code>lm</code>, <code>lme</code> (<code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme()</a></code>) or <code>lmerMod</code> (<code><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lme4::lmer()</a></code>) model object.</p></dd>
 
 
 <dt id="arg-classify">classify<a class="anchor" aria-label="anchor" href="#arg-classify"></a></dt>
@@ -106,7 +106,7 @@
 
 
 <dt id="arg-decimals">decimals<a class="anchor" aria-label="anchor" href="#arg-decimals"></a></dt>
-<dd><p>Controls rounding of decimal places in output. Default is 2 decimal places.</p></dd>
+<dd><p>Deprecated. Rounding is now controlled via the <code>decimals</code> argument of <code><a href="print.mct.html">print.mct()</a></code>.</p></dd>
 
 
 <dt id="arg-descending">descending<a class="anchor" aria-label="anchor" href="#arg-descending"></a></dt>
@@ -117,8 +117,16 @@
 <dd><p>Logical (default <code>TRUE</code>). If <code>TRUE</code>, the significance letter groupings will be calculated and displayed. This can get overwhelming for large numbers of comparisons, so can be turned off by setting to <code>FALSE</code>.</p></dd>
 
 
+<dt id="arg-adjust">adjust<a class="anchor" aria-label="anchor" href="#arg-adjust"></a></dt>
+<dd><p>The method used to adjust p-values for multiple comparisons. Either <code>"tukey"</code> (default, Tukey's HSD) or any method accepted by <code><a href="https://rdrr.io/r/stats/p.adjust.html" class="external-link">stats::p.adjust()</a></code> (<code>"bonferroni"</code>, <code>"holm"</code>, <code>"hochberg"</code>, <code>"hommel"</code>, <code>"BH"</code> (or <code>"fdr"</code>), <code>"BY"</code>, or <code>"none"</code>). See Details.</p></dd>
+
+
+<dt id="arg-by">by<a class="anchor" aria-label="anchor" href="#arg-by"></a></dt>
+<dd><p>A character vector of column name(s) in the predictions over which to split comparisons. Comparisons are run independently within each level (or combination of levels) of the <code>by</code> variable(s); no p-values are pooled or adjusted across groups. Default <code>NULL</code>. See Details.</p></dd>
+
+
 <dt id="arg-plot">plot<a class="anchor" aria-label="anchor" href="#arg-plot"></a></dt>
-<dd><p>Automatically produce a plot of the output of the multiple comparison test? Default is <code>FALSE</code>. This is maintained for backwards compatibility, but the preferred method now is to use <code>autoplot(&lt;multiple_comparisons output&gt;)</code>. See <code><a href="autoplot.html">autoplot.mct()</a></code> for more details.</p></dd>
+<dd><p>Automatically produce a plot of the output of the multiple comparison test? Default is <code>FALSE</code>. This is maintained for backwards compatibility, but the preferred method now is to use <code>autoplot(&lt;multiple_comparisons output&gt;)</code>. See <code><a href="autoplot.mct.html">autoplot.mct()</a></code> for more details.</p></dd>
 
 
 <dt id="arg-label-height">label_height<a class="anchor" aria-label="anchor" href="#arg-label-height"></a></dt>
@@ -137,20 +145,8 @@
 <dd><p>A file name for the predicted values to be saved to. Default is <code>predicted_values</code>.</p></dd>
 
 
-<dt id="arg-order">order<a class="anchor" aria-label="anchor" href="#arg-order"></a></dt>
-<dd><p>Deprecated. Use <code>descending</code> instead.</p></dd>
-
-
-<dt id="arg-pred-obj">pred.obj<a class="anchor" aria-label="anchor" href="#arg-pred-obj"></a></dt>
-<dd><p>Deprecated. Predicted values are calculated within the function from version 1.0.1 onwards.</p></dd>
-
-
-<dt id="arg-pred">pred<a class="anchor" aria-label="anchor" href="#arg-pred"></a></dt>
-<dd><p>Deprecated. Use <code>classify</code> instead.</p></dd>
-
-
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Other arguments passed through to <code><a href="predictions.html">get_predictions()</a></code>.</p></dd>
+<dd><p>Other arguments passed internally to model-specific prediction methods.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -162,20 +158,27 @@ confidence interval upper and lower bounds, and significant group
 allocations</p></dd>
 
 <dt>pairwise_pvalues</dt>
-<dd><p>A symmetric matrix of p-values for all pairwise
-comparisons using Tukey's HSD test</p></dd>
+<dd><p>A symmetric matrix of adjusted p-values for all
+pairwise comparisons (Tukey's HSD by default, otherwise adjusted by the
+<code>adjust</code> method). When <code>by</code> is supplied, a named list of such matrices,
+one per subgroup</p></dd>
 
 <dt>hsd</dt>
-<dd><p>The Honest Significant Difference value(s) used in the comparisons.
-Either a single numeric value (if constant across comparisons) or a matrix
-(if varies by comparison)</p></dd>
+<dd><p>The Honest Significant Difference value(s) used in the comparisons
+when <code>adjust = "tukey"</code>. Either a single numeric value (if constant across
+comparisons) or a matrix (if it varies by comparison). <code>NULL</code> when <code>adjust</code>
+is not <code>"tukey"</code></p></dd>
+
+<dt>sig_level</dt>
+<dd><p>The significance level used (default 0.05)</p></dd>
+
+<dt>comparison_method</dt>
+<dd><p>The p-value adjustment method used (the value of
+<code>adjust</code>)</p></dd>
 
 <dt>aliased</dt>
 <dd><p>Character vector of aliased treatment levels (only present if
 some predictions are aliased)</p></dd>
-
-<dt>sig_level</dt>
-<dd><p>The significance level used (default 0.05)</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -203,6 +206,40 @@ transformation, add 0.1 in the <code>offset</code> argument.</p>
 <p>The power argument allows the specification of arbitrary powers to be
 back transformed, if they have been used to attempt to improve normality of
 residuals.</p>
+</div>
+
+<div class="section">
+<h3 id="p-value-adjustment-adjust-">P-value adjustment (<code>adjust</code>)<a class="anchor" aria-label="anchor" href="#p-value-adjustment-adjust-"></a></h3>
+
+
+<p>By default (<code>adjust = "tukey"</code>) the function uses Tukey's HSD, which is exact
+for the complete set of all pairwise comparisons. Alternatively, <code>adjust</code> may
+be any method accepted by <code><a href="https://rdrr.io/r/stats/p.adjust.html" class="external-link">stats::p.adjust()</a></code>. In that case a matrix of <em>raw</em>
+two-sided t-test p-values is computed first and the chosen adjustment is
+applied to the lower-triangle vector of those raw p-values, avoiding the
+double-adjustment that would occur if Tukey-adjusted p-values were passed to
+<code><a href="https://rdrr.io/r/stats/p.adjust.html" class="external-link">p.adjust()</a></code>. Bonferroni and Holm control the family-wise error rate and are
+valid under arbitrary dependence; BH/BY (FDR) are valid under positive
+dependence, which pairwise comparisons satisfy. The returned
+<code>$pairwise_pvalues</code> always holds the adjusted p-values for the chosen method
+(the Tukey p-values when <code>adjust = "tukey"</code>). When <code>adjust</code> is not <code>"tukey"</code>,
+<code>$hsd</code> is <code>NULL</code>, as an HSD value is only meaningful for Tukey's test.</p>
+</div>
+
+<div class="section">
+<h3 id="grouped-comparisons-by-">Grouped comparisons (<code>by</code>)<a class="anchor" aria-label="anchor" href="#grouped-comparisons-by-"></a></h3>
+
+
+<p>When <code>by</code> is supplied, the predictions are split into subgroups defined by
+the level(s) of the <code>by</code> variable(s) and the comparison procedure is run
+independently within each subgroup. Each subgroup is treated as a separate
+family of comparisons: there is no pooling and no cross-group p-value
+adjustment, and letter groupings restart within each subgroup. When <code>by</code> is
+used, <code>$pairwise_pvalues</code> (and <code>$hsd</code> where applicable) are returned as named
+lists with one element per subgroup, and <code><a href="autoplot.html">autoplot()</a></code> facets the plot by the
+<code>by</code> variable(s) by default. <code>by</code> must leave at least one <code>classify</code> factor
+to compare within each subgroup, so a single-factor <code>classify</code> cannot be
+split with <code>by</code>.</p>
 </div>
 
 <div class="section">
@@ -235,9 +272,34 @@ For multiple comparison contexts, Tukey comparison intervals are recommended as 
 
     </div>
     <div class="section level2">
+    <h2 id="supported-model-types">Supported model types<a class="anchor" aria-label="anchor" href="#supported-model-types"></a></h2>
+
+
+<p>The comparison functions (<code>multiple_comparisons()</code>, <code><a href="pairwise_comparisons.html">pairwise_comparisons()</a></code>
+and <code><a href="reference_comparisons.html">reference_comparisons()</a></code>) work with any model for which a
+<code><a href="get_predictions.html">get_predictions()</a></code> method is defined. These are currently:</p><table class="table table"><tr><td>Model class</td><td>Fitted by</td><td>Notes</td></tr><tr><td><code>aov</code>, <code>lm</code></td><td><code><a href="https://rdrr.io/r/stats/aov.html" class="external-link">stats::aov()</a></code>, <code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">stats::lm()</a></code></td><td>Fixed-effects linear models.</td></tr><tr><td><code>aovlist</code></td><td><code><a href="https://rdrr.io/r/stats/aov.html" class="external-link">stats::aov()</a></code> with an <code>Error()</code> term</td><td>Multi-stratum aov; gives comparison-specific (matrix) degrees of freedom.</td></tr><tr><td><code>lme</code></td><td><code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme()</a></code></td><td>Linear mixed model.</td></tr><tr><td><code>lmerMod</code></td><td><code><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lme4::lmer()</a></code>, <code><a href="https://rdrr.io/pkg/lme4breeding/man/lmeb.html" class="external-link">lme4breeding::lmebreed()</a></code></td><td>Linear mixed model. <code>lmebreed()</code> (relationship-based) models also carry class <code>lmerMod</code>; comparisons target the fixed-effect means with Kenward-Roger degrees of freedom, and correctly reflect the relationship structure (validated against ASReml-R).</td></tr><tr><td><code>lmerModLmerTest</code></td><td><code><a href="https://rdrr.io/pkg/lmerTest/man/lmer.html" class="external-link">lmerTest::lmer()</a></code></td><td>As <code>lmerMod</code>, with Satterthwaite degrees of freedom.</td></tr><tr><td><code>asreml</code></td><td>ASReml-R <code>asreml()</code></td><td>Linear mixed model (commercial; not on CRAN).</td></tr><tr><td><code>afex_aov</code></td><td>afex <code>aov_car()</code> / <code>aov_ez()</code> / <code>aov_4()</code></td><td>Factorial / repeated-measures ANOVA; gives comparison-specific (matrix) degrees of freedom.</td></tr><tr><td><code>glmmTMB</code></td><td>glmmTMB <code>glmmTMB()</code></td><td>Generalized linear mixed model. Predictions are on the link scale with asymptotic (infinite) degrees of freedom; supply <code>trans</code> to back-transform.</td></tr><tr><td><code>mmes</code></td><td>sommer <code>mmes()</code></td><td>Linear mixed model, via sommer's native <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code>. SED from the prediction covariance; asymptotic (infinite) degrees of freedom (sommer provides none).</td></tr></table><p>ARTool (<code>art</code>) models are supported by <code><a href="resplot.html">resplot()</a></code> but <strong>not</strong> by the comparison
+functions: the aligned rank transform makes mean-based comparisons inappropriate.
+Use <code><a href="https://rdrr.io/pkg/ARTool/man/art.con.html" class="external-link">ARTool::art.con()</a></code> for contrasts on ART models instead.</p>
+<p>sommer <code>mmer</code> models (the legacy interface) are supported by <code><a href="resplot.html">resplot()</a></code> but
+<strong>not</strong> by the comparison functions: current sommer provides no <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> method
+for <code>mmer</code>. Refit with <code><a href="https://rdrr.io/pkg/sommer/man/mmes.html" class="external-link">sommer::mmes()</a></code> to use the comparison functions.</p>
+<p>To add a new engine, write a <code>get_predictions.&lt;class&gt;()</code> method returning a
+list with elements <code>predictions</code>, <code>sed</code>, <code>df</code>, <code>ylab</code> and <code>aliased_names</code>
+(plus <code>emmeans_grid</code> for engines backed by <code><a href="https://rvlenth.github.io/emmeans/reference/emmeans.html" class="external-link">emmeans::emmeans()</a></code>), and add a
+row to the table above.</p>
+    </div>
+    <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
     <p>Jørgensen, E. &amp; Pedersen, A. R. (1997). How to Obtain Those Nasty
 Standard Errors From Transformed Data - and Why They Should Not Be Used.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
+    <div class="dont-index"><p><code><a href="pairwise_comparisons.html">pairwise_comparisons()</a></code> for testing a chosen subset of pairwise
+differences as a tidy table, or <code><a href="reference_comparisons.html">reference_comparisons()</a></code> for testing
+treatments against a chosen reference or control. For guidance on choosing
+between the two and on multiplicity adjustments, see
+<code><a href="../articles/choosing-multiple-comparisons.html">vignette("choosing-multiple-comparisons", "biometryassist")</a></code>.</p></div>
     </div>
 
     <div class="section level2">
@@ -304,19 +366,51 @@ Standard Errors From Transformed Data - and Why They Should Not Be Used.</p>
 <span class="r-in"><span><span class="fu"><a href="autoplot.html">autoplot</a></span><span class="op">(</span><span class="va">pred.out.none</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="multiple_comparisons-2.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Use a different p-value adjustment instead of Tukey's HSD</span></span></span>
+<span class="r-in"><span><span class="fu">multiple_comparisons</span><span class="op">(</span><span class="va">model</span>, classify <span class="op">=</span> <span class="st">"Species"</span>, adjust <span class="op">=</span> <span class="st">"fdr"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Multiple Comparisons of Means: p-value adjustment = fdr </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Significance level: 0.05 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Predicted values:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      Species predicted.value std.error  df groups   ci  low   up</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1     setosa            1.46      0.06 147      a 0.12 1.34 1.58</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 versicolor            4.26      0.06 147      b 0.12 4.14 4.38</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3  virginica            5.55      0.06 147      c 0.12 5.43 5.67</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># `by`: run the comparisons independently within each level of another factor.</span></span></span>
+<span class="r-in"><span><span class="co"># Here a 2 x 3 factorial - compare tension levels within each wool type.</span></span></span>
+<span class="r-in"><span><span class="va">m_wb</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/aov.html" class="external-link">aov</a></span><span class="op">(</span><span class="va">breaks</span> <span class="op">~</span> <span class="va">wool</span> <span class="op">*</span> <span class="va">tension</span>, data <span class="op">=</span> <span class="va">warpbreaks</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">mc_by</span> <span class="op">&lt;-</span> <span class="fu">multiple_comparisons</span><span class="op">(</span><span class="va">m_wb</span>, classify <span class="op">=</span> <span class="st">"wool:tension"</span>, by <span class="op">=</span> <span class="st">"wool"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">mc_by</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Multiple Comparisons of Means: Tukey's HSD Test</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Significance level: 0.05 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> HSD value: varies by comparison (see $hsd)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Predicted values:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   wool tension predicted.value std.error df groups   ci   low    up</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1    A       M           24.00      3.65 48      a 7.33 16.67 31.33</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2    A       H           24.56      3.65 48      a 7.33 17.22 31.89</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3    A       L           44.56      3.65 48      b 7.33 37.22 51.89</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4    B       H           18.78      3.65 48      a 7.33 11.45 26.11</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5    B       L           28.22      3.65 48      a 7.33 20.89 35.55</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6    B       M           28.78      3.65 48      a 7.33 21.45 36.11</span>
+<span class="r-in"><span><span class="fu"><a href="autoplot.html">autoplot</a></span><span class="op">(</span><span class="va">mc_by</span><span class="op">)</span> <span class="co"># faceted by wool</span></span></span>
+<span class="r-plt img"><img src="multiple_comparisons-3.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># AOV model example with transformation</span></span></span>
 <span class="r-in"><span><span class="va">my_iris</span> <span class="op">&lt;-</span> <span class="va">iris</span></span></span>
 <span class="r-in"><span><span class="va">my_iris</span><span class="op">$</span><span class="va">Petal.Length</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">my_iris</span><span class="op">$</span><span class="va">Petal.Length</span><span class="op">)</span> <span class="co"># Create exponential response</span></span></span>
 <span class="r-in"><span><span class="va">exp_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/aov.html" class="external-link">aov</a></span><span class="op">(</span><span class="va">Petal.Length</span> <span class="op">~</span> <span class="va">Species</span>, data <span class="op">=</span> <span class="va">my_iris</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="resplot.html">resplot</a></span><span class="op">(</span><span class="va">exp_model</span><span class="op">)</span> <span class="co"># Residual plot shows problems</span></span></span>
-<span class="r-plt img"><img src="multiple_comparisons-3.png" alt="" width="700" height="433"></span>
+<span class="r-plt img"><img src="multiple_comparisons-4.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Fit a new model using a log transformation of the response</span></span></span>
 <span class="r-in"><span><span class="va">log_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/aov.html" class="external-link">aov</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">Petal.Length</span><span class="op">)</span> <span class="op">~</span> <span class="va">Species</span>, data <span class="op">=</span> <span class="va">my_iris</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="resplot.html">resplot</a></span><span class="op">(</span><span class="va">log_model</span><span class="op">)</span> <span class="co"># Looks much better</span></span></span>
-<span class="r-plt img"><img src="multiple_comparisons-4.png" alt="" width="700" height="433"></span>
+<span class="r-plt img"><img src="multiple_comparisons-5.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Display the ANOVA table for the model</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">log_model</span><span class="op">)</span></span></span>
@@ -352,13 +446,13 @@ Standard Errors From Transformed Data - and Why They Should Not Be Used.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Show the predicted values plot</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="autoplot.html">autoplot</a></span><span class="op">(</span><span class="va">pred.out</span>, label_height <span class="op">=</span> <span class="fl">15</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="multiple_comparisons-5.png" alt="" width="700" height="433"></span>
+<span class="r-plt img"><img src="multiple_comparisons-6.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="co"># ASReml-R Example</span></span></span>
 <span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">asreml</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">#Fit ASReml Model</span></span></span>
+<span class="r-in"><span><span class="co"># Fit ASReml-R model</span></span></span>
 <span class="r-in"><span><span class="va">model.asr</span> <span class="op">&lt;-</span> <span class="fu">asreml</span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">Nitrogen</span> <span class="op">+</span> <span class="va">Variety</span> <span class="op">+</span> <span class="va">Nitrogen</span><span class="op">:</span><span class="va">Variety</span>,</span></span>
 <span class="r-in"><span>                    random <span class="op">=</span> <span class="op">~</span> <span class="va">Blocks</span> <span class="op">+</span> <span class="va">Blocks</span><span class="op">:</span><span class="va">Wplots</span>,</span></span>
 <span class="r-in"><span>                    residual <span class="op">=</span> <span class="op">~</span> <span class="va">units</span>,</span></span>
@@ -368,9 +462,9 @@ Standard Errors From Transformed Data - and Why They Should Not Be Used.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Determine ranking and groups according to Tukey's Test</span></span></span>
 <span class="r-in"><span><span class="va">pred.out</span> <span class="op">&lt;-</span> <span class="fu">multiple_comparisons</span><span class="op">(</span>model.obj <span class="op">=</span> <span class="va">model.asr</span>, classify <span class="op">=</span> <span class="st">"Nitrogen"</span>,</span></span>
-<span class="r-in"><span>                    descending <span class="op">=</span> <span class="cn">TRUE</span>, decimals <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span></span>
+<span class="r-in"><span>                    descending <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">pred.out</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">pred.out</span>, decimals <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Example using a box-cox transformation</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span> <span class="co"># See the seed for reproducibility</span></span></span>

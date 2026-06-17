@@ -1,5 +1,124 @@
 # Changelog
 
+## biometryassist 1.5.0
+
+### Major changes
+
+- [`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md):
+  the `plot`, `label_height`, `rotation`, `save`, and `savename`
+  arguments are now **deprecated** and will be removed in a future
+  version. Use `autoplot(<result>)` for plotting (pass `label_height`
+  and `rotation` there), and `write.csv(result$predictions, "file.csv")`
+  for saving. The `pred`, `order`, and `pred.obj` arguments were
+  deprecated in 1.1.0 or earlier and have now been **removed**.
+- [`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md)
+  gains an `adjust` argument to choose the p-value adjustment method
+  (any [`stats::p.adjust()`](https://rdrr.io/r/stats/p.adjust.html)
+  method, in addition to the default Tukey’s HSD), and a `by` argument
+  to run comparisons independently within groups.
+- Added support for `aovlist` and
+  [`nlme::lme()`](https://rdrr.io/pkg/nlme/man/lme.html) models in
+  [`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md)
+  ([\#107](https://github.com/biometryhub/biometryassist/issues/107)).
+- Broadened model-engine support across both workflows to bring
+  [`resplot()`](https://biometryhub.github.io/biometryassist/reference/resplot.md)
+  and the comparison functions
+  ([`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md),
+  [`pairwise_comparisons()`](https://biometryhub.github.io/biometryassist/reference/pairwise_comparisons.md),
+  [`reference_comparisons()`](https://biometryhub.github.io/biometryassist/reference/reference_comparisons.md))
+  closer to parity:
+  - The comparison functions now support `afex` (`afex_aov`), `glmmTMB`,
+    and sommer’s `mmes()` models. `glmmTMB` predictions are on the link
+    scale with asymptotic degrees of freedom (supply `trans` to
+    back-transform); sommer `mmes()` predictions and SEDs come from
+    sommer’s native [`predict()`](https://rdrr.io/r/stats/predict.html),
+    also with asymptotic degrees of freedom.
+  - [`resplot()`](https://biometryhub.github.io/biometryassist/reference/resplot.md)
+    now supports multi-stratum `aov` models fitted with `Error()`
+    (`aovlist`, one panel per error stratum), `afex_aov` models, and
+    Gaussian-family `glmmTMB` models.
+  - [`lme4breeding::lmebreed()`](https://rdrr.io/pkg/lme4breeding/man/lmeb.html)
+    (relationship-based mixed) models are supported by both workflows:
+    they carry class `lmerMod` and are handled by the existing `lmerMod`
+    methods. Comparisons correctly reflect the relationship structure
+    (validated against ASReml-R), using Kenward-Roger degrees of
+    freedom.
+  - Deliberate boundaries (with informative errors): ARTool (`art`) and
+    sommer’s legacy `mmer` models are not available for the comparison
+    functions (ART uses aligned ranks — use
+    [`ARTool::art.con()`](https://rdrr.io/pkg/ARTool/man/art.con.html);
+    refit `mmer` with
+    [`sommer::mmes()`](https://rdrr.io/pkg/sommer/man/mmes.html)),
+    though both remain supported by
+    [`resplot()`](https://biometryhub.github.io/biometryassist/reference/resplot.md).
+    Non-Gaussian `glmmTMB` models are not valid for
+    [`resplot()`](https://biometryhub.github.io/biometryassist/reference/resplot.md)’s
+    normal-Q-Q diagnostic and point to `DHARMa::simulateResiduals()`
+    instead.
+- New function
+  [`pairwise_comparisons()`](https://biometryhub.github.io/biometryassist/reference/pairwise_comparisons.md)
+  to test selected pairwise differences (or general linear contrasts)
+  between predicted means, returning a tidy table of estimates,
+  predicted means and multiplicity-adjusted p-values, with a forest plot
+  via
+  [`autoplot()`](https://biometryhub.github.io/biometryassist/reference/autoplot.md).
+- New function
+  [`reference_comparisons()`](https://biometryhub.github.io/biometryassist/reference/reference_comparisons.md)
+  to compare every level against a single reference (control) level,
+  using an exact Dunnett test by default. It returns a means-centric
+  table (each level’s mean, the reference mean and the adjusted
+  difference) and a means plot via
+  [`autoplot()`](https://biometryhub.github.io/biometryassist/reference/autoplot.md).
+
+### Minor changes
+
+- Added the ability to add buffers or double buffers around blocks.
+  ([\#169](https://github.com/biometryhub/biometryassist/issues/169))
+- [`autoplot()`](https://biometryhub.github.io/biometryassist/reference/autoplot.md)
+  for
+  [`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md)
+  output gains several new options (thanks to Michael Mumford,
+  [\#161](https://github.com/biometryhub/biometryassist/issues/161)):
+  `type = "line"` joins the means with a line; `include_errorbar` and
+  `include_lettering` toggle the error bars and significance letters;
+  `errorbar_type = "hsd"` draws a single Tukey’s HSD reference bar
+  instead of per-mean intervals; and `trans_scale = TRUE` plots
+  back-transformed means on the model (transformed) scale with an exact
+  back-transformed secondary axis.
+- Added a vignette, “Choosing and interpreting multiple comparisons”,
+  introducing
+  [`pairwise_comparisons()`](https://biometryhub.github.io/biometryassist/reference/pairwise_comparisons.md)
+  and
+  [`reference_comparisons()`](https://biometryhub.github.io/biometryassist/reference/reference_comparisons.md)
+  alongside
+  [`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md)
+  and giving guidance on choosing a multiplicity adjustment.
+
+### Bug Fixes
+
+- Fixed an issue where asreml doesn’t install properly on macOS because
+  the link isn’t constructed properly.
+  ([\#163](https://github.com/biometryhub/biometryassist/issues/163))
+- Fixed Skeletal ANOVA table not showing 2 way interactions for 3 way
+  factorials
+  ([\#171](https://github.com/biometryhub/biometryassist/issues/171))
+- Colours are now consistent between the output of designs printed with
+  [`autoplot()`](https://biometryhub.github.io/biometryassist/reference/autoplot.md)
+  and the
+  [`export_design_to_excel()`](https://biometryhub.github.io/biometryassist/reference/export_design_to_excel.md)
+  function.
+  ([\#170](https://github.com/biometryhub/biometryassist/issues/170))
+- The
+  [`export_design_to_excel()`](https://biometryhub.github.io/biometryassist/reference/export_design_to_excel.md)
+  function is now less fragile. It can handle design objects and data
+  frames as input, and alternative names for the row and column columns.
+  ([\#168](https://github.com/biometryhub/biometryassist/issues/168) and
+  [\#172](https://github.com/biometryhub/biometryassist/issues/172))
+- Fixed a bug where asreml models didn’t report the correct number of
+  residual points in
+  [`resplot()`](https://biometryhub.github.io/biometryassist/reference/resplot.md).
+  ([\#167](https://github.com/biometryhub/biometryassist/issues/167))
+
 ## biometryassist 1.4.0
 
 CRAN release: 2026-02-03
@@ -41,7 +160,10 @@ CRAN release: 2026-02-03
   [`satab()`](https://biometryhub.github.io/biometryassist/reference/satab.md)
   to reliably get the same output
   ([\#133](https://github.com/biometryhub/biometryassist/issues/133)).
-- Switched from cowplot to patchwork to speed up resplot (and variogram)
+- Switched from `cowplot` to `patchwork` to speed up
+  [`resplot()`](https://biometryhub.github.io/biometryassist/reference/resplot.md)
+  (and
+  [`variogram()`](https://biometryhub.github.io/biometryassist/reference/variogram.md))
   ([\#29](https://github.com/biometryhub/biometryassist/issues/29)).
 - Added and refactored numerous tests throughout to achieve 100% test
   coverage and speed up tests
@@ -65,7 +187,8 @@ CRAN release: 2026-02-03
   [`install_asreml()`](https://biometryhub.github.io/biometryassist/reference/install_asreml.md)
   where it threw an error with more than one new version
   ([\#122](https://github.com/biometryhub/biometryassist/issues/122)).
-- Fixed a bug where calculate_differences clashed with package “MuMIn”
+- Fixed a bug where `calculate_differences()` clashed with package
+  “MuMIn”
   ([\#131](https://github.com/biometryhub/biometryassist/issues/131)).
 
 ## biometryassist 1.3.3
@@ -213,7 +336,7 @@ CRAN release: 2024-05-31
   functions
 - Enabled arbitrary `row`, `column`, `block` and `treatment` columns to
   be provided in the
-  [`autoplot.design()`](https://biometryhub.github.io/biometryassist/reference/autoplot.md)
+  [`autoplot.design()`](https://biometryhub.github.io/biometryassist/reference/autoplot.design.md)
   function, to enable more general plotting of designs.
   ([\#28](https://github.com/biometryhub/biometryassist/issues/28))
 
@@ -225,7 +348,7 @@ CRAN release: 2024-05-31
   [`install_asreml()`](https://biometryhub.github.io/biometryassist/reference/install_asreml.md)
   to check if there is a later version before downloading.
 - Enabled non-standard evaluation input of column names in
-  [`autoplot.design()`](https://biometryhub.github.io/biometryassist/reference/autoplot.md).
+  [`autoplot.design()`](https://biometryhub.github.io/biometryassist/reference/autoplot.design.md).
 
 ## biometryassist 1.1.3
 
@@ -293,7 +416,7 @@ CRAN release: 2022-10-27
 - Updated the required version of rlang (\>=1.0.0)
 - Fixed a bug that didn’t allow labels and the x axis to be rotated
   independently for
-  [`autoplot.mct()`](https://biometryhub.github.io/biometryassist/reference/autoplot.md)
+  [`autoplot.mct()`](https://biometryhub.github.io/biometryassist/reference/autoplot.mct.md)
   ([\#35](https://github.com/biometryhub/biometryassist/issues/35))
 - Fixed an issue where treatment columns were not determined correctly
   in

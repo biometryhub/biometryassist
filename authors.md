@@ -8,6 +8,8 @@
 
 - **Annie Conway**. Author.
 
+- **Michael Mumford**. Contributor.
+
 - **University of Adelaide**. Copyright holder, funder.  
   https://adelaide.edu.au/
 
@@ -22,12 +24,12 @@ Source:
 
 Nielsen S, Rogers S, Conway A (2026). *biometryassist: Functions to
 Assist Design and Analysis of Agronomic Experiments*. R package version
-1.4.0, <https://biometryhub.github.io/biometryassist/>.
+1.5.0, <https://biometryhub.github.io/biometryassist/>.
 
     @Manual{,
       title = {biometryassist: Functions to Assist Design and Analysis of Agronomic Experiments},
       author = {Sharon Nielsen and Sam Rogers and Annie Conway},
       year = {2026},
-      note = {R package version 1.4.0},
+      note = {R package version 1.5.0},
       url = {https://biometryhub.github.io/biometryassist/},
     }

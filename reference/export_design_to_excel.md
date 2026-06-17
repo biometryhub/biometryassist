@@ -7,29 +7,38 @@ and exports to Excel with optional colour coding by treatment.
 
 ``` r
 export_design_to_excel(
-  design_df,
-  value_column = "treatments",
+  design,
   filename = "experimental_design.xlsx",
+  value_column = "treatments",
+  row = NULL,
+  column = NULL,
   palette = "default"
 )
 ```
 
 ## Arguments
 
-- design_df:
+- design:
 
-  A dataframe containing experimental design with 'row' and 'col'
-  columns
+  A dataframe or design object containing experimental design.
+
+- filename:
+
+  Character string for Excel filename (default:
+  "experimental_design.xlsx")
 
 - value_column:
 
   Character string specifying which column to use for layout values
   (default: "treatments")
 
-- filename:
+- row:
 
-  Character string for Excel filename (default:
-  "experimental_design.xlsx")
+  Column containing the row coordinate. Defaults to `row`.
+
+- column:
+
+  Column containing the column coordinate. Defaults to `col`.
 
 - palette:
 

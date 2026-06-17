@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">biometryassist</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -25,6 +25,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/installing-asreml-r.html">Installing ASReml-R</a></li>
+    <li><a class="dropdown-item" href="../articles/choosing-multiple-comparisons.html">Choosing and interpreting multiple comparisons</a></li>
     <li><a class="dropdown-item" href="../articles/plot_annotation.html">Adding Orientation Arrows and Annotations to Field Layout Plots</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -50,7 +51,7 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">create_buffers</span><span class="op">(</span><span class="va">design</span>, <span class="va">type</span>, blocks <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">create_buffers</span><span class="op">(</span><span class="va">design</span>, <span class="va">type</span>, by <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -62,11 +63,20 @@
 
 
 <dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
-<dd><p>The type of buffer. One of edge, row, column, double row, or double column.</p></dd>
+<dd><p>The type of buffer. One of edge, row, column, double row,
+double column, blocks (internal boundaries only), or double
+block/entire block/full block (buffers fully surrounding each block).</p></dd>
 
 
-<dt id="arg-blocks">blocks<a class="anchor" aria-label="anchor" href="#arg-blocks"></a></dt>
-<dd><p>Does the design data frame contain blocks?</p></dd>
+<dt id="arg-by">by<a class="anchor" aria-label="anchor" href="#arg-by"></a></dt>
+<dd><p>The name of a grouping column. Required for <code>type = "block"</code> and the
+<code>"double block"</code> family (buffers are placed at the boundaries of this
+column's groups). Optional for <code>type = "row"</code>/<code>"col"</code>: when supplied, a
+buffer is inserted only where the <code>by</code> group changes between adjacent
+rows/columns (rather than between every pair); when <code>NULL</code>, a buffer is
+inserted between every pair. Ignored by <code>edge</code>, <code>double row</code>, and
+<code>double col</code>. The <code>edge</code>/<code>row</code>/<code>col</code> (and double) types still assign buffer
+cells to blocks by position when the design has a <code>"block"</code> column.</p></dd>
 
 </dl></div>
     <div class="section level2">

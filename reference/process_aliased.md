@@ -9,7 +9,8 @@ process_aliased(
   pp,
   sed,
   classify,
-  exclude_cols = c("predicted.value", "std.error", "df", "Names")
+  exclude_cols = c("predicted.value", "std.error", "df", "Names"),
+  vcov = NULL
 )
 ```
 
@@ -31,6 +32,13 @@ process_aliased(
 
   Column names to exclude when processing aliased names
 
+- vcov:
+
+  Optional variance-covariance matrix of the predictions, subset to the
+  estimable rows/columns alongside `sed` when supplied (`NULL`
+  otherwise).
+
 ## Value
 
-List containing processed predictions, sed matrix and aliased names
+List containing processed predictions, sed matrix, aliased names and
+(when supplied) the subset `vcov`.

@@ -5,7 +5,7 @@ Compare installed version of ASReml-R with available versions
 ## Usage
 
 ``` r
-newer_version()
+newer_version(manifest = fetch_manifest(), warn = TRUE)
 ```
 
 ## Value

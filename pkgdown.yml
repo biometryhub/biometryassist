@@ -2,9 +2,10 @@ pandoc: 3.8.3
 pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
+  choosing-multiple-comparisons: choosing-multiple-comparisons.html
   installing-asreml-r: installing-asreml-r.html
   plot_annotation: plot_annotation.html
-last_built: 2026-05-18T07:35Z
+last_built: 2026-06-17T09:18Z
 urls:
   reference: https://biometryhub.github.io/biometryassist/reference
   article: https://biometryhub.github.io/biometryassist/articles

@@ -11,8 +11,8 @@
 <script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Functions to Assist Design and Analysis of Agronomic Experiments">
-<meta name="description" content="Provides functions to aid in the design and analysis of agronomic and agricultural experiments through easy access to documentation and helper functions, especially for users who are learning these concepts. While not required for most functionality, this package enhances the `asreml` package which provides a computationally efficient algorithm for fitting mixed models using Residual Maximum Likelihood. It is a commercial package that can be purchased as asreml-R from VSNi &lt;https://vsni.co.uk/&gt;, who will supply a zip file for local installation/updating (see &lt;https://asreml.kb.vsni.co.uk/&gt;).">
-<meta property="og:description" content="Provides functions to aid in the design and analysis of agronomic and agricultural experiments through easy access to documentation and helper functions, especially for users who are learning these concepts. While not required for most functionality, this package enhances the `asreml` package which provides a computationally efficient algorithm for fitting mixed models using Residual Maximum Likelihood. It is a commercial package that can be purchased as asreml-R from VSNi &lt;https://vsni.co.uk/&gt;, who will supply a zip file for local installation/updating (see &lt;https://asreml.kb.vsni.co.uk/&gt;).">
+<meta name="description" content="Provides functions to aid in the design and analysis of agronomic and agricultural experiments through easy access to documentation and helper functions, especially for users who are learning these concepts. While not required for most functionality, this package enhances the `asreml` package which provides a computationally efficient algorithm for fitting mixed models using Residual Maximum Likelihood. It is a commercial package that can be purchased as ASReml-R from VSNi &lt;https://vsni.co.uk/&gt;, who will supply a zip file for local installation/updating (see &lt;https://asreml.kb.vsni.co.uk/&gt;).">
+<meta property="og:description" content="Provides functions to aid in the design and analysis of agronomic and agricultural experiments through easy access to documentation and helper functions, especially for users who are learning these concepts. While not required for most functionality, this package enhances the `asreml` package which provides a computationally efficient algorithm for fitting mixed models using Residual Maximum Likelihood. It is a commercial package that can be purchased as ASReml-R from VSNi &lt;https://vsni.co.uk/&gt;, who will supply a zip file for local installation/updating (see &lt;https://asreml.kb.vsni.co.uk/&gt;).">
 <!-- Global site tag (gtag.js) - Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=G-971LPN0BS4"></script><script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="index.html">biometryassist</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -43,6 +43,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="articles/installing-asreml-r.html">Installing ASReml-R</a></li>
+    <li><a class="dropdown-item" href="articles/choosing-multiple-comparisons.html">Choosing and interpreting multiple comparisons</a></li>
     <li><a class="dropdown-item" href="articles/plot_annotation.html">Adding Orientation Arrows and Annotations to Field Layout Plots</a></li>
   </ul>
 </li>
@@ -80,7 +81,11 @@
 <p>⚠ <strong>Warning</strong>: The development version is unstable and liable to change more often than the CRAN version. It may have bugs fixed, but there may be other currently unknown bugs introduced. ⚠</p>
 <p>Use the following code to install the latest development version of this package.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw">if</span><span class="op">(</span><span class="op">!</span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">require</a></span><span class="op">(</span><span class="st"><a href="https://remotes.r-lib.org" class="external-link">"remotes"</a></span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span> </span>
+<code class="sourceCode R"><span><span class="kw">if</span><span class="op">(</span><span class="op">!</span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">require</a></span><span class="op">(</span><span class="st"><a href="https://pak.r-lib.org/" class="external-link">"pak"</a></span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"pak"</span><span class="op">)</span></span>
+<span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"biometryhub/biometryassist@dev"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Alternatively</span></span>
+<span><span class="kw">if</span><span class="op">(</span><span class="op">!</span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">require</a></span><span class="op">(</span><span class="st"><a href="https://remotes.r-lib.org" class="external-link">"remotes"</a></span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"biometryhub/biometryassist@dev"</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
@@ -90,7 +95,64 @@
 <p>Load the package and start using it with:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://biometryhub.github.io/biometryassist/">biometryassist</a></span><span class="op">)</span></span></code></pre></div>
-<p>If you find this package useful, please cite it! Type <code>citation("biometryassist")</code> on the R console to find out how.</p>
+<p>The package supports two main workflows:</p>
+<p><strong>Experimental design</strong> — generate and visualise trial layouts:</p>
+<ul>
+<li>
+<code><a href="reference/design.html">design()</a></code> — create CRD, RCBD, Latin Square, split-plot, strip-plot, and factorial designs, with a plot of the layout and a skeletal ANOVA table</li>
+<li>
+<code><a href="reference/add_buffers.html">add_buffers()</a></code> — add buffer plots around treatment plots, blocks, or the trial perimeter</li>
+<li>
+<code><a href="reference/export_design_to_excel.html">export_design_to_excel()</a></code> — write a design to a formatted Excel workbook</li>
+</ul>
+<p><strong>Post-model analysis and visualisation</strong> — works with models from <code>aov</code>, <code>lme4</code>, <code>nlme</code>, <code>asreml</code>, <code>sommer</code>, <code>glmmTMB</code>, <code>afex</code>, and more:</p>
+<ul>
+<li>
+<code><a href="reference/multiple_comparisons.html">multiple_comparisons()</a></code> — Tukey HSD and other multiple comparison tests with letter groupings</li>
+<li>
+<code><a href="reference/pairwise_comparisons.html">pairwise_comparisons()</a></code> — selected pairwise differences or general linear contrasts</li>
+<li>
+<code><a href="reference/reference_comparisons.html">reference_comparisons()</a></code> — compare all levels against a reference (Dunnett-style)</li>
+<li>
+<code><a href="reference/resplot.html">resplot()</a></code> — diagnostic residual plots</li>
+<li>
+<code><a href="reference/heat_map.html">heat_map()</a></code> — spatial heat maps of trial data or residuals</li>
+<li>
+<code><a href="reference/variogram.html">variogram()</a></code> — spatial variograms for ASReml-R models</li>
+</ul>
+<p>The package optionally enhances the commercial <a href="https://vsni.co.uk/software/asreml-r" class="external-link">ASReml-R</a> package. If you have a licence, <code><a href="reference/install_asreml.html">install_asreml()</a></code> and <code><a href="reference/install_asreml.html">update_asreml()</a></code> make it easy to install and keep up to date.</p>
+<p>For details on recent changes, see <a href="NEWS.html">NEWS.md</a>.</p>
+<div class="section level3">
+<h3 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
+</h3>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://biometryhub.github.io/biometryassist/">biometryassist</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Generate a Randomised Complete Block Design with 11 treatments and 4 reps</span></span>
+<span><span class="va">des.out</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/design.html">design</a></span><span class="op">(</span></span>
+<span>    type <span class="op">=</span> <span class="st">"rcbd"</span>,</span>
+<span>    treatments <span class="op">=</span> <span class="va">LETTERS</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">11</span><span class="op">]</span>,</span>
+<span>    reps <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>    nrows <span class="op">=</span> <span class="fl">11</span>,</span>
+<span>    ncols <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>    brows <span class="op">=</span> <span class="fl">11</span>,</span>
+<span>    bcols <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>    seed <span class="op">=</span> <span class="fl">42</span>,</span>
+<span>    quiet <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-example-plot-1.png" alt="" width="100%"></p>
+<p>The <code>$satab</code> element gives the skeletal ANOVA table for the design:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">des.out</span><span class="op">$</span><span class="va">satab</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Source of Variation                     df</span></span>
+<span><span class="co">#&gt;  =============================================</span></span>
+<span><span class="co">#&gt;  Block stratum                           3</span></span>
+<span><span class="co">#&gt;  ---------------------------------------------</span></span>
+<span><span class="co">#&gt;  treatments                              10</span></span>
+<span><span class="co">#&gt;  Residual                                30</span></span>
+<span><span class="co">#&gt;  =============================================</span></span>
+<span><span class="co">#&gt;  Total                                   43</span></span></code></pre></div>
+</div>
 </div>
 <div class="section level2">
 <h2 id="troubleshooting-installation">Troubleshooting Installation<a class="anchor" aria-label="anchor" href="#troubleshooting-installation"></a>
@@ -98,6 +160,43 @@
 <ul>
 <li>If you receive an error that the package could not install because <code>rlang</code> or another package could not be upgraded, the easiest way to deal with this is to uninstall the package(s) that could not be updated (<code>remove.packages("rlang")</code>). Then restart R, re-install with <code>install.packages("rlang")</code> and then try installing <code>biometryassist</code> again.</li>
 </ul>
+</div>
+<div class="section level2">
+<h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
+</h2>
+<p>If you find this package useful in your work, please cite it. Run the following in R to get the citation details:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"biometryassist"</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co">#&gt; To cite package 'biometryassist' in publications use:</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="co">#&gt;   Nielsen S, Rogers S, Conway A (2026). _biometryassist: Functions to</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co">#&gt;   Assist Design and Analysis of Agronomic Experiments_. R package</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="co">#&gt;   version 1.5.0, &lt;https://biometryhub.github.io/biometryassist/&gt;.</span></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="co">#&gt; A BibTeX entry for LaTeX users is</span></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co">#&gt;   @Manual{,</span></span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="co">#&gt;     title = {biometryassist: Functions to Assist Design and Analysis of Agronomic Experiments},</span></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="co">#&gt;     author = {Sharon Nielsen and Sam Rogers and Annie Conway},</span></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="co">#&gt;     year = {2026},</span></span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="co">#&gt;     note = {R package version 1.5.0},</span></span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a><span class="co">#&gt;     url = {https://biometryhub.github.io/biometryassist/},</span></span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a><span class="co">#&gt;   }</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="code-of-conduct">Code of Conduct<a class="anchor" aria-label="anchor" href="#code-of-conduct"></a>
+</h2>
+<p>Please note that the biometryassist project is released with a <a href="CODE_OF_CONDUCT.html">Contributor Code of Conduct</a>. By contributing to this project, you agree to abide by its terms.</p>
+</div>
+<div class="section level2">
+<h2 id="contributing">Contributing<a class="anchor" aria-label="anchor" href="#contributing"></a>
+</h2>
+<p>Contributions are welcome! Please see <a href="CONTRIBUTING.html">CONTRIBUTING.md</a> for guidelines on how to get involved.</p>
+</div>
+<div class="section level2">
+<h2 id="licence">Licence<a class="anchor" aria-label="anchor" href="#licence"></a>
+</h2>
+<p>MIT © University of Adelaide Biometry Hub. See <a href="LICENSE.html">LICENSE.md</a> for details.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">
@@ -117,6 +216,13 @@
 </ul>
 </div>
 
+<div class="community">
+<h2 data-toc-skip>Community</h2>
+<ul class="list-unstyled">
+<li><a href="CONTRIBUTING.html">Contributing guide</a></li>
+<li><a href="CODE_OF_CONDUCT.html">Code of conduct</a></li>
+</ul>
+</div>
 
 <div class="citation">
 <h2 data-toc-skip>Citation</h2>
@@ -144,7 +250,7 @@
 <li><a href="https://app.codecov.io/gh/biometryhub/biometryassist?branch=main" class="external-link"><img src="https://codecov.io/gh/biometryhub/biometryassist/branch/main/graph/badge.svg" alt="Codecov test coverage"></a></li>
 <li><a href="https://github.com/biometryhub/biometryassist/actions" class="external-link"><img src="https://github.com/biometryhub/biometryassist/workflows/R-CMD-check/badge.svg" alt="R build status"></a></li>
 <li><a href="https://cran.r-project.org/" class="external-link"><img src="https://img.shields.io/badge/R%3E%3D-4.1.0-6666ff.svg" alt="minimal R version"></a></li>
-<li><a href="https://github.com/biometryhub/biometryassist/commits/main" class="external-link"><img src="https://img.shields.io/badge/Package%20version-1.4.0-orange.svg?style=flat-square" alt="packageversion"></a></li>
+<li><a href="https://github.com/biometryhub/biometryassist/commits/main" class="external-link"><img src="https://img.shields.io/badge/Package%20version-1.5.0-orange.svg?style=flat-square" alt="packageversion"></a></li>
 <li><a href="https://choosealicense.com/licenses/mit/" class="external-link"><img src="https://img.shields.io/github/license/mashape/apistatus.svg" alt="Licence"></a></li>
 <li><a href="https://cran.r-project.org/package=biometryassist" class="external-link"><img src="https://cranlogs.r-pkg.org/badges/biometryassist"></a></li>
 </ul>
