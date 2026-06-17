@@ -23,8 +23,6 @@ authors:
 bibliography: paper.bib
 date: 2 June 2026
 date-format: D MMMM YYYY
-engines:
-- path: "C:`\\PROGRA`{=tex}\\~1`\\Quarto\\share\\extension`{=tex}``{=tex}``{=tex}-subtrees`\\julia`{=tex}-engine_extensions`\\julia`{=tex}-engine`\\julia`{=tex}-engine.js"
 tags:
 - R
 - experimental design
@@ -121,12 +119,12 @@ We organised the functions in *biometryassist* into three categories:
 design, for generating and randomising experimental layouts
 (`design()`), adding buffer plots (`add_buffers()`), and exporting them
 to formatted Excel workbooks (`export_design_to_excel()`); analysis,
-covering model checking, post-hoc testing, and prediction (`resplot()`,
-`variogram()`, `multiple_comparisons()` and `autoplot()`); and
-utilities, including installation helpers (`install_asreml()`) and
-reporting templates (`use_template()`). This structure mirrors the
-stages of a typical field trial and follows the sequence of topics we
-cover in the workshops.
+covering model checking (`resplot()`, `variogram()`), post-hoc testing
+and prediction (`multiple_comparisons()`, `pairwise_comparisons()`,
+`reference_comparisons()` and `autoplot()`); and utilities, including
+installation helpers (`install_asreml()`) and reporting templates
+(`use_template()`). This structure mirrors the stages of a typical field
+trial and follows the sequence of topics we cover in the workshops.
 
 We chose function names and terminology to reflect how concepts are
 taught rather than how they are implemented, intending names such as
