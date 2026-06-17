@@ -143,9 +143,9 @@ available.
 
 We designed the package to extend as the R ecosystem evolves. We add
 support for additional model classes in response to user needs, such as
-the recent addition of `lme4` support in `resplot()` and
-`multiple_comparisons()`, and will continue to do so as new packages are
-developed and gain traction.
+the recent addition of `lme4`, `sommer` and `glmmTMB` support in
+`resplot()` and the `*_comparisons()` functions, and will continue to do
+so as new packages are developed and gain traction.
 
 # Research impact statement
 
