@@ -1,0 +1,473 @@
+---
+title: "Diagnosing Model Fit with resplot()"
+format:
+  html:
+    theme:
+      light: flatly
+      dark: darkly
+    toc: true
+    toc-depth: 3
+    toc-location: right   # or "right", "body"
+    code-fold: true       # collapsible code blocks
+    code-tools: true      # copy button + show/hide all
+    number-sections: false
+    fig-width: 7
+    fig-height: 5
+    embed-resources: true 
+vignette: >
+  %\VignetteIndexEntry{Diagnosing Model Fit with resplot()}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+engine: knitr
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = NA,
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+```{r setup, message=FALSE}
+library(biometryassist)
+library(ggplot2)
+library(patchwork)
+```
+
+## Introduction
+
+After fitting a model to data, it is important to check the residuals — the leftover variation in the data to gain important insight. In particular, we want to check whether the fitted model is appropriate for the data and adheres to key modelling assumptions. These assumptions may include approximately normal and homogeneous residual variance, and linearity in the case of linear regression. In `biometryassist`, `resplot()` is a function that provides a single-panel diagnostic plot for a fitted model.
+
+A call to `resplot()` always returns four core panels, built from the model's
+*standardised* residuals (raw residuals divided by their standard deviation):
+
+- **A — Histogram** of the standardised residuals, to check the overall shape of
+  the residual distribution.
+- **B — Normal Q-Q plot**, to check whether the residuals follow a normal
+  distribution, especially in the tails.
+- **C — Residuals vs. fitted values**, to check for non-constant variance or
+  remaining structure that the model hasn't captured.
+- **D — A Shapiro-Wilk normality test**, displayed as text with relevant p-values and conclusion underneath the three plots (toggle with and `shapiro = TRUE` as the default).
+
+```{r basic_example}
+model <- aov(Petal.Length ~ Petal.Width, data = iris)
+resplot(model)
+```
+<!-- Need Check -->
+`resplot()` works across most of the modelling engines supported by
+`biometryassist` — `aov`/`lm`, `nlme::lme()`, `lme4`/`lmerTest`, `ASReml-R`,
+`sommer`, `ARTool` and others, by dispatching on the model's class via an internal
+`extract_model_info()` generic. See the
+[*Supported model types*](#supported-model-types) section below.
+
+## Understanding the Panels
+
+Each call to `resplot()` returns three core diagnostic panels (A–C) assembled from
+the model's standardised residuals, plus an optional Shapiro-Wilk result (D).
+Together they give a consistent view of how well a model satisfies the normality
+and constant-variance assumptions. Each panel below is pulled directly from
+`resplot()`'s output for the example models featured in the
+[*Full Output Example*](#full-output-example) section below using `resplot(model)[[i]]`, with `i = 1, 2, 3` corresponding to the three plots.
+
+```{r example_models_setup}
+set.seed(42)
+n <- 100
+x <- runif(n, 1, 10)
+y_het <- 2 + 0.5 * x + rnorm(n, sd = x * 0.3)
+model_het <- lm(y_het ~ x)
+
+set.seed(99)
+x <- runif(100, 1, 10)
+y_skew <- exp(1 + 0.3 * x + rnorm(100, sd = 0.5))
+model_skew <- lm(y_skew ~ x)
+```
+
+Alongside the well-behaved `model` fitted in the Introduction, `model_het` and
+`model_skew` are built so that each breaks the model's assumptions in a
+different, deliberate way: `model_het`'s errors are simulated with
+`sd = x * 0.3`, so their spread grows with `x`, while `model_skew`'s errors are
+exponentiated, giving them a right-skewed distribution instead of a normal one.
+
+A linear (mixed) model assumes
+
+$$ y = X\beta + Zu + e, \qquad e \sim N(0, \sigma^2 I) $$
+
+that is, the errors $e$ are independent, normally distributed, and share a
+single constant variance $\sigma^2$. `model_het`'s growing error spread
+violates the constant-$\sigma^2$ half of this assumption, and `model_skew`'s
+skewed errors violate the normal half. This isn't just a technicality:
+the standard errors, confidence intervals, and t-/F-tests used to compare
+treatment means are all derived assuming the assumption holds, so for models
+like these, the p-values and confidence intervals `resplot()` and downstream
+comparisons report can end up too liberal or too conservative to trust.
+
+We can't observe $e$ directly, so we check the assumption using the model's
+standardised residuals,
+
+$$ r_i^{\text{std}} = \frac{r_i}{\hat{\sigma}\sqrt{(n-1)/n}} $$
+
+where $r_i$ is the raw residual for observation $i$ and $\hat\sigma$ is their
+sample standard deviation. If the model's assumptions hold, $r_i^{\text{std}}$
+should behave like an independent random sample from $N(0,1)$, which
+`model`'s residuals broadly do, unlike `model_het` or `model_skew` by design.
+Panels A–D below each check a different aspect of that one claim.
+
+### A — Histogram
+
+The histogram shows the distribution of the standardised residuals $r_i^{\text{std}}$.
+Use it to judge the **overall shape** of the residual distribution against the
+bell-shaped $N(0,1)$ density it should follow.
+
+```{r panel_a_example, fig.width=7, fig.height=3}
+p_hist_good <- resplot(model, shapiro = FALSE)[[1]] +
+    labs(title = "Good: symmetric, bell-shaped")
+
+p_hist_bad <- resplot(model_skew, shapiro = FALSE)[[1]] +
+    labs(title = "Warning: right-skewed")
+
+p_hist_good + p_hist_bad
+```
+
+A roughly symmetric, bell-shaped histogram centred on zero (left) is consistent
+with normally distributed residuals. Strong right or left skew, a bimodal
+distribution, or very heavy tails (right) suggest the model is missing something —
+a transformation of the response, an omitted covariate, or an unaccounted-for
+grouping factor.
+
+### B — Normal Q-Q Plot
+
+The Q-Q plot compares the empirical quantiles of $r_i^{\text{std}}$ to the
+theoretical quantiles of $N(0,1)$ — the most direct check of the normality half
+of the assumption. If the residuals are normally distributed, the points should
+fall close to the diagonal reference line.
+
+```{r panel_b_example, fig.width=7, fig.height=3}
+p_qq_good <- resplot(model, shapiro = FALSE)[[2]] +
+    labs(title = "Good: points on the reference line")
+
+p_qq_bad <- resplot(model_skew, shapiro = FALSE)[[2]] +
+    labs(title = "Warning: S-curve (skew)")
+
+p_qq_good + p_qq_bad
+```
+
+When residuals are well-behaved (left), the points hug the diagonal line. Common
+warning patterns include:
+
+- **S-shaped curve** (right): the residuals are skewed — one tail is longer than
+  the other.
+- **Both ends curling away from the line**: heavy tails — more extreme values than
+  a normal distribution would produce.
+- **A single isolated point far from the rest**: a potential outlier that may be
+  distorting the fit.
+
+### C — Residuals vs. Fitted Values
+
+This scatterplot places $r_i^{\text{std}}$ on the vertical axis and the model's
+fitted values on the horizontal axis. It checks the constant-variance half of
+the assumption: whether $\text{Var}(r_i^{\text{std}})$ stays flat across fitted
+values, as $\sigma^2$ in $e \sim N(0, \sigma^2 I)$ is assumed constant rather
+than a function of $\hat{y}_i$.
+
+```{r panel_c_example, fig.width=7, fig.height=3}
+p_rf_good <- resplot(model, shapiro = FALSE)[[3]] +
+    labs(title = "Good: random scatter around zero")
+
+p_rf_bad <- resplot(model_het, shapiro = FALSE)[[3]] +
+    labs(title = "Warning: funnel (heteroskedasticity)")
+
+p_rf_good + p_rf_bad
+```
+
+Ideally the points form a random cloud centred around zero with roughly constant
+spread across all fitted values (left). Common problems to watch for:
+
+- **Funnel or fan shape** (right): residual variance increases (or decreases) with
+  the fitted value — heteroskedasticity. A variance-stabilising transformation
+  (e.g. log, square-root) or a weighted model may be needed.
+- **Curved trend**: a polynomial or non-linear term is missing from the model.
+- **Distinct bands or clusters**: a factor that should be in the model has been
+  omitted or mislabelled.
+
+### D — Shapiro-Wilk Test
+
+Below the three plots, `resplot()` (by default) displays the result of a
+Shapiro-Wilk normality test on the raw residuals — a formal test of
+$H_0: r_i^{\text{std}} \sim N(0,1)$, complementing the visual evidence in
+panels A and B. The output always includes the test statistic and a
+plain-language interpretation.
+
+When the test finds no evidence of non-normality (p > 0.05):
+
+```
+Shapiro-Wilk normality test p-value: 0.3241
+The residuals appear to be normally distributed. (n = 48)
+```
+
+When the test detects significant non-normality (p ≤ 0.05):
+
+```
+Shapiro-Wilk normality test p-value: 0.0003
+The residuals do not appear to be normally distributed. (n = 48)
+```
+
+Set `shapiro = FALSE` to omit it entirely:
+
+```{r shapiro_off}
+resplot(model, shapiro = FALSE)
+```
+
+The Shapiro-Wilk test becomes unreliable as a guide for larger samples — with
+enough observations, even trivial, practically meaningless departures from
+normality become "significant". `resplot()` reflects this:
+
+- For 2,000–4,999 observations, the test still runs but a warning is issued.
+- For 5,000 or more observations, the test is skipped (with a warning) and
+  panel D is omitted regardless of the `shapiro` argument.
+
+In both cases, prefer to judge normality visually from panels A and B rather
+than relying on the test alone.
+
+### Full Output Example
+
+#### Relatively good residuals
+
+Fitting a simple one-way model to the built-in `iris` data gives residuals that are
+broadly consistent with the model assumptions — a useful baseline:
+
+```{r basic_example_2}
+resplot(model)
+```
+
+Reading each panel in this output:
+
+- **A (histogram)**: roughly symmetric and bell-shaped — consistent with normally
+  distributed residuals.
+- **B (Q-Q plot)**: points follow the reference line closely across most of the
+  range, with only minor deviation at the tails.
+- **C (residuals vs. fitted)**: the scatter is reasonably random with no obvious
+  funnel or trend.
+- **D (Shapiro-Wilk)**: the p-value is above 0.05, supporting the visual
+  impression of approximate normality.
+
+#### Potential extreme cases
+
+The following examples illustrate two common violations so you know what to look
+for in your own analyses.
+
+**Heteroskedasticity — variance that grows with the fitted value**
+
+```{r het_example}
+resplot(model_het)
+```
+
+Panel C shows the classic funnel shape: residual spread increases as fitted values
+get larger. Possible remedies include a log or square-root transformation of the
+response, or fitting a weighted linear model.
+
+**Non-normal (right-skewed) residuals**
+
+```{r skew_example}
+resplot(model_skew)
+```
+
+Panels A and B show clear right skew: the histogram has a long right tail and the
+Q-Q plot follows an S-shaped curve. Log-transforming the response before fitting
+(`log(y_skew)`) is typically the first step to investigate.
+
+## Real Data Example
+
+
+## Playing Around with the Visuals
+
+The default styling `resplot()` ships with is only a starting point, not a
+ceiling. `resplot()` returns a `patchwork` object built from ggplot2 panels, so
+it can be further customised using patchwork syntax:
+
+- Use **`&`** to apply a ggplot2 theme or element to *every* panel at once.
+- **Index** into an individual panel (e.g. `resplot(model)[[1]]`) to modify it
+  with normal ggplot2 `+` syntax.
+
+Patchwork reserves `+` for adding a *new* panel to the layout, so
+`resplot(model) + theme_bw()` won't restyle the existing plots the way it would
+for a single `ggplot` object — reach for `&` instead.
+
+**Restyle every panel at once with `&`**
+
+```{r theme_all_panels}
+resplot(model, shapiro = FALSE) & theme_minimal()
+```
+
+One line swaps `resplot()`'s default `theme_bw()` for `theme_minimal()` across
+the histogram, Q-Q plot and residuals-vs-fitted panel simultaneously — handy for
+matching diagnostics to the theme of a report or slide deck.
+
+**Recolour or annotate a single panel by indexing**
+
+```{r recolour_one_panel, message=FALSE}
+resplot(model, shapiro = FALSE)[[3]] +
+    geom_smooth(se = FALSE, colour = "firebrick", linewidth = 0.5) +
+    labs(title = "Residuals vs. Fitted, with a smoother")
+```
+
+Panels are indexed in the order `resplot()` builds them — `[[1]]` is the
+histogram (A), `[[2]]` the Q-Q plot (B), and `[[3]]` the residuals-vs-fitted
+scatter (C). Once extracted, the panel is an ordinary `ggplot` object, so any
+ggplot2 layer, scale or theme element can be added directly. Here, overlaying a
+loess smoother on panel C makes a subtle curved trend easier to spot than the
+raw scatter alone.
+
+**Compare two models' diagnostics in one figure**
+
+```{r compare_two_models, fig.width=9, fig.height=8}
+model_a <- aov(Petal.Length ~ Petal.Width, data = iris)
+model_b <- aov(Petal.Length ~ Petal.Width + Species, data = iris)
+
+(resplot(model_a, shapiro = FALSE) & theme_minimal()) /
+    (resplot(model_b, shapiro = FALSE) & theme_minimal())
+```
+
+Because each `resplot()` output is itself a patchwork object, two (or more) of
+them compose with patchwork's `/` (stack) and `|` (side-by-side) operators just
+like any other patch — useful for eyeballing whether adding a term (here,
+`Species`) actually improved the residual behaviour.
+
+### Showing the Model Call
+
+Set `call = TRUE` to print the model's call as a title above the plots — handy
+when comparing diagnostics from several candidate models side by side. Use
+`call.size` to adjust its font size:
+
+```{r call_true}
+resplot(model, call = TRUE, call.size = 8)
+```
+
+### Adjusting Text Sizes
+
+Two further size arguments control the rest of the plot's typography:
+
+- `label.size` — the font size of the panel tags (`A`, `B`, `C`).
+- `axes.size` — the font size of the axis text and titles within each panel.
+
+```{r sizing}
+resplot(model, label.size = 14, axes.size = 8)
+```
+
+### Multi-Stratum Models
+
+Some designs are analysed with more than one error stratum — for example, a
+split-plot design fitted with `aov()` and an `Error()` term, or an ASReml-R
+model with multiple residual structures. For these, a single histogram/Q-Q/fitted-values
+panel can't summarise every stratum, so `resplot()` returns a
+**list** of plots, one per stratum, named after the strata.
+
+```{r split_plot_setup}
+set.seed(44)
+n_blocks <- 8
+split_plot_dat <- data.frame(
+  block = factor(rep(1:n_blocks, each = 6)),
+  irrigation = factor(rep(
+    rep(c("Irrigated", "Rainfed"), each = 3),
+    times = n_blocks
+  )),
+  variety = factor(rep(c("A", "B", "C"), times = 2 * n_blocks))
+)
+split_plot_dat$yield <- 50 +
+  5 * (split_plot_dat$irrigation == "Irrigated") +
+  c(A = 0, B = 2, C = 4)[split_plot_dat$variety] +
+  rnorm(nrow(split_plot_dat), sd = 3)
+
+split_plot_model <- aov(
+  yield ~ irrigation * variety + Error(block / irrigation),
+  data = split_plot_dat
+)
+```
+
+```{r split_plot_resplot}
+split_plot_resids <- resplot(split_plot_model, shapiro = FALSE)
+names(split_plot_resids)
+```
+
+Each element is a complete diagnostic panel for that stratum, and can be
+inspected (or saved) individually:
+
+```{r split_plot_print}
+split_plot_resids[["block:irrigation"]]
+```
+
+The same applies to multi-stratum ASReml-R models — each residual variance
+structure becomes its own named element in the returned list.
+
+### Putting Multiple Strata on One Page
+
+When a model has several strata, printing each one separately is tedious. Set
+`onepage = TRUE` to arrange them into a grid (up to 6 strata per page, paginated
+automatically if there are more), and use `onepage_cols` to control the number
+of columns. With three strata, `onepage_cols = 3` puts them side by side in a
+single row:
+
+```{r onepage_example, fig.width=7, fig.height=15}
+resplot(
+  split_plot_model,
+  shapiro = FALSE,
+  onepage = TRUE,
+  onepage_cols = 1
+)
+```
+
+`onepage_cols` matters more once there are enough strata to need more than one
+row — for a model with, say, 5 strata, `onepage_cols = 2` would arrange them as
+two rows of two plus a final row of one, rather than `resplot()`'s default
+3-column grid. If there are more than 6 strata in total, `resplot()` returns a
+*list of pages* instead of a single combined plot — index into it
+(`pages[[1]]`, `pages[[2]]`, ...) to view each page.
+
+## Supported Model Types {#supported-model-types}
+
+`resplot()` produces diagnostics for any model class with an
+`extract_model_info()` method. At the time of writing these are: `aov`, `lm`,
+`aovlist` (multi-stratum `aov`), `lme` ([nlme::lme()]), `lmerMod`/
+`lmerModLmerTest` ([lme4::lmer()], `lmerTest::lmer()`, and relationship-based
+`lme4breeding::lmebreed()` models), `asreml`, `mmer`/`mmes` (sommer), `art`
+(ARTool), `afex_aov` (afex) and `glmmTMB` (Gaussian family only — non-Gaussian
+families should use `DHARMa::simulateResiduals()` instead, since a normal Q-Q
+plot isn't a valid diagnostic for them).
+
+This is a slightly broader set than the comparison functions documented in the
+[*Choosing and interpreting multiple comparisons*](choosing-multiple-comparisons.html)
+vignette: `resplot()` additionally supports ARTool models and sommer's legacy
+`mmer` interface, neither of which has a `predict()`-based comparison
+equivalent.
+
+See `?resplot` for the full, authoritative table, and `?extract_model_info` if
+you need to add support for another model engine.
+
+## Troubleshooting
+
+**"`model.obj` must be a linear (mixed) model object..."** — the object you
+passed isn't one of the supported classes listed above. Check `class(your_model)`
+against the supported list; unsupported engines need a new
+`extract_model_info.<class>()` method before `resplot()` can handle them.
+
+**The Shapiro-Wilk panel is missing** — either you set `shapiro = FALSE`, or
+your model has 5,000 or more residuals, in which case the test is always
+skipped (see [*D — Shapiro-Wilk Test*](#d-shapiro-wilk-test)).
+
+**Warnings about non-finite or missing values being removed** — this usually
+means some residuals or fitted values are `NA` (for example, from a
+rank-deficient fit or missing data left in the model frame). Inspect
+`residuals(your_model)` and `fitted(your_model)` directly to find the cause
+before trusting the diagnostics.
+
+**Plots look cramped with `onepage = TRUE`** — reduce `onepage_cols`, or omit
+`onepage` and review the strata one at a time instead.
+
+
+## Further Reading
+
+- `?resplot` for the complete argument and supported-model reference.
+- `?extract_model_info` for the extension mechanism used to add new model engines.
+- The [*Choosing and interpreting multiple comparisons*](choosing-multiple-comparisons.html)
+  vignette, for the next step after the model passes these checks.
