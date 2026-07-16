@@ -31,19 +31,19 @@ provided on a best-effort basis and any problems with the steps in this
 *installation guide* should be reported to the [developers of
 biometryassist](https://github.com/biometryhub/biometryassist/issues/new).
 
-### Licence key for University of Adelaide Staff and Students
+### Licence key for Adelaide University Staff and Students
 
-As of June 2023, the University of Adelaide has unlimited licence codes
-until June 2026 for university staff, students and affiliates, thanks to
+As of June 2023, Adelaide University has unlimited licence codes until
+June 2027 for university staff, students and affiliates, thanks to
 funding provided by the Grains Research and Development Corporation, via
 the Analytics for the Australian Grains Industry (AAGI) project.
 
-To access the University of Adelaide licence key, please complete this
+To access the Adelaide University licence key, please complete this
 form:
-https://forms.office.com/Pages/ResponsePage.aspx?id=QN_Ns1SWJkqGoXecUfacSFFynOaV3gFMjBxPWBG-lVFUMzIyMjc3MjExVVk3WUFFOUkyNEJNMllaTC4u
+<https://forms.office.com/Pages/ResponsePage.aspx?id=QN_Ns1SWJkqGoXecUfacSFFynOaV3gFMjBxPWBG-lVFUMzIyMjc3MjExVVk3WUFFOUkyNEJNMllaTC4u>
 
 You will receive an email with a licence key if you hold a valid
-University of Adelaide account.
+Adelaide University account.
 
 ## Package method
 

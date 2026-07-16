@@ -2,6 +2,8 @@
 
 ## biometryassist 1.5.0
 
+CRAN release: 2026-06-17
+
 ### Major changes
 
 - [`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md):
