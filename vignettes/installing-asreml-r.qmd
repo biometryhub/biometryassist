@@ -40,14 +40,14 @@ ASReml-R is a proprietary R package which is sold and supported by [VSN Internat
 
 The developers of biometryassist do not provide support for `ASReml-R` via way of bug reports or software patches, and any problems with the ASReml-R software should be directed to [VSN International](https://vsni.co.uk/). These installation instructions are provided on a best-effort basis and any problems with the steps in this _installation guide_ should be reported to the [developers of biometryassist](https://github.com/biometryhub/biometryassist/issues/new).
 
-### Licence key for University of Adelaide Staff and Students {#licence}
+### Licence key for Adelaide University Staff and Students {#licence}
 
-As of June 2023, the University of Adelaide has unlimited licence codes until June 2026 for university staff, students and affiliates, thanks to funding provided by the Grains Research and Development Corporation, via the Analytics for the Australian Grains Industry (AAGI) project.
+As of June 2023, Adelaide University has unlimited licence codes until June 2027 for university staff, students and affiliates, thanks to funding provided by the Grains Research and Development Corporation, via the Analytics for the Australian Grains Industry (AAGI) project.
 
-To access the University of Adelaide licence key, please complete this form:
-https://forms.office.com/Pages/ResponsePage.aspx?id=QN_Ns1SWJkqGoXecUfacSFFynOaV3gFMjBxPWBG-lVFUMzIyMjc3MjExVVk3WUFFOUkyNEJNMllaTC4u
+To access the Adelaide University licence key, please complete this form:
+<https://forms.office.com/Pages/ResponsePage.aspx?id=QN_Ns1SWJkqGoXecUfacSFFynOaV3gFMjBxPWBG-lVFUMzIyMjc3MjExVVk3WUFFOUkyNEJNMllaTC4u>
 
-You will receive an email with a licence key if you hold a valid University of Adelaide account.
+You will receive an email with a licence key if you hold a valid Adelaide University account.
 
 ## Package method
 
