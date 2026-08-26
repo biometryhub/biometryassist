@@ -133,7 +133,7 @@ pairwise comparisons, so \code{adjust = "tukey"} is not valid for
 \subsection{\code{pairs} syntax and sign convention}{
 
 The estimate for a pair is \code{mean(level1) - mean(level2)}, in the order
-written (\code{"A-B"} gives A − B). The \code{level1} and \code{level2} columns make the sign
+written (\code{"A-B"} gives A - B). The \code{level1} and \code{level2} columns make the sign
 unambiguous. With \code{:} joining interaction cells and \code{-} separating the two
 sides of a pair, a level name may itself contain \code{-}: each \code{-} is tried as the
 separator and the split that yields two valid levels is used (so \code{"A-D-xyz"}

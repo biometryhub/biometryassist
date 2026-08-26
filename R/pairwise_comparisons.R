@@ -62,7 +62,7 @@
 #'
 #' ## `pairs` syntax and sign convention
 #' The estimate for a pair is `mean(level1) - mean(level2)`, in the order
-#' written (`"A-B"` gives A − B). The `level1` and `level2` columns make the sign
+#' written (`"A-B"` gives A - B). The `level1` and `level2` columns make the sign
 #' unambiguous. With `:` joining interaction cells and `-` separating the two
 #' sides of a pair, a level name may itself contain `-`: each `-` is tried as the
 #' separator and the split that yields two valid levels is used (so `"A-D-xyz"`
