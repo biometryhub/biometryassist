@@ -1,0 +1,190 @@
+---
+# Report details
+title: "Summary report for project"
+# subtitle: "Subtitle"
+project-number: "UOA2312-008RTX"
+author: Sam Rogers
+affiliation: University of Adelaide (AAGI-UA)
+email: sam.rogers@adelaide.edu.au
+
+#Latex options
+header-includes:
+  - \usepackage{bbm}
+bibliography: references.bib
+# csl: assets/biometrics.csl
+
+knit: yes
+number-sections: no
+toc: no
+link-citations: true
+output:
+  bookdown::pdf_document2:
+    highlight: default      
+    keep_tex: yes
+    latex_engine: pdflatex
+    template: assets/AAGI_markdown.tex
+    # citation_package: biblatex
+---
+
+```{r knitr_options, include=FALSE}
+library(rmarkdown)
+library(xtable)
+options(formatR.arrow=FALSE, xtable.comment=FALSE)
+knitr::opts_chunk$set(fig.path='figure/Rplots-',
+                      fig.align='center',
+                      fig.show='hold',
+                      comment=NA,
+                      background='white',
+                      # highlight=FALSE,
+                      tidy=FALSE,
+                      # tidy.opts=list(width.cutoff=70),
+                      size= "small",
+                      prompt=TRUE,
+                      cache = TRUE)
+```
+
+# Shoot Dry Weight
+
+## Loading and Cleaning Data
+
+```{r loading_packages, message=FALSE, echo = -5}
+library(readxl)
+library(tidyverse)
+library(janitor)
+library(biometryassist)
+biometryassist:::quiet(library(asreml))
+```
+
+```{r loading_data}
+dat <- read_xlsx("../data/raw/Latte pot method chickpea x Mciceri test.xlsx", 
+                 sheet = "Stats Worksheet", na = "*")
+dat <-  dat |> clean_names()
+dat <- dat |> mutate(row = ((rep_block_table-1)*8)+pot_row,
+                     col = as.numeric(substr(pot_number, 2, 3)),
+                     cc1192 = ifelse(strain == c("CC1192"), TRUE, FALSE),
+                     new_strain = ifelse(strain%in%c("Control"), 
+                                         "MC4", strain),
+                     percent_sp_clean = ifelse(strain%in%c("Control"),
+                                               NA, percent_sp)) |>
+    arrange(row, col)
+dat <- dat |> mutate(across(c(1:9, 16:19), factor))
+```
+
+\clearpage
+
+## Exploratory Data Analysis
+
+```{r eda_plots, warning=FALSE, fig.width=6, fig.height=3}
+summary_graph(dat, "shoot_dw_mg_plant", "strain") + 
+    theme(axis.text.x = element_text(angle=90, hjust=1, vjust = 0.5))
+summary_graph(dat, "shoot_dw_mg_plant", "cultivar")
+summary_graph(dat, "shoot_dw_mg_plant", c("strain", "cultivar")) + 
+    theme(axis.text.x = element_text(angle=90, hjust=1, vjust = 0.5))
+summary_graph(dat, "shoot_dw_mg_plant", c("cultivar", "strain"))
+```
+
+From these plots it appears likely that there is a significant effect of strain, possibly a significant cultivar effect, but there does not appear to be a significant interaction effect between the two.
+
+## Model fitting and diagnostics
+
+```{r fit_model, warning=FALSE}
+# Shoot dry weight response
+dat$shoot_dw_mg_plant[dat$shoot_dw_mg_plant==0] <- NA
+
+model.asr <- asreml(log(shoot_dw_mg_plant) ~ strain * cultivar,
+                    random = ~ rep_block_table/main_plot +
+                        at(strain, "MC4"):units +
+                        at(strain, "CC1192"):units +
+                        at(strain, "AU18(4)"):units +
+                        at(strain, "MI_8"):units +
+                        at(strain, "WSM5041"):units +
+                        at(cultivar, "Royal"):units +
+                        at(cultivar, "Magnus"):units,
+                    residual = ~ ar1(row):ar1(col),
+                    data = dat, trace = FALSE)
+
+summary(model.asr)$varcomp
+```
+
+
+Linear mixed models using restricted maximum likelihood were used to analyse the data using the ASReml-R package in R. The following model was fit:
+
+
+\begin{eqnarray*}
+    \log(\textrm{shoot\_dw\_mg\_plant}) &\sim& \textrm{strain + cultivar + strain:cultivar} \\
+    &+& \textbf{rep\_block\_table} + \textbf{rep\_block\_table:main\_plot} \\
+    &+& \textbf{at(strain, "MC4"):units} + \textbf{units:at(strain, "CC1192")} \\
+    &+& \textbf{units:at(strain, "AU18(4)")} + \textbf{units:at(strain, "MI\_8")} \\
+    &+& \textbf{units:at(strain, "WSM5041")} + \textbf{units:at(cultivar, "Royal")} \\
+    &+& \textbf{units:at(cultivar, "Magnus")}
+\end{eqnarray*}
+
+**Notation:** Terms fit in the model as random are shown in **bold**; all other terms are fit as fixed terms. The components with `units:at` or `at:units` enable those strains and cultivars to have a different variance than other treatment factors. This was especially important in the case of the cultivar Magnus which had several missing values.
+
+
+```{r diagnostics, warning=FALSE, fig.cap="Model diagnostic plots", fig.width=6, fig.height=3}
+resplot(model.asr, shapiro = FALSE)
+```
+
+The diagnostic plots in Figure \@ref(fig:diagnostics) show that this model fits the data well, and assumptions of normality and homoscedacity of residuals appear to be justified.
+
+
+# Significance of Fixed Effects
+
+Testing the statistical significance of the fixed effects is performed with a Wald test, the output of which can be found in Table \@ref(tab:wald-table).
+
+```{r wald-table}
+dat.ww <- wald(model.asr, denDF = "default", trace = FALSE)$Wald
+# print.data.frame(dat.ww, digits = 3) 
+dat.ww |> 
+    knitr::kable(caption = "Wald test results", digits = 3) |>
+    kableExtra::kable_styling(latex_options = "hold_position")
+```
+
+Table \@ref(tab:wald-table) shows significant effects of both cultivar and strain but no interaction effect. Hence, predicted values will be obtained for cultivar and strain individually.
+
+# Predicted Means
+
+Post hoc testing was performed using the `multiple_comparisons()` function of the `biometryassist` package in R, which performs a Tukey's Honest Significant Difference test to account for multiple testing.
+
+## Cultivars
+
+Table \@ref(tab:predicted-values-cultivar) and Figure \@ref(fig:predicted-plot-cultivar) show that Gen090 and Kyabra have significantly higher predicted shoot dry weight than all other cultivars except Magnus, while based on this it appears that other cultivars are not different from each other. Due to some missing data for Magnus and the model that was fit it has a much larger standard error. The predicted values have been back-transformed from the log transformation that was applied to them in the model.
+
+```{r predicted-values-cultivar}
+# Prediction
+pred.out <- multiple_comparisons(model.obj = model.asr, trans = "log", 
+                                 offset = 0, classify = "cultivar", 
+                                 save = T, savename = "predicted_values_cultivar")
+pred.out |> select(-predicted.value) |> 
+    knitr::kable(caption = "Predicted mean shoot dry weight by cultivar.") |>
+    kableExtra::kable_styling(latex_options = "hold_position")
+```
+
+```{r predicted-plot-cultivar, fig.cap="Plot of predicted means by cultivar", fig.pos="h", fig.width=6, fig.height=3}
+# graph the predicted values
+autoplot(pred.out, label_height = 0.25) +
+    labs(x = "Cultivar", y = "Predicted Shoot Dry Weight")
+```
+
+\newpage
+
+## Strains
+
+Table \@ref(tab:predicted-values-strain) and Figure \@ref(fig:predicted-plot-strain) show that the `MI_4` and `control` strains had the lowest predicted mean shoot dry weight, while `N control` had the highest. The `CC1192` strain was of particular interest and these results show that it had higher shoot dry weight than both `MI_4` and `control`, and lower than `N Control`, but not significantly different from any other strain.
+
+```{r predicted-values-strain}
+pred.out <- multiple_comparisons(model.obj = model.asr, trans = "log", 
+                                 offset = 0, classify = "strain", 
+                                 save = T, savename = "predicted_values_strain")
+pred.out |> select(-predicted.value) |> 
+    knitr::kable(caption = "Predicted mean shoot dry weight by strain.") |>
+    kableExtra::kable_styling(latex_options = "hold_position")
+```
+
+
+```{r predicted-plot-strain, fig.cap="Plot of predicted means by strain", fig.pos="h", fig.width=6, fig.height=3}
+# graph the predicted values
+autoplot(pred.out, rotation = 90, label_height = 0.99, vjust = 0.5) +
+    labs(x = "Strain", y = "Predicted Shoot Dry Weight")
+```

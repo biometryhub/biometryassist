@@ -13,12 +13,13 @@ format:
     number-sections: true
     fig-width: 7
     fig-height: 5
-    embed-resources: true 
+    embed-resources: true
 vignette: >
   %\VignetteIndexEntry{Diagnosing Model Fit with resplot()}
   %\VignetteEngine{quarto::html}
   %\VignetteEncoding{UTF-8}
 engine: knitr
+bibliography: references.bib
 ---
 
 ```{r, include = FALSE}
@@ -92,18 +93,24 @@ Each panel checks a different one of these assumptions:
 
 **Independence of errors** isn't something any of `resplot()`'s panels can check directly — it depends on the spatial or temporal arrangement of the errors, not just their marginal distribution. For trials laid out in rows and columns, use `variogram()` (or `heat_map()`) instead to check for spatial autocorrelation left in the residuals.
 
-To see each panel in action, the rest of this section uses three example model fits: the well-behaved `model` from the Introduction, plus two models built to violate a specific assumption on purpose. Each panel below is pulled directly from `resplot()`'s output for these models using `resplot(model)[[i]]`, with `i = 1, 2, 3` corresponding to the three plots.
+To see each panel in action, the rest of this section uses three example model fits: the well-behaved `model_good` simulated from a normal distribution, plus two models (`model_het` and `model_skew`) built to violate a specific assumption on purpose. Each panel below is pulled directly from `resplot()`'s output for these models using `resplot(model)[[i]]`, with `i = 1, 2, 3` corresponding to the three plots.
 
 ```{r example_models_setup}
 set.seed(44)
 n <- 100
 x <- runif(n, 1, 10)
-y_het <- (2 + 0.5 * x) * exp(rnorm(n, sd = 0.3))
+y_good <- 5 + 2 * x + rnorm(n, sd = 1)
+model_good <- lm(y_good ~ x)
+
+set.seed(88)
+n <- 100
+x <- runif(n, 1, 10)
+y_het <- (2 + 0.8 * x) * exp(rnorm(n, sd = 0.3))
 model_het <- lm(y_het ~ x)
 
 set.seed(99)
 x <- runif(100, 1, 10)
-y_skew <- exp(1 + 0.3 * x + rnorm(100, sd = 0.5))
+y_skew <- exp(1 + 0.5 * x + rnorm(100, sd = 0.5))
 model_skew <- lm(y_skew ~ x)
 ```
 
@@ -120,8 +127,8 @@ where $\hat\sigma$ is their sample standard deviation. If the model's assumption
 The histogram shows the distribution of the standardised residuals $r_i^{\text{std}}$.
 Use it to judge the **overall shape** of the residual distribution against the bell-shaped $\mathcal{N}(0,1)$ density it should follow.
 
-```{r panel_a_example, fig.width=7, fig.height=3}
-p_hist_good <- resplot(model, shapiro = FALSE)[[1]] +
+```{r panel_a_example, fig.width=7, fig.height=3, fig.align='center'}
+p_hist_good <- resplot(model_good, shapiro = FALSE)[[1]] +
     labs(title = "Good: symmetric, bell-shaped")
 
 p_hist_bad <- resplot(model_skew, shapiro = FALSE)[[1]] +
@@ -139,8 +146,8 @@ theoretical quantiles of $N(0,1)$ — the most direct check of the normality hal
 of the assumption. If the residuals are normally distributed, the points should
 fall close to the diagonal reference line.
 
-```{r panel_b_example, fig.width=7, fig.height=3}
-p_qq_good <- resplot(model, shapiro = FALSE)[[2]] +
+```{r panel_b_example, fig.width=7, fig.height=3, fig.align='center'}
+p_qq_good <- resplot(model_good, shapiro = FALSE)[[2]] +
     labs(title = "Good: points on the reference line")
 
 p_qq_bad <- resplot(model_skew, shapiro = FALSE)[[2]] +
@@ -163,8 +170,8 @@ warning patterns include:
 
 This scatterplot places $r_i^{\text{std}}$ on the vertical axis and the model's fitted values on the horizontal axis. It checks the constant-variance half of the assumption: whether $\text{Var}(r_i^{\text{std}})$ stays flat across fitted values, as $\sigma^2$ in $\boldsymbol{\varepsilon} \sim \mathcal{N}(0, \sigma^2 \mathbf{I})$ is assumed constant rather than a function of $\hat{y}_i$.
 
-```{r panel_c_example, fig.width=7, fig.height=3}
-p_rf_good <- resplot(model, shapiro = FALSE)[[3]] +
+```{r panel_c_example, fig.width=7, fig.height=3, fig.align='center'}
+p_rf_good <- resplot(model_good, shapiro = FALSE)[[3]] +
     labs(title = "Good: random scatter around zero")
 
 p_rf_bad <- resplot(model_het, shapiro = FALSE)[[3]] +
@@ -199,7 +206,7 @@ The residuals do not appear to be normally distributed. (n = 48)
 Set `shapiro = FALSE` to omit it entirely:
 
 ```{r shapiro_off}
-resplot(model, shapiro = FALSE)
+resplot(model_good, shapiro = FALSE)
 ```
 
 The Shapiro-Wilk test becomes unreliable as a guide for larger samples, that is, with enough observations, even trivial, practically meaningless departures from normality become "significant". `resplot()` reflects this:
@@ -211,11 +218,28 @@ In both cases, it is good practice to judge normality visually from panels A and
 
 ## Understanding the Full Outputs
 
-### Example: Relatively Good Fit
+### Example: Simulate Normal Data
 
-Fitting a simple one-way model to the built-in `iris` data gives residuals that are broadly consistent with the model assumptions, as shown below: 
+Before looking at real data, it helps to see what `resplot()`'s output looks like when the modelling assumptions hold *by construction*. The example below simulates data with a genuinely linear relationship and independent, normally distributed, constant-variance errors, then fits a model to it:
 
-```{r basic_example_2}
+```{r full_output_sim, fig.align='center'}
+resplot(model_good)
+```
+
+Reading each panel in this output:
+
+- **A (histogram)**: symmetric and bell-shaped, matching the $\mathcal{N}(0,1)$ density it was drawn from.
+- **B (Q-Q plot)**: points sit tightly on the reference line, right out to the tails.
+- **C (residuals vs. fitted)**: an even, random scatter around zero with no funnel, curve, or banding.
+- **D (Shapiro-Wilk)**: a large p-value, well above 0.05, with nothing in the visual panels to contradict it.
+
+Because the errors here were simulated directly from $\mathcal{N}(0,1)$, every panel lines up with the textbook picture almost exactly. Treat this as the benchmark for what "no violations" looks like — real data, as the next example shows, is rarely this clean.
+
+### Example: Real Data (`iris`)
+
+Fitting a simple one-way model to the built-in `iris` data gives residuals that are broadly, but not perfectly, consistent with the model assumptions, as shown below:
+
+```{r basic_example_2, fig.align='center'}
 resplot(model)
 ```
 
@@ -225,9 +249,10 @@ Reading each panel in this output:
 - **B (Q-Q plot)**: points follow the reference line closely across most of the range, with only minor deviation at the tails.
 - **C (residuals vs. fitted)**:  the scatter looks reasonably random, with no obvious funnel or trend. One could argue there's a faint polynomial-like curvature, but by and large the pattern appears random.
 - **D (Shapiro-Wilk)**: the p-value is above 0.05, supporting the visual impression of approximate normality.
-  
-Together, these four panels indicate that our model fits the iris dataset reasonably well, with no obvious violations of the modelling assumptions. Woo-hoo! 
 
+Together, these four panels indicate that our model fits the iris dataset reasonably well, with no obvious violations of the modelling assumptions. Woo-hoo!
+
+Notice the difference from the simulated example above: real data is rarely this text-book clean, and panel C's faint curvature is a good illustration of why. `resplot()` can't tell you whether a borderline pattern like that is real structure or just noise, that call comes down to judgement, informed by things like how large the sample is, how strong the pattern looks relative to the scatter around it, and how much is riding on the conclusions drawn from the model. Here, with no funnel or clear trend accompanying it, there isn't a strong case for a more complex model, but a more cautious analyst might still investigate further (e.g. fitting a quadratic term, or checking for structure by `Species`). When a pattern is this subtle, there often isn't a single "correct" answer, only a judgement call you should be prepared to explain.
 
 ### Example: Extreme Cases
 
@@ -235,7 +260,7 @@ The following examples illustrate two common violations of assumption using simu
 
 #### **Heteroskedasticity — variance that grows with the fitted value**
 
-```{r het_example}
+```{r het_example, fig.align='center'}
 p_het <- resplot(model_het)
 
 # Compute annotation coordinates from the model
@@ -280,7 +305,7 @@ Panel C shows the classic funnel shape: residual spread increases as fitted valu
 To resolve this, alog-transformation converts this multiplicative structure into an additive one
 where the variance is (approximately) constant:
 
-```{r het_fix}
+```{r het_fix, fig.align='center'}
 model_het_log <- lm(log(y_het) ~ x)
 resplot(model_het_log)
 ```
@@ -289,14 +314,14 @@ After log-transforming the response, the funnel in panel C disappears: the resid
 
 #### **Non-normal (right-skewed) residuals**
 
-```{r skew_example}
+```{r skew_example, fig.align='center'}
 resplot(model_skew)
 ```
 
 Panels A and B show clear right skew: the histogram has a long right tail and th Q-Q plot follows an S-shaped curve, which are indications of model assumptions being violated. The obvious reason here is that the response was generated as `y = exp(linear + noise)`, so a log transformation again is the natural remedy it undoes the exponentiation and returns us to the linear scale on which the
 data were generated:
 
-```{r skew_fix}
+```{r skew_fix, fig.align='center'}
 model_skew_log <- lm(log(y_skew) ~ x)
 resplot(model_skew_log)
 ```
@@ -305,13 +330,14 @@ After log-transforming, all four panels are consistent with the model assumption
 
 ## Common Transformations
 
-While people often work out which transformation they need during exploratory analysis, in case it has slipped their mind, residual diagnostics can help us determine whether the appropriate transformations have been applied. Here are some common patterns and the transformations they call for:
+Analysts often settle on the right transformation during exploratory analysis, before a model is even fitted. Residual diagnostics offer a useful second check — confirming afterwards whether the transformation that was (or wasn't) applied was the appropriate one. The table below summarises common residual patterns and the transformations they typically call for:
 
-| Residual pattern | Typical data type | Transformation | R expression |
-|---|---|---|---|
-| Right-skewed histogram; S-curve in Q-Q; funnel in C (variance ∝ mean²) | Continuous positive measurements | Log | `log(y)` |
-| Mild right skew; mild funnel in C (variance ∝ mean) | Counts (whole numbers ≥ 0) | Square root | `sqrt(y)` |
+| Residual pattern | Potential data type | Transformation | R expression |
+|-----|---|---|---|
+| Right-skewed histogram; S-curve in Q-Q Plot; funnel in Residual vs Fitted Plot (i.e., there is a trend in dispersion along the x axis) | Continuous positive measurements | Log | `log(y)` |
+| Mild right skew; mild funnel in Residual vs Fitted Plot | Counts (Integers $\geq$ 0) | Square root | `sqrt(y)` |
 | Variance highest near fitted values in the middle of the range, lowest at extremes; non-constant spread in C | Proportions / percentages | Arcsine square root | `asin(sqrt(y))` |
+| Left-skewed histogram; mirror-image S-curve in Q-Q Plot; residual spread narrows as fitted values increase | Continuous measurements bounded above (e.g. scores approaching a ceiling or maximum) | Square (or reflect-and-log) | `y^2` |
 
 The log transformation is demonstrated in detail in the [*Extreme Cases*](#example-extreme-cases) section above. The sections below walk through the other two common cases.
 
@@ -319,41 +345,71 @@ The log transformation is demonstrated in detail in the [*Extreme Cases*](#examp
 
 Count data such as numbers of insects caught, seeds germinating, or wireworms recovered follow a Poisson-like distribution in which the variance is proportional to the mean. As fitted values increase, the residual spread grows with them, which produces a mild funnel in panel C and mild right skew in panels A and B.
 
-```{r count_raw}
+```{r count_raw, fig.align='center'}
 set.seed(1001)
 x <- runif(80, 1, 10)
 y_count <- rpois(80, lambda = 1.5 * x)
 m_count <- lm(y_count ~ x)
+
+ggplot(data.frame(y_count = y_count), aes(x = y_count)) +
+    geom_histogram(binwidth = 1, fill = "steelblue", colour = "white") +
+    labs(
+        title = "Histogram of the original response, y_count",
+        subtitle = "(not standardised residuals — compare with resplot() panel A below)",
+        x = "Count",
+        y = "Frequency"
+    ) +
+    theme_bw()
+```
+
+The right skew already visible in the raw counts carries through into the model's residuals. Applying `resplot()` to the fitted model gives:
+
+```{r count_resplot, fig.align='center'}
 resplot(m_count)
 ```
 
-The pattern is more subtle than in the extreme cases above, but panel C still fans out gradually as fitted values increase, consistent with Poisson-type variance, while the histogram (A) is mildly right-skewed and the Shapiro-Wilk test (D) is significant. For count data that follows a Poisson distribution, Poisson regression is a natural alternative modelling approach worth considering.
+The pattern is more subtle than in the extreme cases above, but panel C still fans out gradually as fitted values increase, consistent with Poisson-type variance, while the histogram (A) is mildly right-skewed and the Shapiro-Wilk test (D) is significant. For count data that genuinely follows a Poisson distribution, Poisson regression is a natural alternative to consider instead of transforming.
 
-Another potential improvement would be to use the square root transformation to stabilise the variance for a Poisson random variable $\text{Y}$ with mean $\lambda$, $\text{Var}(\sqrt{\text{Y}}) \approx \tfrac{1}{4}$ regardless of $\lambda$, so the transformed residuals should have roughly constant spread:
+Alternatively, the square root transformation can stabilise the variance directly: for a Poisson random variable $\text{Y}$ with mean $\lambda$, $\text{Var}(\sqrt{\text{Y}}) \approx \tfrac{1}{4}$ regardless of $\lambda$, so the transformed residuals should have roughly constant spread:
 
-```{r count_sqrt}
+```{r count_sqrt, fig.align='center'}
 m_count_sqrt <- lm(sqrt(y_count) ~ x)
 resplot(m_count_sqrt)
 ```
 
-After the square root, the funnel in panel C disappears, the histogram is more symmetric, the Q-Q plot hugs the reference line more closely, and the Shapiro-Wilk p-value is no longer significant. Fitted values and confidence intervals should be back-transformed by squaring before reporting on the original count scale.
+After the square root transformation, the funnel in panel C disappears, the histogram is more symmetric, the Q-Q plot hugs the reference line more closely, and the Shapiro-Wilk p-value is no longer significant. Fitted values and confidence intervals should be back-transformed by squaring before reporting on the original count scale.
 
 ### Arcsine Square Root Transformation (Proportion Data)
 
-Proportions and percentages, for example germination rates, disease incidence, or ground cover — are bounded between 0 and 1. The variance of a proportion $p$ estimated from $n$ trials is $p(1-p)/n$, which is largest near $p = 0.5$ and shrinks toward zero as $p$ approaches 0 or 1. This produces non-constant residual variance: observations whose true proportion sits near the middle of the range scatter widely, while those near the extremes are compressed.
+Some proportion data in agriculture — for example, the percentage of barley grain retained on a sieve during grading — tend to cluster near one end of the scale, and for these a plain `log()` or `sqrt()` transformation is often perfectly reasonable. Other proportions range more freely across the full 0–1 scale, with germination rates, disease incidence, and ground cover as typical examples. The variance of a proportion $p$ estimated from $n$ trials is $p(1-p)/n$, which is largest near $p = 0.5$ and shrinks toward zero as $p$ approaches 0 or 1. This produces non-constant residual variance: observations whose true proportion sits near the middle of the range scatter widely, while those near the extremes are compressed.
 
-```{r prop_raw}
+```{r prop_raw, fig.align='center'}
 set.seed(18)
 x <- runif(80, 0, 5)
 p_true <- plogis(-1 + 0.4 * x)
 y_prop <- rbinom(80, size = 50, prob = p_true) / 50
 m_prop <- lm(y_prop ~ x)
+
+ggplot(data.frame(y_prop = y_prop), aes(x = y_prop)) +
+    geom_histogram(bins = 15, fill = "steelblue", colour = "white") +
+    labs(
+        title = "Histogram of the original response, y_prop",
+        subtitle = "(not standardised residuals — compare with resplot() panel A below)",
+        x = "Proportion",
+        y = "Frequency"
+    ) +
+    theme_bw()
+```
+
+Applying `resplot()` to the fitted model without transforming the response variable gives:
+
+```{r prop_resplot, fig.align='center'}
 resplot(m_prop)
 ```
 
 Panel C shows non-constant spread — residuals are more variable at intermediate fitted values and narrow at the high and low ends. The arcsine square root ("angular") transformation $y' = \arcsin(\sqrt{p})$ is designed to stabilise this variance:
 
-```{r prop_asin}
+```{r prop_asin, fig.align='center'}
 m_prop_asin <- lm(asin(sqrt(y_prop)) ~ x)
 resplot(m_prop_asin)
 ```
@@ -364,7 +420,7 @@ The arcsine square root is most effective when proportions are not too extreme (
 
 ## Simple Field Trial Example
 
-To illustrate how `resplot()` fits into a real analysis workflow, we use `cochran.wireworms` from the `agridat` package, a classic soil fumigation experiment from Cochran & Cox (1957). Five fumigant treatments (K, M, N, O, and an untreated control P) were applied to 5 × 5 soil sections arranged in a Latin Square: each treatment appears exactly once in every row and every column, so both spatial dimensions serve as blocking factors.
+To illustrate how `resplot()` fits into a real analysis workflow, we use `cochran.wireworms` from the `agridat` package, a classic soil fumigation experiment from @cochran1938. Five fumigant treatments (K, M, N, O, and an untreated control P) were applied to 5 × 5 soil sections arranged in a Latin Square: each treatment appears exactly once in every row and every column, so both spatial dimensions serve as blocking factors.
 
 ```{r real_data_setup, message=FALSE}
 library(agridat)
@@ -399,7 +455,7 @@ distribution.
 
 Including `row` and `col` as blocking factors gives the model the Latin Square intended to provide:
 
-```{r real_data_ls}
+```{r real_data_ls, fig.align='center'}
 m_ls <- aov(worms ~ trt + factor(row) + factor(col), data = cochran.wireworms)
 resplot(m_ls)
 ```
@@ -413,11 +469,11 @@ The picture changes substantially:
 
 The residual diagnostics did not point to a distributional problem requiring transformation; they flagged a misspecified model. Accounting for the blocking structure in the design resolved the issue and, as a practical bonus, also increases precision for the treatment comparisons by removing the spatial nuisance variation from the error.
 
-## Chickpea Nitrogen Fixation Trial Example (ASReml-R) [@TODO]
+## Chickpea Nitrogen Fixation Trial Example (ASReml-R)
 
-The second example moves to a more complex setting: a split-plot greenhouse pot trial investigating rhizobium strains for biological nitrogen fixation in chickpea (*Cicer arietinum*). The trial compared 13 rhizobium strains across 8 chickpea cultivars, giving 416 observations of shoot dry weight (mg/plant) arranged in replicate blocks along rows and columns of a greenhouse bench. The response was log-transformed to stabilise variance, and the model includes a first-order autoregressive spatial correlation (`ar1`) across both the row and column dimensions of the greenhouse.
+We will be using a real data example which involves a more complex setting. The `dat` extracted below contains the dataset for a split-plot greenhouse pot trial investigating rhizobium strains for biological nitrogen fixation in chickpea (*Cicer arietinum*). The trial compared 13 rhizobium strains across 8 chickpea cultivars, giving 416 observations of shoot dry weight (mg/plant) arranged in replicate blocks along rows and columns of a greenhouse bench. 
 
-The code in this section requires **ASReml-R**, a commercial mixed model package.To run this code yourself, you may need a valid ASReml-R licence from [VSNi](https://vsni.co.uk/).
+The code in this section requires **ASReml-R**, a commercial mixed model package. To run this code yourself, you may need a valid ASReml-R licence from [VSNi](https://vsni.co.uk/). We start by doing some data processing before fitting:
 
 ```{r chickpea_data, message=FALSE}
 library(openxlsx2)
@@ -451,20 +507,181 @@ dat$rep_block_table <- factor(dat$rep_block_table)
 dat$mainplot <- factor(dat$mainplot)
 ```
 
-### Model fitting
+The trial was laid out on 4 greenhouse benches, each holding one complete replicate of the design: `rep_block_table` records which of the 4 benches ("tables") a pot sits on, `mainplot` is the whole-plot within that bench, with one per rhizobium strain being the main plot. `pot_row` gives the position of each of the 8 cultivar sub-plots within a mainplot. Together, `rep_block_table` and `pot_row` build the `row` index above, while `col` (from the last two digits of `pot_number`) records which mainplot/strain column a pot belongs to. The raw spreadsheet also carries a few columns not needed for this analysis (a row `id`, nodulation counts, %SP), so before continuing we keep just what's used below:
 
-The model includes a `strain × cultivar` fixed interaction, a split-plot random
-structure (`rep_block_table/mainplot`), per-strain and per-cultivar
-heterogeneous variance components for strains/cultivars identified during model
-exploration, and a two-dimensional `ar1(row):ar1(col)` spatial residual
-structure.
+```{r chickpea_clean}
+dat <- dat[, c(
+    "rep_block_table", "mainplot", "row", "col",
+    "strain", "cultivar", "shoot_dw_mg_plant"
+)]
+```
 
-::: {.callout-note}
-The `at(factor, "level"):units` terms allow selected strains and cultivars to
-have their own residual variance — useful here because the `Magnus` cultivar had
-several missing values and some strains (e.g. `CC1192`, `MC4`) showed markedly
-different spread from the others.
-:::
+Sometimes it is also good practice to visualise the experimental design element to see how things are laid out, if it is not immediately obvious. Plotting each pot at its physical `row`/`col` position on the benches, coloured by `strain` (the whole-plot factor) and labelled by `cultivar` (the sub-plot factor, first letter of its name), shows the split-plot structure directly:
+
+```{r chickpea_design_plot, fig.width=7, fig.height=6, fig.align='center'}
+ggplot(dat, aes(x = col, y = row, fill = strain)) +
+    geom_tile(colour = "white") +
+    geom_text(aes(label = substr(cultivar, 1, 1)), size = 2) +
+    geom_hline(yintercept = c(8.5, 16.5, 24.5), linewidth = 0.8) +
+    scale_y_discrete(limits = rev) +
+    scale_fill_discrete() +
+    labs(
+        x = "Column (mainplot)", y = "Row",
+        caption = "Layout of the 4 greenhouse benches. Tile colour = strain (whole-plot); letter = cultivar (sub-plot). Horizontal lines mark the 4 rep_block_table benches"
+    ) +
+    theme_bw()
+```
+
+Each horizontal band between the reference lines is one bench (`rep_block_table`), and each column within a band is one mainplot: all 8 tiles in that column share the same strain colour but carry 8 different cultivar letters (C = Captain, D = Drummond, G = Gen090, H = Hattrick, K = Kyabra, M = Magnus, R = Royal, S = Seamer), since cultivar is randomised as the sub-plot factor within each strain's mainplot. The strain colours scramble from one band to the next, confirming that strains were randomised to mainplots independently within each bench — this is a randomised complete block, split-plot design: every bench is a complete replicate containing all 13 strains fully crossed with all 8 cultivars, not confounded with each other, just estimated at different strata (whole-plot for strain, sub-plot for cultivar).
+
+### Exploratory Data Analysis
+
+While we have largely omitted the EDA step for the previous simple examples, in real life it is often good to observe what the data look like before fitting the model. This is especially the case for experimental design data, where the design structure may not be immediately obvious. Nonetheless, we first investigate the shape of our response variable `shoot_dw_mg_plant`, which records the shoot dry matter measurement per plant.
+
+```{r}
+head(dat)
+```
+
+```{r chickpea_hist, fig.width=7, fig.height=3, fig.align='center'}
+ggplot(dat, aes(x = shoot_dw_mg_plant)) +
+    geom_histogram(bins = 20, fill = "steelblue", colour = "white") +
+    labs(x = "Shoot dry weight (mg/plant)", y = "Frequency") +
+    theme_bw()
+```
+
+Comparing the distribution of shoot dry weight across strains and cultivars gives an early read on which treatment factors are likely to matter. Rather than building these by hand, `biometryassist` already ships `summary_graph()` for exactly this kind of comparison:
+
+```{r chickpea_summary_strain, fig.width=7, fig.height=4, fig.align='center'}
+summary_graph(dat, "shoot_dw_mg_plant", "strain", "mg/plant") +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+```
+
+```{r chickpea_summary_cultivar, fig.width=7, fig.height=4, fig.align='center'}
+summary_graph(dat, "shoot_dw_mg_plant", "cultivar", "mg/plant")
+```
+
+Both factors look like they shift the mean shoot dry weight, which is the basic case for including `strain` and `cultivar` as fixed effects at all. That still leaves the question of whether they act independently or interact, , which is what justifies fitting `strain * cultivar` (with an interaction term) rather than just `strain + cultivar` (main effects only) in every model below. Passing two variables to `summary_graph()` instead of one switches it to an interaction-style plot: the mean of each level of the second variable is traced as a line across the levels of the first, so a genuine interaction shows up as lines that cross or diverge, while lines that stay roughly parallel indicate the two factors act additively.
+
+```{r chickpea_summary_interaction, fig.width=7, fig.height=4, fig.align='center'}
+summary_graph(dat, "shoot_dw_mg_plant", c("strain", "cultivar"), "mg/plant") +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+```
+
+```{r chickpea_summary_interaction2, fig.width=7, fig.height=4, fig.align='center'}
+summary_graph(dat, "shoot_dw_mg_plant", c("cultivar", "strain"), "mg/plant")
+```
+
+### Model Fitting Process
+
+Having done the exploratory analysis, we move into modelling with a clearer picture: the response likely needs a `log()` or `sqrt()` transformation, and strain/cultivar may need some heterogeneous variance treatment. But suppose we hadn't looked at any of that yet — a naive first attempt would model just the two treatment effects and their interaction:
+
+```{r model_simple, warning=FALSE, fig.align='center'}
+model_simple <- asreml(
+    shoot_dw_mg_plant ~ strain * cultivar,
+    data = dat,
+    trace = FALSE
+)
+
+resplot(model_simple)
+```
+
+This clearly presents some problems. Before picking a transformation, it helps to compare the response on a few candidate scales side by side:
+
+```{r chickpea_transform_compare, warning=FALSE, fig.width=9, fig.height=3, fig.align='center'}
+p_raw <- ggplot(dat, aes(x = shoot_dw_mg_plant)) +
+    geom_histogram(bins = 20, fill = "steelblue", colour = "white") +
+    labs(title = "Original scale", x = "Shoot dry weight (mg/plant)") +
+    theme_bw()
+
+p_log <- ggplot(dat, aes(x = log(shoot_dw_mg_plant))) +
+    geom_histogram(bins = 20, fill = "steelblue", colour = "white") +
+    labs(title = "Log scale", x = "log(shoot dry weight)") +
+    theme_bw()
+
+p_sqrt <- ggplot(dat, aes(x = sqrt(shoot_dw_mg_plant))) +
+    geom_histogram(bins = 20, fill = "steelblue", colour = "white") +
+    labs(title = "Square root scale", x = "sqrt(shoot dry weight)") +
+    theme_bw()
+
+p_raw + p_log + p_sqrt
+```
+
+Of the three, the log-transformed histogram is the most symmetric and bell-shaped, so we proceed with the log transformation for the remaining models. Refitting with `log(shoot_dw_mg_plant)` as the response, the dispersion in the residuals-vs-fitted panel is already noticeably less pronounced:
+
+```{r model_2, warning=FALSE, fig.align='center'}
+model_2 <- asreml(
+   log(shoot_dw_mg_plant) ~ strain * cultivar,
+    data = dat,
+    trace = FALSE
+)
+
+resplot(model_2)
+```
+
+The resplot above still needs some work. `model_2` treats every plot as independent, but the trial actually has an experimental design behind it — a randomised complete block, split-plot structure, with `rep_block_table` as the block and `mainplot` as the whole-plot. Fitting these as random effects lets each block and each mainplot have its own deviation from the overall mean, rather than forcing all of that block-to-block and mainplot-to-mainplot variation into the residuals, so accounting for them should tighten things up further:
+
+```{r model_3, warning=FALSE, fig.align='center'}
+model_3 <- asreml(
+   log(shoot_dw_mg_plant) ~ strain * cultivar,
+   random = ~ rep_block_table / mainplot,
+    data = dat,
+    trace = FALSE
+)
+
+resplot(model_3)
+```
+
+The central cluster in panel C now looks more random than before. However, the Q-Q plot still shows heavy tails at both ends. Before reaching for per-group variance terms on faith, it's worth checking whether specific strains or cultivars are actually driving that tail-heaviness: plotting `model_3`'s residuals grouped by strain and by cultivar shows whether some groups are noticeably more (or less) variable than the rest.
+
+```{r model_3_resid_by_group, warning=FALSE, fig.width=7, fig.height=7, fig.align='center'}
+resid_dat <- dat
+resid_dat$resid <- residuals(model_3)
+
+het_strains   <- c("MC4", "CC1192", "AU18(4)", "MI_8", "WSM5041")
+het_cultivars <- c("Royal", "Magnus")
+
+p_resid_strain <- ggplot(resid_dat, aes(x = strain, y = resid, fill = strain %in% het_strains)) +
+    geom_violin(alpha = 0.6, colour = NA, show.legend = FALSE) +
+    geom_boxplot(width = 0.15, fill = "white", outlier.shape = NA) +
+    scale_fill_manual(values = c(`TRUE` = "firebrick", `FALSE` = "grey80")) +
+    labs(x = "Strain", y = "model_3 residual") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+
+p_resid_cultivar <- ggplot(resid_dat, aes(x = cultivar, y = resid, fill = cultivar %in% het_cultivars)) +
+    geom_violin(alpha = 0.6, colour = NA, show.legend = FALSE) +
+    geom_boxplot(width = 0.15, fill = "white", outlier.shape = NA) +
+    scale_fill_manual(values = c(`TRUE` = "firebrick", `FALSE` = "grey80")) +
+    labs(x = "Cultivar", y = "model_3 residual") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+
+p_resid_strain / p_resid_cultivar
+```
+
+The boxes highlighted in red are the strains and cultivars given their own residual variance in `model_4` below (`at(strain, "MC4"):units`, and so on) — check whether they do in fact show visibly wider or narrower spread than the grey boxes. That comparison, on the model's own (log) scale and after the fixed and block effects are already accounted for, is the actual evidence for adding `at():units` terms, rather than the raw pre-model boxplots from the EDA section above (which are on the untransformed scale and reflect total spread, not residual spread).
+
+```{r model_4, warning=FALSE}
+model_4 <- asreml(
+    log(shoot_dw_mg_plant) ~ strain * cultivar,
+    random = ~ rep_block_table / mainplot +
+        at(strain, "MC4"):units +
+        at(strain, "CC1192"):units +
+        at(strain, "AU18(4)"):units +
+        at(strain, "MI_8"):units +
+        at(strain, "WSM5041"):units +
+        at(cultivar, "Royal"):units +
+        at(cultivar, "Magnus"):units,
+    data = dat,
+    trace = FALSE
+)
+
+resplot(model_4)
+```
+
+The `at(factor, "level"):units` terms let selected strains and cultivars have their own residual variance, rather than assuming every group is equally variable — the diagnostic above is what actually flags `CC1192` and `MC4` (among strains) as having noticeably different spread from the rest. `Magnus` is included for a different reason: it had several missing values, which changes its effective precision regardless of whether its residual spread stands out. Allowing for this heterogeneity, rather than assuming every group shares one common residual variance, is what tightens the Q-Q tails compared to `model_3`.
+
+Although not covered in detail elsewhere in this vignette, the physical location of a plant can also matter: pots that sit next to each other on the bench tend to share a similar micro-environment, a phenomenon known as spatial autocorrelation. In ASReml-R, this can be added directly with `residual = ar1(row):ar1(col)`.
 
 ```{r chickpea_model, warning=FALSE}
 model.asr <- asreml(
@@ -483,48 +700,32 @@ model.asr <- asreml(
 )
 ```
 
-### Residual diagnostics
-
-```{r chickpea_resplot}
-resplot(model.asr, shapiro = FALSE)
+```{r chickpea_resplot, fig.align='center'}
+resplot(model.asr)
 ```
 
-`shapiro = FALSE` suppresses the Shapiro-Wilk panel (D), producing a clean three-panel figure suitable for a report. With 416 observations the test has high power — any minor departure from normality will be flagged as significant even when the violation is too small to matter practically. Suppressing the formal test keeps attention on the visual panels (A–C), which give a richer picture of *where* the residual distribution deviates, if at all.
+Overall, the final resplot aligns well with our modelling assumptions — dare we say, beautiful. The Shapiro-Wilk test still flags the residuals as non-normal, but with a relatively large sample (n = 406), the test has high power: minor, practically unimportant departures from normality get flagged as significant just as readily as meaningful ones, so this result can be taken with a grain of salt rather than a cause for concern.
 
-For a well-fitting model on these data you would expect:
+For a well-fitting model on these data, we would expect the histogram (panel A) to be approximately symmetric and bell-shaped around zero, the Q-Q plot (panel B) to sit close to the reference line with only modest deviation in the tails, and the residuals-vs-fitted plot (panel C) to show a horizontal scatter with no funnel shape or systematic curve — confirming that the `ar1` spatial structure and the per-group variance components have absorbed the main sources of heterogeneity in the data.
 
-- **A (histogram)**: approximately symmetric and bell-shaped around zero.
-- **B (Q-Q plot)**: points close to the reference line with only modest tail
-  deviation.
-- **C (residuals vs. fitted)**: a horizontal scatter with no funnel shape or systematic curve — confirming that the `ar1` spatial structure and the per-group variance components have absorbed the main sources of heterogeneity.
-
-If panel C showed a residual funnel widening with fitted values, or if the histogram in A were strongly skewed, you would revisit the variance modelling either adding further `at():units` terms, adjusting the spatial structure, or considering a different transformation of the response.
-
+Modelling is an iterative process: we try to incorporate relevant information into the analysis, and while any single addition might not help much on its own, together they can amount to a substantial improvement, as shown here.
 
 ## Playing Around with the Visuals
 
-`resplot()`'s output follows normal `ggplot2` styling conventions, so it can be
-customised and extended using familiar syntax. But because it returns a
-`patchwork` object built from ggplot2 panels — not a single `ggplot` object —
-that customisation happens through patchwork's own syntax:
+`resplot()`'s output follows normal `ggplot2` styling conventions, so it can be customised and extended using familiar syntax. But because it returns a `patchwork` object built from ggplot2 panels — not a single `ggplot` object — that customisation happens through patchwork's own syntax:
 
 - Use **`&`** to apply a ggplot2 theme or element to *every* panel at once.
-- **Index** into an individual panel (e.g. `resplot(model)[[1]]`) to modify it
-  with normal ggplot2 `+` syntax.
+- **Index** into an individual panel (e.g. `resplot(model)[[1]]`) to modify it with normal ggplot2 `+` syntax.
 
-Patchwork reserves `+` for adding a *new* panel to the layout, so
-`resplot(model) + theme_bw()` won't restyle the existing plots the way it would
-for a single `ggplot` object — reach for `&` instead.
+Patchwork reserves `+` for adding a *new* panel to the layout, so `resplot(model) + theme_bw()` won't restyle the existing plots the way it would for a single `ggplot` object — reach for `&` instead.
 
 ### Restyle every panel at once with `&`
 
-```{r theme_all_panels}
+```{r theme_all_panels, fig.align='center'}
 resplot(model, shapiro = FALSE) & theme_classic()
 ```
 
-One line swaps `resplot()`'s default `theme_bw()` for `theme_classic()` across
-all three panels simultaneously, handy for matching diagnostics to the theme of a report or
-slide deck.
+One line swaps `resplot()`'s default `theme_bw()` for `theme_classic()` across all three panels simultaneously, handy for matching diagnostics to the theme of a report or slide deck.
 
 ### Changing the data mark colours
 
@@ -532,7 +733,7 @@ The fill and outline colours of the histogram bars and scatter points are hard-c
 
 Each panel returned by `resplot()` is a standard `ggplot` object whose first layer holds the histogram bars or scatter points; the static colours live in `$layers[[1]]$aes_params`. Overwrite those entries before printing the panel:
 
-```{r recolour_one_panel}
+```{r recolour_one_panel, fig.align='center'}
 p <- resplot(model, shapiro = FALSE)[[1]]  # histogram panel (A)
 p$layers[[1]]$aes_params$fill <- "steelblue"
 p$layers[[1]]$aes_params$colour <- "navy"
@@ -541,7 +742,7 @@ p
 
 To recolour all three panels at once, apply the same replacement to each one inside a loop — patchwork's indexing lets you modify a panel of an already-composed object in place, so no reassembly is needed:
 
-```{r recolour_all_panels, message=FALSE}
+```{r recolour_all_panels, message=FALSE, fig.align='center'}
 recolour_resplot <- function(plt, fill = "steelblue", colour = "navy") {
     for (i in 1:3) {
         plt[[i]]$layers[[1]]$aes_params$fill <- fill
@@ -557,7 +758,7 @@ The helper loops over the three panels (`[[1]]` histogram, `[[2]]` Q-Q plot, `[[
 
 ### Annotate a single panel by indexing
 
-```{r annotate_one_panel, message=FALSE}
+```{r annotate_one_panel, message=FALSE, fig.align='center'}
 resplot(model, shapiro = FALSE)[[3]] +
     geom_smooth(se = FALSE, colour = "firebrick", linewidth = 0.5) +
     labs(title = "Residuals vs. Fitted, with a smoother")
@@ -567,7 +768,7 @@ Once extracted, a panel is an ordinary `ggplot` object, so any ggplot2 layer, sc
 
 ### Compare two models' diagnostics in one figure
 
-```{r compare_two_models, fig.width=9, fig.height=8}
+```{r compare_two_models, fig.width=9, fig.height=8, fig.align='center'}
 model_a <- aov(Petal.Length ~ Petal.Width, data = iris)
 model_b <- aov(Petal.Length ~ Petal.Width + Species, data = iris)
 
@@ -581,7 +782,7 @@ Because each `resplot()` call already returns a patchwork object, two (or more) 
 
 Set `call = TRUE` to print the model's call as a title above the plots, handy when comparing diagnostics from several candidate models side by side. Use `call.size` to adjust its font size:
 
-```{r call_true}
+```{r call_true, fig.align='center'}
 resplot(model, call = TRUE, call.size = 8)
 ```
 
@@ -592,7 +793,7 @@ Two further size arguments control the rest of the plot's typography:
 - `label.size` — the font size of the panel tags (`A`, `B`, `C`).
 - `axes.size` — the font size of the axis text and titles within each panel.
 
-```{r sizing}
+```{r sizing, fig.align='center'}
 resplot(model, label.size = 14, axes.size = 8)
 ```
 
@@ -623,7 +824,7 @@ split_plot_model <- aov(
 )
 ```
 
-```{r split_plot_resplot}
+```{r split_plot_resplot, fig.align='center'}
 split_plot_resids <- resplot(split_plot_model, shapiro = FALSE)
 names(split_plot_resids)
 ```
@@ -631,7 +832,7 @@ names(split_plot_resids)
 Each element is a complete diagnostic panel for that stratum, and can be
 inspected (or saved) individually:
 
-```{r split_plot_print}
+```{r split_plot_print, fig.align='center'}
 split_plot_resids[["block:irrigation"]]
 ```
 
@@ -642,7 +843,7 @@ structure becomes its own named element in the returned list.
 
 When a model has several strata, printing each one separately is tedious. Set `onepage = TRUE` to arrange them into a grid (up to 6 strata per page, paginated automatically if there are more), and use `onepage_cols` to control the number of columns. With three strata, `onepage_cols = 1` stacks them in a single column:
 
-```{r onepage_example, fig.width=7, fig.height=15}
+```{r onepage_example, fig.width=7, fig.height=15, fig.align='center'}
 resplot(
   split_plot_model,
   shapiro = FALSE,
@@ -692,3 +893,8 @@ before trusting the diagnostics.
 - `?extract_model_info` for the extension mechanism used to add new model engines.
 - The [*Choosing and interpreting multiple comparisons*](choosing-multiple-comparisons.html)
   vignette, for the next step after the model passes these checks.
+
+## References
+
+::: {#refs}
+:::
