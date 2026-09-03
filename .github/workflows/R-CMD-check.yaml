@@ -9,6 +9,12 @@ on:
 
 name: R-CMD-check
 
+# Cancel an in-progress run when a newer commit supersedes it. PR runs are
+# keyed by PR number, push runs by ref, so the two don't cancel each other.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
