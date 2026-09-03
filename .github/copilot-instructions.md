@@ -29,7 +29,13 @@ devtools::test(filter = "design")
 # Full R CMD check
 devtools::check()
 
-# Build README.md from README.Rmd
+# Format R code with Air (run from a shell, not the R console).
+# CI enforces formatting - code that isn't Air-formatted fails the build.
+air format .          # format the whole package in place
+air format --check .  # check only (what the format-check CI job runs)
+
+# Build README.md from README.qmd (never edit README.md directly).
+# Requires Quarto; `quarto render README.qmd` does the same thing from a shell.
 devtools::build_readme()
 
 # Coverage report

@@ -1,19 +1,22 @@
 ---
-output: github_document
+format:
+  gfm:
+    # Badge URLs are extensionless; don't let Quarto append ".png" to them.
+    default-image-extension: ""
+engine: knitr
 ---
 
-<!-- README.md is generated from README.Rmd. Please edit that file -->
+<!-- README.md is generated from README.qmd. Please edit that file -->
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.path = "man/figures/README-",
-  out.width = "100%"
+  fig.path = "man/figures/README-"
 )
 ```
 
-# biometryassist
+# biometryassist <a href="https://biometryhub.github.io/biometryassist/"><img src="man/figures/logo.svg" align="right" height="139" alt="biometryassist website" /></a>
 
 ```{r, echo = FALSE}
 description <- read.dcf('DESCRIPTION')
