@@ -1,5 +1,9 @@
 test_that("export_design_to_excel returns correct layout matrix", {
 	skip_if_not_installed("openxlsx2")
+	# No filename is given, so the default experimental_design.xlsx is written
+	# to the working directory - run in a temporary one so it doesn't
+	# accumulate in tests/testthat/.
+	withr::local_dir(withr::local_tempdir())
 	df <- data.frame(
 		row = rep(1:2, each = 3),
 		col = rep(1:3, 2),
@@ -17,6 +21,7 @@ test_that("export_design_to_excel returns correct layout matrix", {
 
 test_that("export_design_to_excel works with renamed row/column coordinates", {
 	skip_if_not_installed("openxlsx2")
+	withr::local_dir(withr::local_tempdir())
 	df <- data.frame(
 		lane = rep(1:2, each = 3),
 		range = rep(1:3, 2),
@@ -174,6 +179,7 @@ test_that("export_design_to_excel supports numeric value_column (creates numeric
 
 test_that("export_design_to_excel works with a list input", {
 	skip_if_not_installed("openxlsx2")
+	withr::local_dir(withr::local_tempdir())
 	des <- design("crd", c("A", "B"), 2, 2, 2, quiet = TRUE, plot = FALSE)
 	expect_message(
 		layout <- export_design_to_excel(des),
