@@ -323,7 +323,7 @@ multiple_comparisons <- function(
 
 	# Process dots
 	rlang::check_dots_used()
-	args = list(...)
+	args <- list(...)
 
 	# Check for alias 'letters' instead of 'groups'
 	if ("letters" %in% names(args)) {

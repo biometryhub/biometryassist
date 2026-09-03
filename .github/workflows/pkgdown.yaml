@@ -4,12 +4,15 @@ on:
 
 name: pkgdown
 
+# Cancel an in-progress site build when a newer commit supersedes it — the
+# deploy happens in the final step, so a cancelled run never half-deploys.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   pkgdown:
     runs-on: ubuntu-latest
-    # Only restrict concurrency for non-PR jobs
-    concurrency:
-      group: pkgdown-${{ github.event_name != 'pull_request' || github.run_id }}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     permissions:
