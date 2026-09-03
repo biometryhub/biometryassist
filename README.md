@@ -1,7 +1,8 @@
 
-<!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# biometryassist
+<!-- README.md is generated from README.qmd. Please edit that file -->
+
+# biometryassist <a href="https://biometryhub.github.io/biometryassist/"><img src="man/figures/logo.svg" align="right" height="139" alt="biometryassist website" /></a>
 
 <!-- badges: start -->
 
@@ -27,7 +28,7 @@ concepts.
 
 *This package is a renamed version of BiometryTraining which is no
 longer maintained, but can still be found at
-<https://biometryhub.github.io/BiometryTraining/>*
+https://biometryhub.github.io/BiometryTraining/*
 
 ------------------------------------------------------------------------
 
@@ -118,7 +119,7 @@ des.out <- design(
 )
 ```
 
-<img src="man/figures/README-example-plot-1.png" alt="" width="100%" />
+![](man/figures/README-example-plot-1.png)
 
 The `$satab` element gives the skeletal ANOVA table for the design:
 

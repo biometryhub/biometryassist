@@ -35,7 +35,8 @@ devtools::check()
 air format .          # format the whole package in place
 air format --check .  # check only (what the format-check CI job runs)
 
-# Build README.md from README.Rmd (never edit README.md directly)
+# Build README.md from README.qmd (never edit README.md directly).
+# Requires Quarto; `quarto render README.qmd` does the same thing from a shell.
 devtools::build_readme()
 
 # Test coverage
