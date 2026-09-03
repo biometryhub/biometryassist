@@ -222,11 +222,11 @@ reference_comparisons(model_cw, classify = "feed", reference = "casein")
 ## 4   soybean casein   soybean - casein   -77.15      246.43      323.58
 ## 5 sunflower casein sunflower - casein     5.33      328.92      323.58
 ##   std.error statistic df  p.value conf.low conf.high
-## 1     23.49     -6.96 65 1.01e-08  -223.96   -102.80
-## 2     22.39     -4.68 65 6.88e-05  -162.59    -47.07
-## 3     22.90     -2.04 65 1.67e-01  -105.73     12.38
-## 4     21.58     -3.58 65 3.07e-03  -132.81    -21.50
-## 5     22.39      0.24 65 9.99e-01   -52.43     63.09
+## 1     23.49     -6.96 65 2.24e-09  -223.95   -102.82
+## 2     22.39     -4.68 65 7.35e-05  -162.58    -47.09
+## 3     22.90     -2.04 65 1.67e-01  -105.72     12.37
+## 4     21.58     -3.58 65 3.06e-03  -132.80    -21.51
+## 5     22.39      0.24 65 9.99e-01   -52.41     63.08
 ```
 
 Each row gives the mean of a feed (`level1.mean`), the mean of the

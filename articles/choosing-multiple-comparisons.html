@@ -13,6 +13,7 @@
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><script src="choosing-multiple-comparisons_files/libs/quarto-html/popper.min.js"></script><script src="choosing-multiple-comparisons_files/libs/quarto-html/tippy.umd.min.js"></script><link href="choosing-multiple-comparisons_files/libs/quarto-html/tippy.css" rel="stylesheet">
 <link href="choosing-multiple-comparisons_files/libs/quarto-html/light-border.css" rel="stylesheet">
 <!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Choosing and interpreting multiple comparisons">
+<meta property="og:image" content="https://biometryhub.github.io/biometryassist/logo.svg">
 <!-- Global site tag (gtag.js) - Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=G-971LPN0BS4"></script><script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
@@ -62,8 +63,7 @@
 </nav><div class="container template-quarto">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Choosing and interpreting multiple comparisons</h1>
+      <img src="../logo.svg" class="logo" alt=""><h1>Choosing and interpreting multiple comparisons</h1>
 
 
 
@@ -225,11 +225,11 @@
 <span><span class="co">## 4   soybean casein   soybean - casein   -77.15      246.43      323.58</span></span>
 <span><span class="co">## 5 sunflower casein sunflower - casein     5.33      328.92      323.58</span></span>
 <span><span class="co">##   std.error statistic df  p.value conf.low conf.high</span></span>
-<span><span class="co">## 1     23.49     -6.96 65 1.01e-08  -223.96   -102.80</span></span>
-<span><span class="co">## 2     22.39     -4.68 65 6.88e-05  -162.59    -47.07</span></span>
-<span><span class="co">## 3     22.90     -2.04 65 1.67e-01  -105.73     12.38</span></span>
-<span><span class="co">## 4     21.58     -3.58 65 3.07e-03  -132.81    -21.50</span></span>
-<span><span class="co">## 5     22.39      0.24 65 9.99e-01   -52.43     63.09</span></span></code></pre></div>
+<span><span class="co">## 1     23.49     -6.96 65 2.24e-09  -223.95   -102.82</span></span>
+<span><span class="co">## 2     22.39     -4.68 65 7.35e-05  -162.58    -47.09</span></span>
+<span><span class="co">## 3     22.90     -2.04 65 1.67e-01  -105.72     12.37</span></span>
+<span><span class="co">## 4     21.58     -3.58 65 3.06e-03  -132.80    -21.51</span></span>
+<span><span class="co">## 5     22.39      0.24 65 9.99e-01   -52.41     63.08</span></span></code></pre></div>
 </div>
 <p>Each row gives the mean of a feed (<code>level1.mean</code>), the mean of the control (<code>level2.mean</code>) and their difference, with the adjustment defaulting to the exact Dunnett test. The <code><a href="../reference/autoplot.html">autoplot()</a></code> method draws each feed’s mean, a dashed line at the control mean (marked with a diamond), and an interval for the difference from the control, so the interval clears the control line exactly when the comparison is significant; significant feeds are also flagged with an asterisk:</p>
 <div class="cell">
