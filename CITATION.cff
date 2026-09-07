@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it as below.
+title: '*biometryassist*: an R package to aid the design and analysis of agronomic experiments'
+type: software
+authors:
+- given-names: Sam
+  family-names: Rogers
+  orcid: https://orcid.org/0000-0002-8147-1239
+- given-names: Sharon
+  family-names: Nielsen
+  orcid: https://orcid.org/0000-0003-4245-7300
+- given-names: Annie
+  family-names: Conway
+  orcid: https://orcid.org/0009-0003-8385-7615
+repository-code: https://github.com/biometryhub/biometryassist
+license: MIT
