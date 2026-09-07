@@ -1,0 +1,28 @@
+citHeader("To cite biometryassist in publications, please use:")
+
+# Only `meta` is used here: readCitationFile() supplies it from DESCRIPTION,
+# so this works uninstalled (as R CMD check evaluates it). Do not reach for
+# packageDescription(). DESCRIPTION deliberately carries no Date field (CRAN
+# sets the publication date on release), so prefer Date/Publication, then
+# Date, then the current year for source/GitHub installs.
+dates <- c(meta$`Date/Publication`, meta$Date, format(Sys.Date()))
+dates <- dates[!is.na(dates) & nzchar(dates)]
+year <- sub("-.*", "", dates[1L])
+
+bibentry(
+    bibtype = "Manual",
+    title = paste0(
+        "{biometryassist}: Functions to Assist Design and Analysis ",
+        "of Agronomic Experiments"
+    ),
+    author = c(
+        person("Sharon", "Nielsen"),
+        person("Sam", "Rogers"),
+        person("Annie", "Conway")
+    ),
+    year = year,
+    note = paste("R package version", meta$Version),
+    organization = "Adelaide University",
+    url = "https://biometryhub.github.io/biometryassist/",
+    doi = "10.32614/CRAN.package.biometryassist"
+)

@@ -18,7 +18,7 @@ Authors@R:
       person(given = "Michael",
              family = "Mumford",
              role = "ctb"),
-      person(given = "University of Adelaide",
+      person(given = "Adelaide University",
              role = c("cph", "fnd"),
              comment = "https://adelaide.edu.au/"),
       person(given = "Grains Research and Development Corporation",

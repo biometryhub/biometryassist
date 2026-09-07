@@ -3,6 +3,7 @@
 ^README\.qmd$
 ^README\.md$
 ^CODE_OF_CONDUCT\.md$
+^CITATION\.cff$
 ^CONTRIBUTING\.md$
 ^codecov\.yml$
 ^\.covrignore$

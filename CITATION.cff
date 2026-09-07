@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+message: "If you find this package useful in your work, please cite it as below."
+type: software
+title: "biometryassist: Functions to Assist Design and Analysis of Agronomic Experiments"
+abstract: >-
+  Provides functions to aid in the design and analysis of agronomic and
+  agricultural experiments through easy access to documentation and helper
+  functions, especially for users who are learning these concepts.
+version: 1.5.0
+authors:
+  - given-names: Sharon
+    family-names: Nielsen
+    email: biometrytraining@adelaide.edu.au
+    affiliation: Adelaide University
+  - given-names: Sam
+    family-names: Rogers
+    email: biometrytraining@adelaide.edu.au
+    affiliation: Adelaide University
+  - given-names: Annie
+    family-names: Conway
+    email: biometrytraining@adelaide.edu.au
+    affiliation: Adelaide University
+identifiers:
+  - type: doi
+    value: 10.32614/CRAN.package.biometryassist
+    description: The CRAN DOI for this package
+url: "https://biometryhub.github.io/biometryassist/"
+repository: "https://CRAN.R-project.org/package=biometryassist"
+repository-code: "https://github.com/biometryhub/biometryassist"
+license: MIT
+keywords:
+  - r
+  - experimental-design
+  - agronomy
+  - mixed-models
+  - field-trials
