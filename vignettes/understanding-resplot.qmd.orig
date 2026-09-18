@@ -637,9 +637,36 @@ vc_cultivar <- summary(model_cultivar_het)$varcomp
 vc_cultivar[order(-vc_cultivar$component), ]
 ```
 
-`idh(strain):units` adds a variance component for every level of `strain` as a random term on top of `model_4`'s shared `ar1(row):ar1(col)` residual (and likewise for `cultivar` in the second model) — the same `at(factor, "level"):units` idiom `model_final` uses below for a handful of selected levels, just applied to every level at once so they can all be compared. This sidesteps a constraint of ASReml-R's residual-splitting `dsum()` structure, which needs the data sorted contiguously by the splitting factor. Reading the variance estimates in each `summary()$varcomp` table against each other is what identifies which levels are worth splitting out with their own `at():units` term in `model_final` below. The tables below pull out the `component` column from each output above, sorted largest to smallest, alongside whether that level ends up split out in `model_final`:
+`idh(strain):units` adds a variance component for every level of `strain` as a random term on top of `model_4`'s shared `ar1(row):ar1(col)` residual (and likewise for `cultivar` in the second model) — the same `at(factor, "level"):units` idiom `model_final` uses below for a handful of selected levels, just applied to every level at once so they can all be compared. This sidesteps a constraint of ASReml-R's residual-splitting `dsum()` structure, which needs the data sorted contiguously by the splitting factor. Reading the variance estimates in each `summary()$varcomp` table against each other is what identifies which levels are worth splitting out with their own `at():units` term in `model_final` below. Obviously, the choice of cut-off value here remain subjective. The tables below pull out the `component` column from each output above, sorted largest to smallest, alongside whether that level ends up split out in `model_final`:
 
-For cultivar the picture is unambiguous: `Magnus`'s variance is roughly ten times the ~0.026 average of the six unremarkable cultivars, and `Royal`'s sits at close to five times that baseline, while the rest cluster tightly between 0.017 and 0.036 — exactly the two levels split out. [@Sam: pls check] For strain, the evidence is less clean-cut: `MC4` and `CC1192` are the two largest values and the clearest candidates, but `CB1189` is comparably elevated without being split out, while `MI_8` and `WSM5041` — both split out — sit closer to the middle of the pack. `summary()$varcomp` narrows the field of candidates for strain, but doesn't hand over as clean a rule as it does for cultivar — the final selection still reflects some judgement beyond just reading off the largest numbers.
+```{r chickpea_varcomp_tables, warning=FALSE}
+strain_split <- c("MC4", "CB1189", "CC1192", "AU18(4)", "AU58(2)", "WSM5042")
+cultivar_split <- c("Royal", "Magnus")
+
+vc_strain_tbl <- vc_strain[grepl("^strain:units!", rownames(vc_strain)), , drop = FALSE]
+vc_strain_tbl$Strain <- sub("^strain:units!strain_", "", rownames(vc_strain_tbl))
+vc_strain_tbl <- vc_strain_tbl[order(-vc_strain_tbl$component), ]
+vc_strain_tbl$`Split out in model_final` <- vc_strain_tbl$Strain %in% strain_split
+knitr::kable(
+    vc_strain_tbl[, c("Strain", "component", "Split out in model_final")],
+    row.names = FALSE, digits = 4,
+    col.names = c("Strain", "Component", "Split out in model_final"),
+    caption = "Strain residual variance components, largest to smallest"
+)
+
+vc_cultivar_tbl <- vc_cultivar[grepl("^cultivar:units!", rownames(vc_cultivar)), , drop = FALSE]
+vc_cultivar_tbl$Cultivar <- sub("^cultivar:units!cultivar_", "", rownames(vc_cultivar_tbl))
+vc_cultivar_tbl <- vc_cultivar_tbl[order(-vc_cultivar_tbl$component), ]
+vc_cultivar_tbl$`Split out in model_final` <- vc_cultivar_tbl$Cultivar %in% cultivar_split
+knitr::kable(
+    vc_cultivar_tbl[, c("Cultivar", "component", "Split out in model_final")],
+    row.names = FALSE, digits = 4,
+    col.names = c("Cultivar", "Component", "Split out in model_final"),
+    caption = "Cultivar residual variance components, largest to smallest"
+)
+```
+
+For cultivar the picture is unambiguous: `Magnus`'s variance is roughly ten times the ~0.026 average of the six unremarkable cultivars, and `Royal`'s sits at close to five times that baseline, while the rest cluster tightly between 0.017 and 0.036 — exactly the two levels split out. For strain, the evidence is less clean-cut: `MC4` and `CC1192` are the two largest values and the clearest candidates, but `CB1189` is comparably elevated without being split out, while `MI_8` and `WSM5041` — both split out — sit closer to the middle of the pack. `summary()$varcomp` narrows the field of candidates for strain, but doesn't hand over as clean a rule as it does for cultivar — the final selection still reflects some judgement beyond just reading off the largest numbers.
 
 We can alternatively visualise this with a boxplot of residuals by group, though pinpointing exactly which levels are different enough to separate out is a more subjective call this way than reading it straight off the variance-component tables above:
 
@@ -647,7 +674,7 @@ We can alternatively visualise this with a boxplot of residuals by group, though
 resid_dat <- dat
 resid_dat$resid <- residuals(model_3)
 
-het_strains   <- c("MC4", "CC1192", "AU18(4)", "MI_8", "WSM5041")
+het_strains   <- c("MC4", "CB1189", "AU18(4)", "AU58(2)", "WSM5042")
 het_cultivars <- c("Royal", "Magnus")
 
 p_resid_strain <- ggplot(resid_dat, aes(x = strain, y = resid, fill = strain %in% het_strains)) +
@@ -671,42 +698,24 @@ p_resid_strain / p_resid_cultivar
 
 The boxes highlighted in red are the strains and cultivars given their own residual variance in `model_final` below (`at(strain, "MC4"):units`, and so on), check whether they do in fact show visibly wider or narrower spread than the grey boxes. That comparison, on the model's own (log) scale and after the fixed and block effects are already accounted for, is a useful visual sanity check, but it's the variance estimates in the `summary()$varcomp` tables above that are the actual quantitative evidence for adding `at():units` terms, rather than the raw pre-model boxplots from the EDA section above (which are on the untransformed scale and reflect total spread, not residual spread).
 
-The `at(factor, "level"):units` terms let selected strains and cultivars have their own residual variance, rather than assuming every group is equally variable — the `summary()$varcomp` comparison above is what actually flags `CC1192` and `MC4` (among strains) and `Royal` (among cultivars) as having noticeably different residual variance from the rest, corroborated by the boxplot. `Magnus` is included for a different reason: it had several missing values, which changes its effective precision regardless of whether its residual spread stands out — though as it turns out, `Magnus` also has by far the largest residual variance of any level in either table above. Allowing for this heterogeneity, rather than assuming every group shares one common residual variance, is what tightens the Q-Q tails compared to `model_4`. We therefore have our final model as following: 
+The `at(factor, "level"):units` terms let selected strains and cultivars have their own residual variance, rather than assuming every group is equally variable, corroborated by the boxplot. `Magnus` is included for a different reason: it had several missing values, which changes its effective precision regardless of whether its residual spread stands out — though as it turns out, `Magnus` also has by far the largest residual variance of any level in either table above. Allowing for this heterogeneity, rather than assuming every group shares one common residual variance, is what tightens the Q-Q tails compared to `model_4`. We therefore have our final model as following: 
 
 ```{r chickpea_model, warning=FALSE}
-# Sam's Model
 model_final <- asreml(
     log(shoot_dw_mg_plant) ~ strain * cultivar,
     random = ~ rep_block_table / mainplot +
         at(strain, "MC4"):units +
+        at(strain, "CB1189"):units +
         at(strain, "CC1192"):units +
         at(strain, "AU18(4)"):units +
-        at(strain, "MI_8"):units +
-        at(strain, "WSM5041"):units +
+        at(strain, "AU58(2)"):units +
+        at(strain, "WSM5042"):units +
         at(cultivar, "Royal"):units +
         at(cultivar, "Magnus"):units,
     residual = ~ ar1(row):ar1(col),
     data = dat,
     trace = FALSE
 )
-
-# Model by selecting highest variance components: 
-
-# model_final <- asreml(
-#     log(shoot_dw_mg_plant) ~ strain * cultivar,
-#     random = ~ rep_block_table / mainplot +
-#         at(strain, "MC4"):units +
-#         at(strain, "CB1189"):units +
-#         at(strain, "CC1192"):units +
-#         at(strain, "AU18(4)"):units +
-#         at(strain, "AU58(2)"):units +
-#         at(strain, "WSM5042"):units + 
-#         at(cultivar, "Royal"):units +
-#         at(cultivar, "Magnus"):units,
-#     residual = ~ ar1(row):ar1(col),
-#     data = dat,
-#     trace = FALSE
-# )
 ```
 
 ```{r chickpea_resplot, fig.align='center'}
