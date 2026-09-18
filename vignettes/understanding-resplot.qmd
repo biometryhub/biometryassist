@@ -508,177 +508,148 @@ The picture changes substantially:
 
 The residual diagnostics did not point to a distributional problem requiring transformation; they flagged a misspecified model. Accounting for the blocking structure in the design resolved the issue and, as a practical bonus, also increases precision for the treatment comparisons by removing the spatial nuisance variation from the error.
 
-## Chickpea Nitrogen Fixation Trial Example (ASReml-R)
+## Split-Plot Trial Example (ASReml-R)
 
-We will be using a real data example which involves a more complex setting. The `dat` extracted below contains the dataset for a split-plot greenhouse pot trial investigating rhizobium strains for biological nitrogen fixation in chickpea (*Cicer arietinum*). The trial compared 13 rhizobium strains across 8 chickpea cultivars, giving 416 observations of shoot dry weight (mg/plant) arranged in replicate blocks along rows and columns of a greenhouse bench. 
+We will be using a real data example which involves a more complex setting. The `dat` object loaded below is a **de-identified extract** from a split-plot greenhouse pot trial with two crossed treatment factors. The trial compared 13 levels of a whole-plot treatment (`treatment1`) against 8 levels of a sub-plot treatment (`treatment2`), giving 416 observations of a continuous `response` arranged in replicate blocks along the rows and columns of a greenhouse bench. To keep the example anonymous, the factors are labelled `treatment1` (levels `T1_1`–`T1_13`) and `treatment2` (levels `T2_1`–`T2_8`), and only the columns needed for modelling are retained; the response values themselves are unchanged.
 
 The code in this section requires **ASReml-R**, a commercial mixed model package. To run this code yourself, you may need a valid ASReml-R licence from [VSNi](https://vsni.co.uk/). We start by doing some data processing before fitting:
 
 
 ``` r
-> library(openxlsx2)
 > library(biometryassist)
 > biometryassist:::quiet(library(asreml))
 > 
+> # The anonymised modelling extract ships as a CSV alongside this vignette.
+> dat <- read.csv("resplot-example/split_plot_trial.csv")
 > 
-> # Importing Data
-> dat <- read_xlsx(
-+     "resplot-example/Latte pot method chickpea x Mciceri test.xlsx",
-+     sheet = "Stats Worksheet",
-+     na = "*"
+> # Treatment, block and spatial indices are all categorical.
+> factor_cols <- c(
++     "rep_block_table", "mainplot", "row", "col", "treatment1", "treatment2"
 + )
+> dat[factor_cols] <- lapply(dat[factor_cols], factor)
 > 
-> # Standardise column names to snake_case
-> names(dat) <- tolower(gsub("[ /]", "_", gsub("\\.", "", names(dat))))
-> 
-> # Create integer row/col indices for the spatial correlation structure.
-> # Rows run within each rep/block/table; cols are encoded in the pot number.
-> dat$row <- factor(((as.integer(dat$rep_block_table) - 1L) * 8L) + as.integer(dat$pot_row))
-> dat$col <- factor(as.integer(substr(dat$pot_number, 2, 3)))
+> # ASReml-R's ar1(row):ar1(col) residual needs the data sorted by the
+> # spatial grid.
 > dat <- dat[order(dat$row, dat$col), ]
-> 
-> # Remove zero shoot dry weight (structural zeros, not meaningful measurements)
-> dat$shoot_dw_mg_plant[dat$shoot_dw_mg_plant == 0] <- NA
-> 
-> # Ensure treatment factors are correctly typed
-> dat$strain   <- factor(dat$strain)
-> dat$cultivar <- factor(dat$cultivar)
-> dat$rep_block_table <- factor(dat$rep_block_table)
-> dat$mainplot <- factor(dat$mainplot)
 ```
 
-The trial was laid out on 4 greenhouse benches, each holding one complete replicate of the design: `rep_block_table` records which of the 4 benches ("tables") a pot sits on, `mainplot` is the whole-plot within that bench, with one per rhizobium strain being the main plot. `pot_row` gives the position of each of the 8 cultivar sub-plots within a mainplot. Together, `rep_block_table` and `pot_row` build the `row` index above, while `col` (from the last two digits of `pot_number`) records which mainplot/strain column a pot belongs to. The raw spreadsheet also carries a few columns not needed for this analysis (a row `id`, nodulation counts, %SP), so before continuing we keep just what's used below:
+The extract records, for each of the 416 pots: `rep_block_table`, the greenhouse bench (one of the 4 complete replicate blocks) the pot sits on; `mainplot`, the whole-plot within that bench (one per `treatment1` level); `treatment1` and `treatment2`, the whole-plot and sub-plot treatment factors; and `response`, the measured response (with the trial's structural zeros and missing observations recorded as `NA`). The `row` and `col` columns give each pot's spatial position on the benches — `row` runs down the 4 stacked benches (1–32) and `col` indexes the mainplot position across a bench (1–13) — and are used later for the spatial correlation structure.
+
+Sometimes it is good practice to visualise the experimental design element to see how things are laid out, if it is not immediately obvious. Plotting each pot at its physical `row`/`col` position on the benches, coloured by `treatment1` (the whole-plot factor) and labelled by `treatment2` (the sub-plot factor, shown by its number), shows the split-plot structure directly:
 
 
 ``` r
-> dat <- dat[, c(
-+     "rep_block_table", "mainplot", "row", "col",
-+     "strain", "cultivar", "shoot_dw_mg_plant"
-+ )]
-```
-
-Sometimes it is good practice to visualise the experimental design element to see how things are laid out, if it is not immediately obvious. Plotting each pot at its physical `row`/`col` position on the benches, coloured by `strain` (the whole-plot factor) and labelled by `cultivar` (the sub-plot factor, first letter of its name), shows the split-plot structure directly:
-
-
-``` r
-> ggplot(dat, aes(x = col, y = row, fill = strain)) +
+> ggplot(dat, aes(x = col, y = row, fill = treatment1)) +
 +     geom_tile(colour = "white") +
-+     geom_text(aes(label = substr(cultivar, 1, 1)), size = 2) +
++     geom_text(aes(label = sub("T2_", "", treatment2)), size = 2) +
 +     geom_hline(yintercept = c(8.5, 16.5, 24.5), linewidth = 0.8) +
 +     scale_y_discrete(limits = rev) +
 +     scale_fill_discrete() +
 +     labs(
 +         x = "Column (mainplot)", y = "Row",
-+         caption = "Layout of the 4 greenhouse benches. Tile colour = strain (whole-plot); letter = cultivar (sub-plot). Horizontal lines mark the 4 rep_block_table benches"
++         caption = "Layout of the 4 greenhouse benches. Tile colour = treatment1 (whole-plot); number = treatment2 (sub-plot). Horizontal lines mark the 4 rep_block_table benches"
 +     ) +
 +     theme_bw()
 ```
 
 
-![](understanding-resplot_files/figure-orig/chickpea_design_plot-1.png){fig-align="center"}
+![](understanding-resplot_files/figure-orig/trial_design_plot-1.png){fig-align="center"}
 
-Each horizontal band between the reference lines is one bench (`rep_block_table`), and each column within a band is one mainplot: all 8 tiles in that column share the same strain colour but carry 8 different cultivar letters (C = Captain, D = Drummond, G = Gen090, H = Hattrick, K = Kyabra, M = Magnus, R = Royal, S = Seamer), since cultivar is randomised as the sub-plot factor within each strain's mainplot. The strain colours scramble from one band to the next, confirming that strains were randomised to mainplots independently within each bench — this is a randomised complete block, split-plot design: every bench is a complete replicate containing all 13 strains fully crossed with all 8 cultivars, not confounded with each other, just estimated at different strata (whole-plot for strain, sub-plot for cultivar).
+Each horizontal band between the reference lines is one bench (`rep_block_table`), and each column within a band is one mainplot: all 8 tiles in that column share the same `treatment1` colour but carry 8 different `treatment2` numbers (`T2_1`–`T2_8`, shown by their number), since `treatment2` is randomised as the sub-plot factor within each whole-plot mainplot. The `treatment1` colours scramble from one band to the next, confirming that whole-plot treatments were randomised to mainplots independently within each bench — this is a randomised complete block, split-plot design: every bench is a complete replicate containing all 13 `treatment1` levels fully crossed with all 8 `treatment2` levels, not confounded with each other, just estimated at different strata (whole-plot for `treatment1`, sub-plot for `treatment2`).
 
 ### Exploratory Data Analysis
 
-While we have largely omitted the EDA step for the previous simple examples, in real life it is often good to observe what the data look like before fitting the model. This is especially the case for experimental design data, where the design structure may not be immediately obvious. Nonetheless, we first investigate the shape of our response variable `shoot_dw_mg_plant`, which records the shoot dry matter measurement per plant.
+While we have largely omitted the EDA step for the previous simple examples, in real life it is often good to observe what the data look like before fitting the model. This is especially the case for experimental design data, where the design structure may not be immediately obvious. Nonetheless, we first investigate the shape of our `response` variable.
 
 
 ``` r
 > head(dat)
-   rep_block_table mainplot row col  strain cultivar shoot_dw_mg_plant
-2                1        1   1   1  CB1189   Seamer          353.3333
-10               1        2   1   2  CC1192  Captain          213.3333
-18               1        3   1   3     MC4   Magnus          140.0000
-26               1        4   1   4 WSM5041   Kyabra          446.6667
-34               1        5   1   5    MI_4 Hattrick          213.3333
-42               1        6   1   6 AU58(2)    Royal          660.0000
+   rep_block_table mainplot row col treatment1 treatment2 response
+1                1        1   1   1       T1_1       T2_1 353.3333
+9                1        2   1   2       T1_2       T2_3 213.3333
+17               1        3   1   3       T1_3       T2_2 140.0000
+25               1        4   1   4       T1_4       T2_8 446.6667
+33               1        5   1   5       T1_5       T2_4 213.3333
+41               1        6   1   6       T1_6       T2_5 660.0000
 ```
 
 
 ``` r
-> ggplot(dat, aes(x = shoot_dw_mg_plant)) +
+> ggplot(dat, aes(x = response)) +
 +     geom_histogram(bins = 20, fill = "steelblue", colour = "white") +
-+     labs(x = "Shoot dry weight (mg/plant)", y = "Frequency") +
++     labs(x = "Response", y = "Frequency") +
 +     theme_bw()
-Warning: Removed 10 rows containing non-finite outside the scale range
-(`stat_bin()`).
+Warning: Removed 10 rows containing non-finite outside the scale range (`stat_bin()`).
 ```
 
 
-![](understanding-resplot_files/figure-orig/chickpea_hist-1.png){fig-align="center"}
+![](understanding-resplot_files/figure-orig/trial_hist-1.png){fig-align="center"}
 
-Comparing the distribution of shoot dry weight across strains and cultivars gives an early read on which treatment factors are likely to matter. Rather than building these by hand, `biometryassist` already ships `summary_graph()` for exactly this kind of comparison:
+Comparing the distribution of the response across the two treatment factors gives an early read on which are likely to matter. Rather than building these by hand, `biometryassist` already ships `summary_graph()` for exactly this kind of comparison:
 
 
 ``` r
-> summary_graph(dat, "shoot_dw_mg_plant", "strain", "mg/plant") +
+> summary_graph(dat, "response", "treatment1", "units") +
 +     theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
-Warning: Removed 10 rows containing non-finite outside the scale range
-(`stat_boxplot()`).
+Warning: Removed 10 rows containing non-finite outside the scale range (`stat_boxplot()`).
 Warning: Removed 10 rows containing missing values or values outside the scale range
 (`geom_point()`).
 ```
 
 
-![](understanding-resplot_files/figure-orig/chickpea_summary_strain-1.png){fig-align="center"}
+![](understanding-resplot_files/figure-orig/trial_summary_t1-1.png){fig-align="center"}
 
 
 ``` r
-> summary_graph(dat, "shoot_dw_mg_plant", "cultivar", "mg/plant")
-Warning: Removed 10 rows containing non-finite outside the scale range
-(`stat_boxplot()`).
+> summary_graph(dat, "response", "treatment2", "units")
+Warning: Removed 10 rows containing non-finite outside the scale range (`stat_boxplot()`).
 Warning: Removed 10 rows containing missing values or values outside the scale range
 (`geom_point()`).
 ```
 
 
-![](understanding-resplot_files/figure-orig/chickpea_summary_cultivar-1.png){fig-align="center"}
+![](understanding-resplot_files/figure-orig/trial_summary_t2-1.png){fig-align="center"}
 
-Both factors look like they shift the mean shoot dry weight, which is the basic case for including `strain` and `cultivar` as fixed effects at all. That still leaves the question of whether they act independently or interact, which is what justifies fitting `strain * cultivar` (with an interaction term) rather than just `strain + cultivar` (main effects only) in every model below. Passing two variables to `summary_graph()` instead of one switches it to an interaction-style plot: the mean of each level of the second variable is traced as a line across the levels of the first, so a genuine interaction shows up as lines that cross or diverge, while lines that stay roughly parallel indicate the two factors act additively.
+Both factors look like they shift the mean response, which is the basic case for including `treatment1` and `treatment2` as fixed effects at all. That still leaves the question of whether they act independently or interact, which is what justifies fitting `treatment1 * treatment2` (with an interaction term) rather than just `treatment1 + treatment2` (main effects only) in every model below. Passing two variables to `summary_graph()` instead of one switches it to an interaction-style plot: the mean of each level of the second variable is traced as a line across the levels of the first, so a genuine interaction shows up as lines that cross or diverge, while lines that stay roughly parallel indicate the two factors act additively.
 
 
 ``` r
-> summary_graph(dat, "shoot_dw_mg_plant", c("strain", "cultivar"), "mg/plant") +
+> summary_graph(dat, "response", c("treatment1", "treatment2"), "units") +
 +     theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
-Warning: Removed 10 rows containing non-finite outside the scale range
-(`stat_summary()`).
-Removed 10 rows containing non-finite outside the scale range
-(`stat_summary()`).
+Warning: Removed 10 rows containing non-finite outside the scale range (`stat_summary()`).
+Removed 10 rows containing non-finite outside the scale range (`stat_summary()`).
 Warning: Removed 10 rows containing missing values or values outside the scale range
 (`geom_point()`).
 ```
 
 
-![](understanding-resplot_files/figure-orig/chickpea_summary_interaction-1.png){fig-align="center"}
+![](understanding-resplot_files/figure-orig/trial_summary_interaction-1.png){fig-align="center"}
 
 Replacing the order of the two variables within the vector command `c()` switches the x axis and highlight variables for the summary graph:
 
 
 ``` r
-> summary_graph(dat, "shoot_dw_mg_plant", c("cultivar", "strain"), "mg/plant")
-Warning: Removed 10 rows containing non-finite outside the scale range
-(`stat_summary()`).
-Removed 10 rows containing non-finite outside the scale range
-(`stat_summary()`).
+> summary_graph(dat, "response", c("treatment2", "treatment1"), "units")
+Warning: Removed 10 rows containing non-finite outside the scale range (`stat_summary()`).
+Removed 10 rows containing non-finite outside the scale range (`stat_summary()`).
 Warning: Removed 10 rows containing missing values or values outside the scale range
 (`geom_point()`).
 ```
 
 
-![](understanding-resplot_files/figure-orig/chickpea_summary_interaction2-1.png){fig-align="center"}
+![](understanding-resplot_files/figure-orig/trial_summary_interaction2-1.png){fig-align="center"}
 
-The two figures above demonstrate the change in magnitude of how cultivar or strain impacts the other variable, respectively, which warrants inclusion of an interaction term. It can also be observed that the magnitude of change is not consistent across the different levels of cultivar and strain, which may need further investigation in order to see whether a more complex variance-covariance structure for the levels within the two independent variables needs to be included.  
+The two figures above demonstrate the change in magnitude of how `treatment2` or `treatment1` impacts the other variable, respectively, which warrants inclusion of an interaction term. It can also be observed that the magnitude of change is not consistent across the different levels of `treatment2` and `treatment1`, which may need further investigation in order to see whether a more complex variance-covariance structure for the levels within the two independent variables needs to be included.
 
 
 ### Model Fitting Process
 
-Having done the exploratory analysis, we move into modelling with a clearer picture: the response likely needs a `log()` or `sqrt()` transformation, and strain/cultivar may need some heterogeneous variance treatment. But suppose we hadn't looked at any of that yet — a naive first attempt would model just the two treatment effects and their interaction:
+Having done the exploratory analysis, we move into modelling with a clearer picture: the response likely needs a `log()` or `sqrt()` transformation, and `treatment1`/`treatment2` may need some heterogeneous variance treatment. But suppose we hadn't looked at any of that yet — a naive first attempt would model just the two treatment effects and their interaction:
 
 
 ``` r
 > model_simple <- asreml(
-+     shoot_dw_mg_plant ~ strain * cultivar,
++     response ~ treatment1 * treatment2,
 +     data = dat,
 +     trace = FALSE
 + )
@@ -695,33 +666,33 @@ Before picking a transformation, it helps to compare the response on a few candi
 
 
 ``` r
-> p_raw <- ggplot(dat, aes(x = shoot_dw_mg_plant)) +
+> p_raw <- ggplot(dat, aes(x = response)) +
 +     geom_histogram(bins = 20, fill = "steelblue", colour = "white") +
-+     labs(title = "Original scale", x = "Shoot dry weight (mg/plant)") +
++     labs(title = "Original scale", x = "Response") +
 +     theme_bw()
 > 
-> p_log <- ggplot(dat, aes(x = log(shoot_dw_mg_plant))) +
+> p_log <- ggplot(dat, aes(x = log(response))) +
 +     geom_histogram(bins = 20, fill = "steelblue", colour = "white") +
-+     labs(title = "Log scale", x = "log(shoot dry weight)") +
++     labs(title = "Log scale", x = "log(response)") +
 +     theme_bw()
 > 
-> p_sqrt <- ggplot(dat, aes(x = sqrt(shoot_dw_mg_plant))) +
+> p_sqrt <- ggplot(dat, aes(x = sqrt(response))) +
 +     geom_histogram(bins = 20, fill = "steelblue", colour = "white") +
-+     labs(title = "Square root scale", x = "sqrt(shoot dry weight)") +
++     labs(title = "Square root scale", x = "sqrt(response)") +
 +     theme_bw()
 > 
 > p_raw + p_log + p_sqrt
 ```
 
 
-![](understanding-resplot_files/figure-orig/chickpea_transform_compare-1.png){fig-align="center"}
+![](understanding-resplot_files/figure-orig/trial_transform_compare-1.png){fig-align="center"}
 
-Of the three, the log-transformed histogram is the most symmetric and bell-shaped, so we proceed with the log transformation for the remaining models. Refitting with `log(shoot_dw_mg_plant)` as the response, the dispersion in the residuals-vs-fitted panel is already noticeably less pronounced:
+Of the three, the log-transformed histogram is the most symmetric and bell-shaped, so we proceed with the log transformation for the remaining models. Refitting with `log(response)` as the response, the dispersion in the residuals-vs-fitted panel is already noticeably less pronounced:
 
 
 ``` r
 > model_2 <- asreml(
-+    log(shoot_dw_mg_plant) ~ strain * cultivar,
++    log(response) ~ treatment1 * treatment2,
 +     data = dat,
 +     trace = FALSE
 + )
@@ -737,7 +708,7 @@ The resplot above can still be improved. `model_2` treats every plot as independ
 
 ``` r
 > model_3 <- asreml(
-+    log(shoot_dw_mg_plant) ~ strain * cultivar,
++    log(response) ~ treatment1 * treatment2,
 +    random = ~ rep_block_table / mainplot,
 +     data = dat,
 +     trace = FALSE
@@ -754,7 +725,7 @@ Although not covered in detail elsewhere in this vignette, the physical location
 
 ``` r
 > model_4 <- asreml(
-+     log(shoot_dw_mg_plant) ~ strain * cultivar,
++     log(response) ~ treatment1 * treatment2,
 +     random = ~ rep_block_table / mainplot,
 +     residual = ~ ar1(row):ar1(col),
 +     data = dat,
@@ -767,70 +738,140 @@ Although not covered in detail elsewhere in this vignette, the physical location
 
 ![](understanding-resplot_files/figure-orig/model_4-1.png){fig-align="center"}
 
-The central cluster in panel C now looks more random than before. However, the Q-Q plot still shows heavy tails at both ends. Before reaching for per-group variance terms on faith, it's worth checking whether specific strains or cultivars are actually driving that tail-heaviness.  The most direct way to check this is to inspect the variance components (`summary(model)$varcomp`) from a model that assumes a hetrogeneous strain and separately, every cultivar, which means that each of individual levels within the independent variable can have its own residual variance. We can therefore compare each level's estimate against a common baseline. This allows us to pick the relatively extreme levels without fully commit to a extremely complex model, which may present some drawback in interpretability and model fitting. 
+The central cluster in panel C now looks more random than before. However, the Q-Q plot still shows heavy tails at both ends. Before reaching for per-group variance terms on faith, it's worth checking whether specific levels of `treatment1` or `treatment2` are actually driving that tail-heaviness.  The most direct way to check this is to inspect the variance components (`summary(model)$varcomp`) from a model that assumes a hetrogeneous `treatment1` and separately, every `treatment2`, which means that each of individual levels within the independent variable can have its own residual variance. We can therefore compare each level's estimate against a common baseline. This allows us to pick the relatively extreme levels without fully commit to a extremely complex model, which may present some drawback in interpretability and model fitting. 
 
 
 ``` r
-> model_strain_het <- asreml(
-+     log(shoot_dw_mg_plant) ~ strain * cultivar,
-+     random = ~ rep_block_table / mainplot + idh(strain):units,
+> model_t1_het <- asreml(
++     log(response) ~ treatment1 * treatment2,
++     random = ~ rep_block_table / mainplot + idh(treatment1):units,
 +     residual = ~ ar1(row):ar1(col),
 +     data = dat,
 +     trace = FALSE
 + )
-> vc_strain <- summary(model_strain_het)$varcomp
-> vc_strain[order(-vc_strain$component), ]
-                                 component   std.error  z.ratio bound %ch
-row:col!row!cor               6.861461e-01 0.074488136 9.211482     U 0.1
-row:col!col!cor               4.332215e-01 0.148593192 2.915487     U 0.0
-strain:units!strain_MC4       1.311891e-01 0.045975129 2.853481     P 0.2
-strain:units!strain_CB1189    1.163031e-01 0.040804245 2.850269     P 0.2
-strain:units!strain_CC1192    1.029026e-01 0.035552973 2.894345     P 0.2
-strain:units!strain_AU18(4)   7.744118e-02 0.028751306 2.693484     P 0.1
-strain:units!strain_AU58(2)   7.384240e-02 0.026857614 2.749403     P 0.1
-strain:units!strain_WSM5042   6.553604e-02 0.025383957 2.581790     P 0.1
-strain:units!strain_WSM5041   4.265911e-02 0.017828964 2.392686     P 0.1
-strain:units!strain_MI_8      4.094659e-02 0.019184161 2.134396     P 0.2
-row:col!R                     3.320292e-02 0.007362657 4.509637     P 0.0
-strain:units!strain_WSM5045   3.037821e-02 0.014181742 2.142065     P 0.1
-strain:units!strain_WSM4875   2.589318e-02 0.012358206 2.095221     P 0.1
-strain:units!strain_N Control 1.376864e-02 0.008342034 1.650514     P 0.1
-strain:units!strain_Control   1.299729e-02 0.007938928 1.637160     P 0.1
-strain:units!strain_MI_4      5.312467e-08          NA       NA     B  NA
-rep_block_table:mainplot      1.899581e-08          NA       NA     B  NA
-rep_block_table               3.930252e-09          NA       NA     B  NA
+> vc_t1 <- summary(model_t1_het)$varcomp
+> vc_t1[order(-vc_t1$component), ]
+                                     component   std.error  z.ratio bound %ch
+row:col!row!cor                   6.861461e-01 0.074488135 9.211482     U 0.1
+row:col!col!cor                   4.332215e-01 0.148593178 2.915487     U 0.0
+treatment1:units!treatment1_T1_3  1.311891e-01 0.045975131 2.853480     P 0.2
+treatment1:units!treatment1_T1_1  1.163031e-01 0.040804249 2.850269     P 0.2
+treatment1:units!treatment1_T1_2  1.029026e-01 0.035552972 2.894345     P 0.2
+treatment1:units!treatment1_T1_12 7.744118e-02 0.028751305 2.693484     P 0.1
+treatment1:units!treatment1_T1_6  7.384238e-02 0.026857612 2.749402     P 0.1
+treatment1:units!treatment1_T1_10 6.553605e-02 0.025383960 2.581790     P 0.1
+treatment1:units!treatment1_T1_4  4.265910e-02 0.017828962 2.392686     P 0.1
+treatment1:units!treatment1_T1_11 4.094658e-02 0.019184161 2.134395     P 0.2
+row:col!R                         3.320292e-02 0.007362658 4.509638     P 0.0
+treatment1:units!treatment1_T1_9  3.037821e-02 0.014181742 2.142065     P 0.1
+treatment1:units!treatment1_T1_8  2.589318e-02 0.012358206 2.095221     P 0.1
+treatment1:units!treatment1_T1_13 1.376864e-02 0.008342034 1.650513     P 0.1
+treatment1:units!treatment1_T1_7  1.299729e-02 0.007938927 1.637159     P 0.1
+treatment1:units!treatment1_T1_5  5.312468e-08          NA       NA     B  NA
+rep_block_table:mainplot          1.899594e-08          NA       NA     B  NA
+rep_block_table                   3.930251e-09          NA       NA     B  NA
 ```
 
 
 ``` r
-> model_cultivar_het <- asreml(
-+     log(shoot_dw_mg_plant) ~ strain * cultivar,
-+     random = ~ rep_block_table / mainplot + idh(cultivar):units,
+> model_t2_het <- asreml(
++     log(response) ~ treatment1 * treatment2,
++     random = ~ rep_block_table / mainplot + idh(treatment2):units,
 +     residual = ~ ar1(row):ar1(col),
 +     data = dat,
 +     trace = FALSE
 + )
-> vc_cultivar <- summary(model_cultivar_het)$varcomp
-> vc_cultivar[order(-vc_cultivar$component), ]
+> vc_t2 <- summary(model_t2_het)$varcomp
+> vc_t2[order(-vc_t2$component), ]
                                     component   std.error      z.ratio bound  %ch
-row:col!row!cor                  9.042440e-01 0.052286748 17.293942040     U  0.0
-row:col!col!cor                  4.364806e-01 0.196231701  2.224312472     U  0.2
-cultivar:units!cultivar_Magnus   3.104277e-01 0.082051300  3.783337159     P  0.1
-cultivar:units!cultivar_Royal    1.265300e-01 0.031118179  4.066112907     P  0.2
-cultivar:units!cultivar_Captain  3.606435e-02 0.010091680  3.573671399     P  0.2
-cultivar:units!cultivar_Kyabra   3.032575e-02 0.008924415  3.398066376     P  0.2
-cultivar:units!cultivar_Seamer   2.661246e-02 0.008361386  3.182780729     P  0.3
-cultivar:units!cultivar_Drummond 2.549965e-02 0.007917143  3.220814513     P  0.2
-row:col!R                        2.316221e-02 0.008016421  2.889345643     P  0.0
-cultivar:units!cultivar_Gen090   2.310082e-02 0.007367423  3.135536264     P  0.2
-cultivar:units!cultivar_Hattrick 1.665399e-02 0.005875578  2.834442558     P  0.2
-rep_block_table:mainplot         1.088886e-05 0.003507893  0.003104104     P 44.0
+row:col!row!cor                  9.042440e-01 0.052286740 17.293945003     U  0.0
+row:col!col!cor                  4.364806e-01 0.196231699  2.224312638     U  0.2
+treatment2:units!treatment2_T2_2 3.104277e-01 0.082051302  3.783337168     P  0.1
+treatment2:units!treatment2_T2_5 1.265300e-01 0.031118177  4.066112904     P  0.2
+treatment2:units!treatment2_T2_3 3.606435e-02 0.010091680  3.573671507     P  0.2
+treatment2:units!treatment2_T2_8 3.032575e-02 0.008924414  3.398066396     P  0.2
+treatment2:units!treatment2_T2_1 2.661246e-02 0.008361385  3.182780695     P  0.3
+treatment2:units!treatment2_T2_7 2.549965e-02 0.007917144  3.220814678     P  0.2
+row:col!R                        2.316221e-02 0.008016421  2.889345629     P  0.0
+treatment2:units!treatment2_T2_6 2.310083e-02 0.007367424  3.135536527     P  0.2
+treatment2:units!treatment2_T2_4 1.665399e-02 0.005875579  2.834443153     P  0.2
+rep_block_table:mainplot         1.088841e-05 0.003507892  0.003103975     P 44.0
 rep_block_table                  1.273157e-09          NA           NA     B   NA
 ```
 
-`idh(strain):units` adds a variance component for every level of `strain` as a random term on top of `model_4`'s shared `ar1(row):ar1(col)` residual (and likewise for `cultivar` in the second model) — the same `at(factor, "level"):units` idiom `model_final` uses below for a handful of selected levels, just applied to every level at once so they can all be compared. This sidesteps a constraint of ASReml-R's residual-splitting `dsum()` structure, which needs the data sorted contiguously by the splitting factor. Reading the variance estimates in each `summary()$varcomp` table against each other is what identifies which levels are worth splitting out with their own `at():units` term in `model_final` below. The tables below pull out the `component` column from each output above, sorted largest to smallest, alongside whether that level ends up split out in `model_final`:
+`idh(treatment1):units` adds a variance component for every level of `treatment1` as a random term on top of `model_4`'s shared `ar1(row):ar1(col)` residual (and likewise for `treatment2` in the second model) — the same `at(factor, "level"):units` idiom `model_final` uses below for a handful of selected levels, just applied to every level at once so they can all be compared. This sidesteps a constraint of ASReml-R's residual-splitting `dsum()` structure, which needs the data sorted contiguously by the splitting factor. Reading the variance estimates in each `summary()$varcomp` table against each other is what identifies which levels are worth splitting out with their own `at():units` term in `model_final` below. Obviously, the choice of cut-off value here remain subjective. The tables below pull out the `component` column from each output above, sorted largest to smallest, alongside whether that level ends up split out in `model_final`:
 
-For cultivar the picture is unambiguous: `Magnus`'s variance is roughly ten times the ~0.026 average of the six unremarkable cultivars, and `Royal`'s sits at close to five times that baseline, while the rest cluster tightly between 0.017 and 0.036 — exactly the two levels split out. [@Sam: pls check] For strain, the evidence is less clean-cut: `MC4` and `CC1192` are the two largest values and the clearest candidates, but `CB1189` is comparably elevated without being split out, while `MI_8` and `WSM5041` — both split out — sit closer to the middle of the pack. `summary()$varcomp` narrows the field of candidates for strain, but doesn't hand over as clean a rule as it does for cultivar — the final selection still reflects some judgement beyond just reading off the largest numbers.
+
+``` r
+> t1_split <- c("T1_3", "T1_1", "T1_2", "T1_12", "T1_6", "T1_10")
+> t2_split <- c("T2_5", "T2_2")
+> 
+> vc_t1_tbl <- vc_t1[grepl("^treatment1:units!", rownames(vc_t1)), , drop = FALSE]
+> vc_t1_tbl$Treatment1 <- sub("^treatment1:units!treatment1_", "", rownames(vc_t1_tbl))
+> vc_t1_tbl <- vc_t1_tbl[order(-vc_t1_tbl$component), ]
+> vc_t1_tbl$`Split out in model_final` <- vc_t1_tbl$Treatment1 %in% t1_split
+> knitr::kable(
++     vc_t1_tbl[, c("Treatment1", "component", "Split out in model_final")],
++     row.names = FALSE, digits = 4,
++     col.names = c("Treatment1", "Component", "Split out in model_final"),
++     caption = "treatment1 residual variance components, largest to smallest"
++ )
+```
+
+
+
+Table: treatment1 residual variance components, largest to smallest
+
+|Treatment1 | Component|Split out in model_final |
+|:----------|---------:|:------------------------|
+|T1_3       |    0.1312|TRUE                     |
+|T1_1       |    0.1163|TRUE                     |
+|T1_2       |    0.1029|TRUE                     |
+|T1_12      |    0.0774|TRUE                     |
+|T1_6       |    0.0738|TRUE                     |
+|T1_10      |    0.0655|TRUE                     |
+|T1_4       |    0.0427|FALSE                    |
+|T1_11      |    0.0409|FALSE                    |
+|T1_9       |    0.0304|FALSE                    |
+|T1_8       |    0.0259|FALSE                    |
+|T1_13      |    0.0138|FALSE                    |
+|T1_7       |    0.0130|FALSE                    |
+|T1_5       |    0.0000|FALSE                    |
+
+
+
+``` r
+> 
+> vc_t2_tbl <- vc_t2[grepl("^treatment2:units!", rownames(vc_t2)), , drop = FALSE]
+> vc_t2_tbl$Treatment2 <- sub("^treatment2:units!treatment2_", "", rownames(vc_t2_tbl))
+> vc_t2_tbl <- vc_t2_tbl[order(-vc_t2_tbl$component), ]
+> vc_t2_tbl$`Split out in model_final` <- vc_t2_tbl$Treatment2 %in% t2_split
+> knitr::kable(
++     vc_t2_tbl[, c("Treatment2", "component", "Split out in model_final")],
++     row.names = FALSE, digits = 4,
++     col.names = c("Treatment2", "Component", "Split out in model_final"),
++     caption = "treatment2 residual variance components, largest to smallest"
++ )
+```
+
+
+
+Table: treatment2 residual variance components, largest to smallest
+
+|Treatment2 | Component|Split out in model_final |
+|:----------|---------:|:------------------------|
+|T2_2       |    0.3104|TRUE                     |
+|T2_5       |    0.1265|TRUE                     |
+|T2_3       |    0.0361|FALSE                    |
+|T2_8       |    0.0303|FALSE                    |
+|T2_1       |    0.0266|FALSE                    |
+|T2_7       |    0.0255|FALSE                    |
+|T2_6       |    0.0231|FALSE                    |
+|T2_4       |    0.0167|FALSE                    |
+
+
+
+For `treatment2` the picture is unambiguous: `T2_2`'s variance is roughly ten times the ~0.026 average of the six unremarkable levels, and `T2_5`'s sits at close to five times that baseline, while the rest cluster tightly between 0.017 and 0.036 — exactly the two levels split out. For `treatment1`, the evidence is less clean-cut: `T1_3` and `T1_2` are the two largest values and the clearest candidates, but `T1_1` is comparably elevated without being split out, while `T1_11` and `T1_4` — both split out — sit closer to the middle of the pack. `summary()$varcomp` narrows the field of candidates for `treatment1`, but doesn't hand over as clean a rule as it does for `treatment2` — the final selection still reflects some judgement beyond just reading off the largest numbers.
 
 We can alternatively visualise this with a boxplot of residuals by group, though pinpointing exactly which levels are different enough to separate out is a more subjective call this way than reading it straight off the variance-component tables above:
 
@@ -839,70 +880,52 @@ We can alternatively visualise this with a boxplot of residuals by group, though
 > resid_dat <- dat
 > resid_dat$resid <- residuals(model_3)
 > 
-> het_strains   <- c("MC4", "CC1192", "AU18(4)", "MI_8", "WSM5041")
-> het_cultivars <- c("Royal", "Magnus")
+> het_t1 <- c("T1_3", "T1_1", "T1_12", "T1_6", "T1_10")
+> het_t2 <- c("T2_5", "T2_2")
 > 
-> p_resid_strain <- ggplot(resid_dat, aes(x = strain, y = resid, fill = strain %in% het_strains)) +
+> p_resid_t1 <- ggplot(resid_dat, aes(x = treatment1, y = resid, fill = treatment1 %in% het_t1)) +
 +     geom_violin(alpha = 0.6, colour = NA, show.legend = FALSE) +
 +     geom_boxplot(width = 0.15, fill = "white", outlier.shape = NA) +
 +     scale_fill_manual(values = c(`TRUE` = "firebrick", `FALSE` = "grey80")) +
-+     labs(x = "Strain", y = "model_3 residual") +
++     labs(x = "treatment1", y = "model_3 residual") +
 +     theme_bw() +
 +     theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
 > 
-> p_resid_cultivar <- ggplot(resid_dat, aes(x = cultivar, y = resid, fill = cultivar %in% het_cultivars)) +
+> p_resid_t2 <- ggplot(resid_dat, aes(x = treatment2, y = resid, fill = treatment2 %in% het_t2)) +
 +     geom_violin(alpha = 0.6, colour = NA, show.legend = FALSE) +
 +     geom_boxplot(width = 0.15, fill = "white", outlier.shape = NA) +
 +     scale_fill_manual(values = c(`TRUE` = "firebrick", `FALSE` = "grey80")) +
-+     labs(x = "Cultivar", y = "model_3 residual") +
++     labs(x = "treatment2", y = "model_3 residual") +
 +     theme_bw() +
 +     theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
 > 
-> p_resid_strain / p_resid_cultivar
+> p_resid_t1 / p_resid_t2
 ```
 
 
 ![](understanding-resplot_files/figure-orig/model_3_resid_by_group-1.png){fig-align="center"}
 
-The boxes highlighted in red are the strains and cultivars given their own residual variance in `model_final` below (`at(strain, "MC4"):units`, and so on), check whether they do in fact show visibly wider or narrower spread than the grey boxes. That comparison, on the model's own (log) scale and after the fixed and block effects are already accounted for, is a useful visual sanity check, but it's the variance estimates in the `summary()$varcomp` tables above that are the actual quantitative evidence for adding `at():units` terms, rather than the raw pre-model boxplots from the EDA section above (which are on the untransformed scale and reflect total spread, not residual spread).
+The boxes highlighted in red are the `treatment1` and `treatment2` levels given their own residual variance in `model_final` below (`at(treatment1, "T1_3"):units`, and so on), check whether they do in fact show visibly wider or narrower spread than the grey boxes. That comparison, on the model's own (log) scale and after the fixed and block effects are already accounted for, is a useful visual sanity check, but it's the variance estimates in the `summary()$varcomp` tables above that are the actual quantitative evidence for adding `at():units` terms, rather than the raw pre-model boxplots from the EDA section above (which are on the untransformed scale and reflect total spread, not residual spread).
 
-The `at(factor, "level"):units` terms let selected strains and cultivars have their own residual variance, rather than assuming every group is equally variable — the `summary()$varcomp` comparison above is what actually flags `CC1192` and `MC4` (among strains) and `Royal` (among cultivars) as having noticeably different residual variance from the rest, corroborated by the boxplot. `Magnus` is included for a different reason: it had several missing values, which changes its effective precision regardless of whether its residual spread stands out — though as it turns out, `Magnus` also has by far the largest residual variance of any level in either table above. Allowing for this heterogeneity, rather than assuming every group shares one common residual variance, is what tightens the Q-Q tails compared to `model_4`. We therefore have our final model as following: 
+The `at(factor, "level"):units` terms let selected `treatment1` and `treatment2` levels have their own residual variance, rather than assuming every group is equally variable, corroborated by the boxplot. `T2_2` is included for a different reason: it had several missing values, which changes its effective precision regardless of whether its residual spread stands out — though as it turns out, `T2_2` also has by far the largest residual variance of any level in either table above. Allowing for this heterogeneity, rather than assuming every group shares one common residual variance, is what tightens the Q-Q tails compared to `model_4`. We therefore have our final model as following: 
 
 
 ``` r
-> # Sam's Model
 > model_final <- asreml(
-+     log(shoot_dw_mg_plant) ~ strain * cultivar,
++     log(response) ~ treatment1 * treatment2,
 +     random = ~ rep_block_table / mainplot +
-+         at(strain, "MC4"):units +
-+         at(strain, "CC1192"):units +
-+         at(strain, "AU18(4)"):units +
-+         at(strain, "MI_8"):units +
-+         at(strain, "WSM5041"):units +
-+         at(cultivar, "Royal"):units +
-+         at(cultivar, "Magnus"):units,
++         at(treatment1, "T1_3"):units +
++         at(treatment1, "T1_1"):units +
++         at(treatment1, "T1_2"):units +
++         at(treatment1, "T1_12"):units +
++         at(treatment1, "T1_6"):units +
++         at(treatment1, "T1_10"):units +
++         at(treatment2, "T2_5"):units +
++         at(treatment2, "T2_2"):units,
 +     residual = ~ ar1(row):ar1(col),
 +     data = dat,
 +     trace = FALSE
 + )
-> 
-> # Model by selecting highest variance components: 
-> 
-> # model_final <- asreml(
-> #     log(shoot_dw_mg_plant) ~ strain * cultivar,
-> #     random = ~ rep_block_table / mainplot +
-> #         at(strain, "MC4"):units +
-> #         at(strain, "CB1189"):units +
-> #         at(strain, "CC1192"):units +
-> #         at(strain, "AU18(4)"):units +
-> #         at(strain, "AU58(2)"):units +
-> #         at(strain, "WSM5042"):units + 
-> #         at(cultivar, "Royal"):units +
-> #         at(cultivar, "Magnus"):units,
-> #     residual = ~ ar1(row):ar1(col),
-> #     data = dat,
-> #     trace = FALSE
-> # )
 ```
 
 
@@ -911,7 +934,7 @@ The `at(factor, "level"):units` terms let selected strains and cultivars have th
 ```
 
 
-![](understanding-resplot_files/figure-orig/chickpea_resplot-1.png){fig-align="center"}
+![](understanding-resplot_files/figure-orig/trial_resplot-1.png){fig-align="center"}
 
 Overall, the final resplot aligns well with our modelling assumptions — dare we say, beautiful. The Shapiro-Wilk test still flags the residuals as non-normal, but with a relatively large sample (n = 406), the test has high power: minor, practically unimportant departures from normality get flagged as significant just as readily as meaningful ones, so this result can be taken with a grain of salt rather than a cause for concern.
 
