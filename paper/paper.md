@@ -29,7 +29,7 @@ tags:
 - linear mixed models
 - reproducible research
 - professional development
-title: "*biometryassist*: an R package to aid the design and analysis of
+title: "biometryassist: an R package to aid the design and analysis of
   agronomic experiments"
 toc-title: Table of contents
 ---
@@ -41,10 +41,12 @@ provide helper functions and documentation supporting the design and
 analysis of agronomic field experiments, and have published it on the
 Comprehensive R Archive Network (CRAN). Its functions cover the common
 steps of a field trial workflow, including generating and randomising
-experimental designs, fitting and checking mixed models, and presenting
-the results. We designed them for agricultural researchers who need
-robust analyses but may have limited statistical or programming
-experience.
+experimental designs, checking fitted mixed models, and presenting the
+results. Model fitting itself is outside the scope of the package, but
+*biometryassist* provides tools to support users in assessing whether
+fitted models are appropriate for their data. We designed the package
+for agricultural researchers who need robust analyses but may have
+limited statistical or programming experience.
 
 The package also serves as a companion to our biometry training
 workshops at the Biometry Hub, Adelaide University, where we use it to
