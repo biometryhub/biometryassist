@@ -53,13 +53,13 @@ Requires the 'openxlsx2' package to be installed.
 \examples{
 \dontrun{
 # Export with default colours
-export_design_to_excel(my_design, "treatments", "my_design.xlsx")
+export_design_to_excel(my_design, filename = "my_design.xlsx", value_column = "treatments")
 
 # Export without colours
-export_design_to_excel(my_design, "treatments", "my_design.xlsx", palette = NULL)
+export_design_to_excel(my_design, filename = "my_design.xlsx", value_column = "treatments", palette = NULL)
 
 # Export with custom palette
-export_design_to_excel(my_design, "treatments", "my_design.xlsx", palette = "viridis")
+export_design_to_excel(my_design, filename = "my_design.xlsx", value_column = "treatments", palette = "viridis")
 }
 
 }

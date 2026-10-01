@@ -1777,6 +1777,23 @@ test_that("nlme/lme model is supported", {
 	expect_local_doppelganger("nlme output", ap)
 })
 
+test_that("lme uses contrast df for comparisons, matching aov and lmer", {
+	skip_if_not_installed("nlme")
+	skip_if_not_installed("lme4")
+	load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
+	m_aov <- aov(yield ~ Blocks + Variety, data = dat)
+	m_lmer <- lme4::lmer(yield ~ Variety + (1 | Blocks), data = dat)
+	m_lme <- nlme::lme(yield ~ Variety, random = ~ 1 | Blocks, data = dat)
+
+	out_aov <- multiple_comparisons(m_aov, classify = "Variety")
+	out_lmer <- multiple_comparisons(m_lmer, classify = "Variety")
+	out_lme <- multiple_comparisons(m_lme, classify = "Variety")
+
+	expect_equal(out_lme$hsd, out_aov$hsd, tolerance = 1e-4)
+	expect_equal(out_lme$hsd, out_lmer$hsd, tolerance = 1e-4)
+	expect_equal(out_lme$predictions$groups, out_aov$predictions$groups)
+})
+
 test_that("afex (afex_aov) model is supported", {
 	skip_if_not_installed("afex")
 	data(obk.long, package = "afex")

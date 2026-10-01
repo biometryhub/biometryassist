@@ -1306,7 +1306,13 @@ test_that("save = TRUE produces plot file and csv", {
 })
 
 test_that("Output is produced when quiet = FALSE", {
-	withr::local_file("Rplots.pdf")
+	# quiet = FALSE prints the plot, which opens the default device (a pdf
+	# writing Rplots.pdf into the working directory). Open a null device
+	# instead so nothing is ever written; deleting the file afterwards is not
+	# enough, since the device stays open for the rest of the session.
+	grDevices::pdf(NULL)
+	null_device <- grDevices::dev.cur()
+	withr::defer(grDevices::dev.off(null_device))
 	expect_output(
 		des <- design(
 			"crd",

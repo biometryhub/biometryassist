@@ -200,17 +200,18 @@ test_that("by runs within groups; a group missing the reference warns and skips"
 	expect_true(all(out$level2 == "ctrl"))
 })
 
-test_that("comparison-specific df (aovlist) falls back to holm with a warning", {
-	# An Error() stratum yields comparison-specific df, so exact Dunnett is not
-	# available -> fall back to Holm. Uses a built-in dataset so emmeans can
+test_that("a df matrix with a common value (aovlist) uses exact Dunnett", {
+	# aovlist models return a df matrix, but N is compared entirely within the
+	# block stratum so every comparison shares the same df: exact Dunnett is
+	# valid and no fallback occurs. Uses a built-in dataset so emmeans can
 	# re-fit the aovlist model.
 	m <- aov(yield ~ N + Error(block), data = npk)
 
-	expect_warning(
-		out <- reference_comparisons(m, classify = "N", reference = "0"),
-		"Falling back"
+	expect_no_warning(
+		out <- reference_comparisons(m, classify = "N", reference = "0")
 	)
-	expect_equal(attr(out, "comparison_method"), "holm")
+	expect_equal(attr(out, "comparison_method"), "dunnett")
+	expect_equal(out$df, 17)
 })
 
 test_that("transformed response warns it is reported on the model scale", {

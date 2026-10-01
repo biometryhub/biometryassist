@@ -522,7 +522,15 @@ get_predictions.lmerModLmerTest <- function(model.obj, classify, ...) {
 #' @noRd
 #' @exportS3Method get_predictions lme
 get_predictions.lme <- function(model.obj, classify, ...) {
-	get_predictions.lm(model.obj, classify, ...)
+	# Use the shared emmeans core so comparisons use the df of each pairwise
+	# contrast, not the df of the individual means. For lme fits these differ
+	# (e.g. an RCBD gives the means block-level df but the treatment contrasts
+	# the residual df), and using the mean df inflates the HSD.
+	model_terms <- attr(stats::terms(model.obj), 'term.labels')
+	formula_text <- deparse(stats::formula(model.obj))
+	ylab <- trimws(strsplit(formula_text, "~")[[1]][1])
+
+	predictions_from_emmeans(model.obj, classify, model_terms, ylab)
 }
 
 #' @noRd
