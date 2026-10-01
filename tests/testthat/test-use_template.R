@@ -191,3 +191,20 @@ test_that("list_templates returns template files if present", {
 		expect_false("not_a_template.txt" %in% result)
 	})
 })
+
+test_that("use_template copies the named package template", {
+	skip_on_cran()
+	withr::with_tempdir({
+		for (tmpl in list_templates()) {
+			dest <- use_template(tmpl, open = FALSE, overwrite = TRUE)
+			expect_identical(
+				readLines(dest),
+				readLines(system.file(
+					"templates",
+					tmpl,
+					package = "biometryassist"
+				))
+			)
+		}
+	})
+})

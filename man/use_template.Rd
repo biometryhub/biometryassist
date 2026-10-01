@@ -59,7 +59,7 @@ In this case, it will still open the existing file if \code{open = TRUE}.
 use_template()
 
 # Copy a specific template without opening
-use_template("anova_template.R", open = FALSE)
+use_template("aov_template.R", open = FALSE)
 
 # Copy to a specific directory
 use_template("mixed_model_template.R", dest_dir = "analyses")
