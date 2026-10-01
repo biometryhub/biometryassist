@@ -1,3 +1,17 @@
+# biometryassist 1.5.1
+
+## Bug Fixes
+
+
+
+# biometryassist 1.5.1
+
+## Bug Fixes
+
+- `use_template()` now copies the requested package template as expected. Previously it always copied `mixed_model_template.R`. (#188)
+- Fixed the argument order in the `export_design_to_excel()` examples. (#189)
+- `multiple_comparisons()` now uses the correct pairwise contrast degrees of freedom for `nlme::lme()` models rather than those of the individual means, which gave too-large HSD values. Results now match equivalent `aov()` and `lmer()` fits. (#190)
+
 # biometryassist 1.5.0
 
 ## Major changes
