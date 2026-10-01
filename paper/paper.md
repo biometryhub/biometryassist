@@ -204,7 +204,7 @@ Fanning, Joshua, Jason Brand, Isabel Munoz Santa, Linda McDonald, Julian
 Taylor, and Grant Hollaway. 2022. "Management of Chickpea Ascochyta
 Blight Using Fungicides and Cultivar Resistance Improves Grain Yield,
 Quality, and Grower Profitability." *Frontiers in Plant Science* 13:
-942220.
+942220. <https://doi.org/10.3389/fpls.2022.942220>.
 :::
 
 ::: {#ref-kesser2026grower .csl-entry}
@@ -212,6 +212,7 @@ Kesser, Merek M, Timothy R Cavagnaro, Roberta De Bei, and Cassandra
 Collins. 2026. "Grower Motivations, Challenges, and Perceptions of
 Sustainability for Vineyard Floor Management in Australia." *Agronomy
 for Sustainable Development* 46 (1): 2.
+<https://doi.org/10.1007/s13593-025-01066-7>.
 :::
 
 ::: {#ref-Kozak2016 .csl-entry}
@@ -243,13 +244,14 @@ Reed-Métayer, Edouard, Claire Depardieu, Patrick Lenz, Jean Bousquet,
 and Martin Perron. 2025. "Spruce Hybrids Show Superior Lifespan Growth
 but Intermediate Response to Climate Stress Compared to Their
 Ecologically Divergent Parental Species." *Forest Ecology and
-Management* 581: 122550.
+Management* 581: 122550. <https://doi.org/10.1016/j.foreco.2025.122550>.
 :::
 
 ::: {#ref-Tanaka2023 .csl-entry}
 Tanaka, Emi. 2023. *Edibble: An r Package to Encapsulate Elements of
 Experimental Designs for Better Planning, Management and Workflow*.
-arXiv:2311.09705. arXiv. <https://arxiv.org/abs/2311.09705>.
+arXiv:2311.09705. arXiv.
+<https://doi.org/10.32614/CRAN.package.edibble>.
 :::
 
 ::: {#ref-VSNInternational2023 .csl-entry}
@@ -262,5 +264,6 @@ and Mariana Caetano. 2026. "Efficacy of Bromoform Extract Oil
 Supplementation to Mitigate Methane Emissions in Angus Cows in an
 Extensive System and the Health Impact on the Cow-Calf Pair." *Frontiers
 in Animal Science* 7: 1789660.
+<https://doi.org/10.3389/fanim.2026.1789660>.
 :::
 ::::::::::::::::
