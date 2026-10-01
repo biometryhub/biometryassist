@@ -2,15 +2,10 @@
 
 ## Bug Fixes
 
-
-
-# biometryassist 1.5.1
-
-## Bug Fixes
-
 - `use_template()` now copies the requested package template as expected. Previously it always copied `mixed_model_template.R`. (#188)
 - Fixed the argument order in the `export_design_to_excel()` examples. (#189)
 - `multiple_comparisons()` now uses the correct pairwise contrast degrees of freedom for `nlme::lme()` models rather than those of the individual means, which gave too-large HSD values. Results now match equivalent `aov()` and `lmer()` fits. (#190)
+- `reference_comparisons()` now uses the exact Dunnett test whenever all comparisons share a common degrees of freedom, instead of falling back to Holm for any model that reports degrees of freedom per comparison (e.g. `nlme::lme()`, single-stratum `aovlist` and balanced `lmer()` models).
 
 # biometryassist 1.5.0
 
