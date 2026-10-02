@@ -76,6 +76,11 @@ CRAN release: 2026-06-17
 
 - Added the ability to add buffers or double buffers around blocks.
   ([\#169](https://github.com/biometryhub/biometryassist/issues/169))
+- [`design()`](https://biometryhub.github.io/biometryassist/reference/design.md)
+  gains a `plot_numbers` argument to add a `plot_number` column to the
+  design, numbered either sequentially or in a serpentine pattern.
+  Buffer plots are numbered alongside treatment plots.
+  ([\#58](https://github.com/biometryhub/biometryassist/issues/58))
 - [`autoplot()`](https://biometryhub.github.io/biometryassist/reference/autoplot.md)
   for
   [`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md)
