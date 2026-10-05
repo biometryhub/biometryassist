@@ -226,7 +226,7 @@ test_that("transformed response warns it is reported on the model scale", {
 
 test_that("reference_comparisons supports nlme::lme models", {
 	skip_if_not_installed("nlme")
-	# A common (scalar) df, so the exact Dunnett test is used.
+	# Every comparison shares the same df, so the exact Dunnett test is used.
 	m <- nlme::lme(
 		distance ~ Sex,
 		random = ~ 1 | Subject,
