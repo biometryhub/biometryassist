@@ -7,6 +7,7 @@
 - `multiple_comparisons()` now uses the correct pairwise contrast degrees of freedom for `nlme::lme()` models rather than those of the individual means, which gave too-large HSD values. Results now match equivalent `aov()` and `lmer()` fits. (#190)
 - `reference_comparisons()` now uses the exact Dunnett test whenever all comparisons share a common degrees of freedom, instead of falling back to Holm for any model that reports degrees of freedom per comparison (e.g. `nlme::lme()`, single-stratum `aovlist` and balanced `lmer()` models).
 - Fixed the standard errors of difference (and degrees of freedom) being assigned to the wrong pairs for models with four or more treatment levels that use `emmeans` (`aovlist`, `lmer()`, `nlme::lme()`, `afex` and `glmmTMB`). This affected the p-values, HSD and letter groups from `multiple_comparisons()` for unbalanced data; balanced designs were not affected. (#193)
+- `multiple_comparisons()` no longer errors when a treatment level is aliased in models that use `emmeans` (`aovlist`, `lmer()`, `nlme::lme()`, `afex` and `glmmTMB`). (#195)
 
 # biometryassist 1.5.0
 

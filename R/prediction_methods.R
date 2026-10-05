@@ -378,11 +378,22 @@ predictions_from_emmeans <- function(model.obj, classify, model_terms, ylab) {
 	vcov <- as.matrix(stats::vcov(emm))
 
 	# Process aliased treatments
-	aliased_result <- process_aliased(pp, sed, classify, vcov = vcov)
+	aliased_result <- process_aliased(pp, sed, classify, vcov = vcov, ndf = ndf)
 	pp <- aliased_result$predictions
 	sed <- aliased_result$sed
 	vcov <- aliased_result$vcov
+	ndf <- aliased_result$ndf
 	aliased_names <- aliased_result$aliased_names
+
+	# When every comparison shares the same df (e.g. a single error stratum),
+	# return it as a single df so callers can use methods that need one, such as
+	# the exact Dunnett test.
+	df_values <- ndf[!is.na(ndf)]
+	if (
+		length(df_values) > 0 && isTRUE(all.equal(min(df_values), max(df_values)))
+	) {
+		ndf <- df_values[1]
+	}
 
 	return(list(
 		predictions = pp,
@@ -563,16 +574,19 @@ get_predictions.art <- function(model.obj, classify, ...) {
 #' @param exclude_cols Column names to exclude when processing aliased names
 #' @param vcov Optional variance-covariance matrix of the predictions, subset to
 #'   the estimable rows/columns alongside `sed` when supplied (`NULL` otherwise).
+#' @param ndf Optional degrees of freedom. A comparison-specific (matrix) df is
+#'   subset alongside `sed`; a single df is returned unchanged.
 #'
 #' @return List containing processed predictions, sed matrix, aliased names and
-#'   (when supplied) the subset `vcov`.
+#'   (when supplied) the subset `vcov` and `ndf`.
 #' @keywords internal
 process_aliased <- function(
 	pp,
 	sed,
 	classify,
 	exclude_cols = c("predicted.value", "std.error", "df", "Names"),
-	vcov = NULL
+	vcov = NULL,
+	ndf = NULL
 ) {
 	aliased_names <- NULL
 
@@ -625,6 +639,9 @@ process_aliased <- function(
 		if (!is.null(vcov)) {
 			vcov <- vcov[-aliased, -aliased, drop = FALSE]
 		}
+		if (is.matrix(ndf)) {
+			ndf <- ndf[-aliased, -aliased, drop = FALSE]
+		}
 		warning(warn_string, call. = FALSE)
 	}
 
@@ -632,6 +649,7 @@ process_aliased <- function(
 		predictions = pp,
 		sed = sed,
 		aliased_names = aliased_names,
-		vcov = vcov
+		vcov = vcov,
+		ndf = ndf
 	))
 }

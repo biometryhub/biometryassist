@@ -9,7 +9,8 @@ process_aliased(
   sed,
   classify,
   exclude_cols = c("predicted.value", "std.error", "df", "Names"),
-  vcov = NULL
+  vcov = NULL,
+  ndf = NULL
 )
 }
 \arguments{
@@ -23,10 +24,13 @@ process_aliased(
 
 \item{vcov}{Optional variance-covariance matrix of the predictions, subset to
 the estimable rows/columns alongside \code{sed} when supplied (\code{NULL} otherwise).}
+
+\item{ndf}{Optional degrees of freedom. A comparison-specific (matrix) df is
+subset alongside \code{sed}; a single df is returned unchanged.}
 }
 \value{
 List containing processed predictions, sed matrix, aliased names and
-(when supplied) the subset \code{vcov}.
+(when supplied) the subset \code{vcov} and \code{ndf}.
 }
 \description{
 Process aliased treatments in predictions

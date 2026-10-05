@@ -243,16 +243,8 @@ reference_comparisons <- function(
 	# used to give a clear error if the reference is one, and stored on the output.
 	aliased <- result$aliased_names
 
-	# Exact Dunnett needs a single common df. A df matrix whose entries are all
-	# equal (e.g. nlme::lme with a single error stratum) has one, so collapse it;
-	# genuinely comparison-specific df have no single multivariate-t df, so fall
-	# back to Holm.
-	if (is.matrix(ndf)) {
-		df_range <- range(ndf, na.rm = TRUE)
-		if (isTRUE(all.equal(df_range[1], df_range[2]))) {
-			ndf <- df_range[1]
-		}
-	}
+	# Exact Dunnett needs a single common df; comparison-specific df (a matrix)
+	# has no single multivariate-t df, so fall back to Holm.
 	if (adjust == "dunnett" && is.matrix(ndf)) {
 		warning(
 			"Exact Dunnett requires a common degrees-of-freedom, but this model ",

@@ -761,9 +761,9 @@ test_that("Test that aov works when using Error() to including experimental desi
 	)
 	expect_equal(mean(pred.aov$sed, na.rm = TRUE), 4.436, tolerance = 5e-2)
 	expect_equal(mean(pred.aov$df, na.rm = TRUE), 45, tolerance = 5e-2)
-	# sed and df should be matrices for aovlist objects
+	# sed is a matrix; every comparison shares one df, so df is a single value
 	expect_equal(is.matrix(pred.aov$sed), TRUE)
-	expect_equal(is.matrix(pred.aov$df), TRUE)
+	expect_length(pred.aov$df, 1)
 })
 
 test_that("get_predictions.aovlist errors when classify is not in model terms", {
@@ -805,7 +805,7 @@ test_that("get_predictions.listof delegates to get_predictions.aovlist", {
 	)
 	expect_equal(pred.listof$ylab, pred.aov$ylab)
 	expect_equal(is.matrix(pred.listof$sed), TRUE)
-	expect_equal(is.matrix(pred.listof$df), TRUE)
+	expect_length(pred.listof$df, 1)
 })
 
 test_that("get_predictions errors informatively for ARTool (art) models", {
@@ -846,7 +846,7 @@ test_that("get_predictions works for afex (afex_aov) models", {
 	)
 	expect_equal(pred_b$ylab, "value")
 	expect_true(is.matrix(pred_b$sed))
-	expect_true(is.matrix(pred_b$df))
+	expect_length(pred_b$df, 1)
 	expect_equal(mean(pred_b$df, na.rm = TRUE), 10)
 
 	# Within-subjects design: the backing aov is multi-stratum (aovlist), so the
@@ -904,9 +904,9 @@ test_that("get_predictions works for glmmTMB models", {
 	)
 	expect_equal(pred$ylab, "count")
 	expect_true(is.matrix(pred$sed))
-	expect_true(is.matrix(pred$df))
+	expect_length(pred$df, 1)
 	# glmmTMB uses asymptotic (infinite) degrees of freedom.
-	expect_true(all(is.infinite(pred$df[!is.na(pred$df)])))
+	expect_true(is.infinite(pred$df))
 
 	# Non-Gaussian families predict on the link (here log) scale.
 	g_pois <- glmmTMB::glmmTMB(
@@ -1050,9 +1050,9 @@ test_that("Test that lmer provides the same results as multi-stratum ANOVA for o
 	)
 	expect_equal(mean(pred.lme$sed, na.rm = TRUE), 4.436, tolerance = 5e-2)
 	expect_equal(mean(pred.lme$df, na.rm = TRUE), 45)
-	# sed and df should be matrices for lme objects
+	# sed is a matrix; every comparison shares one df, so df is a single value
 	expect_equal(is.matrix(pred.lme$sed), TRUE)
-	expect_equal(is.matrix(pred.lme$df), TRUE)
+	expect_length(pred.lme$df, 1)
 })
 
 test_that("emmeans-based SED matrix matches pairs for unbalanced data", {
@@ -1072,6 +1072,26 @@ test_that("emmeans-based SED matrix matches pairs for unbalanced data", {
 	expected <- sqrt(outer(diag(V), diag(V), "+") - 2 * V)
 	diag(expected) <- NA_real_
 	expect_equal(unname(pred$sed), unname(expected), tolerance = 1e-6)
+})
+
+test_that("emmeans-based df matrix drops aliased levels alongside the SED", {
+	skip_if_not_installed("lme4")
+	# Unbalanced, so the df differ between comparisons and stay a matrix
+	dat <- subset(npk, !(N == "0" & P == "0"))
+	dat <- dat[-c(1, 6), ]
+	fit <- suppressMessages(lme4::lmer(yield ~ N * P + (1 | block), data = dat))
+	expect_warning(
+		pred <- get_predictions(fit, classify = "N:P"),
+		"aliased"
+	)
+
+	expect_true(is.matrix(pred$df))
+	expect_equal(dim(pred$df), dim(pred$sed))
+	expect_equal(nrow(pred$df), nrow(pred$predictions))
+	expect_s3_class(
+		suppressWarnings(multiple_comparisons(fit, classify = "N:P")),
+		"mct"
+	)
 })
 
 # check that predictions from asreml are the same as a aovlist object
@@ -1094,7 +1114,7 @@ test_that("Test that lmerTest provides the same results as multi-stratum ANOVA f
 	)
 	expect_equal(mean(pred.lmet$sed, na.rm = TRUE), 4.436, tolerance = 5e-2)
 	expect_equal(mean(pred.lmet$df, na.rm = TRUE), 45)
-	# sed and df should be matrices for lme objects
+	# sed is a matrix; every comparison shares one df, so df is a single value
 	expect_equal(is.matrix(pred.lmet$sed), TRUE)
-	expect_equal(is.matrix(pred.lmet$df), TRUE)
+	expect_length(pred.lmet$df, 1)
 })
