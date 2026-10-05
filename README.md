@@ -185,5 +185,5 @@ for guidelines on how to get involved.
 
 ## Licence
 
-MIT © University of Adelaide Biometry Hub. See [LICENSE.md](LICENSE.md)
-for details.
+MIT © Adelaide University Biometry Hub. See [LICENSE.md](LICENSE.md) for
+details.

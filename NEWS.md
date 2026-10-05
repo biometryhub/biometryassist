@@ -1,5 +1,9 @@
 # biometryassist 1.5.1
 
+## Minor Changes
+
+- The package startup message, licence and documentation now refer to Adelaide University.
+
 ## Bug Fixes
 
 - `use_template()` now copies the requested package template as expected. Previously it always copied `mixed_model_template.R`. (#188)

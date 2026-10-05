@@ -153,4 +153,4 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 
 ## Licence
 
-MIT © University of Adelaide Biometry Hub. See [LICENSE.md](LICENSE.md) for details.
+MIT © Adelaide University Biometry Hub. See [LICENSE.md](LICENSE.md) for details.

@@ -62,7 +62,7 @@ quiet <- function(x) {
 				sep = ""
 			),
 			"    |  Authors: Sharon Nielsen, Sam Rogers, Annie Conway                |",
-			"    |  Developed at the University of Adelaide with funding provided    |",
+			"    |  Developed at Adelaide University with funding provided           |",
 			"    |  by the Australian Grains Research and Development Corporation.   |",
 			"    |  Package website: https://biometryhub.github.io/biometryassist    |",
 			"    |                                                                   |",
