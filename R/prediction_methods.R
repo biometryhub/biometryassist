@@ -47,6 +47,18 @@ check_classify_in_terms <- function(classify, model_terms) {
 	)
 }
 
+#' Get the response label from a model formula
+#'
+#' @param model.obj A fitted model object with a [stats::formula()] method.
+#'
+#' @return The left-hand side of the model formula as a string, for use as the
+#' plot label.
+#' @keywords internal
+response_label <- function(model.obj) {
+	formula_text <- deparse(stats::formula(model.obj))
+	return(trimws(strsplit(formula_text, "~")[[1]][1]))
+}
+
 #' Internal prediction extraction for the comparison functions
 #'
 #' `get_predictions()` is the internal generic that [multiple_comparisons()],
@@ -289,9 +301,7 @@ get_predictions.lm <- function(model.obj, classify, ...) {
 	ndf <- pp$df[1]
 
 	# Get response variable for plot label
-	formula_text <- deparse(stats::formula(model.obj))
-	ylab <- strsplit(formula_text, "~")[[1]][1]
-	ylab <- trimws(ylab)
+	ylab <- response_label(model.obj)
 
 	return(list(
 		predictions = pp,
@@ -414,13 +424,12 @@ get_predictions.aovlist <- function(model.obj, classify, ...) {
 
 	# Get response variable for plot label
 	if (class(model.obj)[1] %in% c("lmerMod", "lmerModLmerTest")) {
-		formula_text <- deparse(stats::formula(model.obj))
+		ylab <- response_label(model.obj)
 	} else {
-		formula_text <- deparse(stats::formula(model.obj[[1]]))
+		ylab <- response_label(model.obj[[1]])
 	}
-	ylab <- trimws(strsplit(formula_text, "~")[[1]][1])
 
-	predictions_from_emmeans(model.obj, classify, model_terms, ylab)
+	return(predictions_from_emmeans(model.obj, classify, model_terms, ylab))
 }
 
 #' @noRd
@@ -433,7 +442,7 @@ get_predictions.afex_aov <- function(model.obj, classify, ...) {
 	model_terms <- rownames(model.obj$anova_table)
 	ylab <- attr(model.obj, "dv")
 
-	predictions_from_emmeans(model.obj, classify, model_terms, ylab)
+	return(predictions_from_emmeans(model.obj, classify, model_terms, ylab))
 }
 
 #' @noRd
@@ -446,10 +455,9 @@ get_predictions.glmmTMB <- function(model.obj, classify, ...) {
 	# For non-Gaussian families predictions are on the link scale; supply `trans` to
 	# multiple_comparisons() to back-transform.
 	model_terms <- attr(stats::terms(model.obj), 'term.labels')
-	formula_text <- deparse(stats::formula(model.obj))
-	ylab <- trimws(strsplit(formula_text, "~")[[1]][1])
+	ylab <- response_label(model.obj)
 
-	predictions_from_emmeans(model.obj, classify, model_terms, ylab)
+	return(predictions_from_emmeans(model.obj, classify, model_terms, ylab))
 }
 
 #' @noRd
@@ -513,7 +521,7 @@ get_predictions.mmer <- function(model.obj, classify, ...) {
 #' @noRd
 #' @exportS3Method get_predictions listof
 get_predictions.listof <- function(model.obj, classify, ...) {
-	get_predictions.aovlist(model.obj, classify, ...)
+	return(get_predictions.aovlist(model.obj, classify, ...))
 }
 
 
@@ -534,21 +542,19 @@ get_predictions.lmerMod <- function(model.obj, classify, ...) {
 #' @noRd
 #' @exportS3Method get_predictions lmerModLmerTest
 get_predictions.lmerModLmerTest <- function(model.obj, classify, ...) {
-	get_predictions.lmerMod(model.obj, classify, ...)
+	return(get_predictions.lmerMod(model.obj, classify, ...))
 }
 
 #' @noRd
 #' @exportS3Method get_predictions lme
 get_predictions.lme <- function(model.obj, classify, ...) {
-	# Use the shared emmeans core so comparisons use the df of each pairwise
-	# contrast, not the df of the individual means. For lme fits these differ
-	# (e.g. an RCBD gives the means block-level df but the treatment contrasts
-	# the residual df), and using the mean df inflates the HSD.
+	# Use the shared emmeans core rather than the lm method: comparisons need
+	# the df of each pairwise contrast, which for lme differs from the df of the
+	# individual means.
 	model_terms <- attr(stats::terms(model.obj), 'term.labels')
-	formula_text <- deparse(stats::formula(model.obj))
-	ylab <- trimws(strsplit(formula_text, "~")[[1]][1])
+	ylab <- response_label(model.obj)
 
-	predictions_from_emmeans(model.obj, classify, model_terms, ylab)
+	return(predictions_from_emmeans(model.obj, classify, model_terms, ylab))
 }
 
 #' @noRd
