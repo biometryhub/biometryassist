@@ -349,7 +349,14 @@ predictions_from_emmeans <- function(model.obj, classify, model_terms, ylab) {
 	# obtain residual degrees of freedom matrix
 	ndf <- matrix(NA_real_, nrow = n, ncol = n)
 	if (n > 1) {
-		upper_idx <- upper.tri(sed)
+		# emmeans orders pairwise contrasts row-wise (1-2, 1-3, ..., 2-3, ...),
+		# but upper.tri() indexes column-wise, so reorder the indices to match
+		upper_idx <- which(upper.tri(sed), arr.ind = TRUE)
+		upper_idx <- upper_idx[
+			order(upper_idx[, 1], upper_idx[, 2]),
+			,
+			drop = FALSE
+		]
 		sed[upper_idx] <- aov_compare$SE
 		ndf[upper_idx] <- aov_compare$df
 		sed[lower.tri(sed)] <- t(sed)[lower.tri(sed)]

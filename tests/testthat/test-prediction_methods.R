@@ -1055,6 +1055,25 @@ test_that("Test that lmer provides the same results as multi-stratum ANOVA for o
 	expect_equal(is.matrix(pred.lme$df), TRUE)
 })
 
+test_that("emmeans-based SED matrix matches pairs for unbalanced data", {
+	skip_if_not_installed("lme4")
+	# Unbalanced so each pair has a distinct SED; with 4+ levels a wrong fill
+	# order puts SEDs against the wrong pairs
+	set.seed(1)
+	dat <- data.frame(
+		trt = factor(rep(c("a", "b", "c", "d"), times = c(3, 8, 4, 10))),
+		blk = factor(rep(1:5, length.out = 25))
+	)
+	dat$y <- 10 + as.numeric(dat$trt) + rnorm(25)
+	fit <- suppressMessages(lme4::lmer(y ~ trt + (1 | blk), data = dat))
+	pred <- get_predictions(fit, classify = "trt")
+
+	V <- pred$vcov
+	expected <- sqrt(outer(diag(V), diag(V), "+") - 2 * V)
+	diag(expected) <- NA_real_
+	expect_equal(unname(pred$sed), unname(expected), tolerance = 1e-6)
+})
+
 # check that predictions from asreml are the same as a aovlist object
 test_that("Test that lmerTest provides the same results as multi-stratum ANOVA for oats data", {
 	load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
