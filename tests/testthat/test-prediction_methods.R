@@ -924,7 +924,17 @@ test_that("get_predictions works for glmmTMB models", {
 
 test_that("get_predictions works for sommer mmes models", {
 	skip_if_not_installed("sommer")
-	load(test_path("data", "sommer_models.Rdata"), .GlobalEnv)
+	# Fit at test time rather than loading a saved fixture: sommer's predict()
+	# depends on internal model components that change between versions (e.g.
+	# sommer 4.4.87 requires `C`, which older fits lack).
+	data("DT_example", package = "sommer", envir = environment())
+	model_mmes <- sommer::mmes(
+		Yield ~ Env,
+		random = ~ Name + Env:Name,
+		rcov = ~units,
+		data = DT_example,
+		verbose = FALSE
+	)
 
 	pred <- get_predictions.mmes(model_mmes, classify = "Env")
 
