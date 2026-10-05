@@ -210,3 +210,14 @@ capture_messages_text <- function(expr) {
 capture_warnings_text <- function(expr) {
 	paste(testthat::capture_warnings(expr), collapse = "\n")
 }
+
+# Print plots to a null device for the rest of the calling test (or file, when
+# called at the top level of a test file), so printing
+# doesn't open the default device and write Rplots.pdf to the working directory.
+# Deleting Rplots.pdf afterwards is not enough: the default device stays open.
+local_null_device <- function(env = parent.frame()) {
+	grDevices::pdf(NULL)
+	device <- grDevices::dev.cur()
+	withr::defer(grDevices::dev.off(device), envir = env)
+	return(invisible(device))
+}

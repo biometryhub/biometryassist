@@ -15,6 +15,9 @@
 # Load pre-computed models once for reuse across tests
 suppressWarnings(load(test_path("data", "w2_models.Rdata"), envir = .GlobalEnv))
 
+# variogram() draws its wireframe with grid.grabExpr(), which opens a device
+local_null_device()
+
 test_that("example 1 works", {
 	skip_on_cran()
 	withr::local_options(scipen = 100)

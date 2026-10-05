@@ -1417,16 +1417,12 @@ test_that("save produces output", {
 })
 
 test_that("plot, save and savename arguments are deprecated", {
+	local_null_device()
+	expect_warning(
+		multiple_comparisons(dat.aov, classify = "Species", plot = TRUE),
+		"`plot` has been deprecated"
+	)
 	tmp <- withr::local_tempdir()
-	withr::with_dir(tmp, {
-		expect_warning(
-			multiple_comparisons(dat.aov, classify = "Species", plot = TRUE),
-			"`plot` has been deprecated"
-		)
-		while (grDevices::dev.cur() > 1) {
-			grDevices::dev.off()
-		}
-	})
 	withr::with_dir(tmp, {
 		expect_warning(
 			multiple_comparisons(dat.aov, classify = "Species", save = TRUE),
@@ -1709,41 +1705,31 @@ test_that("plots are produced when requested", {
 	des$design$C <- factor(des$design$C)
 	dat.aov <- aov(response ~ A * B * C, data = des$design)
 
-	tmp <- withr::local_tempdir()
-	withr::with_dir(tmp, {
-		withr::local_file("Rplots.pdf")
+	local_null_device()
+	expect_snapshot_output(
+		output <- suppressWarnings(multiple_comparisons(
+			dat.aov,
+			classify = "A:B:C",
+			plot = TRUE
+		))
+	)
 
-		expect_snapshot_output(
-			output <- suppressWarnings(multiple_comparisons(
+	expect_s3_class(output, "mct")
+	expect_equal(nrow(output$predictions), 27)
+	expect_equal(output$predictions$std.error, rep(0.63, 27), tolerance = 5e-2)
+
+	skip_if(interactive())
+	expect_local_doppelganger(
+		"3 way interaction internal",
+		function() {
+			suppressWarnings(invisible(multiple_comparisons(
 				dat.aov,
 				classify = "A:B:C",
 				plot = TRUE
-			))
-		)
-		while (grDevices::dev.cur() > 1) {
-			grDevices::dev.off()
-		}
-
-		expect_s3_class(output, "mct")
-		expect_equal(nrow(output$predictions), 27)
-		expect_equal(output$predictions$std.error, rep(0.63, 27), tolerance = 5e-2)
-
-		skip_if(interactive())
-		expect_local_doppelganger(
-			"3 way interaction internal",
-			function() {
-				suppressWarnings(invisible(multiple_comparisons(
-					dat.aov,
-					classify = "A:B:C",
-					plot = TRUE
-				)))
-			},
-			variant = ggplot2_variant()
-		)
-		while (grDevices::dev.cur() > 1) {
-			grDevices::dev.off()
-		}
-	})
+			)))
+		},
+		variant = ggplot2_variant()
+	)
 })
 
 test_that("nlme/lme model is supported", {
