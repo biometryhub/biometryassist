@@ -52,13 +52,16 @@ int2col <- function(num) {
 #' @examples
 #' \dontrun{
 #' # Export with default colours
-#' export_design_to_excel(my_design, filename = "my_design.xlsx", value_column = "treatments")
+#' export_design_to_excel(my_design, filename = "my_design.xlsx",
+#' value_column = "treatments")
 #'
 #' # Export without colours
-#' export_design_to_excel(my_design, filename = "my_design.xlsx", value_column = "treatments", palette = NULL)
+#' export_design_to_excel(my_design, filename = "my_design.xlsx",
+#' value_column = "treatments", palette = NULL)
 #'
 #' # Export with custom palette
-#' export_design_to_excel(my_design, filename = "my_design.xlsx", value_column = "treatments", palette = "viridis")
+#' export_design_to_excel(my_design, filename = "my_design.xlsx",
+#' value_column = "treatments", palette = "viridis")
 #' }
 #'
 #' @export
