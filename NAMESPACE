@@ -53,105 +53,123 @@ export(summary_graph)
 export(update_asreml)
 export(use_template)
 export(variogram)
-importFrom(agricolae,design.ab)
-importFrom(agricolae,design.crd)
-importFrom(agricolae,design.lsd)
-importFrom(agricolae,design.rcbd)
-importFrom(agricolae,design.split)
-importFrom(agricolae,design.strip)
-importFrom(curl,curl_fetch_disk)
-importFrom(curl,has_internet)
+importFrom(agricolae,
+  design.ab,
+  design.crd,
+  design.lsd,
+  design.rcbd,
+  design.split,
+  design.strip
+)
+importFrom(curl,
+  curl_fetch_disk,
+  has_internet
+)
 importFrom(emmeans,emmeans)
-importFrom(ggplot2,aes)
-importFrom(ggplot2,autoplot)
-importFrom(ggplot2,coord_equal)
-importFrom(ggplot2,element_text)
-importFrom(ggplot2,facet_wrap)
-importFrom(ggplot2,geom_boxplot)
-importFrom(ggplot2,geom_col)
-importFrom(ggplot2,geom_contour)
-importFrom(ggplot2,geom_errorbar)
-importFrom(ggplot2,geom_histogram)
-importFrom(ggplot2,geom_line)
-importFrom(ggplot2,geom_linerange)
-importFrom(ggplot2,geom_point)
-importFrom(ggplot2,geom_qq_line)
-importFrom(ggplot2,geom_raster)
-importFrom(ggplot2,geom_text)
-importFrom(ggplot2,geom_tile)
-importFrom(ggplot2,geom_vline)
-importFrom(ggplot2,ggplot)
-importFrom(ggplot2,ggsave)
-importFrom(ggplot2,labs)
-importFrom(ggplot2,scale_fill_gradientn)
-importFrom(ggplot2,scale_fill_manual)
-importFrom(ggplot2,scale_x_continuous)
-importFrom(ggplot2,scale_x_discrete)
-importFrom(ggplot2,scale_y_continuous)
-importFrom(ggplot2,scale_y_discrete)
-importFrom(ggplot2,scale_y_reverse)
-importFrom(ggplot2,sec_axis)
-importFrom(ggplot2,stat_qq)
-importFrom(ggplot2,stat_summary)
-importFrom(ggplot2,theme)
-importFrom(ggplot2,theme_bw)
-importFrom(ggplot2,vars)
-importFrom(grDevices,colorRampPalette)
-importFrom(grDevices,rainbow)
+importFrom(ggplot2,
+  aes,
+  autoplot,
+  coord_equal,
+  element_text,
+  facet_wrap,
+  geom_boxplot,
+  geom_col,
+  geom_contour,
+  geom_errorbar,
+  geom_histogram,
+  geom_line,
+  geom_linerange,
+  geom_point,
+  geom_qq_line,
+  geom_raster,
+  geom_text,
+  geom_tile,
+  geom_vline,
+  ggplot,
+  ggsave,
+  labs,
+  scale_fill_gradientn,
+  scale_fill_manual,
+  scale_x_continuous,
+  scale_x_discrete,
+  scale_y_continuous,
+  scale_y_discrete,
+  scale_y_reverse,
+  sec_axis,
+  stat_qq,
+  stat_summary,
+  theme,
+  theme_bw,
+  vars
+)
+importFrom(grDevices,
+  colorRampPalette,
+  rainbow
+)
 importFrom(graphics,plot)
 importFrom(grid,grid.grabExpr)
 importFrom(jsonlite,fromJSON)
 importFrom(lattice,wireframe)
 importFrom(multcompView,multcompLetters)
-importFrom(patchwork,plot_annotation)
-importFrom(patchwork,plot_layout)
-importFrom(patchwork,plot_spacer)
-importFrom(patchwork,wrap_elements)
-importFrom(patchwork,wrap_plots)
+importFrom(patchwork,
+  plot_annotation,
+  plot_layout,
+  plot_spacer,
+  wrap_elements,
+  wrap_plots
+)
 importFrom(pracma,interp2)
-importFrom(rlang,as_string)
-importFrom(rlang,check_dots_used)
-importFrom(rlang,enquo)
-importFrom(rlang,ensym)
-importFrom(rlang,ensyms)
-importFrom(rlang,is_installed)
-importFrom(rlang,is_interactive)
-importFrom(rlang,quo_is_null)
-importFrom(rlang,quo_name)
-importFrom(rlang,sym)
-importFrom(scales,brewer_pal)
-importFrom(scales,reverse_trans)
-importFrom(scales,viridis_pal)
-importFrom(stats,aggregate)
-importFrom(stats,as.formula)
-importFrom(stats,fitted)
-importFrom(stats,formula)
-importFrom(stats,model.frame)
-importFrom(stats,p.adjust)
-importFrom(stats,p.adjust.methods)
-importFrom(stats,pchisq)
-importFrom(stats,predict)
-importFrom(stats,pt)
-importFrom(stats,ptukey)
-importFrom(stats,qnorm)
-importFrom(stats,qt)
-importFrom(stats,qtukey)
-importFrom(stats,quantile)
-importFrom(stats,residuals)
-importFrom(stats,sd)
-importFrom(stats,setNames)
-importFrom(stats,shapiro.test)
-importFrom(stats,terms)
-importFrom(stats,var)
+importFrom(rlang,
+  as_string,
+  check_dots_used,
+  enquo,
+  ensym,
+  ensyms,
+  is_installed,
+  is_interactive,
+  quo_is_null,
+  quo_name,
+  sym
+)
+importFrom(scales,
+  brewer_pal,
+  reverse_trans,
+  viridis_pal
+)
+importFrom(stats,
+  aggregate,
+  as.formula,
+  fitted,
+  formula,
+  model.frame,
+  p.adjust,
+  p.adjust.methods,
+  pchisq,
+  predict,
+  pt,
+  ptukey,
+  qnorm,
+  qt,
+  qtukey,
+  quantile,
+  residuals,
+  sd,
+  setNames,
+  shapiro.test,
+  terms,
+  var
+)
 importFrom(stringi,stri_sort)
-importFrom(utils,available.packages)
-importFrom(utils,compareVersion)
-importFrom(utils,download.file)
-importFrom(utils,file.edit)
-importFrom(utils,install.packages)
-importFrom(utils,installed.packages)
-importFrom(utils,packageDescription)
-importFrom(utils,packageVersion)
-importFrom(utils,remove.packages)
-importFrom(utils,tail)
-importFrom(utils,write.csv)
+importFrom(utils,
+  available.packages,
+  compareVersion,
+  download.file,
+  file.edit,
+  install.packages,
+  installed.packages,
+  packageDescription,
+  packageVersion,
+  remove.packages,
+  tail,
+  write.csv
+)

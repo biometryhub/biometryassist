@@ -81,4 +81,4 @@ Config/testthat/parallel: true
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 VignetteBuilder: quarto
-Config/roxygen2/version: 8.0.0
+Config/roxygen2/version: 8.1.0
