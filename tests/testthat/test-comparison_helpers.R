@@ -25,6 +25,43 @@ test_that("validate_inputs: sig in [0.5, 1) warns suggesting 1 - sig", {
 	)
 })
 
+test_that("check_reserved_names: applies to classify as resolved by the engine", {
+	# A fake engine that resolves a wrapped classify as get_predictions.asreml()
+	# does: "at(groups):Trt" becomes "groups:Trt". The reserved name is hidden
+	# inside the wrapper in the input, so it must be caught after resolution.
+	registerS3method(
+		"get_predictions",
+		"ch_fake_wrapped_classify",
+		function(model.obj, classify, ...) {
+			list(
+				predictions = data.frame(
+					groups = factor(c("a", "b")),
+					Trt = factor(c("x", "x")),
+					predicted.value = c(1, 2),
+					std.error = c(0.5, 0.5)
+				),
+				sed = matrix(c(NA, 0.7, 0.7, NA), nrow = 2),
+				vcov = diag(2) * 0.25,
+				df = 10,
+				ylab = "response",
+				aliased_names = NULL,
+				emmeans_grid = NULL,
+				classify = "groups:Trt"
+			)
+		},
+		envir = asNamespace("biometryassist")
+	)
+	m <- structure(list(), class = "ch_fake_wrapped_classify")
+	msg <- "Invalid column name\\. Please change the name of column\\(s\\): groups"
+
+	expect_error(multiple_comparisons(m, classify = "at(groups):Trt"), msg)
+	expect_error(pairwise_comparisons(m, classify = "at(groups):Trt"), msg)
+	expect_error(
+		reference_comparisons(m, classify = "at(groups):Trt", reference = "a"),
+		msg
+	)
+})
+
 test_that("aliased_note: more than 6 aliased levels is condensed to a count", {
 	result <- biometryassist:::aliased_note(letters[1:7])
 	expect_match(result, "^7 levels are aliased")

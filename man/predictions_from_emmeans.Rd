@@ -24,7 +24,7 @@ side of the model formula.}
 }
 \value{
 A list with elements \code{predictions}, \code{sed}, \code{df}, \code{ylab},
-\code{aliased_names}, \code{emmeans_grid} and \code{vcov}.
+\code{aliased_names}, \code{emmeans_grid}, \code{vcov} and \code{classify}.
 }
 \description{
 Shared core for the emmeans-backed \code{get_predictions()} methods (\code{aovlist},

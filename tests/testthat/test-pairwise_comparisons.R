@@ -838,8 +838,7 @@ test_that("asreml models work with contrasts (asreml vcov branch)", {
 		classify = "Nitrogen",
 		contrasts = list(
 			"0_cwt vs 0.2_cwt" = c(`0_cwt` = 1, `0.2_cwt` = -1)
-		),
-		dendf = dendf
+		)
 	))
 	expect_s3_class(out, "pairwise_comparisons")
 	expect_equal(nrow(out), 1L)
@@ -867,7 +866,8 @@ test_that("contrasts: no-emmeans_grid vcov path without asreml (scalar ndf)", {
 				df = 20L,
 				ylab = "response",
 				aliased_names = NULL,
-				emmeans_grid = NULL
+				emmeans_grid = NULL,
+				classify = classify
 			)
 		},
 		envir = asNamespace("biometryassist")
@@ -891,39 +891,41 @@ test_that("contrasts: no-emmeans_grid vcov path without asreml (scalar ndf)", {
 	expect_false(any(c("level1", "level2") %in% names(out)))
 })
 
-test_that("contrasts: matrix ndf + no emmeans_grid errors with clear message", {
-	# Exercises lines 754-759: the defensive stop() in build_contrast_block that
-	# fires when an engine reports per-comparison (matrix) df but provides no
-	# emmeans reference grid. This combination cannot arise from any real engine
-	# but the guard must be reachable to prevent a silent wrong df slipping through.
+test_that("contrasts: matrix ndf + no emmeans_grid uses the smallest df involved", {
+	# asreml at() terms give a per-pair df matrix without an emmeans grid. A
+	# contrast takes the smallest df among the levels it involves: for two levels
+	# that is the pair's entry. Runs without asreml via a fake engine.
 	fake_pp <- data.frame(
-		Trt = factor(c("A", "B")),
-		predicted.value = c(1.0, 2.0),
+		Trt = factor(c("A", "B", "C")),
+		predicted.value = c(1.0, 2.0, 4.0),
 		stringsAsFactors = FALSE
 	)
+	row_df <- c(10, 8, 6)
 	registerS3method(
 		"get_predictions",
 		"pc_fake_matrix_ndf",
 		function(model.obj, classify, ...) {
 			list(
 				predictions = fake_pp,
-				vcov = diag(2) * 0.5,
-				df = matrix(c(10, 8, 8, 10), nrow = 2),
+				vcov = diag(3) * 0.5,
+				df = outer(row_df, row_df, pmin),
 				ylab = "response",
 				aliased_names = NULL,
-				emmeans_grid = NULL
+				emmeans_grid = NULL,
+				classify = classify
 			)
 		},
 		envir = asNamespace("biometryassist")
 	)
 	m <- structure(list(), class = "pc_fake_matrix_ndf")
 
-	expect_error(
-		pairwise_comparisons(
-			m,
-			classify = "Trt",
-			contrasts = list("A vs B" = c(A = 1, B = -1))
-		),
-		"General contrasts are not supported"
+	out <- pairwise_comparisons(
+		m,
+		classify = "Trt",
+		contrasts = list(
+			"A vs B" = c(A = 1, B = -1),
+			"A vs B+C" = c(A = 1, B = -0.5, C = -0.5)
+		)
 	)
+	expect_equal(out$df, c(8, 6))
 })

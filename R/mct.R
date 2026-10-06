@@ -3,7 +3,9 @@
 #' A function for comparing and ranking predicted means with Tukey's Honest Significant Difference (HSD) Test.
 #'
 #' @param model.obj An `asreml`, `aov`, `lm`, `lme` ([nlme::lme()]) or `lmerMod` ([lme4::lmer()]) model object.
-#' @param classify Name of predictor variable as string.
+#' @param classify Name of predictor variable as string. Interactions are
+#'   specified with `:` (e.g. `"Trt:Site"`). For `asreml` models, see
+#'   *ASReml-R terms in `classify`* below.
 #' @param sig The significance level, numeric between 0 and 1. Default is 0.05.
 #' @param int.type The type of confidence interval to calculate. One of `ci`, `tukey`, `1se`, `2se`, or `none`. Default is `ci`.
 #' @param trans Transformation that was applied to the response variable. One of `log`, `sqrt`, `logit`, `power`, `inverse`, or `arcsin`. Default is `NULL`.
@@ -19,7 +21,9 @@
 #' @param rotation Rotate the text output as Treatments within the plot. Allows for easier reading of long treatment labels. Number between 0 and 360 (inclusive) - default 0
 #' @param save Logical (default `FALSE`). Save the predicted values to a csv file?
 #' @param savename A file name for the predicted values to be saved to. Default is `predicted_values`.
-#' @param ... Other arguments passed internally to model-specific prediction methods.
+#' @param ... Other arguments passed to the model-specific prediction methods
+#'   (e.g. ASReml-R `predict()` arguments such as `present`; see
+#'   *ASReml-R prediction arguments* below).
 #'
 #' @importFrom multcompView multcompLetters
 #' @importFrom emmeans emmeans
@@ -126,6 +130,8 @@
 #'  Standard Errors From Transformed Data - and Why They Should Not Be Used.
 #'
 #' @inheritSection get_predictions Supported model types
+#' @inheritSection get_predictions ASReml-R terms in `classify`
+#' @inheritSection get_predictions ASReml-R prediction arguments
 #'
 #' @seealso [pairwise_comparisons()] for testing a chosen subset of pairwise
 #'   differences as a tidy table, or [reference_comparisons()] for testing
@@ -319,7 +325,7 @@ multiple_comparisons <- function(
 		"Use `write.csv(result$predictions, \"filename.csv\")` instead."
 	)
 
-	vars <- validate_inputs(sig, classify, model.obj, trans)
+	validate_inputs(sig, model.obj, trans)
 
 	# Process dots
 	rlang::check_dots_used()
@@ -357,6 +363,11 @@ multiple_comparisons <- function(
 
 	# Get model-specific predictions and SED
 	result <- get_predictions(model.obj, classify, ...)
+
+	# classify as resolved by the model engine (e.g. ASReml-R at() removed)
+	classify <- result$classify
+	vars <- unlist(strsplit(classify, ":"))
+	check_reserved_names(vars)
 
 	pp <- result$predictions
 	sed <- result$sed

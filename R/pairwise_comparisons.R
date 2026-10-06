@@ -12,7 +12,8 @@
 #' @param model.obj An `asreml`, `aov`, `lm`, `lme` ([nlme::lme()]) or `lmerMod`
 #'   ([lme4::lmer()]) model object.
 #' @param classify Name of the predictor variable(s) to compare, as a string.
-#'   Interactions are specified with `:` (e.g. `"Trt:Site"`).
+#'   Interactions are specified with `:` (e.g. `"Trt:Site"`). For `asreml`
+#'   models, see *ASReml-R terms in `classify`* below.
 #' @param pairs The comparisons to test. `NULL` (default) tests all pairwise
 #'   comparisons. Otherwise either a character vector of `"level1-level2"`
 #'   labels (levels of an interaction joined by `:`, the two sides of a pair
@@ -46,7 +47,8 @@
 #'   `NULL` (default) keeps the input order of `pairs`; `FALSE` sorts ascending
 #'   by estimate; `TRUE` sorts descending by estimate.
 #' @param ... Other arguments passed to the model-specific prediction methods
-#'   (e.g. ASReml-R `predict()` arguments).
+#'   (e.g. ASReml-R `predict()` arguments such as `present`; see
+#'   *ASReml-R prediction arguments* below).
 #'
 #' @details
 #' ## Relationship to the other comparison functions
@@ -133,6 +135,8 @@
 #'   `aliased` attribute.
 #'
 #' @inheritSection get_predictions Supported model types
+#' @inheritSection get_predictions ASReml-R terms in `classify`
+#' @inheritSection get_predictions ASReml-R prediction arguments
 #'
 #' @seealso [multiple_comparisons()] for means-and-letters output, and
 #'   [reference_comparisons()] for comparing every level against a single
@@ -228,12 +232,11 @@ pairwise_comparisons <- function(
 		)
 	}
 
-	# sig / classify / transformation checks (shared with multiple_comparisons()).
+	# sig / transformation checks (shared with multiple_comparisons()).
 	# `trans_supported = FALSE`: these functions report differences on the model
 	# scale and have no `trans` argument, so the transform note reflects that.
-	vars <- validate_inputs(
+	validate_inputs(
 		sig,
-		classify,
 		model.obj,
 		trans = NULL,
 		trans_supported = FALSE
@@ -243,6 +246,10 @@ pairwise_comparisons <- function(
 	# chosen engine. The vcov is the authoritative prediction covariance; the
 	# standard error of every difference/contrast is taken from it.
 	result <- get_predictions(model.obj, classify, ...)
+	# classify as resolved by the model engine (e.g. ASReml-R at() removed)
+	classify <- result$classify
+	vars <- unlist(strsplit(classify, ":"))
+	check_reserved_names(vars)
 	pp <- result$predictions
 	vcov <- result$vcov
 	ndf <- result$df
@@ -733,11 +740,10 @@ build_contrast_block <- function(
 			se[k] <- ct$SE
 			df_c[k] <- ct$df
 		} else {
-			# asreml (no grid): use the exact prediction vcov directly. df is the
-			# model's single residual df (scalar for asreml). Floor c'Vc at zero so a
-			# contrast with ~0 true variance rounding just below zero gives se = 0,
-			# not a NaN; V is the exact (PSD) model covariance, so this only ever
-			# floors floating-point rounding noise.
+			# asreml (no grid): use the exact prediction vcov directly. Floor c'Vc at
+			# zero so a contrast with ~0 true variance rounding just below zero gives
+			# se = 0, not a NaN; V is the exact (PSD) model covariance, so this only
+			# ever floors floating-point rounding noise.
 			est[k] <- sum(w * pv[gi])
 			u <- sort(unique(gi))
 			V <- vcov[u, u, drop = FALSE]
@@ -748,17 +754,11 @@ build_contrast_block <- function(
 			}
 			qf <- as.numeric(t(wal) %*% V %*% wal)
 			se[k] <- sqrt(max(0, qf))
-			if (is.matrix(ndf)) {
-				# Should not occur: matrix df only arises for emmeans engines, which
-				# take the branch above. Guard rather than emit an ad-hoc df.
-				stop(
-					"General contrasts are not supported for this model: it reports ",
-					"comparison-specific degrees of freedom but provides no emmeans ",
-					"reference grid to derive an exact contrast df.",
-					call. = FALSE
-				)
-			}
-			df_c[k] <- ndf
+			# The df is the model's single df, or for an asreml at() term the
+			# per-pair matrix: use the smallest df among the levels the contrast
+			# involves, which for a two-level contrast is that pair's entry and
+			# matches the conservative rule used across at() levels.
+			df_c[k] <- if (is.matrix(ndf)) min(ndf[u, u]) else ndf
 		}
 	}
 
