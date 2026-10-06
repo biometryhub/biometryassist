@@ -760,10 +760,9 @@ test_that("Test that aov works when using Error() to including experimental desi
 		tolerance = 5e-2
 	)
 	expect_equal(mean(pred.aov$sed, na.rm = TRUE), 4.436, tolerance = 5e-2)
-	expect_equal(mean(pred.aov$df, na.rm = TRUE), 45, tolerance = 5e-2)
 	# sed is a matrix; every comparison shares one df, so df is a single value
 	expect_equal(is.matrix(pred.aov$sed), TRUE)
-	expect_length(pred.aov$df, 1)
+	expect_equal(pred.aov$df, 45, tolerance = 5e-2)
 })
 
 test_that("get_predictions.aovlist errors when classify is not in model terms", {
@@ -805,7 +804,7 @@ test_that("get_predictions.listof delegates to get_predictions.aovlist", {
 	)
 	expect_equal(pred.listof$ylab, pred.aov$ylab)
 	expect_equal(is.matrix(pred.listof$sed), TRUE)
-	expect_length(pred.listof$df, 1)
+	expect_equal(pred.listof$df, pred.aov$df)
 })
 
 test_that("get_predictions errors informatively for ARTool (art) models", {
@@ -828,8 +827,8 @@ test_that("get_predictions works for afex (afex_aov) models", {
 	skip_if_not_installed("afex")
 	data(obk.long, package = "afex")
 
-	# Between-subjects design: the backing aov is a single stratum, so emmeans gives
-	# a scalar df, replicated across the (matrix) df like other emmeans engines.
+	# Between-subjects design: the backing aov is a single stratum, so every
+	# comparison shares one df.
 	afex_b <- afex::aov_ez(
 		id = "id",
 		dv = "value",
@@ -846,8 +845,7 @@ test_that("get_predictions works for afex (afex_aov) models", {
 	)
 	expect_equal(pred_b$ylab, "value")
 	expect_true(is.matrix(pred_b$sed))
-	expect_length(pred_b$df, 1)
-	expect_equal(mean(pred_b$df, na.rm = TRUE), 10)
+	expect_equal(pred_b$df, 10)
 
 	# Within-subjects design: the backing aov is multi-stratum (aovlist), so the
 	# comparison-specific (matrix) degrees of freedom path is exercised.
@@ -904,9 +902,8 @@ test_that("get_predictions works for glmmTMB models", {
 	)
 	expect_equal(pred$ylab, "count")
 	expect_true(is.matrix(pred$sed))
-	expect_length(pred$df, 1)
 	# glmmTMB uses asymptotic (infinite) degrees of freedom.
-	expect_true(is.infinite(pred$df))
+	expect_equal(pred$df, Inf)
 
 	# Non-Gaussian families predict on the link (here log) scale.
 	g_pois <- glmmTMB::glmmTMB(
@@ -1062,10 +1059,9 @@ test_that("Test that lmer provides the same results as multi-stratum ANOVA for o
 		tolerance = 5e-2
 	)
 	expect_equal(mean(pred.lme$sed, na.rm = TRUE), 4.436, tolerance = 5e-2)
-	expect_equal(mean(pred.lme$df, na.rm = TRUE), 45)
 	# sed is a matrix; every comparison shares one df, so df is a single value
 	expect_equal(is.matrix(pred.lme$sed), TRUE)
-	expect_length(pred.lme$df, 1)
+	expect_equal(pred.lme$df, 45)
 })
 
 test_that("emmeans-based SED matrix matches pairs for unbalanced data", {
@@ -1126,8 +1122,7 @@ test_that("Test that lmerTest provides the same results as multi-stratum ANOVA f
 		tolerance = 5e-2
 	)
 	expect_equal(mean(pred.lmet$sed, na.rm = TRUE), 4.436, tolerance = 5e-2)
-	expect_equal(mean(pred.lmet$df, na.rm = TRUE), 45)
 	# sed is a matrix; every comparison shares one df, so df is a single value
 	expect_equal(is.matrix(pred.lmet$sed), TRUE)
-	expect_length(pred.lmet$df, 1)
+	expect_equal(pred.lmet$df, 45)
 })
