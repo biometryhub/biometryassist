@@ -8,7 +8,7 @@
 #' Shared by [multiple_comparisons()], [pairwise_comparisons()] and
 #' [reference_comparisons()]. Checks the significance level, rejects reserved
 #' `classify` column names, and warns when the response appears to be transformed
-#' in the model formula. Returns the individual `classify` variable names.
+#' in the model formula.
 #'
 #' @param sig Significance level.
 #' @param classify The `classify` string.
@@ -17,7 +17,9 @@
 #' @param trans_supported Logical; `TRUE` for [multiple_comparisons()] (which has
 #'   a `trans` argument), `FALSE` for the difference-based functions (which
 #'   report on the model scale). Controls the transformed-response warning hint.
-#' @return Character vector of `classify` variable names.
+#' @return `NULL`, invisibly; called for its checks. The `classify` variables
+#'   are taken from the `classify` returned by [get_predictions()], which
+#'   resolves model-specific syntax such as ASReml-R `at()`.
 #' @importFrom stats formula
 #' @keywords internal
 #' @noRd
@@ -110,7 +112,7 @@ validate_inputs <- function(
 		)
 	}
 
-	return(vars)
+	invisible(NULL)
 }
 
 

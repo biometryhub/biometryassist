@@ -16,7 +16,8 @@
 #' @param model.obj An `asreml`, `aov`, `lm`, `lme` ([nlme::lme()]) or `lmerMod`
 #'   ([lme4::lmer()]) model object.
 #' @param classify Name of the predictor variable(s) to compare, as a string.
-#'   Interactions are specified with `:` (e.g. `"Trt:Site"`).
+#'   Interactions are specified with `:` (e.g. `"Trt:Site"`). For `asreml`
+#'   models, see *ASReml-R terms in `classify`* below.
 #' @param reference The reference (control) level to compare every other level
 #'   against, as a single character string. When `by` is used it is a level of
 #'   the remaining (non-`by`) factor; for an interaction `classify` with no `by`
@@ -45,7 +46,8 @@
 #'   *estimate* (each level minus the reference), unlike [multiple_comparisons()]
 #'   which orders by the predicted *mean*.
 #' @param ... Other arguments passed to the model-specific prediction methods
-#'   (e.g. ASReml-R `predict()` arguments).
+#'   (e.g. ASReml-R `predict()` arguments such as `present`; see
+#'   *ASReml-R prediction arguments* below).
 #'
 #' @details
 #' ## Why Dunnett is the default
@@ -117,6 +119,8 @@
 #'   in an `aliased` attribute; an aliased `reference` is an error.
 #'
 #' @inheritSection get_predictions Supported model types
+#' @inheritSection get_predictions ASReml-R terms in `classify`
+#' @inheritSection get_predictions ASReml-R prediction arguments
 #'
 #' @seealso [multiple_comparisons()] for all-pairs means and letters,
 #'   [pairwise_comparisons()] for selected differences. For guidance on choosing
@@ -223,7 +227,7 @@ reference_comparisons <- function(
 	# sig / classify / transformation checks (shared with multiple_comparisons()).
 	# `trans_supported = FALSE`: these functions report differences on the model
 	# scale and have no `trans` argument, so the transform note reflects that.
-	vars <- validate_inputs(
+	validate_inputs(
 		sig,
 		classify,
 		model.obj,
@@ -235,6 +239,9 @@ reference_comparisons <- function(
 	# chosen engine. The vcov is the authoritative prediction covariance; the
 	# standard error of every comparison is taken from it.
 	result <- get_predictions(model.obj, classify, ...)
+	# classify as resolved by the model engine (e.g. ASReml-R at() removed)
+	classify <- result$classify
+	vars <- unlist(strsplit(classify, ":"))
 	pp <- result$predictions
 	vcov <- result$vcov
 	ndf <- result$df

@@ -19,8 +19,12 @@ otherwise predictions are computed internally).}
 ASReml-R \code{predict()} arguments).}
 }
 \value{
-A list with elements \code{predictions}, \code{sed}, \code{df}, \code{ylab} and
-\code{aliased_names} (and \code{emmeans_grid} for emmeans-backed engines).
+A list with elements \code{predictions}, \code{sed}, \code{df}, \code{ylab},
+\code{aliased_names} and \code{classify} (and \code{emmeans_grid} for emmeans-backed
+engines). \code{classify} is the input resolved to the factor names the
+predictions are labelled by, in the order given by the user (e.g. ASReml-R
+wrappers removed: \code{"at(Year):Prior_crop"} becomes \code{"Year:Prior_crop"}).
+The comparison functions take their \code{classify} variables from it.
 }
 \description{
 \code{get_predictions()} is the internal generic that \code{\link[=multiple_comparisons]{multiple_comparisons()}},
@@ -57,9 +61,73 @@ sommer \code{mmer} models (the legacy interface) are supported by \code{\link[=r
 for \code{mmer}. Refit with \code{sommer::mmes()} to use the comparison functions.
 
 To add a new engine, write a \verb{get_predictions.<class>()} method returning a
-list with elements \code{predictions}, \code{sed}, \code{df}, \code{ylab} and \code{aliased_names}
-(plus \code{emmeans_grid} for engines backed by \code{\link[emmeans:emmeans]{emmeans::emmeans()}}), and add a
-row to the table above.
+list with elements \code{predictions}, \code{sed}, \code{df}, \code{ylab}, \code{aliased_names} and
+\code{classify} (plus \code{emmeans_grid} for engines backed by \code{\link[emmeans:emmeans]{emmeans::emmeans()}}),
+and add a row to the table above.
+}
+
+\section{ASReml-R terms in \code{classify}}{
+
+For \code{asreml} models, \code{classify} names the factors to predict, as for
+ASReml-R \code{predict()}. A term wrapped in an ASReml-R function can be given
+either by its factors or as written in the model, so for a model with
+\code{at(Year):Treatment} both \code{classify = "Year:Treatment"} and
+\code{classify = "at(Year):Treatment"} give the same result. This applies to
+\code{at()} and to the variance-structure and relationship functions in the
+random model (e.g. \code{diag()}, \code{us()}, \code{fa()}, \code{vm()}), so
+\code{fa(Site, 2):Variety} is classified with \code{"Site:Variety"}.
+
+Predictions of terms in the random model include the random effects
+(BLUPs). Their comparisons use the residual degrees of freedom, with a
+warning.
+
+For an \code{at()} term, ASReml-R gives a separate Wald test, with its own
+denominator degrees of freedom, for each level of the conditioning factor.
+A comparison within a level uses that level's degrees of freedom; a
+comparison between levels uses the smaller of the two, as a conservative
+choice. Levels not included in \code{at()} use the residual degrees of freedom.
+}
+
+\section{ASReml-R prediction arguments}{
+
+For \code{asreml} models, arguments given in \code{...} are passed to ASReml-R
+\code{predict()}. Those most useful for comparisons are:
+\itemize{
+\item \code{present}: average only over the combinations of factor levels that occur
+in the data (see below).
+\item \code{average}: choose the factors to average over, optionally with weights
+(e.g. in proportion to replication rather than equally).
+\item \code{levels}: predict at chosen levels only, e.g. a subset of treatments, or
+at given values of a covariate rather than its mean.
+\item \code{ignore}, \code{use}, \code{except} and \code{only}: change which model terms enter the
+predictions, e.g. \code{use} to include a random term that is otherwise left
+out.
+\item \code{associate}: declare nested factors, e.g. treatments nested within
+treatment types.
+}
+
+\code{classify}, \code{sed} and \code{vcov} are set by the comparison functions and cannot
+be passed. \code{aliased = TRUE} (predictions of non-estimable functions) and
+\code{evaluate = FALSE} are not suitable. See ASReml-R \code{?predict.asreml} for full
+details of each argument.
+
+\strong{When to use \code{present}.} By default ASReml-R \code{predict()} averages over
+every combination of the levels of the fixed factors not in \code{classify}. If
+some combinations were never observed (treatments that differ between sites
+or years, a control outside a factorial set, or a factor fitted only within
+some levels of another, as with \code{at()}), the predictions that need them
+cannot be estimated: those levels are dropped as aliased, with a warning, or
+the function stops with "All predicted values are aliased". \code{present}
+restricts the averaging to the combinations in the data. Give it the
+factors involved, usually those in \code{classify} and those averaged over:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{multiple_comparisons(model.asr, classify = "Year:Prior_crop",
+                     present = c("Year", "Prior_crop", "Treatment"))
+}\if{html}{\out{</div>}}
+
+Each mean is then averaged over only the combinations observed for it, so
+two means can rest on different sets of levels of the other factors. Check
+that this is a fair basis for the comparison.
 }
 
 \seealso{

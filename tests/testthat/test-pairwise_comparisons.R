@@ -867,7 +867,8 @@ test_that("contrasts: no-emmeans_grid vcov path without asreml (scalar ndf)", {
 				df = 20L,
 				ylab = "response",
 				aliased_names = NULL,
-				emmeans_grid = NULL
+				emmeans_grid = NULL,
+				classify = classify
 			)
 		},
 		envir = asNamespace("biometryassist")
@@ -911,7 +912,8 @@ test_that("contrasts: matrix ndf + no emmeans_grid errors with clear message", {
 				df = matrix(c(10, 8, 8, 10), nrow = 2),
 				ylab = "response",
 				aliased_names = NULL,
-				emmeans_grid = NULL
+				emmeans_grid = NULL,
+				classify = classify
 			)
 		},
 		envir = asNamespace("biometryassist")

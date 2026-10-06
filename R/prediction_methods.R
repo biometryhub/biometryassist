@@ -47,6 +47,193 @@ check_classify_in_terms <- function(classify, model_terms) {
 	)
 }
 
+#' Strip ASReml-R special functions from a term label
+#'
+#' ASReml-R keeps special-function wrappers in its term labels (e.g.
+#' `at(Year):Prior_crop`, `fa(Site, 2):Variety`, `vm(Genotype, Ainv)`), but
+#' `predict.asreml()` expects the bare factor names in `classify`
+#' (`Year:Prior_crop`). This replaces each whitelisted wrapper with its first
+#' argument. Only ASReml-R's own functions are stripped, so base R calls such as
+#' `log(x)` are left alone; `random = TRUE` adds the variance-model and
+#' relationship-matrix functions, which only have that meaning in the random
+#' formula (e.g. `exp()` is a variance model there, but a base function in the
+#' fixed formula). Covariate functions (`pol()`, `lin()`, `spl()`, `dev()`,
+#' `leg()`) are deliberately not stripped: comparisons on a covariate are not
+#' meaningful.
+#'
+#' @param labels Character vector of term labels.
+#' @param random Logical; also strip random-formula-only functions.
+#'
+#' @return Character vector of labels with the wrappers removed.
+#' @keywords internal
+strip_asreml_specials <- function(labels, random = FALSE) {
+	specials <- "at"
+	if (random) {
+		specials <- c(specials, asreml_random_specials)
+	}
+
+	strip <- function(expr) {
+		if (!is.call(expr)) {
+			return(expr)
+		}
+		fn <- as.character(expr[[1]])
+		if (identical(fn, ":")) {
+			expr[[2]] <- strip(expr[[2]])
+			expr[[3]] <- strip(expr[[3]])
+			return(expr)
+		}
+		if (fn %in% specials && length(expr) >= 2) {
+			return(expr[[2]])
+		}
+		expr
+	}
+
+	vapply(
+		labels,
+		function(label) {
+			expr <- tryCatch(str2lang(label), error = function(e) NULL)
+			if (is.null(expr)) {
+				return(label)
+			}
+			paste(deparse(strip(expr), width.cutoff = 500L), collapse = "")
+		},
+		character(1),
+		USE.NAMES = FALSE
+	)
+}
+
+# ASReml-R variance-model and relationship-matrix functions, which wrap a factor
+# in random terms (e.g. `diag(Site):Variety`, `fa(Site, 2):Variety`,
+# `vm(Genotype, Ainv)`). The bare factor is what predict.asreml() classifies on.
+asreml_random_specials <- c(
+	# relationship matrices
+	"vm",
+	"ide",
+	# identity / diagonal / unstructured / factor analytic
+	"id",
+	"idv",
+	"idh",
+	"diag",
+	"us",
+	"chol",
+	"cholc",
+	"ante",
+	"fa",
+	"rr",
+	"sfa",
+	"facv",
+	# correlation models (and their v / h variants)
+	paste0(
+		rep(
+			c(
+				"cor",
+				"corb",
+				"corg",
+				"ar1",
+				"ar2",
+				"ar3",
+				"sar",
+				"sar2",
+				"ma1",
+				"ma2",
+				"arma",
+				"exp",
+				"iexp",
+				"aexp",
+				"gau",
+				"igau",
+				"agau",
+				"mtrn"
+			),
+			each = 3
+		),
+		c("", "v", "h")
+	)
+)
+
+#' Per-pair denominator df for a classify term fitted with at()
+#'
+#' `wald()` splits an `at(F):X` term into one row per level of `F`
+#' (`at(F, 'a'):X`, `at(F, 'b'):X`, ...), each with its own denDF. For
+#' `classify = "F:X"`, a comparison between two predictions within one level of
+#' `F` uses that level's denDF, which is the df ASReml-R uses to test the `X`
+#' effect at that level. A comparison across levels has no exact df (with
+#' level-specific residual variances it is a Welch-type problem); the smaller of
+#' the two levels' denDF is used as a conservative bound.
+#'
+#' @param classify The (bare) classify term.
+#' @param dendf Data frame with columns `Source` and `denDF` from `wald()`.
+#' @param pp Predictions data frame, one row per predicted mean.
+#' @param resid_df Residual df, used for levels of `F` without an at() row (when
+#'   `at()` was given a subset of levels).
+#'
+#' @return A square df matrix matching the rows of `pp`, a single value if every
+#'   pair has the same df, or `NULL` if `classify` does not match an at() term.
+#' @keywords internal
+at_term_df <- function(classify, dendf, pp, resid_df) {
+	flatten <- function(expr) {
+		if (is.call(expr) && identical(as.character(expr[[1]]), ":")) {
+			return(c(flatten(expr[[2]]), flatten(expr[[3]])))
+		}
+		list(expr)
+	}
+	is_at <- function(expr) {
+		is.call(expr) &&
+			identical(as.character(expr[[1]]), "at") &&
+			length(expr) == 3 &&
+			is.atomic(expr[[3]]) &&
+			length(expr[[3]]) == 1
+	}
+
+	classify_parts <- sort(unlist(strsplit(classify, ":")))
+	at_factor <- NULL
+	level_df <- numeric(0)
+
+	for (k in seq_len(nrow(dendf))) {
+		expr <- tryCatch(
+			str2lang(as.character(dendf$Source[k])),
+			error = function(e) NULL
+		)
+		if (is.null(expr)) {
+			next
+		}
+		parts <- flatten(expr)
+		at_parts <- vapply(parts, is_at, logical(1))
+		if (sum(at_parts) != 1) {
+			next
+		}
+		bare <- vapply(
+			parts,
+			function(p) deparse(if (is_at(p)) p[[2]] else p),
+			character(1)
+		)
+		if (!identical(sort(bare), classify_parts)) {
+			next
+		}
+		at_call <- parts[[which(at_parts)]]
+		factor_name <- deparse(at_call[[2]])
+		if (!is.null(at_factor) && factor_name != at_factor) {
+			return(NULL)
+		}
+		at_factor <- factor_name
+		level_df[as.character(at_call[[3]])] <- dendf$denDF[k]
+	}
+
+	if (is.null(at_factor) || !at_factor %in% names(pp)) {
+		return(NULL)
+	}
+	if (all(is.na(level_df))) {
+		return(NULL)
+	}
+
+	row_df <- unname(level_df[as.character(pp[[at_factor]])])
+	row_df[is.na(row_df)] <- resid_df
+	if (length(unique(row_df)) == 1) {
+		return(row_df[1])
+	}
+	outer(row_df, row_df, pmin)
+}
+
 #' Get the response label from a model formula
 #'
 #' @param model.obj A fitted model object with a [stats::formula()] method.
@@ -117,12 +304,76 @@ sed_from_vcov <- function(vcov) {
 #' for `mmer`. Refit with `sommer::mmes()` to use the comparison functions.
 #'
 #' To add a new engine, write a `get_predictions.<class>()` method returning a
-#' list with elements `predictions`, `sed`, `df`, `ylab` and `aliased_names`
-#' (plus `emmeans_grid` for engines backed by [emmeans::emmeans()]), and add a
-#' row to the table above.
+#' list with elements `predictions`, `sed`, `df`, `ylab`, `aliased_names` and
+#' `classify` (plus `emmeans_grid` for engines backed by [emmeans::emmeans()]),
+#' and add a row to the table above.
 #'
-#' @returns A list with elements `predictions`, `sed`, `df`, `ylab` and
-#'   `aliased_names` (and `emmeans_grid` for emmeans-backed engines).
+#' @section ASReml-R terms in `classify`:
+#' For `asreml` models, `classify` names the factors to predict, as for
+#' ASReml-R `predict()`. A term wrapped in an ASReml-R function can be given
+#' either by its factors or as written in the model, so for a model with
+#' `at(Year):Treatment` both `classify = "Year:Treatment"` and
+#' `classify = "at(Year):Treatment"` give the same result. This applies to
+#' `at()` and to the variance-structure and relationship functions in the
+#' random model (e.g. `diag()`, `us()`, `fa()`, `vm()`), so
+#' `fa(Site, 2):Variety` is classified with `"Site:Variety"`.
+#'
+#' Predictions of terms in the random model include the random effects
+#' (BLUPs). Their comparisons use the residual degrees of freedom, with a
+#' warning.
+#'
+#' For an `at()` term, ASReml-R gives a separate Wald test, with its own
+#' denominator degrees of freedom, for each level of the conditioning factor.
+#' A comparison within a level uses that level's degrees of freedom; a
+#' comparison between levels uses the smaller of the two, as a conservative
+#' choice. Levels not included in `at()` use the residual degrees of freedom.
+#'
+#' @section ASReml-R prediction arguments:
+#' For `asreml` models, arguments given in `...` are passed to ASReml-R
+#' `predict()`. Those most useful for comparisons are:
+#'
+#' * `present`: average only over the combinations of factor levels that occur
+#'   in the data (see below).
+#' * `average`: choose the factors to average over, optionally with weights
+#'   (e.g. in proportion to replication rather than equally).
+#' * `levels`: predict at chosen levels only, e.g. a subset of treatments, or
+#'   at given values of a covariate rather than its mean.
+#' * `ignore`, `use`, `except` and `only`: change which model terms enter the
+#'   predictions, e.g. `use` to include a random term that is otherwise left
+#'   out.
+#' * `associate`: declare nested factors, e.g. treatments nested within
+#'   treatment types.
+#'
+#' `classify`, `sed` and `vcov` are set by the comparison functions and cannot
+#' be passed. `aliased = TRUE` (predictions of non-estimable functions) and
+#' `evaluate = FALSE` are not suitable. See ASReml-R `?predict.asreml` for full
+#' details of each argument.
+#'
+#' **When to use `present`.** By default ASReml-R `predict()` averages over
+#' every combination of the levels of the fixed factors not in `classify`. If
+#' some combinations were never observed (treatments that differ between sites
+#' or years, a control outside a factorial set, or a factor fitted only within
+#' some levels of another, as with `at()`), the predictions that need them
+#' cannot be estimated: those levels are dropped as aliased, with a warning, or
+#' the function stops with "All predicted values are aliased". `present`
+#' restricts the averaging to the combinations in the data. Give it the
+#' factors involved, usually those in `classify` and those averaged over:
+#'
+#' ```r
+#' multiple_comparisons(model.asr, classify = "Year:Prior_crop",
+#'                      present = c("Year", "Prior_crop", "Treatment"))
+#' ```
+#'
+#' Each mean is then averaged over only the combinations observed for it, so
+#' two means can rest on different sets of levels of the other factors. Check
+#' that this is a fair basis for the comparison.
+#'
+#' @returns A list with elements `predictions`, `sed`, `df`, `ylab`,
+#'   `aliased_names` and `classify` (and `emmeans_grid` for emmeans-backed
+#'   engines). `classify` is the input resolved to the factor names the
+#'   predictions are labelled by, in the order given by the user (e.g. ASReml-R
+#'   wrappers removed: `"at(Year):Prior_crop"` becomes `"Year:Prior_crop"`).
+#'   The comparison functions take their `classify` variables from it.
 #'
 #' @seealso [multiple_comparisons()], [pairwise_comparisons()],
 #'   [reference_comparisons()]
@@ -158,12 +409,23 @@ get_predictions.default <- function(model.obj, ...) {
 get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 	args <- list(...)
 	# asr_args <- args[names(args) %in% names(formals(asreml::predict.asreml))]
-	# Check if classify is in model terms (handles reversed interaction order)
-	model_terms <- c(
-		attr(stats::terms(model.obj$formulae$fixed), 'term.labels'),
-		attr(stats::terms(model.obj$formulae$random), 'term.labels')
-	)
-	classify <- check_classify_in_terms(classify, model_terms)
+	# Check if classify is in model terms (handles reversed interaction order).
+	# ASReml-R special functions are stripped from the term labels and from
+	# classify, since predict.asreml() classifies on the bare factor names: both
+	# "at(Year):Prior_crop" and "Year:Prior_crop" resolve to "Year:Prior_crop".
+	model_terms <- unique(c(
+		strip_asreml_specials(
+			attr(stats::terms(model.obj$formulae$fixed), 'term.labels')
+		),
+		strip_asreml_specials(
+			attr(stats::terms(model.obj$formulae$random), 'term.labels'),
+			random = TRUE
+		)
+	))
+	# Returned to the caller in the user's order (it sets the order of the
+	# treatment labels); only the model's ordering is used for prediction.
+	classify_label <- strip_asreml_specials(classify, random = TRUE)
+	classify <- check_classify_in_terms(classify_label, model_terms)
 
 	# Generate predictions if not provided. `vcov = TRUE` returns the exact
 	# variance-covariance of the predicted means, used directly by
@@ -214,6 +476,10 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 
 	# Remove status column if present
 	pp$status <- NULL
+	# predict.asreml() keeps every level of the classify factors even when
+	# `levels` restricts the predictions to a subset; drop the unused ones so
+	# the factors match the rows (the letter groupings fail otherwise).
+	pp <- droplevels(pp)
 
 	if (!"dendf" %in% names(args)) {
 		dat.ww <- quiet(
@@ -229,21 +495,21 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 		dendf <- args$dendf
 	}
 
-	vars <- unlist(strsplit(classify, "\\:"))
 	ndf <- dendf$denDF[
 		grepl(classify, dendf$Source) &
 			nchar(classify) == nchar(as.character(dendf$Source))
 	]
+	# An at() term has no single wald() row: it is split into one row per level
+	# of the conditioning factor, each with its own denDF. Use those per pair.
+	if (rlang::is_empty(ndf) || all(is.na(ndf))) {
+		ndf <- at_term_df(classify, dendf, pp, model.obj$nedf)
+	}
 	# Fall back to the residual df when wald() returns no usable denominator df
 	# for the term (term absent, or an NA denDF).
-	if (rlang::is_empty(ndf) || all(is.na(ndf))) {
+	if (is.null(ndf) || rlang::is_empty(ndf) || all(is.na(ndf))) {
 		ndf <- model.obj$nedf
-		rand_terms <- vars[
-			vars %in%
-				attr(stats::terms(model.obj$formulae$random), 'term.labels')
-		]
 		warning(
-			rand_terms,
+			classify,
 			" is not a fixed term in the model. The denominator degrees of freedom are estimated using the residual degrees of freedom. This may be inaccurate.",
 			call. = FALSE
 		)
@@ -259,7 +525,8 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 		df = ndf,
 		ylab = ylab,
 		aliased_names = aliased_names,
-		vcov = vcov
+		vcov = vcov,
+		classify = classify_label
 	))
 }
 
@@ -269,6 +536,7 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 get_predictions.lm <- function(model.obj, classify, ...) {
 	# Check if classify is in model terms (handles reversed interaction order)
 	model_terms <- attr(stats::terms(model.obj), 'term.labels')
+	classify_label <- classify
 	classify <- check_classify_in_terms(classify, model_terms)
 
 	# Set emmeans options
@@ -322,7 +590,8 @@ get_predictions.lm <- function(model.obj, classify, ...) {
 		ylab = ylab,
 		aliased_names = aliased_names,
 		emmeans_grid = emm,
-		vcov = vcov
+		vcov = vcov,
+		classify = classify_label
 	))
 }
 
@@ -343,7 +612,7 @@ get_predictions.lm <- function(model.obj, classify, ...) {
 #'   side of the model formula.
 #'
 #' @return A list with elements `predictions`, `sed`, `df`, `ylab`,
-#'   `aliased_names`, `emmeans_grid` and `vcov`.
+#'   `aliased_names`, `emmeans_grid`, `vcov` and `classify`.
 #' @keywords internal
 predictions_from_emmeans <- function(
 	model.obj,
@@ -352,6 +621,7 @@ predictions_from_emmeans <- function(
 	ylab = response_label(model.obj)
 ) {
 	# Check if classify is in model terms (handles reversed interaction order)
+	classify_label <- classify
 	classify <- check_classify_in_terms(classify, model_terms)
 
 	# Set emmeans options
@@ -431,7 +701,8 @@ predictions_from_emmeans <- function(
 		ylab = ylab,
 		aliased_names = aliased_names,
 		emmeans_grid = emm,
-		vcov = vcov
+		vcov = vcov,
+		classify = classify_label
 	))
 }
 
@@ -481,6 +752,7 @@ get_predictions.mmes <- function(model.obj, classify, ...) {
 	# response (ylab) from the stored fixed formula.
 	model_terms <- model.obj$Dtable$term[model.obj$Dtable$type == "fixed"]
 	model_terms <- setdiff(model_terms, c("1", "(Intercept)"))
+	classify_label <- classify
 	classify <- check_classify_in_terms(classify, model_terms)
 
 	pred <- predict(model.obj, D = classify)
@@ -509,7 +781,8 @@ get_predictions.mmes <- function(model.obj, classify, ...) {
 		df = ndf,
 		ylab = ylab,
 		aliased_names = aliased_names,
-		emmeans_grid = NULL
+		emmeans_grid = NULL,
+		classify = classify_label
 	))
 }
 
