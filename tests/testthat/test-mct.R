@@ -1830,13 +1830,15 @@ test_that("glmmTMB model is supported", {
 
 test_that("sommer mmes model is supported", {
 	skip_if_not_installed("sommer")
-	# Fitted at test time: saved sommer fits go stale across sommer versions.
-	data("DT_example", package = "sommer", envir = environment())
-	model_mmes <- sommer::mmes(
+	# Refit from the fixture's data: saved sommer fits go stale across sommer
+	# versions (see test-prediction_methods.R).
+	suppressPackageStartupMessages(library(sommer))
+	load(test_path("data", "sommer_models.Rdata"), .GlobalEnv)
+	model_mmes <- mmes(
 		Yield ~ Env,
 		random = ~ Name + Env:Name,
 		rcov = ~units,
-		data = DT_example,
+		data = model_mmes$data,
 		verbose = FALSE
 	)
 

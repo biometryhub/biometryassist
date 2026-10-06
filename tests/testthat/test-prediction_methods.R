@@ -924,15 +924,18 @@ test_that("get_predictions works for glmmTMB models", {
 
 test_that("get_predictions works for sommer mmes models", {
 	skip_if_not_installed("sommer")
-	# Fit at test time rather than loading a saved fixture: sommer's predict()
-	# depends on internal model components that change between versions (e.g.
-	# sommer 4.4.87 requires `C`, which older fits lack).
-	data("DT_example", package = "sommer", envir = environment())
-	model_mmes <- sommer::mmes(
+	# Refit from the fixture's data rather than using the saved fit: sommer's
+	# predict() depends on internal model components that change between versions
+	# (e.g. sommer 4.4.87 requires `C`, which older fits lack). The data is taken
+	# from the fixture because DT_example has moved from sommer to enhancer.
+	# sommer must be attached: mmes() evaluates vsm()/ism() in the caller's scope.
+	suppressPackageStartupMessages(library(sommer))
+	load(test_path("data", "sommer_models.Rdata"), .GlobalEnv)
+	model_mmes <- mmes(
 		Yield ~ Env,
 		random = ~ Name + Env:Name,
 		rcov = ~units,
-		data = DT_example,
+		data = model_mmes$data,
 		verbose = FALSE
 	)
 
