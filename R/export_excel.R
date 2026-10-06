@@ -127,7 +127,7 @@ export_design_to_excel <- function(
 				call. = FALSE
 			)
 		}
-		out
+		return(out)
 	}
 
 	row_vals_i <- as_int_coord(row_vals, row_name)

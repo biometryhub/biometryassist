@@ -90,7 +90,8 @@ use_template <- function(
 			warning(
 				"Template '",
 				template_name,
-				"' not found as a file. Using default biometryassist template instead."
+				"' not found as a file. Using default biometryassist template instead.",
+				call. = FALSE
 			)
 			template_name <- "mixed_model_template.R"
 		}
