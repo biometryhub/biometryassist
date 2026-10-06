@@ -838,8 +838,7 @@ test_that("asreml models work with contrasts (asreml vcov branch)", {
 		classify = "Nitrogen",
 		contrasts = list(
 			"0_cwt vs 0.2_cwt" = c(`0_cwt` = 1, `0.2_cwt` = -1)
-		),
-		dendf = dendf
+		)
 	))
 	expect_s3_class(out, "pairwise_comparisons")
 	expect_equal(nrow(out), 1L)

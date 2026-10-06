@@ -450,8 +450,6 @@ get_predictions.default <- function(model.obj, ...) {
 #' @noRd
 #' @exportS3Method get_predictions asreml
 get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
-	args <- list(...)
-	# asr_args <- args[names(args) %in% names(formals(asreml::predict.asreml))]
 	# Check if classify is in model terms (handles reversed interaction order).
 	# ASReml-R special functions are stripped from the term labels and from
 	# classify, since predict.asreml() classifies on the bare factor names: both
@@ -543,19 +541,15 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 	# the factors match the rows (the letter groupings fail otherwise).
 	pp <- droplevels(pp)
 
-	if (!"dendf" %in% names(args)) {
-		dat.ww <- quiet(
-			asreml::wald(
-				model.obj,
-				ssType = "conditional",
-				denDF = "default",
-				trace = FALSE
-			)$Wald
-		)
-		dendf <- data.frame(Source = row.names(dat.ww), denDF = dat.ww$denDF)
-	} else {
-		dendf <- args$dendf
-	}
+	dat.ww <- quiet(
+		asreml::wald(
+			model.obj,
+			ssType = "conditional",
+			denDF = "default",
+			trace = FALSE
+		)$Wald
+	)
+	dendf <- data.frame(Source = row.names(dat.ww), denDF = dat.ww$denDF)
 	ndf <- asreml_denominator_df(classify, dendf, pp, model.obj$nedf)
 
 	# Get response variable for plot label

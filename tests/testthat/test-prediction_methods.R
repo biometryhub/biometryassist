@@ -357,61 +357,6 @@ test_that("get_predictions.asreml passes additional arguments to predict.asreml"
 	expect_equal(call_args$aliasing.scheme, TRUE)
 })
 
-test_that("get_predictions.asreml uses provided dendf when supplied in args", {
-	skip_if_not_installed("mockery")
-
-	# Create mock model object
-	mock_model <- list(
-		formulae = list(
-			fixed = as.formula("yield ~ Nitrogen"),
-			random = as.formula("~Blocks")
-		),
-		nedf = 10
-	)
-	class(mock_model) <- "asreml"
-
-	# Mock prediction result
-	mock_pred_result <- list(
-		pvals = data.frame(
-			Nitrogen = c("0", "0.2", "0.4"),
-			predicted.value = c(100, 110, 120),
-			std.error = c(5, 5, 5),
-			status = c("Estimable", "Estimable", "Estimable")
-		),
-		sed = matrix(c(NA, 7, 8, 7, NA, 8, 8, 8, NA), nrow = 3, ncol = 3)
-	)
-
-	# Create custom dendf data frame
-	custom_dendf <- data.frame(
-		Source = c("Nitrogen", "Blocks"),
-		denDF = c(25, 5)
-	)
-
-	# Mock the asreml functions
-	mock_predict <- mockery::mock(mock_pred_result)
-	mock_wald <- mockery::mock() # Should NOT be called when dendf is provided
-
-	mockery::stub(
-		get_predictions.asreml,
-		'asreml::predict.asreml',
-		mock_predict
-	)
-	mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
-
-	# Call with dendf provided in args
-	result <- get_predictions.asreml(
-		mock_model,
-		classify = "Nitrogen",
-		dendf = custom_dendf
-	)
-
-	# Verify wald was NOT called (because dendf was provided)
-	mockery::expect_called(mock_wald, 0)
-
-	# Verify the custom dendf was used (should be 25, not the default from wald)
-	expect_equal(result$df, 25)
-})
-
 test_that("get_predictions.asreml uses residual df when classify not found in wald output", {
 	skip_if_not_installed("mockery")
 
@@ -992,8 +937,7 @@ test_that("Testing pred.obj removal for asreml predictions", {
 		output <- multiple_comparisons(
 			model.asr,
 			classify = "Nitrogen",
-			pred.obj = pred.asr,
-			dendf = dendf
+			pred.obj = pred.asr
 		),
 		"`pred.obj` was removed in biometryassist 1\\.5\\.0\\. Predictions are now performed internally in the function\\."
 	)
