@@ -59,6 +59,21 @@ response_label <- function(model.obj) {
 	return(trimws(strsplit(formula_text, "~")[[1]][1]))
 }
 
+#' Build the SED matrix from a prediction variance-covariance matrix
+#'
+#' @param vcov Variance-covariance matrix of the predicted means.
+#'
+#' @return Matrix of standard errors of difference,
+#'   `SED_ij = sqrt(V_ii + V_jj - 2 * V_ij)`. The diagonal is left for the
+#'   caller to set.
+#' @keywords internal
+sed_from_vcov <- function(vcov) {
+	vd <- diag(vcov)
+	sed <- outer(vd, vd, "+") - 2 * vcov
+	sed[sed < 0] <- 0 # guard tiny negatives from rounding
+	return(sqrt(sed))
+}
+
 #' Internal prediction extraction for the comparison functions
 #'
 #' `get_predictions()` is the internal generic that [multiple_comparisons()],
@@ -84,12 +99,12 @@ response_label <- function(model.obj) {
 #' | Model class | Fitted by | Notes |
 #' | --- | --- | --- |
 #' | `aov`, `lm` | [stats::aov()], [stats::lm()] | Fixed-effects linear models. |
-#' | `aovlist` | [stats::aov()] with an `Error()` term | Multi-stratum aov; gives comparison-specific (matrix) degrees of freedom. |
+#' | `aovlist` | [stats::aov()] with an `Error()` term | Multi-stratum aov; degrees of freedom are comparison-specific (a matrix) when comparisons span strata. |
 #' | `lme` | [nlme::lme()] | Linear mixed model. |
 #' | `lmerMod` | [lme4::lmer()], `lme4breeding::lmebreed()` | Linear mixed model. `lmebreed()` (relationship-based) models also carry class `lmerMod`; comparisons target the fixed-effect means with Kenward-Roger degrees of freedom, and correctly reflect the relationship structure (validated against ASReml-R). |
 #' | `lmerModLmerTest` | [lmerTest::lmer()] | As `lmerMod`, with Satterthwaite degrees of freedom. |
 #' | `asreml` | ASReml-R `asreml()` | Linear mixed model (commercial; not on CRAN). |
-#' | `afex_aov` | afex `aov_car()` / `aov_ez()` / `aov_4()` | Factorial / repeated-measures ANOVA; gives comparison-specific (matrix) degrees of freedom. |
+#' | `afex_aov` | afex `aov_car()` / `aov_ez()` / `aov_4()` | Factorial / repeated-measures ANOVA; degrees of freedom are comparison-specific (a matrix) when comparisons span strata. |
 #' | `glmmTMB` | glmmTMB `glmmTMB()` | Generalized linear mixed model. Predictions are on the link scale with asymptotic (infinite) degrees of freedom; supply `trans` to back-transform. |
 #' | `mmes` | sommer `mmes()` | Linear mixed model, via sommer's native `predict()`. SED from the prediction covariance; asymptotic (infinite) degrees of freedom (sommer provides none). |
 #'
@@ -268,14 +283,11 @@ get_predictions.lm <- function(model.obj, classify, ...) {
 	# build the SED matrix below.
 	vcov <- as.matrix(stats::vcov(emm))
 
-	# SED matrix from the prediction vcov: SED_ij = sqrt(V_ii + V_jj - 2 V_ij).
-	# Exact for all designs, including unbalanced marginal means. The earlier
-	# sigma * sqrt(1/w_i + 1/w_j) form was only exact for balanced or one-way
-	# predictions and was wrong when averaging over an unbalanced factor.
-	vd <- diag(vcov)
-	sed <- outer(vd, vd, "+") - 2 * vcov
-	sed[sed < 0] <- 0 # guard tiny negatives from rounding
-	sed <- sqrt(sed)
+	# SED matrix from the prediction vcov. Exact for all designs, including
+	# unbalanced marginal means. The earlier sigma * sqrt(1/w_i + 1/w_j) form was
+	# only exact for balanced or one-way predictions and was wrong when averaging
+	# over an unbalanced factor.
+	sed <- sed_from_vcov(vcov)
 
 	pred.out <- as.data.frame(emm)
 	pred.out <- pred.out[, !grepl("CL", names(pred.out))]
@@ -319,19 +331,26 @@ get_predictions.lm <- function(model.obj, classify, ...) {
 #'
 #' Shared core for the emmeans-backed `get_predictions()` methods (`aovlist`,
 #' `afex_aov`, ...). Given the emmeans reference grid for `classify`, it builds the
-#' predicted means, the comparison-specific (matrix) SED and degrees of freedom from
-#' the pairwise contrasts, and processes aliased levels. The terms check and `ylab`
-#' are computed by the caller (these differ per engine) and passed in.
+#' predicted means, the SED matrix and the degrees of freedom from the pairwise
+#' contrasts, and processes aliased levels. The df is a single value when every
+#' comparison shares it, and a comparison-specific matrix otherwise.
 #'
 #' @param model.obj A fitted model object with an `emmeans::emmeans()` method.
 #' @param classify Name of the predictor variable(s) as a string.
-#' @param model_terms Character vector of model term labels (for the classify check).
-#' @param ylab Response variable label for the plot.
+#' @param model_terms Character vector of model term labels (for the classify
+#'   check). Defaults to the term labels of `model.obj`.
+#' @param ylab Response variable label for the plot. Defaults to the left-hand
+#'   side of the model formula.
 #'
-#' @return A list with elements `predictions`, `sed`, `df`, `ylab`, `aliased_names`
-#'   and `emmeans_grid`.
+#' @return A list with elements `predictions`, `sed`, `df`, `ylab`,
+#'   `aliased_names`, `emmeans_grid` and `vcov`.
 #' @keywords internal
-predictions_from_emmeans <- function(model.obj, classify, model_terms, ylab) {
+predictions_from_emmeans <- function(
+	model.obj,
+	classify,
+	model_terms = attr(stats::terms(model.obj), 'term.labels'),
+	ylab = response_label(model.obj)
+) {
 	# Check if classify is in model terms (handles reversed interaction order)
 	classify <- check_classify_in_terms(classify, model_terms)
 
@@ -420,16 +439,12 @@ predictions_from_emmeans <- function(model.obj, classify, model_terms, ylab) {
 #' @exportS3Method get_predictions aovlist
 #' @importFrom emmeans emmeans
 get_predictions.aovlist <- function(model.obj, classify, ...) {
-	model_terms <- attr(stats::terms(model.obj), 'term.labels')
-
-	# Get response variable for plot label
-	if (class(model.obj)[1] %in% c("lmerMod", "lmerModLmerTest")) {
-		ylab <- response_label(model.obj)
-	} else {
-		ylab <- response_label(model.obj[[1]])
-	}
-
-	return(predictions_from_emmeans(model.obj, classify, model_terms, ylab))
+	# The response label comes from the first stratum's formula
+	return(predictions_from_emmeans(
+		model.obj,
+		classify,
+		ylab = response_label(model.obj[[1]])
+	))
 }
 
 #' @noRd
@@ -454,10 +469,7 @@ get_predictions.glmmTMB <- function(model.obj, classify, ...) {
 	# from the full coefficient covariance. Degrees of freedom are asymptotic (Inf).
 	# For non-Gaussian families predictions are on the link scale; supply `trans` to
 	# multiple_comparisons() to back-transform.
-	model_terms <- attr(stats::terms(model.obj), 'term.labels')
-	ylab <- response_label(model.obj)
-
-	return(predictions_from_emmeans(model.obj, classify, model_terms, ylab))
+	return(predictions_from_emmeans(model.obj, classify))
 }
 
 #' @noRd
@@ -474,10 +486,9 @@ get_predictions.mmes <- function(model.obj, classify, ...) {
 	pred <- predict(model.obj, D = classify)
 	pp <- pred$pvals
 
-	# Build the SED matrix from the prediction covariance:
-	# SED_ij = sqrt(V_ii + V_jj - 2 * V_ij).
+	# Build the SED matrix from the prediction covariance
 	vcov <- as.matrix(pred$vcov)
-	sed <- sqrt(outer(diag(vcov), diag(vcov), "+") - 2 * vcov)
+	sed <- sed_from_vcov(vcov)
 	diag(sed) <- NA
 
 	# Process aliased treatments (levels with NA predictions), reusing shared helper.
@@ -528,15 +539,7 @@ get_predictions.listof <- function(model.obj, classify, ...) {
 #' @noRd
 #' @exportS3Method get_predictions lmerMod
 get_predictions.lmerMod <- function(model.obj, classify, ...) {
-	# Reuse lm method for common functionality
-	#result <- get_predictions.lm(model.obj, classify, ...)
-
-	result <- get_predictions.aovlist(model.obj, classify, ...)
-
-	# Override ylab extraction for lmerMod
-	# result$ylab <- model.obj@call[[2]][[2]]
-
-	return(result)
+	return(predictions_from_emmeans(model.obj, classify))
 }
 
 #' @noRd
@@ -551,10 +554,7 @@ get_predictions.lme <- function(model.obj, classify, ...) {
 	# Use the shared emmeans core rather than the lm method: comparisons need
 	# the df of each pairwise contrast, which for lme differs from the df of the
 	# individual means.
-	model_terms <- attr(stats::terms(model.obj), 'term.labels')
-	ylab <- response_label(model.obj)
-
-	return(predictions_from_emmeans(model.obj, classify, model_terms, ylab))
+	return(predictions_from_emmeans(model.obj, classify))
 }
 
 #' @noRd
