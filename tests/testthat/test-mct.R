@@ -2233,6 +2233,79 @@ test_that("Multiple comparisons works with aovlist objects", {
 	expect_equal(pred.aovlist$pairwise_pvalues[3, 4], 0.180, tolerance = 5e-2)
 })
 
+test_that("confidence intervals use the df of each mean, not the comparison df (#199)", {
+	load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+	oats.aovlist <- aov(
+		yield ~ Variety * Nitrogen + Error(Blocks / Wplots),
+		data = dat
+	)
+
+	for (cl in c("Nitrogen", "Variety:Nitrogen")) {
+		emm <- as.data.frame(emmeans::emmeans(
+			oats.aovlist,
+			stats::as.formula(paste("~", cl))
+		))
+		pred <- multiple_comparisons(oats.aovlist, classify = cl)$predictions
+		ord <- match(
+			do.call(paste, pred[, unlist(strsplit(cl, ":")), drop = FALSE]),
+			do.call(paste, emm[, unlist(strsplit(cl, ":")), drop = FALSE])
+		)
+		# The df is used internally and not returned
+		expect_false("df" %in% names(pred))
+		expect_equal(
+			pred$ci,
+			stats::qt(0.975, emm$df[ord]) * pred$std.error,
+			tolerance = 1e-6
+		)
+	}
+
+	# Values from the issue: t on ~6.79 and ~16.08 df rather than 45
+	pred_n <- multiple_comparisons(oats.aovlist, classify = "Nitrogen")
+	expect_equal(
+		unique(pred_n$predictions$ci / pred_n$predictions$std.error),
+		2.379,
+		tolerance = 1e-3
+	)
+	pred_vn <- multiple_comparisons(oats.aovlist, classify = "Variety:Nitrogen")
+	expect_equal(
+		unique(round(pred_vn$predictions$ci / pred_vn$predictions$std.error, 6)),
+		2.119,
+		tolerance = 1e-3
+	)
+})
+
+test_that("tukey intervals use the smallest comparison df of each mean (#199)", {
+	load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+	oats.aovlist <- aov(
+		yield ~ Variety * Nitrogen + Error(Blocks / Wplots),
+		data = dat
+	)
+	res <- get_predictions(oats.aovlist, "Variety:Nitrogen")
+	expect_true(is.matrix(res$df))
+
+	out <- add_confidence_intervals(res$predictions, "tukey", 0.05, res$df)
+	min_df <- apply(res$df, 1, min, na.rm = TRUE)
+	expect_equal(
+		out$ci,
+		stats::qtukey(0.95, nrow(out), min_df) / sqrt(2) * out$std.error
+	)
+	# At least as wide as the old intervals, which used the largest df
+	old <- stats::qtukey(0.95, nrow(out), max(res$df, na.rm = TRUE)) /
+		sqrt(2) *
+		out$std.error
+	expect_true(all(out$ci >= old))
+})
+
+test_that("single-stratum confidence intervals are unchanged (#199)", {
+	load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+	oats.aov <- aov(yield ~ Blocks + Variety * Nitrogen, data = dat)
+	pred <- multiple_comparisons(oats.aov, classify = "Nitrogen")$predictions
+	expect_equal(
+		pred$ci,
+		stats::qt(0.975, oats.aov$df.residual) * pred$std.error
+	)
+})
+
 test_that("Multiple comparisons for asreml objects provides the same results as an aovlist object for oats data", {
 	# load in oats data
 	skip_if_not_installed("asreml")

@@ -6,6 +6,7 @@
 - `reference_comparisons()` now uses the exact Dunnett test whenever all comparisons share a common degrees of freedom (e.g. single-stratum `aovlist` and balanced `lmer()` models), instead of falling back to Holm for any model that reports degrees of freedom per comparison.
 - The package startup message, licence and documentation now refer to Adelaide University.
 - `multiple_comparisons()`, `pairwise_comparisons()` and `reference_comparisons()` now work with `asreml` models whose terms use ASReml-R special functions, such as `at()` in the fixed model or `diag()`, `fa()`, `us()` and `vm()` in the random model. (#198)
+- The `predictions` returned by `multiple_comparisons()` no longer include a `df` column for `aov` and `lm` models, so the output is the same for every model type.
 
 ## Bug Fixes
 
@@ -16,6 +17,7 @@
 - `multiple_comparisons()` no longer errors when a treatment level is aliased in models that use `emmeans` (`aovlist`, `lmer()`, `nlme::lme()`, `afex` and `glmmTMB`). (#195)
 - The warning given when the comparison functions fall back to the residual degrees of freedom for an `asreml` model now always names the `classify` term; previously the term name could be missing.
 - `multiple_comparisons()` no longer errors with "subscript out of bounds" when ASReml-R's `levels` argument is used to predict a subset of levels for an `asreml` model.
+- `multiple_comparisons()` confidence intervals (`int.type = "ci"`) now use the degrees of freedom of each predicted mean, rather than the largest pairwise-comparison degrees of freedom, and `int.type = "tukey"` now uses the smallest comparison degrees of freedom for each mean. Intervals were too narrow for multi-stratum models (`aovlist`, `afex`, `lmer()`, `nlme::lme()` and `asreml` `at()` terms); single-stratum models are not affected. (#199)
 
 # biometryassist 1.5.0
 

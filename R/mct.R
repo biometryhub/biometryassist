@@ -490,6 +490,9 @@ multiple_comparisons <- function(
 		pp$up <- pp$predicted.value + pp$ci
 	}
 
+	# The df of each mean is only needed for the intervals above
+	pp$df <- NULL
+
 	# Order results and format output
 	pp <- format_output(pp, descending, vars, by)
 
@@ -1006,15 +1009,28 @@ process_treatment_names <- function(pp, vars) {
 
 #' @noRd
 add_confidence_intervals <- function(pp, int.type, sig, ndf) {
-	# Calculate confidence interval width
-	# If denominator df is a type matrix, use the max value (TEMPORARY SOLUTION!)
-	if (is.matrix(ndf) == TRUE) {
-		ndf <- max(ndf, na.rm = TRUE)
+	# Calculate confidence interval width. A confidence interval for a mean uses
+	# that mean's own df (`pp$df`). A Tukey comparison interval is for
+	# differences, so it uses the comparison df: when that is comparison-specific
+	# (a matrix), each mean takes the smallest df among its comparisons.
+	if (is.matrix(ndf)) {
+		comparison_df <- apply(ndf, 1, function(d) {
+			if (all(is.na(d))) NA_real_ else min(d, na.rm = TRUE)
+		})
+		# A group with a single mean has no comparisons
+		no_comparisons <- is.na(comparison_df)
+		comparison_df[no_comparisons] <- pp$df[no_comparisons]
+	} else {
+		comparison_df <- rep(ndf, nrow(pp))
 	}
 	pp$ci <- switch(
 		tolower(int.type),
-		"ci" = stats::qt(p = sig / 2, ndf, lower.tail = FALSE) * pp$std.error,
-		"tukey" = stats::qtukey(p = 1 - sig, nmeans = nrow(pp), df = ndf) /
+		"ci" = stats::qt(p = sig / 2, pp$df, lower.tail = FALSE) * pp$std.error,
+		"tukey" = stats::qtukey(
+			p = 1 - sig,
+			nmeans = nrow(pp),
+			df = comparison_df
+		) /
 			sqrt(2) *
 			pp$std.error,
 		"1se" = pp$std.error,
