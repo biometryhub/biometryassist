@@ -2,7 +2,8 @@
 
 ## Minor Changes
 
-- Added citation information: `citation("biometryassist")` now gives the package citation, including its CRAN DOI.
+- Added citation information: `citation("biometryassist")` now gives the package citation, including its CRAN DOI, and the repository includes a `CITATION.cff` generated from the package metadata. (#194, #196)
+- `reference_comparisons()` now uses the exact Dunnett test whenever all comparisons share a common degrees of freedom (e.g. single-stratum `aovlist` and balanced `lmer()` models), instead of falling back to Holm for any model that reports degrees of freedom per comparison.
 - The package startup message, licence and documentation now refer to Adelaide University.
 
 ## Bug Fixes
@@ -10,7 +11,6 @@
 - `use_template()` now copies the requested package template as expected. Previously it always copied `mixed_model_template.R`. (#188)
 - Fixed the argument order in the `export_design_to_excel()` examples, which are now runnable. (#189, #197)
 - `multiple_comparisons()`, `pairwise_comparisons()` and `reference_comparisons()` now use the correct pairwise contrast degrees of freedom for `nlme::lme()` models rather than those of the individual means. In `multiple_comparisons()` this gave too-large HSD values; results now match equivalent `aov()` and `lmer()` fits. (#190)
-- `reference_comparisons()` now uses the exact Dunnett test whenever all comparisons share a common degrees of freedom (e.g. single-stratum `aovlist` and balanced `lmer()` models), instead of falling back to Holm for any model that reports degrees of freedom per comparison.
 - Fixed the standard errors of difference (and degrees of freedom) being assigned to the wrong pairs for models with four or more treatment levels that use `emmeans` (`aovlist`, `lmer()`, `nlme::lme()`, `afex` and `glmmTMB`). This affected the p-values, HSD and letter groups from `multiple_comparisons()` for unbalanced data; balanced designs were not affected. (#193)
 - `multiple_comparisons()` no longer errors when a treatment level is aliased in models that use `emmeans` (`aovlist`, `lmer()`, `nlme::lme()`, `afex` and `glmmTMB`). (#195)
 
