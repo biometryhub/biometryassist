@@ -6,26 +6,23 @@
 #' Validate shared inputs for the comparison functions
 #'
 #' Shared by [multiple_comparisons()], [pairwise_comparisons()] and
-#' [reference_comparisons()]. Checks the significance level, rejects reserved
-#' `classify` column names, and warns when the response appears to be transformed
-#' in the model formula.
+#' [reference_comparisons()]. Checks the significance level and warns when the
+#' response appears to be transformed in the model formula. The `classify`
+#' variables are checked separately by `check_reserved_names()`, once the model
+#' engine has resolved them.
 #'
 #' @param sig Significance level.
-#' @param classify The `classify` string.
 #' @param model.obj The fitted model object.
 #' @param trans The transformation argument (or `NULL`).
 #' @param trans_supported Logical; `TRUE` for [multiple_comparisons()] (which has
 #'   a `trans` argument), `FALSE` for the difference-based functions (which
 #'   report on the model scale). Controls the transformed-response warning hint.
-#' @return `NULL`, invisibly; called for its checks. The `classify` variables
-#'   are taken from the `classify` returned by [get_predictions()], which
-#'   resolves model-specific syntax such as ASReml-R `at()`.
+#' @return `NULL`, invisibly; called for its checks.
 #' @importFrom stats formula
 #' @keywords internal
 #' @noRd
 validate_inputs <- function(
 	sig,
-	classify,
 	model.obj,
 	trans,
 	trans_supported = TRUE
@@ -54,27 +51,6 @@ validate_inputs <- function(
 				call. = FALSE
 			)
 		}
-	}
-
-	# Get the individual names provided in classify
-	vars <- unlist(strsplit(classify, "\\:"))
-	reserved_col_names <- c(
-		"predicted.value",
-		"std.error",
-		"Df",
-		"groups",
-		"PredictedValue",
-		"ApproxSE",
-		"ci",
-		"low",
-		"up"
-	)
-	if (any(vars %in% reserved_col_names)) {
-		stop(
-			"Invalid column name. Please change the name of column(s): ",
-			vars[vars %in% reserved_col_names],
-			call. = FALSE
-		)
 	}
 
 	# Check if the response variable is transformed in the model formula.
@@ -112,6 +88,39 @@ validate_inputs <- function(
 		)
 	}
 
+	return(invisible(NULL))
+}
+
+#' Reject `classify` variables that clash with output column names
+#'
+#' Shared by [multiple_comparisons()], [pairwise_comparisons()] and
+#' [reference_comparisons()]. Called on the `classify` variables as resolved by
+#' [get_predictions()], so a reserved name cannot slip through inside a
+#' model-specific wrapper (e.g. ASReml-R `at(groups):Trt`).
+#'
+#' @param vars Character vector of `classify` variable names.
+#' @return `NULL`, invisibly; called for its check.
+#' @keywords internal
+#' @noRd
+check_reserved_names <- function(vars) {
+	reserved_col_names <- c(
+		"predicted.value",
+		"std.error",
+		"Df",
+		"groups",
+		"PredictedValue",
+		"ApproxSE",
+		"ci",
+		"low",
+		"up"
+	)
+	if (any(vars %in% reserved_col_names)) {
+		stop(
+			"Invalid column name. Please change the name of column(s): ",
+			vars[vars %in% reserved_col_names],
+			call. = FALSE
+		)
+	}
 	return(invisible(NULL))
 }
 

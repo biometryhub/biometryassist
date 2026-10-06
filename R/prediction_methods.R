@@ -370,6 +370,8 @@ sed_from_vcov <- function(vcov) {
 #' A comparison within a level uses that level's degrees of freedom; a
 #' comparison between levels uses the smaller of the two, as a conservative
 #' choice. Levels not included in `at()` use the residual degrees of freedom.
+#' A general contrast in [pairwise_comparisons()] uses the smallest degrees of
+#' freedom among the levels it involves.
 #'
 #' @section ASReml-R prediction arguments:
 #' For `asreml` models, arguments given in `...` are passed to ASReml-R

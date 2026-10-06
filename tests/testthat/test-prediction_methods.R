@@ -868,6 +868,21 @@ test_that("asreml at() terms give comparison-specific df from wald()", {
 	# Cross-level pairs take the smaller of the two levels' df
 	expect_equal(result$df[1, 4], 12.5, tolerance = 1e-2)
 	expect_equal(result$df[4, 7], 15.0, tolerance = 1e-2)
+
+	# General contrasts take the smallest df among the levels involved
+	contr <- pairwise_comparisons(
+		model,
+		classify = "Nitrogen:Variety",
+		contrasts = list(
+			within = c(`0_cwt:Golden_rain` = 1, `0_cwt:Marvellous` = -1),
+			across = c(
+				`0.2_cwt:Victory` = 1,
+				`0.4_cwt:Victory` = -0.5,
+				`0.6_cwt:Victory` = -0.5
+			)
+		)
+	)
+	expect_equal(contr$df, c(12.5, 15.0), tolerance = 1e-2)
 })
 
 test_that("asreml random terms with variance structures can be classified", {

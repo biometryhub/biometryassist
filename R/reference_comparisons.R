@@ -224,12 +224,11 @@ reference_comparisons <- function(
 		include_means <- TRUE
 	}
 
-	# sig / classify / transformation checks (shared with multiple_comparisons()).
+	# sig / transformation checks (shared with multiple_comparisons()).
 	# `trans_supported = FALSE`: these functions report differences on the model
 	# scale and have no `trans` argument, so the transform note reflects that.
 	validate_inputs(
 		sig,
-		classify,
 		model.obj,
 		trans = NULL,
 		trans_supported = FALSE
@@ -242,6 +241,7 @@ reference_comparisons <- function(
 	# classify as resolved by the model engine (e.g. ASReml-R at() removed)
 	classify <- result$classify
 	vars <- unlist(strsplit(classify, ":"))
+	check_reserved_names(vars)
 	pp <- result$predictions
 	vcov <- result$vcov
 	ndf <- result$df

@@ -88,6 +88,8 @@ denominator degrees of freedom, for each level of the conditioning factor.
 A comparison within a level uses that level's degrees of freedom; a
 comparison between levels uses the smaller of the two, as a conservative
 choice. Levels not included in \code{at()} use the residual degrees of freedom.
+A general contrast in \code{\link[=pairwise_comparisons]{pairwise_comparisons()}} uses the smallest degrees of
+freedom among the levels it involves.
 }
 
 \section{ASReml-R prediction arguments}{

@@ -325,7 +325,7 @@ multiple_comparisons <- function(
 		"Use `write.csv(result$predictions, \"filename.csv\")` instead."
 	)
 
-	validate_inputs(sig, classify, model.obj, trans)
+	validate_inputs(sig, model.obj, trans)
 
 	# Process dots
 	rlang::check_dots_used()
@@ -367,6 +367,7 @@ multiple_comparisons <- function(
 	# classify as resolved by the model engine (e.g. ASReml-R at() removed)
 	classify <- result$classify
 	vars <- unlist(strsplit(classify, ":"))
+	check_reserved_names(vars)
 
 	pp <- result$predictions
 	sed <- result$sed
