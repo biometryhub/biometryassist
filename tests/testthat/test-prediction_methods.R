@@ -809,12 +809,6 @@ test_that("asreml_denominator_df builds a per-pair df matrix for at() terms", {
 	)
 	expect_equal(ndf, expected)
 
-	# Classify in either order matches the at() term
-	expect_equal(
-		asreml_denominator_df("Crop:Year", dendf, pp, resid_df = 30),
-		expected
-	)
-
 	# A common df across levels collapses to a single value
 	dendf_equal <- dendf
 	dendf_equal$denDF[4] <- 12
@@ -868,6 +862,9 @@ test_that("asreml at() terms give comparison-specific df from wald()", {
 	# Cross-level pairs take the smaller of the two levels' df
 	expect_equal(result$df[1, 4], 12.5, tolerance = 1e-2)
 	expect_equal(result$df[4, 7], 15.0, tolerance = 1e-2)
+
+	# Classify in the reverse order resolves to the same at() term
+	expect_equal(get_predictions(model, "Variety:Nitrogen")$df, result$df)
 
 	# General contrasts take the smallest df among the levels involved
 	contr <- pairwise_comparisons(

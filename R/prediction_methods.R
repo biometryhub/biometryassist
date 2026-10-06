@@ -234,15 +234,10 @@ asreml_denominator_df <- function(classify, dendf, pp, resid_df) {
 	}
 
 	# An at() term: one row per level of the at() factor. Rows whose label
-	# changes when at() is stripped, and then matches classify in any order.
-	classify_parts <- sort(unlist(strsplit(classify, ":")))
+	# changes when at() is stripped, and then matches classify (already in the
+	# model's order, from check_classify_in_terms()).
 	stripped <- strip_asreml_specials(sources)
-	at_rows <- stripped != sources &
-		vapply(
-			strsplit(stripped, ":"),
-			function(parts) identical(sort(parts), classify_parts),
-			logical(1)
-		)
+	at_rows <- stripped != sources & stripped == classify
 	# wald() labels each row as at(<factor>, '<level>')
 	at_parts <- regmatches(
 		sources[at_rows],
