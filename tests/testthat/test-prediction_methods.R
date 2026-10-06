@@ -735,7 +735,7 @@ test_that("strip_asreml_specials removes ASReml-R wrappers from term labels", {
 		"ar1(Column):ar1(Row)"
 	)
 	expect_equal(
-		strip_asreml_specials(random_labels, random = TRUE),
+		strip_asreml_specials(random_labels, asreml_random_specials),
 		c(
 			"Site:Variety",
 			"Site:Variety",
@@ -751,8 +751,27 @@ test_that("strip_asreml_specials removes ASReml-R wrappers from term labels", {
 
 	# Base R and covariate functions are left alone
 	expect_equal(
-		strip_asreml_specials(c("log(x)", "pol(x, 2)", "spl(x)"), random = TRUE),
+		strip_asreml_specials(
+			c("log(x)", "pol(x, 2)", "spl(x)"),
+			asreml_random_specials
+		),
 		c("log(x)", "pol(x, 2)", "spl(x)")
+	)
+})
+
+test_that("get_predictions.asreml gives a clear error for a covariate classify", {
+	mock_model <- list(
+		formulae = list(
+			fixed = as.formula("yield ~ Trt + pol(x, 2)"),
+			random = as.formula("~Rep")
+		),
+		nedf = 30
+	)
+	class(mock_model) <- "asreml"
+
+	expect_error(
+		get_predictions.asreml(mock_model, classify = "x"),
+		"x is fitted as a covariate \\(pol\\(x, 2\\)\\), so its predicted values cannot be compared"
 	)
 })
 
@@ -821,12 +840,9 @@ test_that("get_predictions.asreml resolves at() in classify", {
 		character(1)
 	)
 	expect_equal(classify_args, rep("Year:Crop", 3))
-
-	# Per-pair df from the at() rows of the wald table
-	expect_equal(diag(bare$df), c(12, 12, 16, 16))
 })
 
-test_that("at_term_df builds a per-pair df matrix from the per-level wald rows", {
+test_that("asreml_denominator_df builds a per-pair df matrix for at() terms", {
 	dendf <- data.frame(
 		Source = c(
 			"(Intercept)",
@@ -841,7 +857,7 @@ test_that("at_term_df builds a per-pair df matrix from the per-level wald rows",
 		Crop = rep(c("Canola", "Wheat"), 2)
 	)
 
-	ndf <- at_term_df("Year:Crop", dendf, pp, resid_df = 30)
+	ndf <- asreml_denominator_df("Year:Crop", dendf, pp, resid_df = 30)
 	expected <- matrix(
 		c(12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 16, 16, 12, 12, 16, 16),
 		nrow = 4
@@ -849,25 +865,34 @@ test_that("at_term_df builds a per-pair df matrix from the per-level wald rows",
 	expect_equal(ndf, expected)
 
 	# Classify in either order matches the at() term
-	expect_equal(at_term_df("Crop:Year", dendf, pp, resid_df = 30), expected)
+	expect_equal(
+		asreml_denominator_df("Crop:Year", dendf, pp, resid_df = 30),
+		expected
+	)
 
 	# A common df across levels collapses to a single value
 	dendf_equal <- dendf
 	dendf_equal$denDF[4] <- 12
-	expect_equal(at_term_df("Year:Crop", dendf_equal, pp, resid_df = 30), 12)
+	expect_equal(
+		asreml_denominator_df("Year:Crop", dendf_equal, pp, resid_df = 30),
+		12
+	)
 
 	# Levels outside an at() level subset take the residual df
 	pp3 <- data.frame(
 		Year = rep(c("2020", "2021", "2022"), each = 2),
 		Crop = rep(c("Canola", "Wheat"), 3)
 	)
-	ndf3 <- at_term_df("Year:Crop", dendf, pp3, resid_df = 30)
+	ndf3 <- asreml_denominator_df("Year:Crop", dendf, pp3, resid_df = 30)
 	expect_equal(diag(ndf3), c(12, 12, 16, 16, 30, 30))
 	expect_equal(ndf3[1, 5], 12)
 
-	# No matching at() term
-	expect_null(at_term_df("Crop", dendf, pp, resid_df = 30))
-	expect_null(at_term_df("Year:Other", dendf, pp, resid_df = 30))
+	# A term that only resembles the at() rows falls back to the residual df
+	expect_warning(
+		ndf_other <- asreml_denominator_df("Year:Other", dendf, pp, 30),
+		"Year:Other is not a fixed term in the model"
+	)
+	expect_equal(ndf_other, 30)
 })
 
 test_that("asreml at() terms give comparison-specific df from wald()", {
@@ -898,11 +923,6 @@ test_that("asreml at() terms give comparison-specific df from wald()", {
 	# Cross-level pairs take the smaller of the two levels' df
 	expect_equal(result$df[1, 4], 12.5, tolerance = 1e-2)
 	expect_equal(result$df[4, 7], 15.0, tolerance = 1e-2)
-
-	# The term label as written in the model is accepted too
-	bare <- multiple_comparisons(model, classify = "Nitrogen:Variety")
-	wrapped <- multiple_comparisons(model, classify = "at(Nitrogen):Variety")
-	expect_equal(bare$predictions, wrapped$predictions)
 })
 
 test_that("asreml random terms with variance structures can be classified", {

@@ -112,7 +112,7 @@ validate_inputs <- function(
 		)
 	}
 
-	invisible(NULL)
+	return(invisible(NULL))
 }
 
 

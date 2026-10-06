@@ -75,7 +75,9 @@ either by its factors or as written in the model, so for a model with
 \code{classify = "at(Year):Treatment"} give the same result. This applies to
 \code{at()} and to the variance-structure and relationship functions in the
 random model (e.g. \code{diag()}, \code{us()}, \code{fa()}, \code{vm()}), so
-\code{fa(Site, 2):Variety} is classified with \code{"Site:Variety"}.
+\code{fa(Site, 2):Variety} is classified with \code{"Site:Variety"}. Covariates fitted
+with \code{pol()}, \code{spl()}, \code{lin()} and similar functions cannot be compared and
+are not accepted in \code{classify}.
 
 Predictions of terms in the random model include the random effects
 (BLUPs). Their comparisons use the residual degrees of freedom, with a

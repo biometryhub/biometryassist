@@ -4,12 +4,13 @@
 \alias{strip_asreml_specials}
 \title{Strip ASReml-R special functions from a term label}
 \usage{
-strip_asreml_specials(labels, random = FALSE)
+strip_asreml_specials(labels, specials = "at")
 }
 \arguments{
 \item{labels}{Character vector of term labels.}
 
-\item{random}{Logical; also strip random-formula-only functions.}
+\item{specials}{Character vector of function names to strip. Defaults to
+\code{"at"}; see \code{asreml_random_specials} and \code{asreml_covariate_specials}.}
 }
 \value{
 Character vector of labels with the wrappers removed.
@@ -18,13 +19,10 @@ Character vector of labels with the wrappers removed.
 ASReml-R keeps special-function wrappers in its term labels (e.g.
 \code{at(Year):Prior_crop}, \code{fa(Site, 2):Variety}, \code{vm(Genotype, Ainv)}), but
 \code{predict.asreml()} expects the bare factor names in \code{classify}
-(\code{Year:Prior_crop}). This replaces each whitelisted wrapper with its first
-argument. Only ASReml-R's own functions are stripped, so base R calls such as
-\code{log(x)} are left alone; \code{random = TRUE} adds the variance-model and
-relationship-matrix functions, which only have that meaning in the random
-formula (e.g. \code{exp()} is a variance model there, but a base function in the
-fixed formula). Covariate functions (\code{pol()}, \code{lin()}, \code{spl()}, \code{dev()},
-\code{leg()}) are deliberately not stripped: comparisons on a covariate are not
-meaningful.
+(\code{Year:Prior_crop}). This replaces each wrapper named in \code{specials} with its
+first argument. Only ASReml-R's own functions are listed, so base R calls
+such as \code{log(x)} are left alone. The variance-model functions are only
+stripped from random terms, since some share names with base functions
+(e.g. \code{exp()}, \code{diag()}) that may appear in the fixed formula.
 }
 \keyword{internal}
