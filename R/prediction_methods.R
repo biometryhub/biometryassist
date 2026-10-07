@@ -548,6 +548,9 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 	)
 	dendf <- data.frame(Source = row.names(dat.ww), denDF = dat.ww$denDF)
 	ndf <- asreml_denominator_df(classify, dendf, pp, model.obj$nedf)
+	# ASReml-R gives no df for a single predicted mean, so each mean takes the
+	# denominator df of its term (for an at() term, that of its level).
+	pp$df <- if (is.matrix(ndf)) diag(ndf) else rep(ndf, nrow(pp))
 
 	# Get response variable for plot label
 	ylab <- model.obj$formulae$fixed[[2]]
@@ -696,10 +699,9 @@ predictions_from_emmeans <- function(
 		ndf[lower.tri(ndf)] <- t(ndf)[lower.tri(ndf)]
 	}
 
-	# Remove columns with upper and lower confidence intervals
+	# Remove columns with upper and lower confidence intervals. The `df` column
+	# (the df of each mean, used for its confidence interval) is kept.
 	pred.out <- pred.out[, !grepl("CL", names(pred.out))]
-	# Remove columns with degrees of freedom
-	pred.out <- pred.out[, !grepl("df", names(pred.out))]
 
 	# Rename columns for consistency
 	pp <- pred.out
@@ -806,6 +808,7 @@ get_predictions.mmes <- function(model.obj, classify, ...) {
 	# sommer provides no denominator degrees of freedom; use asymptotic (z-based)
 	# inference, as for glmmTMB.
 	ndf <- Inf
+	pp$df <- ndf
 
 	ylab <- model.obj$args$fixed[[2]]
 

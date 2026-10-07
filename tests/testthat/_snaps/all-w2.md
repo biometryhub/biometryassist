@@ -19,11 +19,11 @@
       HSD value: 1.637308 
       
       Predicted values:
-        trt predicted.value std.error df groups   ci   low    up
-      1  20            9.96       0.4 16      a 0.86  9.11 10.82
-      2   1           12.26       0.4 16      b 0.86 11.40 13.12
-      3   5           16.14       0.4 16      c 0.86 15.29 17.00
-      4  10           17.77       0.4 16      c 0.86 16.92 18.63
+        trt predicted.value std.error groups   ci   low    up
+      1  20            9.96       0.4      a 0.86  9.11 10.82
+      2   1           12.26       0.4      b 0.86 11.40 13.12
+      3   5           16.14       0.4      c 0.86 15.29 17.00
+      4  10           17.77       0.4      c 0.86 16.92 18.63
 
 # example 2 works
 
@@ -46,14 +46,14 @@
       HSD value: 1.420913 
       
       Predicted values:
-        trt predicted.value std.error df groups   ci   low    up
-      1  T3           11.15      0.33 77      a 0.66 10.49 11.81
-      2  T5           12.45      0.33 77      a 0.66 11.79 13.11
-      3  T6           14.02      0.33 77      b 0.66 13.36 14.69
-      4  T4           15.10      0.33 77     bc 0.66 14.44 15.76
-      5  T2           16.11      0.33 77     cd 0.66 15.45 16.77
-      6  T7           17.24      0.33 77     de 0.66 16.58 17.90
-      7  T1           17.83      0.33 77      e 0.66 17.17 18.49
+        trt predicted.value std.error groups   ci   low    up
+      1  T3           11.15      0.33      a 0.66 10.49 11.81
+      2  T5           12.45      0.33      a 0.66 11.79 13.11
+      3  T6           14.02      0.33      b 0.66 13.36 14.69
+      4  T4           15.10      0.33     bc 0.66 14.44 15.76
+      5  T2           16.11      0.33     cd 0.66 15.45 16.77
+      6  T7           17.24      0.33     de 0.66 16.58 17.90
+      7  T1           17.83      0.33      e 0.66 17.17 18.49
 
 # example 3 works
 
@@ -77,11 +77,11 @@
       HSD value: 2.634022 
       
       Predicted values:
-          Variety predicted.value std.error df groups   ci  low   up
-      1 Parafield            1.68      0.63 12      a 1.37 0.31 3.05
-      2     Kaspa            2.68      0.63 12     ab 1.37 1.31 4.04
-      3    Yarrum            4.72      0.63 12      b 1.37 3.36 6.09
-      4    Excell            4.85      0.63 12      b 1.37 3.48 6.21
+          Variety predicted.value std.error groups   ci  low   up
+      1 Parafield            1.68      0.63      a 1.37 0.31 3.05
+      2     Kaspa            2.68      0.63     ab 1.37 1.31 4.04
+      3    Yarrum            4.72      0.63      b 1.37 3.36 6.09
+      4    Excell            4.85      0.63      b 1.37 3.48 6.21
 
 # example 4 works
 
@@ -106,11 +106,11 @@
       HSD value: 303.4081 
       
       Predicted values:
-        trt predicted.value std.error df groups     ci     low      up
-      1  S4         1707.94     61.98  6      a 151.65 1556.29 1859.59
-      2  S2         1802.70     61.98  6     ab 151.65 1651.05 1954.35
-      3  S1         2053.73     61.98  6     bc 151.65 1902.08 2205.38
-      4  S3         2200.08     61.98  6      c 151.65 2048.44 2351.73
+        trt predicted.value std.error groups     ci     low      up
+      1  S4         1707.94     61.98      a 151.65 1556.29 1859.59
+      2  S2         1802.70     61.98     ab 151.65 1651.05 1954.35
+      3  S1         2053.73     61.98     bc 151.65 1902.08 2205.38
+      4  S3         2200.08     61.98      c 151.65 2048.44 2351.73
 
 # example 3 LMM works
 
@@ -298,19 +298,19 @@
       HSD value: 0.6006176 
       
       Predicted values:
-          Variety predicted.value std.error df groups   ci  low   up
-      1      Lang            1.97      0.12 24      a 0.24 1.73 2.22
-      2  Drysdale            2.13      0.12 24      a 0.24 1.89 2.37
-      3     Wylah            2.13      0.12 24      a 0.24 1.89 2.37
-      4    Baxter            2.14      0.12 24      a 0.24 1.90 2.38
-      5      Janz            2.19      0.12 24     ab 0.24 1.95 2.44
-      6    Endure            2.24      0.12 24     ab 0.24 2.00 2.48
-      7     Orion            2.27      0.12 24     ab 0.24 2.03 2.51
-      8     Zippy            2.28      0.12 24     ab 0.24 2.04 2.53
-      9   Fortune            2.53      0.12 24     ab 0.24 2.28 2.77
-      10  Caryina            2.54      0.12 24     ab 0.24 2.30 2.78
-      11  Pugsley            2.75      0.12 24      b 0.24 2.51 2.99
-      12   Arrino            2.75      0.12 24      b 0.24 2.51 3.00
+          Variety predicted.value std.error groups   ci  low   up
+      1      Lang            1.97      0.12      a 0.24 1.73 2.22
+      2  Drysdale            2.13      0.12      a 0.24 1.89 2.37
+      3     Wylah            2.13      0.12      a 0.24 1.89 2.37
+      4    Baxter            2.14      0.12      a 0.24 1.90 2.38
+      5      Janz            2.19      0.12     ab 0.24 1.95 2.44
+      6    Endure            2.24      0.12     ab 0.24 2.00 2.48
+      7     Orion            2.27      0.12     ab 0.24 2.03 2.51
+      8     Zippy            2.28      0.12     ab 0.24 2.04 2.53
+      9   Fortune            2.53      0.12     ab 0.24 2.28 2.77
+      10  Caryina            2.54      0.12     ab 0.24 2.30 2.78
+      11  Pugsley            2.75      0.12      b 0.24 2.51 2.99
+      12   Arrino            2.75      0.12      b 0.24 2.51 3.00
 
 # exercise 2 works
 
@@ -330,13 +330,13 @@
         if (is.numeric(y)) round(y, 1) else y
       }))
     Output
-        Treatment predicted.value std.error df groups  ci low  up
-      1        KC             2.1       0.2 18      a 0.4 1.7 2.5
-      2        PE             2.2       0.2 18      a 0.4 1.8 2.5
-      3        HL             2.6       0.2 18     ab 0.4 2.2 3.0
-      4        CN             2.8       0.2 18     ab 0.4 2.4 3.2
-      5        HE             2.8       0.2 18     ab 0.4 2.4 3.2
-      6        CP             3.4       0.2 18      b 0.4 3.0 3.7
+        Treatment predicted.value std.error groups  ci low  up
+      1        KC             2.1       0.2      a 0.4 1.7 2.5
+      2        PE             2.2       0.2      a 0.4 1.8 2.5
+      3        HL             2.6       0.2     ab 0.4 2.2 3.0
+      4        CN             2.8       0.2     ab 0.4 2.4 3.2
+      5        HE             2.8       0.2     ab 0.4 2.4 3.2
+      6        CP             3.4       0.2      b 0.4 3.0 3.7
 
 # exercise 3 works
 
@@ -360,14 +360,14 @@
       HSD value: 1.911107 
       
       Predicted values:
-              Variety predicted.value std.error df groups   ci  low   up
-      1 CarolinaCross            2.84      0.42 24      a 0.87 1.97 3.71
-      2       Pharoah            2.86      0.42 24      a 0.87 1.99 3.73
-      3       Phantom            3.08      0.42 24     ab 0.87 2.21 3.95
-      4      Hercules            4.70      0.42 24     ab 0.87 3.83 5.57
-      5  Melitopolski            4.78      0.42 24      b 0.87 3.91 5.65
-      6     Orangeglo            4.96      0.42 24      b 0.87 4.09 5.83
-      7      Sudanese            8.88      0.42 24      c 0.87 8.01 9.75
+              Variety predicted.value std.error groups   ci  low   up
+      1 CarolinaCross            2.84      0.42      a 0.87 1.97 3.71
+      2       Pharoah            2.86      0.42      a 0.87 1.99 3.73
+      3       Phantom            3.08      0.42     ab 0.87 2.21 3.95
+      4      Hercules            4.70      0.42     ab 0.87 3.83 5.57
+      5  Melitopolski            4.78      0.42      b 0.87 3.91 5.65
+      6     Orangeglo            4.96      0.42      b 0.87 4.09 5.83
+      7      Sudanese            8.88      0.42      c 0.87 8.01 9.75
 
 # exercise 4 works
 
@@ -404,12 +404,12 @@
       HSD value: 5.978043 
       
       Predicted values:
-        Treatment predicted.value std.error df groups   ci   low    up
-      1      Root           31.61       1.4 18      a 2.94 28.67 34.54
-      2      Seed           35.98       1.4 18     ab 2.94 33.04 38.91
-      3     Stalk           38.95       1.4 18     bc 2.94 36.02 41.89
-      4    Damage           43.52       1.4 18     cd 2.94 40.58 46.45
-      5      Silk           48.12       1.4 18      d 2.94 45.18 51.05
+        Treatment predicted.value std.error groups   ci   low    up
+      1      Root           31.61       1.4      a 2.94 28.67 34.54
+      2      Seed           35.98       1.4     ab 2.94 33.04 38.91
+      3     Stalk           38.95       1.4     bc 2.94 36.02 41.89
+      4    Damage           43.52       1.4     cd 2.94 40.58 46.45
+      5      Silk           48.12       1.4      d 2.94 45.18 51.05
 
 # exercise 6 works
 
@@ -434,11 +434,11 @@
       HSD value: 6.904745 
       
       Predicted values:
-        Treatment predicted.value std.error df groups   ci   low    up
-      1        T4           16.01       1.6 10      a 3.56 12.45 19.57
-      2        T8           17.51       1.6 10     ab 3.56 13.95 21.07
-      3       T12           21.40       1.6 10     ab 3.56 17.85 24.96
-      4        T0           24.39       1.6 10      b 3.56 20.83 27.95
+        Treatment predicted.value std.error groups   ci   low    up
+      1        T4           16.01       1.6      a 3.56 12.45 19.57
+      2        T8           17.51       1.6     ab 3.56 13.95 21.07
+      3       T12           21.40       1.6     ab 3.56 17.85 24.96
+      4        T0           24.39       1.6      b 3.56 20.83 27.95
 
 # exercise 7 works
 
