@@ -1605,7 +1605,8 @@ test_that("Invalid column name causes an error", {
 		quiet = TRUE
 	)$design
 	names(dat)[5] <- "groups"
-	dat.aov <- aov(rnorm(16, 10) ~ groups, data = dat)
+	dat$response <- rnorm(16, 10)
+	dat.aov <- aov(response ~ groups, data = dat)
 
 	expect_error(
 		multiple_comparisons(dat.aov, classify = "groups"),
@@ -2260,18 +2261,14 @@ test_that("confidence intervals use the df of each mean, not the comparison df (
 	}
 
 	# Values from the issue: t on ~6.79 and ~16.08 df rather than 45
+	# Compare every element rather than unique(): the per-level ratios can
+	# differ in the last bits across platforms (seen on macOS)
 	pred_n <- multiple_comparisons(oats.aovlist, classify = "Nitrogen")
-	expect_equal(
-		unique(pred_n$predictions$ci / pred_n$predictions$std.error),
-		2.379,
-		tolerance = 1e-3
-	)
+	t_n <- pred_n$predictions$ci / pred_n$predictions$std.error
+	expect_equal(t_n, rep(2.379, length(t_n)), tolerance = 1e-3)
 	pred_vn <- multiple_comparisons(oats.aovlist, classify = "Variety:Nitrogen")
-	expect_equal(
-		unique(round(pred_vn$predictions$ci / pred_vn$predictions$std.error, 6)),
-		2.119,
-		tolerance = 1e-3
-	)
+	t_vn <- pred_vn$predictions$ci / pred_vn$predictions$std.error
+	expect_equal(t_vn, rep(2.119, length(t_vn)), tolerance = 1e-3)
 })
 
 test_that("tukey intervals use the smallest comparison df of each mean (#199)", {
