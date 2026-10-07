@@ -4,16 +4,13 @@
 \alias{get_predictions}
 \title{Internal prediction extraction for the comparison functions}
 \usage{
-get_predictions(model.obj, classify, pred.obj = NULL, ...)
+get_predictions(model.obj, classify, ...)
 }
 \arguments{
 \item{model.obj}{A fitted model object of a supported class (see
 \emph{Supported model types} below).}
 
 \item{classify}{Name of the predictor variable(s) as a string.}
-
-\item{pred.obj}{Optional precomputed prediction object (\code{asreml} only;
-otherwise predictions are computed internally).}
 
 \item{...}{Additional arguments passed to the class-specific method (e.g.
 ASReml-R \code{predict()} arguments).}

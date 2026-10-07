@@ -1,63 +1,4 @@
-test_that("get_predictions.asreml uses provided pred.obj when supplied", {
-	skip_if_not_installed("mockery")
-
-	# Create mock model object
-	mock_model <- list(
-		formulae = list(
-			fixed = as.formula("yield ~ Nitrogen"),
-			random = as.formula("~Blocks")
-		),
-		nedf = 10
-	)
-	class(mock_model) <- "asreml"
-
-	# Create mock pred.obj that would be passed in
-	mock_pred_obj <- list(
-		pvals = data.frame(
-			Nitrogen = c("0", "0.2", "0.4", "0.6"),
-			predicted.value = c(100, 110, 120, 130),
-			std.error = c(5, 5, 5, 5),
-			status = c("Estimable", "Estimable", "Estimable", "Estimable")
-		),
-		sed = matrix(
-			c(NA, 7, 8, 9, 7, NA, 8, 9, 8, 8, NA, 9, 9, 9, 9, NA),
-			nrow = 4,
-			ncol = 4
-		)
-	)
-
-	# Mock the asreml functions to ensure they're NOT called when pred.obj is provided
-	mock_predict <- mockery::mock()
-	mock_wald <- mockery::mock(list(
-		Wald = data.frame(
-			denDF = c(10),
-			row.names = c("Nitrogen")
-		)
-	))
-
-	mockery::stub(
-		get_predictions.asreml,
-		'asreml::predict.asreml',
-		mock_predict
-	)
-	mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
-
-	# Call the function with pred.obj provided
-	result <- get_predictions.asreml(
-		mock_model,
-		classify = "Nitrogen",
-		pred.obj = mock_pred_obj
-	)
-
-	# Verify predict.asreml was NOT called (because pred.obj was provided)
-	mockery::expect_called(mock_predict, 0)
-
-	# Verify the result uses the provided pred.obj
-	expect_equal(result$predictions$predicted.value, c(100, 110, 120, 130))
-	expect_equal(result$predictions$std.error, c(5, 5, 5, 5))
-})
-
-test_that("get_predictions.asreml generates predictions when pred.obj is NULL", {
+test_that("get_predictions.asreml generates predictions via predict.asreml", {
 	skip_if_not_installed("mockery")
 
 	# Create mock model object
@@ -101,10 +42,8 @@ test_that("get_predictions.asreml generates predictions when pred.obj is NULL", 
 	)
 	mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
 
-	# Call the function without pred.obj (NULL by default)
 	result <- get_predictions.asreml(mock_model, classify = "Nitrogen")
 
-	# Verify predict.asreml WAS called (because pred.obj was NULL)
 	mockery::expect_called(mock_predict, 1)
 
 	# Verify the correct arguments were passed to predict.asreml
@@ -112,58 +51,11 @@ test_that("get_predictions.asreml generates predictions when pred.obj is NULL", 
 	expect_equal(call_args$object, mock_model)
 	expect_equal(call_args$classify, "Nitrogen")
 	expect_equal(call_args$sed, TRUE)
+	expect_equal(call_args$vcov, TRUE)
 	expect_equal(call_args$trace, FALSE)
 
 	# Verify the result contains the generated predictions
 	expect_equal(result$predictions$predicted.value, c(100, 110, 120, 130))
-})
-
-test_that("get_predictions.asreml generates predictions when pred.obj is missing", {
-	skip_if_not_installed("mockery")
-
-	# Create mock model object
-	mock_model <- list(
-		formulae = list(
-			fixed = as.formula("yield ~ Nitrogen"),
-			random = as.formula("~Blocks")
-		),
-		nedf = 10
-	)
-	class(mock_model) <- "asreml"
-
-	# Mock prediction result
-	mock_pred_result <- list(
-		pvals = data.frame(
-			Nitrogen = c("0", "0.2"),
-			predicted.value = c(100, 110),
-			std.error = c(5, 5),
-			status = c("Estimable", "Estimable")
-		),
-		sed = matrix(c(NA, 7, 7, NA), nrow = 2, ncol = 2)
-	)
-
-	# Mock the asreml functions
-	mock_predict <- mockery::mock(mock_pred_result)
-	mock_wald <- mockery::mock(list(
-		Wald = data.frame(
-			denDF = c(10),
-			row.names = c("Nitrogen")
-		)
-	))
-
-	mockery::stub(
-		get_predictions.asreml,
-		'asreml::predict.asreml',
-		mock_predict
-	)
-	mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
-
-	# Call without specifying pred.obj at all
-	result <- get_predictions.asreml(mock_model, classify = "Nitrogen")
-
-	# Verify predict.asreml WAS called
-	mockery::expect_called(mock_predict, 1)
-	expect_equal(result$predictions$predicted.value, c(100, 110))
 })
 
 test_that("get_predictions.asreml errors when all predicted values are aliased", {
@@ -951,7 +843,7 @@ test_that("Testing pred.obj removal for asreml predictions", {
 			classify = "Nitrogen",
 			pred.obj = pred.asr
 		),
-		"`pred.obj` was removed in biometryassist 1\\.5\\.0\\. Predictions are now performed internally in the function\\."
+		"Argument `pred.obj` was removed in version 1\\.5\\.0\\. Predictions are now performed internally in the function\\."
 	)
 })
 

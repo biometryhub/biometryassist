@@ -116,14 +116,17 @@ compare_version <- function(a, b) {
 
 #' Handle deprecated parameters
 #'
-#' Simple internal function to warn about deprecated parameters
+#' Internal function to warn about a deprecated parameter: one that is still a
+#' formal of the calling function and still works, but is no longer
+#' recommended. For a parameter that has been removed outright, use
+#' [handle_removed_param()].
 #'
-#' @param old_param Name of the deprecated parameter
-#' @param new_param Name of the replacement parameter or NULL if parameter is being removed
-#' @param custom_msg Optional custom message to append to the warning
-#' @param call_env Environment where to check for the deprecated parameter
+#' @param old_param Name of the deprecated parameter.
+#' @param new_param Name of the replacement parameter, or `NULL` if none.
+#' @param custom_msg Optional custom message to append to the warning.
+#' @param call_env Environment where to check for the deprecated parameter.
 #'
-#' @return Nothing, called for side effects (warnings)
+#' @return `NULL`, invisibly; called for its side effect (a warning).
 #'
 #' @keywords internal
 handle_deprecated_param <- function(
@@ -132,31 +135,71 @@ handle_deprecated_param <- function(
 	custom_msg = NULL,
 	call_env = parent.frame()
 ) {
-	# Check if the old parameter was provided
 	if (
 		!eval(
 			substitute(missing(PARAM), list(PARAM = as.name(old_param))),
 			envir = call_env
 		)
 	) {
-		# Different message depending on whether parameter is replaced or removed
 		msg <- sprintf(
 			"Argument `%s` has been deprecated and will be removed in a future version.",
 			old_param
 		)
 		if (!is.null(new_param)) {
-			warning(
-				msg,
-				sprintf(" Please use `%s` instead.", new_param),
-				call. = FALSE
+			msg <- paste(msg, sprintf("Please use `%s` instead.", new_param))
+		}
+		if (!is.null(custom_msg)) {
+			msg <- paste(msg, custom_msg)
+		}
+		warning(msg, call. = FALSE)
+	}
+	return(invisible(NULL))
+}
+
+#' Handle removed parameters
+#'
+#' Internal function to stop on a parameter that has been removed. A removed
+#' parameter is no longer a formal of the calling function, so it is looked for
+#' in the caller's `...`, where it would otherwise be silently captured and
+#' passed on. For a parameter that still works but is no longer recommended,
+#' use [handle_deprecated_param()].
+#'
+#' @param old_param Name of the removed parameter.
+#' @param new_param Name of the replacement parameter, or `NULL` if none.
+#' @param custom_msg Optional custom message to append to the error.
+#' @param version Optional version in which the parameter was removed, e.g.
+#'   `"1.5.0"`, so users can find the change in NEWS.
+#' @param call_env Environment of the calling function, whose `...` is checked.
+#'
+#' @return `NULL`, invisibly; called for its check.
+#'
+#' @keywords internal
+handle_removed_param <- function(
+	old_param,
+	new_param = NULL,
+	custom_msg = NULL,
+	version = NULL,
+	call_env = parent.frame()
+) {
+	if (old_param %in% eval(quote(...names()), call_env)) {
+		msg <- if (!is.null(version)) {
+			sprintf(
+				"Argument `%s` was removed in version %s.",
+				old_param,
+				version
 			)
 		} else {
-			if (!is.null(custom_msg)) {
-				msg <- paste(msg, custom_msg)
-			}
-			warning(msg, call. = FALSE)
+			sprintf("Argument `%s` has been removed.", old_param)
 		}
+		if (!is.null(new_param)) {
+			msg <- paste(msg, sprintf("Please use `%s` instead.", new_param))
+		}
+		if (!is.null(custom_msg)) {
+			msg <- paste(msg, custom_msg)
+		}
+		stop(msg, call. = FALSE)
 	}
+	return(invisible(NULL))
 }
 
 

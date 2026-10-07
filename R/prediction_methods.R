@@ -309,8 +309,6 @@ sed_from_vcov <- function(vcov) {
 #' @param model.obj A fitted model object of a supported class (see
 #'   *Supported model types* below).
 #' @param classify Name of the predictor variable(s) as a string.
-#' @param pred.obj Optional precomputed prediction object (`asreml` only;
-#'   otherwise predictions are computed internally).
 #' @param ... Additional arguments passed to the class-specific method (e.g.
 #'   ASReml-R `predict()` arguments).
 #'
@@ -418,7 +416,7 @@ sed_from_vcov <- function(vcov) {
 #' @seealso [multiple_comparisons()], [pairwise_comparisons()],
 #'   [reference_comparisons()]
 #' @keywords internal
-get_predictions <- function(model.obj, classify, pred.obj = NULL, ...) {
+get_predictions <- function(model.obj, classify, ...) {
 	UseMethod("get_predictions")
 }
 
@@ -446,7 +444,7 @@ get_predictions.default <- function(model.obj, ...) {
 
 #' @noRd
 #' @exportS3Method get_predictions asreml
-get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
+get_predictions.asreml <- function(model.obj, classify, ...) {
 	# Check if classify is in model terms (handles reversed interaction order).
 	# ASReml-R special functions are stripped from the term labels and from
 	# classify, since predict.asreml() classifies on the bare factor names: both
@@ -484,20 +482,17 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 
 	classify <- check_classify_in_terms(classify_label, model_terms)
 
-	# Generate predictions if not provided. `vcov = TRUE` returns the exact
-	# variance-covariance of the predicted means, used directly by
-	# pairwise_comparisons()/reference_comparisons() for contrasts and the
-	# Dunnett correlation (no reconstruction from SEDs needed).
-	if (missing(pred.obj) || is.null(pred.obj)) {
-		pred.obj <- quiet(asreml::predict.asreml(
-			object = model.obj,
-			classify = classify,
-			sed = TRUE,
-			vcov = TRUE,
-			trace = FALSE,
-			...
-		))
-	}
+	# `vcov = TRUE` returns the exact variance-covariance of the predicted means,
+	# used directly by pairwise_comparisons()/reference_comparisons() for
+	# contrasts and the Dunnett correlation (no reconstruction from SEDs needed).
+	pred.obj <- quiet(asreml::predict.asreml(
+		object = model.obj,
+		classify = classify,
+		sed = TRUE,
+		vcov = TRUE,
+		trace = FALSE,
+		...
+	))
 
 	# Check if all predicted values are NA
 	if (
@@ -513,9 +508,7 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 	# For use with asreml 4+
 	pp <- pred.obj$pvals
 	sed <- pred.obj$sed
-	# Exact prediction vcov (NULL on the deprecated `pred.obj` path if it was
-	# generated without `vcov = TRUE`; only multiple_comparisons() uses that path,
-	# and it relies on `sed`, not `vcov`).
+	# Exact prediction vcov
 	vcov <- if (!is.null(pred.obj$vcov)) as.matrix(pred.obj$vcov) else NULL
 
 	# Process aliased treatments with asreml-specific exclude columns

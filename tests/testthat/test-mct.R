@@ -1471,7 +1471,7 @@ test_that("Interaction terms work", {
 test_that("order argument was removed in 1.5.0", {
 	expect_error(
 		multiple_comparisons(dat.aov, classify = "Species", order = "xyz"),
-		"`order` was removed in biometryassist 1.5.0. Use `descending` instead."
+		"Argument `order` was removed in version 1\\.5\\.0\\. Please use `descending` instead\\."
 	)
 })
 
@@ -1591,7 +1591,7 @@ test_that("Significance values that are too high give a warning or error", {
 test_that("pred argument was removed in 1.5.0", {
 	expect_error(
 		multiple_comparisons(dat.aov, classify = "Species", pred = "Species"),
-		"`pred` was removed in biometryassist 1.5.0. Use `classify` instead."
+		"Argument `pred` was removed in version 1\\.5\\.0\\. Please use `classify` instead\\."
 	)
 })
 
@@ -1621,7 +1621,7 @@ test_that("pred.obj argument was removed in 1.5.0", {
 			pred.obj = pred.asr,
 			classify = "Nitrogen"
 		),
-		"`pred.obj` was removed in biometryassist 1.5.0."
+		"Argument `pred.obj` was removed in version 1\\.5\\.0\\."
 	)
 })
 

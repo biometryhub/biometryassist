@@ -278,20 +278,13 @@ multiple_comparisons <- function(
 	...
 ) {
 	# Parameters removed in 1.5.0: give a clear error with migration guidance
-	.removed_params <- list(
-		pred = "`pred` was removed in biometryassist 1.5.0. Use `classify` instead.",
-		order = "`order` was removed in biometryassist 1.5.0. Use `descending` instead.",
-		pred.obj = paste0(
-			"`pred.obj` was removed in biometryassist 1.5.0. ",
-			"Predictions are now performed internally in the function."
-		)
+	handle_removed_param("pred", "classify", version = "1.5.0")
+	handle_removed_param("order", "descending", version = "1.5.0")
+	handle_removed_param(
+		"pred.obj",
+		custom_msg = "Predictions are now performed internally in the function.",
+		version = "1.5.0"
 	)
-	.early_dots <- list(...)
-	for (.p in names(.removed_params)) {
-		if (.p %in% names(.early_dots)) {
-			stop(.removed_params[[.p]], call. = FALSE)
-		}
-	}
 
 	# Handle deprecated parameters
 	handle_deprecated_param(
