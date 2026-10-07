@@ -79,6 +79,7 @@ test_that("resplot sets stdres to NA when denominator is non-finite", {
 		"no non-missing arguments to max; returning -Inf"
 	)
 	expect_true(inherits(p, c("patchwork", "ggplot")))
+	local_null_device()
 	expect_silent(print(p))
 })
 

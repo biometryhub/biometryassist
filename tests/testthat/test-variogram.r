@@ -1,6 +1,9 @@
 load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
 load(test_path("data", "multi_dsum.Rdata"))
 
+# variogram() draws its wireframe with grid.grabExpr(), which opens a device
+local_null_device()
+
 test_that("vario_df produces a dataframe", {
 	vg <- vario_df(model.asr)
 	expect_equal(nrow(vg), 72)

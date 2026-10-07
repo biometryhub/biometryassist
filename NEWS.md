@@ -1,6 +1,27 @@
+# biometryassist 1.5.1
+
+## Minor Changes
+
+- Added citation information: `citation("biometryassist")` now gives the package citation, including its CRAN DOI, and the repository includes a `CITATION.cff` generated from the package metadata. (#194, #196)
+- `reference_comparisons()` now uses the exact Dunnett test whenever all comparisons share a common degrees of freedom (e.g. single-stratum `aovlist` and balanced `lmer()` models), instead of falling back to Holm for any model that reports degrees of freedom per comparison.
+- The package startup message, licence and documentation now refer to Adelaide University.
+- `multiple_comparisons()`, `pairwise_comparisons()` and `reference_comparisons()` now work with `asreml` models whose terms use ASReml-R special functions, such as `at()` in the fixed model or `diag()`, `fa()`, `us()` and `vm()` in the random model. (#198)
+- The `predictions` returned by `multiple_comparisons()` no longer include a `df` column for `aov` and `lm` models, so the output is the same for every model type.
+
+## Bug Fixes
+
+- `use_template()` now copies the requested package template as expected. Previously it always copied `mixed_model_template.R`. (#188)
+- Fixed the argument order in the `export_design_to_excel()` examples, which are now runnable. (#189, #197)
+- `multiple_comparisons()`, `pairwise_comparisons()` and `reference_comparisons()` now use the correct pairwise contrast degrees of freedom for `nlme::lme()` models rather than those of the individual means. In `multiple_comparisons()` this gave too-large HSD values; results now match equivalent `aov()` and `lmer()` fits. (#190)
+- Fixed the standard errors of difference (and degrees of freedom) being assigned to the wrong pairs for models with four or more treatment levels that use `emmeans` (`aovlist`, `lmer()`, `nlme::lme()`, `afex` and `glmmTMB`). This affected the p-values, HSD and letter groups from `multiple_comparisons()` for unbalanced data; balanced designs were not affected. (#193)
+- `multiple_comparisons()` no longer errors when a treatment level is aliased in models that use `emmeans` (`aovlist`, `lmer()`, `nlme::lme()`, `afex` and `glmmTMB`). (#195)
+- The warning given when the comparison functions fall back to the residual degrees of freedom for an `asreml` model now always names the `classify` term; previously the term name could be missing.
+- `multiple_comparisons()` no longer errors with "subscript out of bounds" when ASReml-R's `levels` argument is used to predict a subset of levels for an `asreml` model.
+- `multiple_comparisons()` confidence intervals (`int.type = "ci"`) now use the degrees of freedom of each predicted mean, rather than the largest pairwise-comparison degrees of freedom, and `int.type = "tukey"` now uses the smallest comparison degrees of freedom for each mean. Intervals were too narrow for multi-stratum models (`aovlist`, `afex`, `lmer()`, `nlme::lme()` and `asreml` `at()` terms); single-stratum models are not affected. (#199)
+
 # biometryassist 1.5.0
 
-## Major changes
+## Major Changes
 
 - `multiple_comparisons()`: the `plot`, `label_height`, `rotation`, `save`, and `savename` arguments are now **deprecated** and will be removed in a future version. Use `autoplot(<result>)` for plotting (pass `label_height` and `rotation` there), and `write.csv(result$predictions, "file.csv")` for saving. The `pred`, `order`, and `pred.obj` arguments were deprecated in 1.1.0 or earlier and have now been **removed**.
 - `multiple_comparisons()` gains an `adjust` argument to choose the p-value adjustment method (any `stats::p.adjust()` method, in addition to the default Tukey's HSD), and a `by` argument to run comparisons independently within groups.
@@ -14,7 +35,7 @@
 - New function `reference_comparisons()` to compare every level against a single reference (control) level, using an exact Dunnett test by default. It returns a means-centric table (each level's mean, the reference mean and the adjusted difference) and a means plot via `autoplot()`.
 
 
-## Minor changes
+## Minor Changes
 
 - Added the ability to add buffers or double buffers around blocks. (#169)
 - `design()` gains a `plot_numbers` argument to add a `plot_number` column to the design, numbered either sequentially or in a serpentine pattern. Buffer plots are numbered alongside treatment plots. (#58)
@@ -31,7 +52,7 @@
 
 # biometryassist 1.4.0
 
-## Major changes
+## Major Changes
 
 - Deprecated `des_info()`. This function has been superseded by `design()`, and will be removed in a future version.
 - Implement `arcsin` transformation handling in `multiple_comparisons()` (#60).
@@ -40,7 +61,7 @@
 - Added strip-plot designs (#134).
 - Enabled output of p-value matrix from `multiple_comparisons()`. This required changing the `multiple_comparisons()` output object to a list, but printing to console and autoplot(<multiple_comparisons>) still work as before (#22).  
 
-## Minor changes
+## Minor Changes
 
 - Add interval type 'none' for `multiple_comparisons()` (#125).
 - Added a print method for `satab()` to reliably get the same output (#133).
@@ -77,7 +98,7 @@
 
 # biometryassist 1.3.0
 
-## Major changes
+## Major Changes
 
 - Switched to using S3 methods for `resplot()` to enable easier expansion to different models in future. (#100)
 - Introduced a new function `export_design_to_excel()`. An excel file can now be created from a design dataframe, instead of just a graphical plot. (#74)
@@ -85,7 +106,7 @@
 The new option `int.type = 'tukey'` will now create comparison intervals using Tukey's distribution rather than a _t_-distribution for a regular confidence interval. 
 This has been a point of confusion when intervals don't overlap but share letters. (#66)
 
-## Minor changes
+## Minor Changes
 
 - Model inputs are now checked for potential transformations that haven't been supplied in `multiple_comparisons()`. (#83)
 - Enabled a `verbose` option for the `quiet` parameter in `install_asreml()` to give more detailed output when required. (#81)
@@ -101,11 +122,11 @@ This has been a point of confusion when intervals don't overlap but share letter
 
 # biometryassist 1.2.2
 
-## Major changes
+## Major Changes
 
 - Switched to using S3 methods to get predictions in `multiple_comparisons()` to enable easier expansion to different models in future. (#92)
 
-## Minor changes
+## Minor Changes
 
 - Added ability to produce column plots from `multiple_comparisons()` (#90)
 - Add option in multiple_comparisons() to disable letter comparisons (#85)
@@ -126,12 +147,12 @@ This has been a point of confusion when intervals don't overlap but share letter
 
 # biometryassist 1.2.0
 
-## Major changes
+## Major Changes
 
 - Introduced the `summary_graph()` (#75) and `heat_map()` (#19) functions 
 - Enabled arbitrary `row`, `column`, `block` and `treatment` columns to be provided in the `autoplot.design()` function, to enable more general plotting of designs. (#28)
 
-## Minor changes
+## Minor Changes
 
 - Implemented the ability to plot designs with buffer plots. (#68)
 - Changed `install_asreml()` to check if there is a later version before downloading.
@@ -140,7 +161,7 @@ This has been a point of confusion when intervals don't overlap but share letter
 
 # biometryassist 1.1.3
 
-## Bug fixes
+## Bug Fixes
 
 - Better checking of column names in data provided to `multiple_comparisons()` to prevent breaking. (#53)
 - Updated install_asreml() to work with ARM chip macOS devices. (#54)
@@ -150,7 +171,7 @@ This has been a point of confusion when intervals don't overlap but share letter
 
 # biometryassist 1.1.2
 
-## Bug fixes
+## Bug Fixes
 
 - Fixed a bug introduced due to a change in names by `predictmeans()`. (#50)
 - Added a check for missing `ar1()` component in `variogram()`. (#49)
@@ -160,14 +181,14 @@ This has been a point of confusion when intervals don't overlap but share letter
 
 # biometryassist 1.1.1
 
-## Minor changes
+## Minor Changes
 
 - `multiple_comparisons()` now accepts power transformations and automatically back-transforms. It gains a new argument `power` to provide the transformation power applied in the model to undo. This enables more general Box-Cox transformations. (#36)
 - `multiple_comparisons()` no longer produces an error when the `trans` argument is supplied and `offset` is not. It now produces a warning and sets `offset` to 0 when not provided. (#37)
 - Added an option to turn off the start up message and version check. Add `options(biometryassist.check = FALSE)` to your .Rprofile file to disable. Partially fixes #6.
 - Enabled new colour-blind friendly palettes (#39)
 
-## Bug fixes
+## Bug Fixes
 
 - Updated the required version of rlang (>=1.0.0)
 - Fixed a bug that didn't allow labels and the x axis to be rotated independently for `autoplot.mct()` (#35)
@@ -178,17 +199,17 @@ This has been a point of confusion when intervals don't overlap but share letter
 
 # biometryassist 1.1.0
 
-## Major changes
+## Major Changes
 
 - `multiple_comparisons()` no longer requires calls to `predict.asreml()` to be passed into the function, as the predicted values are now calculated internally. Additional arguments can be passed to `predict.asreml()` via the `...` argument. (#27)
 
-## Minor changes
+## Minor Changes
 
 - The `order` argument of `multiple_comparisons()` has been deprecated in favour of a new argument `descending`. This takes logical (`TRUE` or `FALSE`) values only, so `default` is no longer possible as it was producing incorrect results. (#8)
 - `resplt()` has been deprecated in favour of `resplot()` and will be removed in a future version (#20).
 - Warnings about lack of convergence are no longer output in `logl_test()`. (#17)
 
-## Bug fixes
+## Bug Fixes
 
 - Aliased levels are printed properly in `multiple_comparisons()` now. (#14)
 - R.param and G.param are removed from the `asreml()` call on `resplot()` if not explicitly provided. (#21)
@@ -197,7 +218,7 @@ This has been a point of confusion when intervals don't overlap but share letter
 
 # biometryassist 1.0.0
 
-## Minor changes
+## Minor Changes
 
 - `mct.out()` has been renamed to `multiple_comparisons()`
 - `logl.test()` has been renamed to `logl_test()`

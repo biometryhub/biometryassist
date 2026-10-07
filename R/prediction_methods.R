@@ -47,6 +47,256 @@ check_classify_in_terms <- function(classify, model_terms) {
 	)
 }
 
+#' Strip ASReml-R special functions from a term label
+#'
+#' ASReml-R keeps special-function wrappers in its term labels (e.g.
+#' `at(Year):Prior_crop`, `fa(Site, 2):Variety`, `vm(Genotype, Ainv)`), but
+#' `predict.asreml()` expects the bare factor names in `classify`
+#' (`Year:Prior_crop`). This replaces each wrapper named in `specials` with its
+#' first argument. Only ASReml-R's own functions are listed, so base R calls
+#' such as `log(x)` are left alone. The variance-model functions are only
+#' stripped from random terms, since some share names with base functions
+#' (e.g. `exp()`, `diag()`) that may appear in the fixed formula.
+#'
+#' @param labels Character vector of term labels.
+#' @param specials Character vector of function names to strip. Defaults to
+#'   `"at"`; see `asreml_random_specials` and `asreml_covariate_specials`.
+#'
+#' @return Character vector of labels with the wrappers removed.
+#' @keywords internal
+strip_asreml_specials <- function(labels, specials = "at") {
+	strip <- function(expr) {
+		if (!is.call(expr)) {
+			return(expr)
+		}
+		fn <- as.character(expr[[1]])
+		if (identical(fn, ":")) {
+			expr[[2]] <- strip(expr[[2]])
+			expr[[3]] <- strip(expr[[3]])
+			return(expr)
+		}
+		if (fn %in% specials && length(expr) >= 2) {
+			return(expr[[2]])
+		}
+		return(expr)
+	}
+
+	stripped <- vapply(
+		labels,
+		function(label) {
+			expr <- tryCatch(str2lang(label), error = function(e) NULL)
+			if (is.null(expr)) {
+				return(label)
+			}
+			paste(deparse(strip(expr), width.cutoff = 500L), collapse = "")
+		},
+		character(1),
+		USE.NAMES = FALSE
+	)
+	return(stripped)
+}
+
+# ASReml-R functions that wrap a factor in random terms (e.g.
+# `diag(Site):Variety`, `fa(Site, 2):Variety`, `vm(Genotype, Ainv)`), from the
+# ASReml-R 4.2 variance-structure help pages. The bare factor is what
+# predict.asreml() classifies on.
+asreml_random_specials <- c(
+	"at",
+	# known and independent structures
+	"vm",
+	"ide",
+	"ric",
+	"id",
+	"idv",
+	"idh",
+	# general structures
+	"cor",
+	"corv",
+	"corh",
+	"corb",
+	"corbv",
+	"corbh",
+	"corg",
+	"corgv",
+	"corgh",
+	"diag",
+	"us",
+	"chol",
+	"cholc",
+	"ante",
+	"sfa",
+	"facv",
+	"fa",
+	"rr",
+	# time series
+	"ar1",
+	"ar1v",
+	"ar1h",
+	"ar2",
+	"ar2v",
+	"ar2h",
+	"ar3",
+	"ar3v",
+	"ar3h",
+	"sar",
+	"sarv",
+	"sarh",
+	"sar2",
+	"sar2v",
+	"sar2h",
+	"ma1",
+	"ma1v",
+	"ma1h",
+	"ma2",
+	"ma2v",
+	"ma2h",
+	"arma",
+	"armav",
+	"armah",
+	# metric (1D, 2D) and Matern
+	"exp",
+	"expv",
+	"exph",
+	"gau",
+	"gauv",
+	"gauh",
+	"lvr",
+	"lvrv",
+	"lvrh",
+	"iexp",
+	"iexpv",
+	"iexph",
+	"aexp",
+	"aexpv",
+	"aexph",
+	"igau",
+	"igauv",
+	"igauh",
+	"agau",
+	"agauv",
+	"agauh",
+	"ieuc",
+	"ieucv",
+	"ieuch",
+	"ilv",
+	"ilvv",
+	"ilvh",
+	"sph",
+	"sphv",
+	"sphh",
+	"cir",
+	"cirv",
+	"cirh",
+	"mtrn",
+	"mtrnv",
+	"mtrnh",
+	# user-defined
+	"own"
+)
+
+# ASReml-R functions that fit a covariate. Comparisons of predicted means are
+# not meaningful for a covariate, so these are never stripped; they are only
+# used to give a clear error when `classify` names one.
+asreml_covariate_specials <- c("lin", "pow", "pol", "leg", "spl", "dev")
+
+#' Denominator df for comparisons from an asreml model
+#'
+#' Looks up the denominator df for `classify` in the `wald()` table. When the
+#' term has its own row, that row's denDF is used for every comparison.
+#'
+#' An `at(F):X` term has no single row: `wald()` gives one per level of `F`
+#' (`at(F, 'a'):X`, `at(F, 'b'):X`, ...), each with its own denDF. For
+#' `classify = "F:X"`, a comparison within one level of `F` uses that level's
+#' denDF, which is the df ASReml-R uses to test `X` at that level. A comparison
+#' across levels has no exact df (with level-specific residual variances it is
+#' a Welch-type problem), so the smaller of the two levels' denDF is used as a
+#' conservative bound. Levels without a row (when `at()` was given a subset of
+#' levels) use the residual df.
+#'
+#' Otherwise, for example for a random term, the residual df is used with a
+#' warning.
+#'
+#' @param classify The classify term, without ASReml-R wrappers and in the
+#'   model's order.
+#' @param dendf Data frame with columns `Source` and `denDF` from `wald()`.
+#' @param pp Predictions data frame, one row per predicted mean.
+#' @param resid_df Residual df of the model.
+#'
+#' @return A single df, or a square df matrix matching the rows of `pp`.
+#' @keywords internal
+asreml_denominator_df <- function(classify, dendf, pp, resid_df) {
+	sources <- as.character(dendf$Source)
+
+	# The term has its own row
+	ndf <- dendf$denDF[sources == classify]
+	if (length(ndf) > 0 && !all(is.na(ndf))) {
+		return(ndf)
+	}
+
+	# An at() term: one row per level of the at() factor. Rows whose label
+	# changes when at() is stripped, and then matches classify (already in the
+	# model's order, from check_classify_in_terms()).
+	stripped <- strip_asreml_specials(sources)
+	at_rows <- stripped != sources & stripped == classify
+	# wald() labels each row as at(<factor>, '<level>')
+	at_parts <- regmatches(
+		sources[at_rows],
+		regexec("at\\(([^,]+), '([^']*)'\\)", sources[at_rows])
+	)
+	at_factor <- unique(vapply(at_parts, `[`, character(1), 2))
+	level_df <- stats::setNames(
+		dendf$denDF[at_rows],
+		vapply(at_parts, `[`, character(1), 3)
+	)
+
+	if (
+		length(at_factor) == 1 &&
+			at_factor %in% names(pp) &&
+			!all(is.na(level_df))
+	) {
+		row_df <- unname(level_df[as.character(pp[[at_factor]])])
+		row_df[is.na(row_df)] <- resid_df
+		if (length(unique(row_df)) == 1) {
+			return(row_df[1])
+		}
+		return(outer(row_df, row_df, pmin))
+	}
+
+	warning(
+		classify,
+		" is not a fixed term in the model. The denominator degrees of freedom are estimated using the residual degrees of freedom. This may be inaccurate.",
+		call. = FALSE
+	)
+	return(resid_df)
+}
+
+#' Get the response label from a model formula
+#'
+#' @param model.obj A fitted model object with a [stats::formula()] method.
+#'
+#' @return The left-hand side of the model formula as a string, for use as the
+#' plot label.
+#' @keywords internal
+response_label <- function(model.obj) {
+	formula_text <- deparse(stats::formula(model.obj))
+	return(trimws(strsplit(formula_text, "~")[[1]][1]))
+}
+
+#' Build the SED matrix from a prediction variance-covariance matrix
+#'
+#' @param vcov Variance-covariance matrix of the predicted means.
+#'
+#' @return Matrix of standard errors of difference,
+#'   `SED_ij = sqrt(V_ii + V_jj - 2 * V_ij)`. The diagonal is left for the
+#'   caller to set.
+#' @keywords internal
+sed_from_vcov <- function(vcov) {
+	vd <- diag(vcov)
+	sed <- outer(vd, vd, "+") - 2 * vcov
+	sed[sed < 0] <- 0 # guard tiny negatives from rounding
+	return(sqrt(sed))
+}
+
 #' Internal prediction extraction for the comparison functions
 #'
 #' `get_predictions()` is the internal generic that [multiple_comparisons()],
@@ -59,8 +309,6 @@ check_classify_in_terms <- function(classify, model_terms) {
 #' @param model.obj A fitted model object of a supported class (see
 #'   *Supported model types* below).
 #' @param classify Name of the predictor variable(s) as a string.
-#' @param pred.obj Optional precomputed prediction object (`asreml` only;
-#'   otherwise predictions are computed internally).
 #' @param ... Additional arguments passed to the class-specific method (e.g.
 #'   ASReml-R `predict()` arguments).
 #'
@@ -72,12 +320,12 @@ check_classify_in_terms <- function(classify, model_terms) {
 #' | Model class | Fitted by | Notes |
 #' | --- | --- | --- |
 #' | `aov`, `lm` | [stats::aov()], [stats::lm()] | Fixed-effects linear models. |
-#' | `aovlist` | [stats::aov()] with an `Error()` term | Multi-stratum aov; gives comparison-specific (matrix) degrees of freedom. |
+#' | `aovlist` | [stats::aov()] with an `Error()` term | Multi-stratum aov; degrees of freedom are comparison-specific (a matrix) when comparisons span strata. |
 #' | `lme` | [nlme::lme()] | Linear mixed model. |
 #' | `lmerMod` | [lme4::lmer()], `lme4breeding::lmebreed()` | Linear mixed model. `lmebreed()` (relationship-based) models also carry class `lmerMod`; comparisons target the fixed-effect means with Kenward-Roger degrees of freedom, and correctly reflect the relationship structure (validated against ASReml-R). |
 #' | `lmerModLmerTest` | [lmerTest::lmer()] | As `lmerMod`, with Satterthwaite degrees of freedom. |
 #' | `asreml` | ASReml-R `asreml()` | Linear mixed model (commercial; not on CRAN). |
-#' | `afex_aov` | afex `aov_car()` / `aov_ez()` / `aov_4()` | Factorial / repeated-measures ANOVA; gives comparison-specific (matrix) degrees of freedom. |
+#' | `afex_aov` | afex `aov_car()` / `aov_ez()` / `aov_4()` | Factorial / repeated-measures ANOVA; degrees of freedom are comparison-specific (a matrix) when comparisons span strata. |
 #' | `glmmTMB` | glmmTMB `glmmTMB()` | Generalized linear mixed model. Predictions are on the link scale with asymptotic (infinite) degrees of freedom; supply `trans` to back-transform. |
 #' | `mmes` | sommer `mmes()` | Linear mixed model, via sommer's native `predict()`. SED from the prediction covariance; asymptotic (infinite) degrees of freedom (sommer provides none). |
 #'
@@ -90,17 +338,85 @@ check_classify_in_terms <- function(classify, model_terms) {
 #' for `mmer`. Refit with `sommer::mmes()` to use the comparison functions.
 #'
 #' To add a new engine, write a `get_predictions.<class>()` method returning a
-#' list with elements `predictions`, `sed`, `df`, `ylab` and `aliased_names`
-#' (plus `emmeans_grid` for engines backed by [emmeans::emmeans()]), and add a
-#' row to the table above.
+#' list with elements `predictions`, `sed`, `df`, `ylab`, `aliased_names` and
+#' `classify` (plus `emmeans_grid` for engines backed by [emmeans::emmeans()]),
+#' and add a row to the table above.
 #'
-#' @returns A list with elements `predictions`, `sed`, `df`, `ylab` and
-#'   `aliased_names` (and `emmeans_grid` for emmeans-backed engines).
+#' @section ASReml-R terms in `classify`:
+#' For `asreml` models, `classify` names the factors to predict, as for
+#' ASReml-R `predict()`. A term wrapped in an ASReml-R function can be given
+#' either by its factors or as written in the model, so for a model with
+#' `at(Year):Treatment` both `classify = "Year:Treatment"` and
+#' `classify = "at(Year):Treatment"` give the same result. This applies to
+#' `at()` and to the variance-structure and relationship functions in the
+#' random model (e.g. `diag()`, `us()`, `fa()`, `vm()`), so
+#' `fa(Site, 2):Variety` is classified with `"Site:Variety"`. Covariates fitted
+#' with `pol()`, `spl()`, `lin()` and similar functions cannot be compared and
+#' are not accepted in `classify`.
+#'
+#' Predictions of terms in the random model include the random effects
+#' (BLUPs). Their comparisons use the residual degrees of freedom, with a
+#' warning.
+#'
+#' For an `at()` term, ASReml-R gives a separate Wald test, with its own
+#' denominator degrees of freedom, for each level of the conditioning factor.
+#' A comparison within a level uses that level's degrees of freedom; a
+#' comparison between levels uses the smaller of the two, as a conservative
+#' choice. Levels not included in `at()` use the residual degrees of freedom.
+#' A general contrast in [pairwise_comparisons()] uses the smallest degrees of
+#' freedom among the levels it involves.
+#'
+#' @section ASReml-R prediction arguments:
+#' For `asreml` models, arguments given in `...` are passed to ASReml-R
+#' `predict()`. Those most useful for comparisons are:
+#'
+#' * `present`: average only over the combinations of factor levels that occur
+#'   in the data (see below).
+#' * `average`: choose the factors to average over, optionally with weights
+#'   (e.g. in proportion to replication rather than equally).
+#' * `levels`: predict at chosen levels only, e.g. a subset of treatments, or
+#'   at given values of a covariate rather than its mean.
+#' * `ignore`, `use`, `except` and `only`: change which model terms enter the
+#'   predictions, e.g. `use` to include a random term that is otherwise left
+#'   out.
+#' * `associate`: declare nested factors, e.g. treatments nested within
+#'   treatment types.
+#'
+#' `classify`, `sed` and `vcov` are set by the comparison functions and cannot
+#' be passed. `aliased = TRUE` (predictions of non-estimable functions) and
+#' `evaluate = FALSE` are not suitable. See ASReml-R `?predict.asreml` for full
+#' details of each argument.
+#'
+#' **When to use `present`.** By default ASReml-R `predict()` averages over
+#' every combination of the levels of the fixed factors not in `classify`. If
+#' some combinations were never observed (treatments that differ between sites
+#' or years, a control outside a factorial set, or a factor fitted only within
+#' some levels of another, as with `at()`), the predictions that need them
+#' cannot be estimated: those levels are dropped as aliased, with a warning, or
+#' the function stops with "All predicted values are aliased". `present`
+#' restricts the averaging to the combinations in the data. Give it the
+#' factors involved, usually those in `classify` and those averaged over:
+#'
+#' ```r
+#' multiple_comparisons(model.asr, classify = "Year:Prior_crop",
+#'                      present = c("Year", "Prior_crop", "Treatment"))
+#' ```
+#'
+#' Each mean is then averaged over only the combinations observed for it, so
+#' two means can rest on different sets of levels of the other factors. Check
+#' that this is a fair basis for the comparison.
+#'
+#' @returns A list with elements `predictions`, `sed`, `df`, `ylab`,
+#'   `aliased_names` and `classify` (and `emmeans_grid` for emmeans-backed
+#'   engines). `classify` is the input resolved to the factor names the
+#'   predictions are labelled by, in the order given by the user (e.g. ASReml-R
+#'   wrappers removed: `"at(Year):Prior_crop"` becomes `"Year:Prior_crop"`).
+#'   The comparison functions take their `classify` variables from it.
 #'
 #' @seealso [multiple_comparisons()], [pairwise_comparisons()],
 #'   [reference_comparisons()]
 #' @keywords internal
-get_predictions <- function(model.obj, classify, pred.obj = NULL, ...) {
+get_predictions <- function(model.obj, classify, ...) {
 	UseMethod("get_predictions")
 }
 
@@ -128,30 +444,55 @@ get_predictions.default <- function(model.obj, ...) {
 
 #' @noRd
 #' @exportS3Method get_predictions asreml
-get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
-	args <- list(...)
-	# asr_args <- args[names(args) %in% names(formals(asreml::predict.asreml))]
-	# Check if classify is in model terms (handles reversed interaction order)
-	model_terms <- c(
-		attr(stats::terms(model.obj$formulae$fixed), 'term.labels'),
-		attr(stats::terms(model.obj$formulae$random), 'term.labels')
-	)
-	classify <- check_classify_in_terms(classify, model_terms)
+get_predictions.asreml <- function(model.obj, classify, ...) {
+	# Check if classify is in model terms (handles reversed interaction order).
+	# ASReml-R special functions are stripped from the term labels and from
+	# classify, since predict.asreml() classifies on the bare factor names: both
+	# "at(Year):Prior_crop" and "Year:Prior_crop" resolve to "Year:Prior_crop".
+	fixed_labels <- attr(stats::terms(model.obj$formulae$fixed), 'term.labels')
+	random_labels <- attr(stats::terms(model.obj$formulae$random), 'term.labels')
+	model_terms <- unique(c(
+		strip_asreml_specials(fixed_labels),
+		strip_asreml_specials(random_labels, asreml_random_specials)
+	))
+	# Returned to the caller in the user's order (it sets the order of the
+	# treatment labels); only the model's ordering is used for prediction.
+	classify_label <- strip_asreml_specials(classify, asreml_random_specials)
 
-	# Generate predictions if not provided. `vcov = TRUE` returns the exact
-	# variance-covariance of the predicted means, used directly by
-	# pairwise_comparisons()/reference_comparisons() for contrasts and the
-	# Dunnett correlation (no reconstruction from SEDs needed).
-	if (missing(pred.obj) || is.null(pred.obj)) {
-		pred.obj <- quiet(asreml::predict.asreml(
-			object = model.obj,
-			classify = classify,
-			sed = TRUE,
-			vcov = TRUE,
-			trace = FALSE,
-			...
-		))
+	# A covariate fitted with pol(), spl() etc. has no levels to compare
+	term_parts <- unique(unlist(strsplit(c(fixed_labels, random_labels), ":")))
+	covariates <- strip_asreml_specials(term_parts, asreml_covariate_specials)
+	is_covariate <- covariates != term_parts
+	classify_covariates <- intersect(
+		unlist(strsplit(classify_label, ":")),
+		covariates[is_covariate]
+	)
+	if (length(classify_covariates) > 0) {
+		stop(
+			paste(classify_covariates, collapse = ", "),
+			" is fitted as a covariate (",
+			paste(
+				term_parts[is_covariate & covariates %in% classify_covariates],
+				collapse = ", "
+			),
+			"), so its predicted values cannot be compared. Use a factor in `classify`.",
+			call. = FALSE
+		)
 	}
+
+	classify <- check_classify_in_terms(classify_label, model_terms)
+
+	# `vcov = TRUE` returns the exact variance-covariance of the predicted means,
+	# used directly by pairwise_comparisons()/reference_comparisons() for
+	# contrasts and the Dunnett correlation (no reconstruction from SEDs needed).
+	pred.obj <- quiet(asreml::predict.asreml(
+		object = model.obj,
+		classify = classify,
+		sed = TRUE,
+		vcov = TRUE,
+		trace = FALSE,
+		...
+	))
 
 	# Check if all predicted values are NA
 	if (
@@ -167,9 +508,7 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 	# For use with asreml 4+
 	pp <- pred.obj$pvals
 	sed <- pred.obj$sed
-	# Exact prediction vcov (NULL on the deprecated `pred.obj` path if it was
-	# generated without `vcov = TRUE`; only multiple_comparisons() uses that path,
-	# and it relies on `sed`, not `vcov`).
+	# Exact prediction vcov
 	vcov <- if (!is.null(pred.obj$vcov)) as.matrix(pred.obj$vcov) else NULL
 
 	# Process aliased treatments with asreml-specific exclude columns
@@ -187,40 +526,24 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 
 	# Remove status column if present
 	pp$status <- NULL
+	# predict.asreml() keeps every level of the classify factors even when
+	# `levels` restricts the predictions to a subset; drop the unused ones so
+	# the factors match the rows (the letter groupings fail otherwise).
+	pp <- droplevels(pp)
 
-	if (!"dendf" %in% names(args)) {
-		dat.ww <- quiet(
-			asreml::wald(
-				model.obj,
-				ssType = "conditional",
-				denDF = "default",
-				trace = FALSE
-			)$Wald
-		)
-		dendf <- data.frame(Source = row.names(dat.ww), denDF = dat.ww$denDF)
-	} else {
-		dendf <- args$dendf
-	}
-
-	vars <- unlist(strsplit(classify, "\\:"))
-	ndf <- dendf$denDF[
-		grepl(classify, dendf$Source) &
-			nchar(classify) == nchar(as.character(dendf$Source))
-	]
-	# Fall back to the residual df when wald() returns no usable denominator df
-	# for the term (term absent, or an NA denDF).
-	if (rlang::is_empty(ndf) || all(is.na(ndf))) {
-		ndf <- model.obj$nedf
-		rand_terms <- vars[
-			vars %in%
-				attr(stats::terms(model.obj$formulae$random), 'term.labels')
-		]
-		warning(
-			rand_terms,
-			" is not a fixed term in the model. The denominator degrees of freedom are estimated using the residual degrees of freedom. This may be inaccurate.",
-			call. = FALSE
-		)
-	}
+	dat.ww <- quiet(
+		asreml::wald(
+			model.obj,
+			ssType = "conditional",
+			denDF = "default",
+			trace = FALSE
+		)$Wald
+	)
+	dendf <- data.frame(Source = row.names(dat.ww), denDF = dat.ww$denDF)
+	ndf <- asreml_denominator_df(classify, dendf, pp, model.obj$nedf)
+	# ASReml-R gives no df for a single predicted mean, so each mean takes the
+	# denominator df of its term (for an at() term, that of its level).
+	pp$df <- if (is.matrix(ndf)) diag(ndf) else rep(ndf, nrow(pp))
 
 	# Get response variable for plot label
 	ylab <- model.obj$formulae$fixed[[2]]
@@ -232,7 +555,8 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 		df = ndf,
 		ylab = ylab,
 		aliased_names = aliased_names,
-		vcov = vcov
+		vcov = vcov,
+		classify = classify_label
 	))
 }
 
@@ -242,6 +566,7 @@ get_predictions.asreml <- function(model.obj, classify, pred.obj = NULL, ...) {
 get_predictions.lm <- function(model.obj, classify, ...) {
 	# Check if classify is in model terms (handles reversed interaction order)
 	model_terms <- attr(stats::terms(model.obj), 'term.labels')
+	classify_label <- classify
 	classify <- check_classify_in_terms(classify, model_terms)
 
 	# Set emmeans options
@@ -256,14 +581,11 @@ get_predictions.lm <- function(model.obj, classify, ...) {
 	# build the SED matrix below.
 	vcov <- as.matrix(stats::vcov(emm))
 
-	# SED matrix from the prediction vcov: SED_ij = sqrt(V_ii + V_jj - 2 V_ij).
-	# Exact for all designs, including unbalanced marginal means. The earlier
-	# sigma * sqrt(1/w_i + 1/w_j) form was only exact for balanced or one-way
-	# predictions and was wrong when averaging over an unbalanced factor.
-	vd <- diag(vcov)
-	sed <- outer(vd, vd, "+") - 2 * vcov
-	sed[sed < 0] <- 0 # guard tiny negatives from rounding
-	sed <- sqrt(sed)
+	# SED matrix from the prediction vcov. Exact for all designs, including
+	# unbalanced marginal means. The earlier sigma * sqrt(1/w_i + 1/w_j) form was
+	# only exact for balanced or one-way predictions and was wrong when averaging
+	# over an unbalanced factor.
+	sed <- sed_from_vcov(vcov)
 
 	pred.out <- as.data.frame(emm)
 	pred.out <- pred.out[, !grepl("CL", names(pred.out))]
@@ -289,9 +611,7 @@ get_predictions.lm <- function(model.obj, classify, ...) {
 	ndf <- pp$df[1]
 
 	# Get response variable for plot label
-	formula_text <- deparse(stats::formula(model.obj))
-	ylab <- strsplit(formula_text, "~")[[1]][1]
-	ylab <- trimws(ylab)
+	ylab <- response_label(model.obj)
 
 	return(list(
 		predictions = pp,
@@ -300,7 +620,8 @@ get_predictions.lm <- function(model.obj, classify, ...) {
 		ylab = ylab,
 		aliased_names = aliased_names,
 		emmeans_grid = emm,
-		vcov = vcov
+		vcov = vcov,
+		classify = classify_label
 	))
 }
 
@@ -309,20 +630,28 @@ get_predictions.lm <- function(model.obj, classify, ...) {
 #'
 #' Shared core for the emmeans-backed `get_predictions()` methods (`aovlist`,
 #' `afex_aov`, ...). Given the emmeans reference grid for `classify`, it builds the
-#' predicted means, the comparison-specific (matrix) SED and degrees of freedom from
-#' the pairwise contrasts, and processes aliased levels. The terms check and `ylab`
-#' are computed by the caller (these differ per engine) and passed in.
+#' predicted means, the SED matrix and the degrees of freedom from the pairwise
+#' contrasts, and processes aliased levels. The df is a single value when every
+#' comparison shares it, and a comparison-specific matrix otherwise.
 #'
 #' @param model.obj A fitted model object with an `emmeans::emmeans()` method.
 #' @param classify Name of the predictor variable(s) as a string.
-#' @param model_terms Character vector of model term labels (for the classify check).
-#' @param ylab Response variable label for the plot.
+#' @param model_terms Character vector of model term labels (for the classify
+#'   check). Defaults to the term labels of `model.obj`.
+#' @param ylab Response variable label for the plot. Defaults to the left-hand
+#'   side of the model formula.
 #'
-#' @return A list with elements `predictions`, `sed`, `df`, `ylab`, `aliased_names`
-#'   and `emmeans_grid`.
+#' @return A list with elements `predictions`, `sed`, `df`, `ylab`,
+#'   `aliased_names`, `emmeans_grid`, `vcov` and `classify`.
 #' @keywords internal
-predictions_from_emmeans <- function(model.obj, classify, model_terms, ylab) {
+predictions_from_emmeans <- function(
+	model.obj,
+	classify,
+	model_terms = attr(stats::terms(model.obj), 'term.labels'),
+	ylab = response_label(model.obj)
+) {
 	# Check if classify is in model terms (handles reversed interaction order)
+	classify_label <- classify
 	classify <- check_classify_in_terms(classify, model_terms)
 
 	# Set emmeans options
@@ -349,17 +678,23 @@ predictions_from_emmeans <- function(model.obj, classify, model_terms, ylab) {
 	# obtain residual degrees of freedom matrix
 	ndf <- matrix(NA_real_, nrow = n, ncol = n)
 	if (n > 1) {
-		upper_idx <- upper.tri(sed)
+		# emmeans orders pairwise contrasts row-wise (1-2, 1-3, ..., 2-3, ...),
+		# but upper.tri() indexes column-wise, so reorder the indices to match
+		upper_idx <- which(upper.tri(sed), arr.ind = TRUE)
+		upper_idx <- upper_idx[
+			order(upper_idx[, 1], upper_idx[, 2]),
+			,
+			drop = FALSE
+		]
 		sed[upper_idx] <- aov_compare$SE
 		ndf[upper_idx] <- aov_compare$df
 		sed[lower.tri(sed)] <- t(sed)[lower.tri(sed)]
 		ndf[lower.tri(ndf)] <- t(ndf)[lower.tri(ndf)]
 	}
 
-	# Remove columns with upper and lower confidence intervals
+	# Remove columns with upper and lower confidence intervals. The `df` column
+	# (the df of each mean, used for its confidence interval) is kept.
 	pred.out <- pred.out[, !grepl("CL", names(pred.out))]
-	# Remove columns with degrees of freedom
-	pred.out <- pred.out[, !grepl("df", names(pred.out))]
 
 	# Rename columns for consistency
 	pp <- pred.out
@@ -371,11 +706,22 @@ predictions_from_emmeans <- function(model.obj, classify, model_terms, ylab) {
 	vcov <- as.matrix(stats::vcov(emm))
 
 	# Process aliased treatments
-	aliased_result <- process_aliased(pp, sed, classify, vcov = vcov)
+	aliased_result <- process_aliased(pp, sed, classify, vcov = vcov, ndf = ndf)
 	pp <- aliased_result$predictions
 	sed <- aliased_result$sed
 	vcov <- aliased_result$vcov
+	ndf <- aliased_result$ndf
 	aliased_names <- aliased_result$aliased_names
+
+	# When every comparison shares the same df (e.g. a single error stratum),
+	# return it as a single df so callers can use methods that need one, such as
+	# the exact Dunnett test.
+	df_values <- ndf[!is.na(ndf)]
+	if (
+		length(df_values) > 0 && isTRUE(all.equal(min(df_values), max(df_values)))
+	) {
+		ndf <- df_values[1]
+	}
 
 	return(list(
 		predictions = pp,
@@ -384,7 +730,8 @@ predictions_from_emmeans <- function(model.obj, classify, model_terms, ylab) {
 		ylab = ylab,
 		aliased_names = aliased_names,
 		emmeans_grid = emm,
-		vcov = vcov
+		vcov = vcov,
+		classify = classify_label
 	))
 }
 
@@ -392,17 +739,12 @@ predictions_from_emmeans <- function(model.obj, classify, model_terms, ylab) {
 #' @exportS3Method get_predictions aovlist
 #' @importFrom emmeans emmeans
 get_predictions.aovlist <- function(model.obj, classify, ...) {
-	model_terms <- attr(stats::terms(model.obj), 'term.labels')
-
-	# Get response variable for plot label
-	if (class(model.obj)[1] %in% c("lmerMod", "lmerModLmerTest")) {
-		formula_text <- deparse(stats::formula(model.obj))
-	} else {
-		formula_text <- deparse(stats::formula(model.obj[[1]]))
-	}
-	ylab <- trimws(strsplit(formula_text, "~")[[1]][1])
-
-	predictions_from_emmeans(model.obj, classify, model_terms, ylab)
+	# The response label comes from the first stratum's formula
+	return(predictions_from_emmeans(
+		model.obj,
+		classify,
+		ylab = response_label(model.obj[[1]])
+	))
 }
 
 #' @noRd
@@ -415,7 +757,7 @@ get_predictions.afex_aov <- function(model.obj, classify, ...) {
 	model_terms <- rownames(model.obj$anova_table)
 	ylab <- attr(model.obj, "dv")
 
-	predictions_from_emmeans(model.obj, classify, model_terms, ylab)
+	return(predictions_from_emmeans(model.obj, classify, model_terms, ylab))
 }
 
 #' @noRd
@@ -427,11 +769,7 @@ get_predictions.glmmTMB <- function(model.obj, classify, ...) {
 	# from the full coefficient covariance. Degrees of freedom are asymptotic (Inf).
 	# For non-Gaussian families predictions are on the link scale; supply `trans` to
 	# multiple_comparisons() to back-transform.
-	model_terms <- attr(stats::terms(model.obj), 'term.labels')
-	formula_text <- deparse(stats::formula(model.obj))
-	ylab <- trimws(strsplit(formula_text, "~")[[1]][1])
-
-	predictions_from_emmeans(model.obj, classify, model_terms, ylab)
+	return(predictions_from_emmeans(model.obj, classify))
 }
 
 #' @noRd
@@ -443,15 +781,15 @@ get_predictions.mmes <- function(model.obj, classify, ...) {
 	# response (ylab) from the stored fixed formula.
 	model_terms <- model.obj$Dtable$term[model.obj$Dtable$type == "fixed"]
 	model_terms <- setdiff(model_terms, c("1", "(Intercept)"))
+	classify_label <- classify
 	classify <- check_classify_in_terms(classify, model_terms)
 
 	pred <- predict(model.obj, D = classify)
 	pp <- pred$pvals
 
-	# Build the SED matrix from the prediction covariance:
-	# SED_ij = sqrt(V_ii + V_jj - 2 * V_ij).
+	# Build the SED matrix from the prediction covariance
 	vcov <- as.matrix(pred$vcov)
-	sed <- sqrt(outer(diag(vcov), diag(vcov), "+") - 2 * vcov)
+	sed <- sed_from_vcov(vcov)
 	diag(sed) <- NA
 
 	# Process aliased treatments (levels with NA predictions), reusing shared helper.
@@ -463,6 +801,7 @@ get_predictions.mmes <- function(model.obj, classify, ...) {
 	# sommer provides no denominator degrees of freedom; use asymptotic (z-based)
 	# inference, as for glmmTMB.
 	ndf <- Inf
+	pp$df <- ndf
 
 	ylab <- model.obj$args$fixed[[2]]
 
@@ -472,7 +811,8 @@ get_predictions.mmes <- function(model.obj, classify, ...) {
 		df = ndf,
 		ylab = ylab,
 		aliased_names = aliased_names,
-		emmeans_grid = NULL
+		emmeans_grid = NULL,
+		classify = classify_label
 	))
 }
 
@@ -495,34 +835,29 @@ get_predictions.mmer <- function(model.obj, classify, ...) {
 #' @noRd
 #' @exportS3Method get_predictions listof
 get_predictions.listof <- function(model.obj, classify, ...) {
-	get_predictions.aovlist(model.obj, classify, ...)
+	return(get_predictions.aovlist(model.obj, classify, ...))
 }
 
 
 #' @noRd
 #' @exportS3Method get_predictions lmerMod
 get_predictions.lmerMod <- function(model.obj, classify, ...) {
-	# Reuse lm method for common functionality
-	#result <- get_predictions.lm(model.obj, classify, ...)
-
-	result <- get_predictions.aovlist(model.obj, classify, ...)
-
-	# Override ylab extraction for lmerMod
-	# result$ylab <- model.obj@call[[2]][[2]]
-
-	return(result)
+	return(predictions_from_emmeans(model.obj, classify))
 }
 
 #' @noRd
 #' @exportS3Method get_predictions lmerModLmerTest
 get_predictions.lmerModLmerTest <- function(model.obj, classify, ...) {
-	get_predictions.lmerMod(model.obj, classify, ...)
+	return(get_predictions.lmerMod(model.obj, classify, ...))
 }
 
 #' @noRd
 #' @exportS3Method get_predictions lme
 get_predictions.lme <- function(model.obj, classify, ...) {
-	get_predictions.lm(model.obj, classify, ...)
+	# Use the shared emmeans core rather than the lm method: comparisons need
+	# the df of each pairwise contrast, which for lme differs from the df of the
+	# individual means.
+	return(predictions_from_emmeans(model.obj, classify))
 }
 
 #' @noRd
@@ -548,16 +883,19 @@ get_predictions.art <- function(model.obj, classify, ...) {
 #' @param exclude_cols Column names to exclude when processing aliased names
 #' @param vcov Optional variance-covariance matrix of the predictions, subset to
 #'   the estimable rows/columns alongside `sed` when supplied (`NULL` otherwise).
+#' @param ndf Optional degrees of freedom. A comparison-specific (matrix) df is
+#'   subset alongside `sed`; a single df is returned unchanged.
 #'
 #' @return List containing processed predictions, sed matrix, aliased names and
-#'   (when supplied) the subset `vcov`.
+#'   (when supplied) the subset `vcov` and `ndf`.
 #' @keywords internal
 process_aliased <- function(
 	pp,
 	sed,
 	classify,
 	exclude_cols = c("predicted.value", "std.error", "df", "Names"),
-	vcov = NULL
+	vcov = NULL,
+	ndf = NULL
 ) {
 	aliased_names <- NULL
 
@@ -610,6 +948,9 @@ process_aliased <- function(
 		if (!is.null(vcov)) {
 			vcov <- vcov[-aliased, -aliased, drop = FALSE]
 		}
+		if (is.matrix(ndf)) {
+			ndf <- ndf[-aliased, -aliased, drop = FALSE]
+		}
 		warning(warn_string, call. = FALSE)
 	}
 
@@ -617,6 +958,7 @@ process_aliased <- function(
 		predictions = pp,
 		sed = sed,
 		aliased_names = aliased_names,
-		vcov = vcov
+		vcov = vcov,
+		ndf = ndf
 	))
 }

@@ -42,7 +42,7 @@
 #' use_template()
 #'
 #' # Copy a specific template without opening
-#' use_template("anova_template.R", open = FALSE)
+#' use_template("aov_template.R", open = FALSE)
 #'
 #' # Copy to a specific directory
 #' use_template("mixed_model_template.R", dest_dir = "analyses")
@@ -90,12 +90,14 @@ use_template <- function(
 			warning(
 				"Template '",
 				template_name,
-				"' not found as a file. Using default biometryassist template instead."
+				"' not found as a file. Using default biometryassist template instead.",
+				call. = FALSE
 			)
+			template_name <- "mixed_model_template.R"
 		}
 		template_path <- system.file(
 			"templates",
-			"mixed_model_template.R",
+			template_name,
 			package = "biometryassist"
 		)
 	}

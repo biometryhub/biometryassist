@@ -1417,16 +1417,12 @@ test_that("save produces output", {
 })
 
 test_that("plot, save and savename arguments are deprecated", {
+	local_null_device()
+	expect_warning(
+		multiple_comparisons(dat.aov, classify = "Species", plot = TRUE),
+		"`plot` has been deprecated"
+	)
 	tmp <- withr::local_tempdir()
-	withr::with_dir(tmp, {
-		expect_warning(
-			multiple_comparisons(dat.aov, classify = "Species", plot = TRUE),
-			"`plot` has been deprecated"
-		)
-		while (grDevices::dev.cur() > 1) {
-			grDevices::dev.off()
-		}
-	})
 	withr::with_dir(tmp, {
 		expect_warning(
 			multiple_comparisons(dat.aov, classify = "Species", save = TRUE),
@@ -1475,7 +1471,7 @@ test_that("Interaction terms work", {
 test_that("order argument was removed in 1.5.0", {
 	expect_error(
 		multiple_comparisons(dat.aov, classify = "Species", order = "xyz"),
-		"`order` was removed in biometryassist 1.5.0. Use `descending` instead."
+		"Argument `order` was removed in version 1\\.5\\.0\\. Please use `descending` instead\\."
 	)
 })
 
@@ -1595,7 +1591,7 @@ test_that("Significance values that are too high give a warning or error", {
 test_that("pred argument was removed in 1.5.0", {
 	expect_error(
 		multiple_comparisons(dat.aov, classify = "Species", pred = "Species"),
-		"`pred` was removed in biometryassist 1.5.0. Use `classify` instead."
+		"Argument `pred` was removed in version 1\\.5\\.0\\. Please use `classify` instead\\."
 	)
 })
 
@@ -1609,7 +1605,8 @@ test_that("Invalid column name causes an error", {
 		quiet = TRUE
 	)$design
 	names(dat)[5] <- "groups"
-	dat.aov <- aov(rnorm(16, 10) ~ groups, data = dat)
+	dat$response <- rnorm(16, 10)
+	dat.aov <- aov(response ~ groups, data = dat)
 
 	expect_error(
 		multiple_comparisons(dat.aov, classify = "groups"),
@@ -1625,7 +1622,7 @@ test_that("pred.obj argument was removed in 1.5.0", {
 			pred.obj = pred.asr,
 			classify = "Nitrogen"
 		),
-		"`pred.obj` was removed in biometryassist 1.5.0."
+		"Argument `pred.obj` was removed in version 1\\.5\\.0\\."
 	)
 })
 
@@ -1709,41 +1706,31 @@ test_that("plots are produced when requested", {
 	des$design$C <- factor(des$design$C)
 	dat.aov <- aov(response ~ A * B * C, data = des$design)
 
-	tmp <- withr::local_tempdir()
-	withr::with_dir(tmp, {
-		withr::local_file("Rplots.pdf")
+	local_null_device()
+	expect_snapshot_output(
+		output <- suppressWarnings(multiple_comparisons(
+			dat.aov,
+			classify = "A:B:C",
+			plot = TRUE
+		))
+	)
 
-		expect_snapshot_output(
-			output <- suppressWarnings(multiple_comparisons(
+	expect_s3_class(output, "mct")
+	expect_equal(nrow(output$predictions), 27)
+	expect_equal(output$predictions$std.error, rep(0.63, 27), tolerance = 5e-2)
+
+	skip_if(interactive())
+	expect_local_doppelganger(
+		"3 way interaction internal",
+		function() {
+			suppressWarnings(invisible(multiple_comparisons(
 				dat.aov,
 				classify = "A:B:C",
 				plot = TRUE
-			))
-		)
-		while (grDevices::dev.cur() > 1) {
-			grDevices::dev.off()
-		}
-
-		expect_s3_class(output, "mct")
-		expect_equal(nrow(output$predictions), 27)
-		expect_equal(output$predictions$std.error, rep(0.63, 27), tolerance = 5e-2)
-
-		skip_if(interactive())
-		expect_local_doppelganger(
-			"3 way interaction internal",
-			function() {
-				suppressWarnings(invisible(multiple_comparisons(
-					dat.aov,
-					classify = "A:B:C",
-					plot = TRUE
-				)))
-			},
-			variant = ggplot2_variant()
-		)
-		while (grDevices::dev.cur() > 1) {
-			grDevices::dev.off()
-		}
-	})
+			)))
+		},
+		variant = ggplot2_variant()
+	)
 })
 
 test_that("nlme/lme model is supported", {
@@ -1775,6 +1762,19 @@ test_that("nlme/lme model is supported", {
 	ap <- autoplot(output)
 	expect_autoplot_data(ap, output)
 	expect_local_doppelganger("nlme output", ap)
+})
+
+test_that("lme uses contrast df for comparisons, matching aov", {
+	skip_if_not_installed("nlme")
+	load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
+	m_aov <- aov(yield ~ Blocks + Variety, data = dat)
+	m_lme <- nlme::lme(yield ~ Variety, random = ~ 1 | Blocks, data = dat)
+
+	out_aov <- multiple_comparisons(m_aov, classify = "Variety")
+	out_lme <- multiple_comparisons(m_lme, classify = "Variety")
+
+	expect_equal(out_lme$hsd, out_aov$hsd, tolerance = 1e-4)
+	expect_equal(out_lme$predictions$groups, out_aov$predictions$groups)
 })
 
 test_that("afex (afex_aov) model is supported", {
@@ -1831,7 +1831,17 @@ test_that("glmmTMB model is supported", {
 
 test_that("sommer mmes model is supported", {
 	skip_if_not_installed("sommer")
+	# Refit from the fixture's data: saved sommer fits go stale across sommer
+	# versions (see test-prediction_methods.R).
+	suppressPackageStartupMessages(library(sommer))
 	load(test_path("data", "sommer_models.Rdata"), .GlobalEnv)
+	model_mmes <- mmes(
+		Yield ~ Env,
+		random = ~ Name + Env:Name,
+		rcov = ~units,
+		data = model_mmes$data,
+		verbose = FALSE
+	)
 
 	output <- multiple_comparisons(model_mmes, classify = "Env")
 
@@ -2222,6 +2232,75 @@ test_that("Multiple comparisons works with aovlist objects", {
 	# check HSD value
 	expect_equal(pred.aovlist$hsd, 11.833, tolerance = 5e-2)
 	expect_equal(pred.aovlist$pairwise_pvalues[3, 4], 0.180, tolerance = 5e-2)
+})
+
+test_that("confidence intervals use the df of each mean, not the comparison df (#199)", {
+	load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+	oats.aovlist <- aov(
+		yield ~ Variety * Nitrogen + Error(Blocks / Wplots),
+		data = dat
+	)
+
+	for (cl in c("Nitrogen", "Variety:Nitrogen")) {
+		emm <- as.data.frame(emmeans::emmeans(
+			oats.aovlist,
+			stats::as.formula(paste("~", cl))
+		))
+		pred <- multiple_comparisons(oats.aovlist, classify = cl)$predictions
+		ord <- match(
+			do.call(paste, pred[, unlist(strsplit(cl, ":")), drop = FALSE]),
+			do.call(paste, emm[, unlist(strsplit(cl, ":")), drop = FALSE])
+		)
+		# The df is used internally and not returned
+		expect_false("df" %in% names(pred))
+		expect_equal(
+			pred$ci,
+			stats::qt(0.975, emm$df[ord]) * pred$std.error,
+			tolerance = 1e-6
+		)
+	}
+
+	# Values from the issue: t on ~6.79 and ~16.08 df rather than 45
+	# Compare every element rather than unique(): the per-level ratios can
+	# differ in the last bits across platforms (seen on macOS)
+	pred_n <- multiple_comparisons(oats.aovlist, classify = "Nitrogen")
+	t_n <- pred_n$predictions$ci / pred_n$predictions$std.error
+	expect_equal(t_n, rep(2.379, length(t_n)), tolerance = 1e-3)
+	pred_vn <- multiple_comparisons(oats.aovlist, classify = "Variety:Nitrogen")
+	t_vn <- pred_vn$predictions$ci / pred_vn$predictions$std.error
+	expect_equal(t_vn, rep(2.119, length(t_vn)), tolerance = 1e-3)
+})
+
+test_that("tukey intervals use the smallest comparison df of each mean (#199)", {
+	load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+	oats.aovlist <- aov(
+		yield ~ Variety * Nitrogen + Error(Blocks / Wplots),
+		data = dat
+	)
+	res <- get_predictions(oats.aovlist, "Variety:Nitrogen")
+	expect_true(is.matrix(res$df))
+
+	out <- add_confidence_intervals(res$predictions, "tukey", 0.05, res$df)
+	min_df <- apply(res$df, 1, min, na.rm = TRUE)
+	expect_equal(
+		out$ci,
+		stats::qtukey(0.95, nrow(out), min_df) / sqrt(2) * out$std.error
+	)
+	# At least as wide as the old intervals, which used the largest df
+	old <- stats::qtukey(0.95, nrow(out), max(res$df, na.rm = TRUE)) /
+		sqrt(2) *
+		out$std.error
+	expect_true(all(out$ci >= old))
+})
+
+test_that("single-stratum confidence intervals are unchanged (#199)", {
+	load(test_path("data", "oats_data.Rdata"), .GlobalEnv)
+	oats.aov <- aov(yield ~ Blocks + Variety * Nitrogen, data = dat)
+	pred <- multiple_comparisons(oats.aov, classify = "Nitrogen")$predictions
+	expect_equal(
+		pred$ci,
+		stats::qt(0.975, oats.aov$df.residual) * pred$std.error
+	)
 })
 
 test_that("Multiple comparisons for asreml objects provides the same results as an aovlist object for oats data", {

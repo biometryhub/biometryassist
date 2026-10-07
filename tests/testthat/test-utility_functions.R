@@ -138,12 +138,58 @@ test_that("handle_deprecated_param includes custom message if provided", {
 	expect_warning(test_fun(old = 5), "custom message")
 })
 
+test_that("handle_deprecated_param includes both replacement and custom message", {
+	test_fun <- function(old = 1, new = 2) {
+		handle_deprecated_param(
+			"old",
+			"new",
+			custom_msg = "This is a custom message."
+		)
+		old
+	}
+	expect_warning(
+		test_fun(old = 5),
+		"use `new` instead\\. This is a custom message\\."
+	)
+})
+
 test_that("handle_deprecated_param does not warn if old param is missing", {
 	test_fun <- function(old = 1) {
 		handle_deprecated_param("old", "new")
 		42
 	}
 	expect_silent(test_fun())
+})
+
+test_that("handle_removed_param errors on a removed param supplied via ...", {
+	test_fun <- function(x, ...) {
+		handle_removed_param("old", "new", custom_msg = "This is a custom message.")
+		x
+	}
+	expect_error(
+		test_fun(1, old = 5),
+		"Argument `old` has been removed\\. Please use `new` instead\\. This is a custom message\\."
+	)
+})
+
+test_that("handle_removed_param names the version it was removed in", {
+	test_fun <- function(x, ...) {
+		handle_removed_param("old", "new", version = "1.5.0")
+		x
+	}
+	expect_error(
+		test_fun(1, old = 5),
+		"Argument `old` was removed in version 1\\.5\\.0\\. Please use `new` instead\\."
+	)
+})
+
+test_that("handle_removed_param is silent if the removed param is not supplied", {
+	test_fun <- function(x, ...) {
+		handle_removed_param("old", "new")
+		x
+	}
+	expect_equal(test_fun(1), 1)
+	expect_equal(test_fun(1, other = 5), 1)
 })
 
 # n_unique() tests ----

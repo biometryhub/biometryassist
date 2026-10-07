@@ -1,63 +1,4 @@
-test_that("get_predictions.asreml uses provided pred.obj when supplied", {
-	skip_if_not_installed("mockery")
-
-	# Create mock model object
-	mock_model <- list(
-		formulae = list(
-			fixed = as.formula("yield ~ Nitrogen"),
-			random = as.formula("~Blocks")
-		),
-		nedf = 10
-	)
-	class(mock_model) <- "asreml"
-
-	# Create mock pred.obj that would be passed in
-	mock_pred_obj <- list(
-		pvals = data.frame(
-			Nitrogen = c("0", "0.2", "0.4", "0.6"),
-			predicted.value = c(100, 110, 120, 130),
-			std.error = c(5, 5, 5, 5),
-			status = c("Estimable", "Estimable", "Estimable", "Estimable")
-		),
-		sed = matrix(
-			c(NA, 7, 8, 9, 7, NA, 8, 9, 8, 8, NA, 9, 9, 9, 9, NA),
-			nrow = 4,
-			ncol = 4
-		)
-	)
-
-	# Mock the asreml functions to ensure they're NOT called when pred.obj is provided
-	mock_predict <- mockery::mock()
-	mock_wald <- mockery::mock(list(
-		Wald = data.frame(
-			denDF = c(10),
-			row.names = c("Nitrogen")
-		)
-	))
-
-	mockery::stub(
-		get_predictions.asreml,
-		'asreml::predict.asreml',
-		mock_predict
-	)
-	mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
-
-	# Call the function with pred.obj provided
-	result <- get_predictions.asreml(
-		mock_model,
-		classify = "Nitrogen",
-		pred.obj = mock_pred_obj
-	)
-
-	# Verify predict.asreml was NOT called (because pred.obj was provided)
-	mockery::expect_called(mock_predict, 0)
-
-	# Verify the result uses the provided pred.obj
-	expect_equal(result$predictions$predicted.value, c(100, 110, 120, 130))
-	expect_equal(result$predictions$std.error, c(5, 5, 5, 5))
-})
-
-test_that("get_predictions.asreml generates predictions when pred.obj is NULL", {
+test_that("get_predictions.asreml generates predictions via predict.asreml", {
 	skip_if_not_installed("mockery")
 
 	# Create mock model object
@@ -101,10 +42,8 @@ test_that("get_predictions.asreml generates predictions when pred.obj is NULL", 
 	)
 	mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
 
-	# Call the function without pred.obj (NULL by default)
 	result <- get_predictions.asreml(mock_model, classify = "Nitrogen")
 
-	# Verify predict.asreml WAS called (because pred.obj was NULL)
 	mockery::expect_called(mock_predict, 1)
 
 	# Verify the correct arguments were passed to predict.asreml
@@ -112,58 +51,11 @@ test_that("get_predictions.asreml generates predictions when pred.obj is NULL", 
 	expect_equal(call_args$object, mock_model)
 	expect_equal(call_args$classify, "Nitrogen")
 	expect_equal(call_args$sed, TRUE)
+	expect_equal(call_args$vcov, TRUE)
 	expect_equal(call_args$trace, FALSE)
 
 	# Verify the result contains the generated predictions
 	expect_equal(result$predictions$predicted.value, c(100, 110, 120, 130))
-})
-
-test_that("get_predictions.asreml generates predictions when pred.obj is missing", {
-	skip_if_not_installed("mockery")
-
-	# Create mock model object
-	mock_model <- list(
-		formulae = list(
-			fixed = as.formula("yield ~ Nitrogen"),
-			random = as.formula("~Blocks")
-		),
-		nedf = 10
-	)
-	class(mock_model) <- "asreml"
-
-	# Mock prediction result
-	mock_pred_result <- list(
-		pvals = data.frame(
-			Nitrogen = c("0", "0.2"),
-			predicted.value = c(100, 110),
-			std.error = c(5, 5),
-			status = c("Estimable", "Estimable")
-		),
-		sed = matrix(c(NA, 7, 7, NA), nrow = 2, ncol = 2)
-	)
-
-	# Mock the asreml functions
-	mock_predict <- mockery::mock(mock_pred_result)
-	mock_wald <- mockery::mock(list(
-		Wald = data.frame(
-			denDF = c(10),
-			row.names = c("Nitrogen")
-		)
-	))
-
-	mockery::stub(
-		get_predictions.asreml,
-		'asreml::predict.asreml',
-		mock_predict
-	)
-	mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
-
-	# Call without specifying pred.obj at all
-	result <- get_predictions.asreml(mock_model, classify = "Nitrogen")
-
-	# Verify predict.asreml WAS called
-	mockery::expect_called(mock_predict, 1)
-	expect_equal(result$predictions$predicted.value, c(100, 110))
 })
 
 test_that("get_predictions.asreml errors when all predicted values are aliased", {
@@ -355,61 +247,6 @@ test_that("get_predictions.asreml passes additional arguments to predict.asreml"
 	call_args <- mockery::mock_args(mock_predict)[[1]]
 	expect_equal(call_args$present, c("Nitrogen", "Blocks"))
 	expect_equal(call_args$aliasing.scheme, TRUE)
-})
-
-test_that("get_predictions.asreml uses provided dendf when supplied in args", {
-	skip_if_not_installed("mockery")
-
-	# Create mock model object
-	mock_model <- list(
-		formulae = list(
-			fixed = as.formula("yield ~ Nitrogen"),
-			random = as.formula("~Blocks")
-		),
-		nedf = 10
-	)
-	class(mock_model) <- "asreml"
-
-	# Mock prediction result
-	mock_pred_result <- list(
-		pvals = data.frame(
-			Nitrogen = c("0", "0.2", "0.4"),
-			predicted.value = c(100, 110, 120),
-			std.error = c(5, 5, 5),
-			status = c("Estimable", "Estimable", "Estimable")
-		),
-		sed = matrix(c(NA, 7, 8, 7, NA, 8, 8, 8, NA), nrow = 3, ncol = 3)
-	)
-
-	# Create custom dendf data frame
-	custom_dendf <- data.frame(
-		Source = c("Nitrogen", "Blocks"),
-		denDF = c(25, 5)
-	)
-
-	# Mock the asreml functions
-	mock_predict <- mockery::mock(mock_pred_result)
-	mock_wald <- mockery::mock() # Should NOT be called when dendf is provided
-
-	mockery::stub(
-		get_predictions.asreml,
-		'asreml::predict.asreml',
-		mock_predict
-	)
-	mockery::stub(get_predictions.asreml, 'asreml::wald', mock_wald)
-
-	# Call with dendf provided in args
-	result <- get_predictions.asreml(
-		mock_model,
-		classify = "Nitrogen",
-		dendf = custom_dendf
-	)
-
-	# Verify wald was NOT called (because dendf was provided)
-	mockery::expect_called(mock_wald, 0)
-
-	# Verify the custom dendf was used (should be 25, not the default from wald)
-	expect_equal(result$df, 25)
 })
 
 test_that("get_predictions.asreml uses residual df when classify not found in wald output", {
@@ -711,6 +548,304 @@ test_that("check_classify_in_terms works correctly", {
 	)
 })
 
+test_that("strip_asreml_specials removes ASReml-R wrappers from term labels", {
+	# at() is stripped in fixed and random terms, with or without levels
+	expect_equal(
+		strip_asreml_specials(c("Year", "at(Year):Prior_crop")),
+		c("Year", "Year:Prior_crop")
+	)
+	expect_equal(
+		strip_asreml_specials('at(Nitrogen, c("0.2_cwt", "0.4_cwt")):Variety'),
+		"Nitrogen:Variety"
+	)
+	expect_equal(
+		strip_asreml_specials("at(Year):Prior_crop:Treatment"),
+		"Year:Prior_crop:Treatment"
+	)
+
+	# Variance-model and relationship-matrix functions only in random terms
+	random_labels <- c(
+		"diag(Site):Variety",
+		"fa(Site, 2):Variety",
+		"us(Trait):Genotype",
+		"vm(Genotype, Ainv)",
+		"ar1(Column):ar1(Row)"
+	)
+	expect_equal(
+		strip_asreml_specials(random_labels, asreml_random_specials),
+		c(
+			"Site:Variety",
+			"Site:Variety",
+			"Trait:Genotype",
+			"Genotype",
+			"Column:Row"
+		)
+	)
+	expect_equal(
+		strip_asreml_specials("diag(Site):Variety"),
+		"diag(Site):Variety"
+	)
+
+	# Base R and covariate functions are left alone
+	expect_equal(
+		strip_asreml_specials(
+			c("log(x)", "pol(x, 2)", "spl(x)"),
+			asreml_random_specials
+		),
+		c("log(x)", "pol(x, 2)", "spl(x)")
+	)
+})
+
+test_that("strip_asreml_specials returns labels that cannot be parsed unchanged", {
+	# e.g. a user classify with a space or a dangling `:` or `(`; it is left
+	# for check_classify_in_terms() to reject with a clear error
+	unparseable <- c("Prior crop", "Year:", "at(Year")
+	expect_equal(strip_asreml_specials(unparseable), unparseable)
+	# Parseable labels in the same call are still stripped
+	expect_equal(
+		strip_asreml_specials(c("Prior crop", "at(Year):Prior_crop")),
+		c("Prior crop", "Year:Prior_crop")
+	)
+})
+
+test_that("get_predictions.asreml gives a clear error for a covariate classify", {
+	mock_model <- list(
+		formulae = list(
+			fixed = as.formula("yield ~ Trt + pol(x, 2)"),
+			random = as.formula("~Rep")
+		),
+		nedf = 30
+	)
+	class(mock_model) <- "asreml"
+
+	expect_error(
+		get_predictions.asreml(mock_model, classify = "x"),
+		"x is fitted as a covariate \\(pol\\(x, 2\\)\\), so its predicted values cannot be compared"
+	)
+})
+
+test_that("get_predictions returns classify in the user's order", {
+	# The model's ordering is used for prediction, but the returned classify
+	# keeps the user's order: it sets the order of the treatment labels that
+	# `pairs` and `reference` are written in.
+	m_wb <- aov(breaks ~ wool * tension, data = warpbreaks)
+	expect_equal(get_predictions(m_wb, "wool:tension")$classify, "wool:tension")
+	expect_equal(get_predictions(m_wb, "tension:wool")$classify, "tension:wool")
+})
+
+test_that("get_predictions.asreml resolves at() in classify", {
+	skip_if_not_installed("mockery")
+
+	mock_model <- list(
+		formulae = list(
+			fixed = as.formula("yield ~ Year + at(Year):Crop"),
+			random = as.formula("~Rep")
+		),
+		nedf = 30
+	)
+	class(mock_model) <- "asreml"
+
+	mock_pred_result <- list(
+		pvals = data.frame(
+			Year = rep(c("2020", "2021"), each = 2),
+			Crop = rep(c("Canola", "Wheat"), 2),
+			predicted.value = c(100, 105, 110, 120),
+			std.error = rep(5, 4),
+			status = rep("Estimable", 4)
+		),
+		sed = matrix(7, nrow = 4, ncol = 4)
+	)
+	mock_wald <- list(
+		Wald = data.frame(
+			denDF = c(5, 20, 12, 16),
+			row.names = c(
+				"(Intercept)",
+				"Year",
+				"at(Year, '2020'):Crop",
+				"at(Year, '2021'):Crop"
+			)
+		)
+	)
+	mock_predict <- mockery::mock(mock_pred_result, cycle = TRUE)
+	mockery::stub(get_predictions.asreml, 'asreml::predict.asreml', mock_predict)
+	mockery::stub(
+		get_predictions.asreml,
+		'asreml::wald',
+		mockery::mock(mock_wald, cycle = TRUE)
+	)
+
+	# Bare, wrapped and reversed forms are all accepted
+	bare <- get_predictions.asreml(mock_model, classify = "Year:Crop")
+	wrapped <- get_predictions.asreml(mock_model, classify = "at(Year):Crop")
+	reversed <- get_predictions.asreml(mock_model, classify = "Crop:Year")
+	expect_equal(bare$classify, "Year:Crop")
+	expect_equal(wrapped$classify, "Year:Crop")
+	expect_equal(reversed$classify, "Crop:Year")
+
+	# predict.asreml() always receives the bare term in the model's order
+	classify_args <- vapply(
+		mockery::mock_args(mock_predict),
+		function(a) a$classify,
+		character(1)
+	)
+	expect_equal(classify_args, rep("Year:Crop", 3))
+})
+
+test_that("asreml_denominator_df builds a per-pair df matrix for at() terms", {
+	dendf <- data.frame(
+		Source = c(
+			"(Intercept)",
+			"Year",
+			"at(Year, '2020'):Crop",
+			"at(Year, '2021'):Crop"
+		),
+		denDF = c(5, 20, 12, 16)
+	)
+	pp <- data.frame(
+		Year = rep(c("2020", "2021"), each = 2),
+		Crop = rep(c("Canola", "Wheat"), 2)
+	)
+
+	ndf <- asreml_denominator_df("Year:Crop", dendf, pp, resid_df = 30)
+	expected <- matrix(
+		c(12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 16, 16, 12, 12, 16, 16),
+		nrow = 4
+	)
+	expect_equal(ndf, expected)
+
+	# A common df across levels collapses to a single value
+	dendf_equal <- dendf
+	dendf_equal$denDF[4] <- 12
+	expect_equal(
+		asreml_denominator_df("Year:Crop", dendf_equal, pp, resid_df = 30),
+		12
+	)
+
+	# Levels outside an at() level subset take the residual df
+	pp3 <- data.frame(
+		Year = rep(c("2020", "2021", "2022"), each = 2),
+		Crop = rep(c("Canola", "Wheat"), 3)
+	)
+	ndf3 <- asreml_denominator_df("Year:Crop", dendf, pp3, resid_df = 30)
+	expect_equal(diag(ndf3), c(12, 12, 16, 16, 30, 30))
+	expect_equal(ndf3[1, 5], 12)
+
+	# A term that only resembles the at() rows falls back to the residual df
+	expect_warning(
+		ndf_other <- asreml_denominator_df("Year:Other", dendf, pp, 30),
+		"Year:Other is not a fixed term in the model"
+	)
+	expect_equal(ndf_other, 30)
+})
+
+test_that("asreml at() terms give comparison-specific df from wald()", {
+	skip_on_cran()
+	skip_if_not_installed("asreml")
+	quiet(library(asreml))
+	load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
+	# dsum() requires the data grouped by the dsum factor
+	assign("oats_sorted", dat[order(dat$Nitrogen), ], envir = .GlobalEnv)
+	withr::defer(rm("oats_sorted", envir = .GlobalEnv))
+
+	model <- asreml(
+		yield ~ Nitrogen + at(Nitrogen):Variety,
+		random = ~ Blocks / Wplots,
+		residual = ~ dsum(~ units | Nitrogen),
+		data = oats_sorted,
+		trace = FALSE
+	)
+
+	# Conditional wald denDF per Nitrogen level: 12.5, 15.0, 16.8, 16.8
+	result <- get_predictions(model, "Nitrogen:Variety")
+	expect_true(is.matrix(result$df))
+	expect_equal(
+		diag(result$df),
+		rep(c(12.5, 15.0, 16.8, 16.8), each = 3),
+		tolerance = 1e-2
+	)
+	# Cross-level pairs take the smaller of the two levels' df
+	expect_equal(result$df[1, 4], 12.5, tolerance = 1e-2)
+	expect_equal(result$df[4, 7], 15.0, tolerance = 1e-2)
+
+	# Classify in the reverse order resolves to the same at() term
+	expect_equal(get_predictions(model, "Variety:Nitrogen")$df, result$df)
+
+	# General contrasts take the smallest df among the levels involved
+	contr <- pairwise_comparisons(
+		model,
+		classify = "Nitrogen:Variety",
+		contrasts = list(
+			within = c(`0_cwt:Golden_rain` = 1, `0_cwt:Marvellous` = -1),
+			across = c(
+				`0.2_cwt:Victory` = 1,
+				`0.4_cwt:Victory` = -0.5,
+				`0.6_cwt:Victory` = -0.5
+			)
+		)
+	)
+	expect_equal(contr$df, c(12.5, 15.0), tolerance = 1e-2)
+})
+
+test_that("asreml random terms with variance structures can be classified", {
+	skip_on_cran()
+	skip_if_not_installed("asreml")
+	quiet(library(asreml))
+	load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
+
+	model <- asreml(
+		yield ~ Nitrogen,
+		random = ~ Blocks / Wplots + diag(Nitrogen):Variety,
+		data = dat,
+		trace = FALSE
+	)
+
+	expect_warning(
+		bare <- multiple_comparisons(model, classify = "Nitrogen:Variety"),
+		"Nitrogen:Variety is not a fixed term in the model"
+	)
+	expect_equal(nrow(bare$predictions), 12)
+	expect_warning(
+		wrapped <- multiple_comparisons(
+			model,
+			classify = "diag(Nitrogen):Variety"
+		),
+		"Nitrogen:Variety is not a fixed term in the model"
+	)
+	expect_equal(bare$predictions, wrapped$predictions)
+})
+
+test_that("asreml `levels` passed through ... predicts a subset of levels", {
+	skip_on_cran()
+	skip_if_not_installed("asreml")
+	quiet(library(asreml))
+	load(test_path("data", "oats_data.Rdata"), envir = .GlobalEnv)
+
+	model <- asreml(
+		yield ~ Nitrogen * Variety,
+		random = ~ Blocks / Wplots,
+		data = dat,
+		trace = FALSE
+	)
+	subset <- c("0_cwt", "0.2_cwt", "0.6_cwt")
+
+	# predict.asreml() keeps all four Nitrogen levels on the factor; they must
+	# be dropped or the letter groupings fail with "subscript out of bounds".
+	result <- get_predictions(
+		model,
+		"Nitrogen",
+		levels = list(Nitrogen = subset)
+	)
+	expect_equal(levels(result$predictions$Nitrogen), subset)
+
+	output <- multiple_comparisons(
+		model,
+		classify = "Nitrogen",
+		levels = list(Nitrogen = subset)
+	)
+	expect_setequal(as.character(output$predictions$Nitrogen), subset)
+	expect_equal(nrow(output$predictions), 3)
+})
+
 test_that("Testing pred.obj removal for asreml predictions", {
 	skip_if_not_installed("Matrix")
 	load(test_path("data", "asreml_model.Rdata"), .GlobalEnv)
@@ -718,10 +853,9 @@ test_that("Testing pred.obj removal for asreml predictions", {
 		output <- multiple_comparisons(
 			model.asr,
 			classify = "Nitrogen",
-			pred.obj = pred.asr,
-			dendf = dendf
+			pred.obj = pred.asr
 		),
-		"`pred.obj` was removed in biometryassist 1\\.5\\.0\\. Predictions are now performed internally in the function\\."
+		"Argument `pred.obj` was removed in version 1\\.5\\.0\\. Predictions are now performed internally in the function\\."
 	)
 })
 
@@ -760,10 +894,9 @@ test_that("Test that aov works when using Error() to including experimental desi
 		tolerance = 5e-2
 	)
 	expect_equal(mean(pred.aov$sed, na.rm = TRUE), 4.436, tolerance = 5e-2)
-	expect_equal(mean(pred.aov$df, na.rm = TRUE), 45, tolerance = 5e-2)
-	# sed and df should be matrices for aovlist objects
+	# sed is a matrix; every comparison shares one df, so df is a single value
 	expect_equal(is.matrix(pred.aov$sed), TRUE)
-	expect_equal(is.matrix(pred.aov$df), TRUE)
+	expect_equal(pred.aov$df, 45, tolerance = 5e-2)
 })
 
 test_that("get_predictions.aovlist errors when classify is not in model terms", {
@@ -805,7 +938,7 @@ test_that("get_predictions.listof delegates to get_predictions.aovlist", {
 	)
 	expect_equal(pred.listof$ylab, pred.aov$ylab)
 	expect_equal(is.matrix(pred.listof$sed), TRUE)
-	expect_equal(is.matrix(pred.listof$df), TRUE)
+	expect_equal(pred.listof$df, pred.aov$df)
 })
 
 test_that("get_predictions errors informatively for ARTool (art) models", {
@@ -828,8 +961,8 @@ test_that("get_predictions works for afex (afex_aov) models", {
 	skip_if_not_installed("afex")
 	data(obk.long, package = "afex")
 
-	# Between-subjects design: the backing aov is a single stratum, so emmeans gives
-	# a scalar df, replicated across the (matrix) df like other emmeans engines.
+	# Between-subjects design: the backing aov is a single stratum, so every
+	# comparison shares one df.
 	afex_b <- afex::aov_ez(
 		id = "id",
 		dv = "value",
@@ -846,8 +979,7 @@ test_that("get_predictions works for afex (afex_aov) models", {
 	)
 	expect_equal(pred_b$ylab, "value")
 	expect_true(is.matrix(pred_b$sed))
-	expect_true(is.matrix(pred_b$df))
-	expect_equal(mean(pred_b$df, na.rm = TRUE), 10)
+	expect_equal(pred_b$df, 10)
 
 	# Within-subjects design: the backing aov is multi-stratum (aovlist), so the
 	# comparison-specific (matrix) degrees of freedom path is exercised.
@@ -904,9 +1036,8 @@ test_that("get_predictions works for glmmTMB models", {
 	)
 	expect_equal(pred$ylab, "count")
 	expect_true(is.matrix(pred$sed))
-	expect_true(is.matrix(pred$df))
 	# glmmTMB uses asymptotic (infinite) degrees of freedom.
-	expect_true(all(is.infinite(pred$df[!is.na(pred$df)])))
+	expect_equal(pred$df, Inf)
 
 	# Non-Gaussian families predict on the link (here log) scale.
 	g_pois <- glmmTMB::glmmTMB(
@@ -924,7 +1055,20 @@ test_that("get_predictions works for glmmTMB models", {
 
 test_that("get_predictions works for sommer mmes models", {
 	skip_if_not_installed("sommer")
+	# Refit from the fixture's data rather than using the saved fit: sommer's
+	# predict() depends on internal model components that change between versions
+	# (e.g. sommer 4.4.87 requires `C`, which older fits lack). The data is taken
+	# from the fixture because DT_example has moved from sommer to enhancer.
+	# sommer must be attached: mmes() evaluates vsm()/ism() in the caller's scope.
+	suppressPackageStartupMessages(library(sommer))
 	load(test_path("data", "sommer_models.Rdata"), .GlobalEnv)
+	model_mmes <- mmes(
+		Yield ~ Env,
+		random = ~ Name + Env:Name,
+		rcov = ~units,
+		data = model_mmes$data,
+		verbose = FALSE
+	)
 
 	pred <- get_predictions.mmes(model_mmes, classify = "Env")
 
@@ -1049,10 +1193,48 @@ test_that("Test that lmer provides the same results as multi-stratum ANOVA for o
 		tolerance = 5e-2
 	)
 	expect_equal(mean(pred.lme$sed, na.rm = TRUE), 4.436, tolerance = 5e-2)
-	expect_equal(mean(pred.lme$df, na.rm = TRUE), 45)
-	# sed and df should be matrices for lme objects
+	# sed is a matrix; every comparison shares one df, so df is a single value
 	expect_equal(is.matrix(pred.lme$sed), TRUE)
-	expect_equal(is.matrix(pred.lme$df), TRUE)
+	expect_equal(pred.lme$df, 45)
+})
+
+test_that("emmeans-based SED matrix matches pairs for unbalanced data", {
+	skip_if_not_installed("lme4")
+	# Unbalanced so each pair has a distinct SED; with 4+ levels a wrong fill
+	# order puts SEDs against the wrong pairs
+	set.seed(1)
+	dat <- data.frame(
+		trt = factor(rep(c("a", "b", "c", "d"), times = c(3, 8, 4, 10))),
+		blk = factor(rep(1:5, length.out = 25))
+	)
+	dat$y <- 10 + as.numeric(dat$trt) + rnorm(25)
+	fit <- suppressMessages(lme4::lmer(y ~ trt + (1 | blk), data = dat))
+	pred <- get_predictions(fit, classify = "trt")
+
+	V <- pred$vcov
+	expected <- sqrt(outer(diag(V), diag(V), "+") - 2 * V)
+	diag(expected) <- NA_real_
+	expect_equal(unname(pred$sed), unname(expected), tolerance = 1e-6)
+})
+
+test_that("emmeans-based df matrix drops aliased levels alongside the SED", {
+	skip_if_not_installed("lme4")
+	# Unbalanced, so the df differ between comparisons and stay a matrix
+	dat <- subset(npk, !(N == "0" & P == "0"))
+	dat <- dat[-c(1, 6), ]
+	fit <- suppressMessages(lme4::lmer(yield ~ N * P + (1 | block), data = dat))
+	expect_warning(
+		pred <- get_predictions(fit, classify = "N:P"),
+		"aliased"
+	)
+
+	expect_true(is.matrix(pred$df))
+	expect_equal(dim(pred$df), dim(pred$sed))
+	expect_equal(nrow(pred$df), nrow(pred$predictions))
+	expect_s3_class(
+		suppressWarnings(multiple_comparisons(fit, classify = "N:P")),
+		"mct"
+	)
 })
 
 # check that predictions from asreml are the same as a aovlist object
@@ -1074,8 +1256,7 @@ test_that("Test that lmerTest provides the same results as multi-stratum ANOVA f
 		tolerance = 5e-2
 	)
 	expect_equal(mean(pred.lmet$sed, na.rm = TRUE), 4.436, tolerance = 5e-2)
-	expect_equal(mean(pred.lmet$df, na.rm = TRUE), 45)
-	# sed and df should be matrices for lme objects
+	# sed is a matrix; every comparison shares one df, so df is a single value
 	expect_equal(is.matrix(pred.lmet$sed), TRUE)
-	expect_equal(is.matrix(pred.lmet$df), TRUE)
+	expect_equal(pred.lmet$df, 45)
 })

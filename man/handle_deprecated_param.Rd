@@ -12,18 +12,21 @@ handle_deprecated_param(
 )
 }
 \arguments{
-\item{old_param}{Name of the deprecated parameter}
+\item{old_param}{Name of the deprecated parameter.}
 
-\item{new_param}{Name of the replacement parameter or NULL if parameter is being removed}
+\item{new_param}{Name of the replacement parameter, or \code{NULL} if none.}
 
-\item{custom_msg}{Optional custom message to append to the warning}
+\item{custom_msg}{Optional custom message to append to the warning.}
 
-\item{call_env}{Environment where to check for the deprecated parameter}
+\item{call_env}{Environment where to check for the deprecated parameter.}
 }
 \value{
-Nothing, called for side effects (warnings)
+\code{NULL}, invisibly; called for its side effect (a warning).
 }
 \description{
-Simple internal function to warn about deprecated parameters
+Internal function to warn about a deprecated parameter: one that is still a
+formal of the calling function and still works, but is no longer
+recommended. For a parameter that has been removed outright, use
+\code{\link[=handle_removed_param]{handle_removed_param()}}.
 }
 \keyword{internal}

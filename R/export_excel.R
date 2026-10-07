@@ -49,17 +49,19 @@ int2col <- function(num) {
 #'
 #' Requires the 'openxlsx2' package to be installed.
 #'
-#' @examples
-#' \dontrun{
+#' @examplesIf rlang::is_installed("openxlsx2")
+#' my_design <- design("crd", treatments = c("A", "B", "C"), reps = 2,
+#'                     nrows = 2, ncols = 3, quiet = TRUE, plot = FALSE)
+#' file <- tempfile(fileext = ".xlsx")
+#'
 #' # Export with default colours
-#' export_design_to_excel(my_design, "treatments", "my_design.xlsx")
+#' export_design_to_excel(my_design, file)
 #'
 #' # Export without colours
-#' export_design_to_excel(my_design, "treatments", "my_design.xlsx", palette = NULL)
+#' export_design_to_excel(my_design, file, palette = NULL)
 #'
 #' # Export with custom palette
-#' export_design_to_excel(my_design, "treatments", "my_design.xlsx", palette = "viridis")
-#' }
+#' export_design_to_excel(my_design, file, palette = "viridis")
 #'
 #' @export
 export_design_to_excel <- function(
@@ -125,7 +127,7 @@ export_design_to_excel <- function(
 				call. = FALSE
 			)
 		}
-		out
+		return(out)
 	}
 
 	row_vals_i <- as_int_coord(row_vals, row_name)

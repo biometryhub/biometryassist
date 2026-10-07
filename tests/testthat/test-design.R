@@ -1306,7 +1306,7 @@ test_that("save = TRUE produces plot file and csv", {
 })
 
 test_that("Output is produced when quiet = FALSE", {
-	withr::local_file("Rplots.pdf")
+	local_null_device()
 	expect_output(
 		des <- design(
 			"crd",

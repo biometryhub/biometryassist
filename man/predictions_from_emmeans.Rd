@@ -4,26 +4,33 @@
 \alias{predictions_from_emmeans}
 \title{Build predictions, SED and df from an emmeans-backed model}
 \usage{
-predictions_from_emmeans(model.obj, classify, model_terms, ylab)
+predictions_from_emmeans(
+  model.obj,
+  classify,
+  model_terms = attr(stats::terms(model.obj), "term.labels"),
+  ylab = response_label(model.obj)
+)
 }
 \arguments{
 \item{model.obj}{A fitted model object with an \code{emmeans::emmeans()} method.}
 
 \item{classify}{Name of the predictor variable(s) as a string.}
 
-\item{model_terms}{Character vector of model term labels (for the classify check).}
+\item{model_terms}{Character vector of model term labels (for the classify
+check). Defaults to the term labels of \code{model.obj}.}
 
-\item{ylab}{Response variable label for the plot.}
+\item{ylab}{Response variable label for the plot. Defaults to the left-hand
+side of the model formula.}
 }
 \value{
-A list with elements \code{predictions}, \code{sed}, \code{df}, \code{ylab}, \code{aliased_names}
-and \code{emmeans_grid}.
+A list with elements \code{predictions}, \code{sed}, \code{df}, \code{ylab},
+\code{aliased_names}, \code{emmeans_grid}, \code{vcov} and \code{classify}.
 }
 \description{
 Shared core for the emmeans-backed \code{get_predictions()} methods (\code{aovlist},
 \code{afex_aov}, ...). Given the emmeans reference grid for \code{classify}, it builds the
-predicted means, the comparison-specific (matrix) SED and degrees of freedom from
-the pairwise contrasts, and processes aliased levels. The terms check and \code{ylab}
-are computed by the caller (these differ per engine) and passed in.
+predicted means, the SED matrix and the degrees of freedom from the pairwise
+contrasts, and processes aliased levels. The df is a single value when every
+comparison shares it, and a comparison-specific matrix otherwise.
 }
 \keyword{internal}

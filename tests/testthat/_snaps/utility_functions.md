@@ -4,9 +4,9 @@
       biometryassist:::.onAttach(pkg = "biometryassist")
     Message
           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-          |  biometryassist version 1.5.0                                     |
+          |  biometryassist version 1.5.1                                     |
           |  Authors: Sharon Nielsen, Sam Rogers, Annie Conway                |
-          |  Developed at the University of Adelaide with funding provided    |
+          |  Developed at Adelaide University with funding provided           |
           |  by the Australian Grains Research and Development Corporation.   |
           |  Package website: https://biometryhub.github.io/biometryassist    |
           |                                                                   |

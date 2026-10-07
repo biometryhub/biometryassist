@@ -3,7 +3,9 @@
 #' A function for comparing and ranking predicted means with Tukey's Honest Significant Difference (HSD) Test.
 #'
 #' @param model.obj An `asreml`, `aov`, `lm`, `lme` ([nlme::lme()]) or `lmerMod` ([lme4::lmer()]) model object.
-#' @param classify Name of predictor variable as string.
+#' @param classify Name of predictor variable as string. Interactions are
+#'   specified with `:` (e.g. `"Trt:Site"`). For `asreml` models, see
+#'   *ASReml-R terms in `classify`* below.
 #' @param sig The significance level, numeric between 0 and 1. Default is 0.05.
 #' @param int.type The type of confidence interval to calculate. One of `ci`, `tukey`, `1se`, `2se`, or `none`. Default is `ci`.
 #' @param trans Transformation that was applied to the response variable. One of `log`, `sqrt`, `logit`, `power`, `inverse`, or `arcsin`. Default is `NULL`.
@@ -19,7 +21,9 @@
 #' @param rotation Rotate the text output as Treatments within the plot. Allows for easier reading of long treatment labels. Number between 0 and 360 (inclusive) - default 0
 #' @param save Logical (default `FALSE`). Save the predicted values to a csv file?
 #' @param savename A file name for the predicted values to be saved to. Default is `predicted_values`.
-#' @param ... Other arguments passed internally to model-specific prediction methods.
+#' @param ... Other arguments passed to the model-specific prediction methods
+#'   (e.g. ASReml-R `predict()` arguments such as `present`; see
+#'   *ASReml-R prediction arguments* below).
 #'
 #' @importFrom multcompView multcompLetters
 #' @importFrom emmeans emmeans
@@ -126,6 +130,8 @@
 #'  Standard Errors From Transformed Data - and Why They Should Not Be Used.
 #'
 #' @inheritSection get_predictions Supported model types
+#' @inheritSection get_predictions ASReml-R terms in `classify`
+#' @inheritSection get_predictions ASReml-R prediction arguments
 #'
 #' @seealso [pairwise_comparisons()] for testing a chosen subset of pairwise
 #'   differences as a tidy table, or [reference_comparisons()] for testing
@@ -272,20 +278,13 @@ multiple_comparisons <- function(
 	...
 ) {
 	# Parameters removed in 1.5.0: give a clear error with migration guidance
-	.removed_params <- list(
-		pred = "`pred` was removed in biometryassist 1.5.0. Use `classify` instead.",
-		order = "`order` was removed in biometryassist 1.5.0. Use `descending` instead.",
-		pred.obj = paste0(
-			"`pred.obj` was removed in biometryassist 1.5.0. ",
-			"Predictions are now performed internally in the function."
-		)
+	handle_removed_param("pred", "classify", version = "1.5.0")
+	handle_removed_param("order", "descending", version = "1.5.0")
+	handle_removed_param(
+		"pred.obj",
+		custom_msg = "Predictions are now performed internally in the function.",
+		version = "1.5.0"
 	)
-	.early_dots <- list(...)
-	for (.p in names(.removed_params)) {
-		if (.p %in% names(.early_dots)) {
-			stop(.removed_params[[.p]], call. = FALSE)
-		}
-	}
 
 	# Handle deprecated parameters
 	handle_deprecated_param(
@@ -319,7 +318,7 @@ multiple_comparisons <- function(
 		"Use `write.csv(result$predictions, \"filename.csv\")` instead."
 	)
 
-	vars <- validate_inputs(sig, classify, model.obj, trans)
+	validate_inputs(sig, model.obj, trans)
 
 	# Process dots
 	rlang::check_dots_used()
@@ -357,6 +356,11 @@ multiple_comparisons <- function(
 
 	# Get model-specific predictions and SED
 	result <- get_predictions(model.obj, classify, ...)
+
+	# classify as resolved by the model engine (e.g. ASReml-R at() removed)
+	classify <- result$classify
+	vars <- unlist(strsplit(classify, ":"))
+	check_reserved_names(vars)
 
 	pp <- result$predictions
 	sed <- result$sed
@@ -478,6 +482,9 @@ multiple_comparisons <- function(
 		pp$low <- pp$predicted.value - pp$ci
 		pp$up <- pp$predicted.value + pp$ci
 	}
+
+	# The df of each mean is only needed for the intervals above
+	pp$df <- NULL
 
 	# Order results and format output
 	pp <- format_output(pp, descending, vars, by)
@@ -995,15 +1002,28 @@ process_treatment_names <- function(pp, vars) {
 
 #' @noRd
 add_confidence_intervals <- function(pp, int.type, sig, ndf) {
-	# Calculate confidence interval width
-	# If denominator df is a type matrix, use the max value (TEMPORARY SOLUTION!)
-	if (is.matrix(ndf) == TRUE) {
-		ndf <- max(ndf, na.rm = TRUE)
+	# Calculate confidence interval width. A confidence interval for a mean uses
+	# that mean's own df (`pp$df`). A Tukey comparison interval is for
+	# differences, so it uses the comparison df: when that is comparison-specific
+	# (a matrix), each mean takes the smallest df among its comparisons.
+	if (is.matrix(ndf)) {
+		comparison_df <- apply(ndf, 1, function(d) {
+			if (all(is.na(d))) NA_real_ else min(d, na.rm = TRUE)
+		})
+		# A group with a single mean has no comparisons
+		no_comparisons <- is.na(comparison_df)
+		comparison_df[no_comparisons] <- pp$df[no_comparisons]
+	} else {
+		comparison_df <- rep(ndf, nrow(pp))
 	}
 	pp$ci <- switch(
 		tolower(int.type),
-		"ci" = stats::qt(p = sig / 2, ndf, lower.tail = FALSE) * pp$std.error,
-		"tukey" = stats::qtukey(p = 1 - sig, nmeans = nrow(pp), df = ndf) /
+		"ci" = stats::qt(p = sig / 2, pp$df, lower.tail = FALSE) * pp$std.error,
+		"tukey" = stats::qtukey(
+			p = 1 - sig,
+			nmeans = nrow(pp),
+			df = comparison_df
+		) /
 			sqrt(2) *
 			pp$std.error,
 		"1se" = pp$std.error,

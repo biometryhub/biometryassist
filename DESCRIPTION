@@ -1,7 +1,7 @@
 Type: Package
 Package: biometryassist
 Title: Functions to Assist Design and Analysis of Agronomic Experiments
-Version: 1.5.0
+Version: 1.5.1
 Authors@R: 
     c(person(given = "Sharon",
              family = "Nielsen",
@@ -18,7 +18,7 @@ Authors@R:
       person(given = "Michael",
              family = "Mumford",
              role = "ctb"),
-      person(given = "University of Adelaide",
+      person(given = "Adelaide University",
              role = c("cph", "fnd"),
              comment = "https://adelaide.edu.au/"),
       person(given = "Grains Research and Development Corporation",
@@ -81,4 +81,4 @@ Config/testthat/parallel: true
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 VignetteBuilder: quarto
-Config/roxygen2/version: 8.0.0
+Config/roxygen2/version: 8.1.0
