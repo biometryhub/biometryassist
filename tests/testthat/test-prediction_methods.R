@@ -596,6 +596,18 @@ test_that("strip_asreml_specials removes ASReml-R wrappers from term labels", {
 	)
 })
 
+test_that("strip_asreml_specials returns labels that cannot be parsed unchanged", {
+	# e.g. a user classify with a space or a dangling `:` or `(`; it is left
+	# for check_classify_in_terms() to reject with a clear error
+	unparseable <- c("Prior crop", "Year:", "at(Year")
+	expect_equal(strip_asreml_specials(unparseable), unparseable)
+	# Parseable labels in the same call are still stripped
+	expect_equal(
+		strip_asreml_specials(c("Prior crop", "at(Year):Prior_crop")),
+		c("Prior crop", "Year:Prior_crop")
+	)
+})
+
 test_that("get_predictions.asreml gives a clear error for a covariate classify", {
 	mock_model <- list(
 		formulae = list(
