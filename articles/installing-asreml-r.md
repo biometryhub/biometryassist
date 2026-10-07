@@ -40,7 +40,7 @@ the Analytics for the Australian Grains Industry (AAGI) project.
 
 To access the Adelaide University licence key, please complete this
 form:
-<https://forms.office.com/Pages/ResponsePage.aspx?id=QN_Ns1SWJkqGoXecUfacSFFynOaV3gFMjBxPWBG-lVFUMzIyMjc3MjExVVk3WUFFOUkyNEJNMllaTC4u>
+<https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=QN_Ns1SWJkqGoXecUfacSFFynOaV3gFMjBxPWBG-lVFUMzIyMjc3MjExVVk3WUFFOUkyNEJNMllaTC4u>
 
 You will receive an email with a licence key if you hold a valid
 Adelaide University account.

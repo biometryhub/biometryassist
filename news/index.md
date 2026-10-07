@@ -1,10 +1,93 @@
 # Changelog
 
+## biometryassist 1.5.1
+
+### Minor Changes
+
+- Added citation information: `citation("biometryassist")` now gives the
+  package citation, including its CRAN DOI, and the repository includes
+  a `CITATION.cff` generated from the package metadata.
+  ([\#194](https://github.com/biometryhub/biometryassist/issues/194),
+  [\#196](https://github.com/biometryhub/biometryassist/issues/196))
+- [`reference_comparisons()`](https://biometryhub.github.io/biometryassist/reference/reference_comparisons.md)
+  now uses the exact Dunnett test whenever all comparisons share a
+  common degrees of freedom (e.g. single-stratum `aovlist` and balanced
+  `lmer()` models), instead of falling back to Holm for any model that
+  reports degrees of freedom per comparison.
+- The package startup message, licence and documentation now refer to
+  Adelaide University.
+- [`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md),
+  [`pairwise_comparisons()`](https://biometryhub.github.io/biometryassist/reference/pairwise_comparisons.md)
+  and
+  [`reference_comparisons()`](https://biometryhub.github.io/biometryassist/reference/reference_comparisons.md)
+  now work with `asreml` models whose terms use ASReml-R special
+  functions, such as `at()` in the fixed model or
+  [`diag()`](https://rdrr.io/r/base/diag.html), `fa()`, `us()` and
+  `vm()` in the random model.
+  ([\#198](https://github.com/biometryhub/biometryassist/issues/198))
+- The `predictions` returned by
+  [`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md)
+  no longer include a `df` column for `aov` and `lm` models, so the
+  output is the same for every model type.
+
+### Bug Fixes
+
+- [`use_template()`](https://biometryhub.github.io/biometryassist/reference/use_template.md)
+  now copies the requested package template as expected. Previously it
+  always copied `mixed_model_template.R`.
+  ([\#188](https://github.com/biometryhub/biometryassist/issues/188))
+- Fixed the argument order in the
+  [`export_design_to_excel()`](https://biometryhub.github.io/biometryassist/reference/export_design_to_excel.md)
+  examples, which are now runnable.
+  ([\#189](https://github.com/biometryhub/biometryassist/issues/189),
+  [\#197](https://github.com/biometryhub/biometryassist/issues/197))
+- [`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md),
+  [`pairwise_comparisons()`](https://biometryhub.github.io/biometryassist/reference/pairwise_comparisons.md)
+  and
+  [`reference_comparisons()`](https://biometryhub.github.io/biometryassist/reference/reference_comparisons.md)
+  now use the correct pairwise contrast degrees of freedom for
+  [`nlme::lme()`](https://rdrr.io/pkg/nlme/man/lme.html) models rather
+  than those of the individual means. In
+  [`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md)
+  this gave too-large HSD values; results now match equivalent
+  [`aov()`](https://rdrr.io/r/stats/aov.html) and `lmer()` fits.
+  ([\#190](https://github.com/biometryhub/biometryassist/issues/190))
+- Fixed the standard errors of difference (and degrees of freedom) being
+  assigned to the wrong pairs for models with four or more treatment
+  levels that use `emmeans` (`aovlist`, `lmer()`,
+  [`nlme::lme()`](https://rdrr.io/pkg/nlme/man/lme.html), `afex` and
+  `glmmTMB`). This affected the p-values, HSD and letter groups from
+  [`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md)
+  for unbalanced data; balanced designs were not affected.
+  ([\#193](https://github.com/biometryhub/biometryassist/issues/193))
+- [`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md)
+  no longer errors when a treatment level is aliased in models that use
+  `emmeans` (`aovlist`, `lmer()`,
+  [`nlme::lme()`](https://rdrr.io/pkg/nlme/man/lme.html), `afex` and
+  `glmmTMB`).
+  ([\#195](https://github.com/biometryhub/biometryassist/issues/195))
+- The warning given when the comparison functions fall back to the
+  residual degrees of freedom for an `asreml` model now always names the
+  `classify` term; previously the term name could be missing.
+- [`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md)
+  no longer errors with “subscript out of bounds” when ASReml-R’s
+  `levels` argument is used to predict a subset of levels for an
+  `asreml` model.
+- [`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md)
+  confidence intervals (`int.type = "ci"`) now use the degrees of
+  freedom of each predicted mean, rather than the largest
+  pairwise-comparison degrees of freedom, and `int.type = "tukey"` now
+  uses the smallest comparison degrees of freedom for each mean.
+  Intervals were too narrow for multi-stratum models (`aovlist`, `afex`,
+  `lmer()`, [`nlme::lme()`](https://rdrr.io/pkg/nlme/man/lme.html) and
+  `asreml` `at()` terms); single-stratum models are not affected.
+  ([\#199](https://github.com/biometryhub/biometryassist/issues/199))
+
 ## biometryassist 1.5.0
 
 CRAN release: 2026-06-17
 
-### Major changes
+### Major Changes
 
 - [`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md):
   the `plot`, `label_height`, `rotation`, `save`, and `savename`
@@ -72,7 +155,7 @@ CRAN release: 2026-06-17
   difference) and a means plot via
   [`autoplot()`](https://biometryhub.github.io/biometryassist/reference/autoplot.md).
 
-### Minor changes
+### Minor Changes
 
 - Added the ability to add buffers or double buffers around blocks.
   ([\#169](https://github.com/biometryhub/biometryassist/issues/169))
@@ -130,7 +213,7 @@ CRAN release: 2026-06-17
 
 CRAN release: 2026-02-03
 
-### Major changes
+### Major Changes
 
 - Deprecated
   [`des_info()`](https://biometryhub.github.io/biometryassist/reference/des_info.md).
@@ -158,7 +241,7 @@ CRAN release: 2026-02-03
   work as before
   ([\#22](https://github.com/biometryhub/biometryassist/issues/22)).
 
-### Minor changes
+### Minor Changes
 
 - Add interval type ‘none’ for
   [`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md)
@@ -234,7 +317,7 @@ CRAN release: 2025-07-04
 
 CRAN release: 2025-06-11
 
-### Major changes
+### Major Changes
 
 - Switched to using S3 methods for
   [`resplot()`](https://biometryhub.github.io/biometryassist/reference/resplot.md)
@@ -253,7 +336,7 @@ CRAN release: 2025-06-11
   when intervals don’t overlap but share letters.
   ([\#66](https://github.com/biometryhub/biometryassist/issues/66))
 
-### Minor changes
+### Minor Changes
 
 - Model inputs are now checked for potential transformations that
   haven’t been supplied in
@@ -286,14 +369,14 @@ CRAN release: 2025-06-11
 
 CRAN release: 2025-04-23
 
-### Major changes
+### Major Changes
 
 - Switched to using S3 methods to get predictions in
   [`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md)
   to enable easier expansion to different models in future.
   ([\#92](https://github.com/biometryhub/biometryassist/issues/92))
 
-### Minor changes
+### Minor Changes
 
 - Added ability to produce column plots from
   [`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md)
@@ -333,7 +416,7 @@ CRAN release: 2024-06-05
 
 CRAN release: 2024-05-31
 
-### Major changes
+### Major Changes
 
 - Introduced the
   [`summary_graph()`](https://biometryhub.github.io/biometryassist/reference/summary_graph.md)
@@ -347,7 +430,7 @@ CRAN release: 2024-05-31
   function, to enable more general plotting of designs.
   ([\#28](https://github.com/biometryhub/biometryassist/issues/28))
 
-### Minor changes
+### Minor Changes
 
 - Implemented the ability to plot designs with buffer plots.
   ([\#68](https://github.com/biometryhub/biometryassist/issues/68))
@@ -361,7 +444,7 @@ CRAN release: 2024-05-31
 
 CRAN release: 2023-07-19
 
-### Bug fixes
+### Bug Fixes
 
 - Better checking of column names in data provided to
   [`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md)
@@ -379,7 +462,7 @@ CRAN release: 2023-07-19
 
 CRAN release: 2022-11-25
 
-### Bug fixes
+### Bug Fixes
 
 - Fixed a bug introduced due to a change in names by `predictmeans()`.
   ([\#50](https://github.com/biometryhub/biometryassist/issues/50))
@@ -398,7 +481,7 @@ CRAN release: 2022-11-25
 
 CRAN release: 2022-10-27
 
-### Minor changes
+### Minor Changes
 
 - [`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md)
   now accepts power transformations and automatically back-transforms.
@@ -418,7 +501,7 @@ CRAN release: 2022-10-27
 - Enabled new colour-blind friendly palettes
   ([\#39](https://github.com/biometryhub/biometryassist/issues/39))
 
-### Bug fixes
+### Bug Fixes
 
 - Updated the required version of rlang (\>=1.0.0)
 - Fixed a bug that didn’t allow labels and the x axis to be rotated
@@ -441,7 +524,7 @@ CRAN release: 2022-10-27
 
 CRAN release: 2022-04-14
 
-### Major changes
+### Major Changes
 
 - [`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md)
   no longer requires calls to `predict.asreml()` to be passed into the
@@ -450,7 +533,7 @@ CRAN release: 2022-04-14
   argument.
   ([\#27](https://github.com/biometryhub/biometryassist/issues/27))
 
-### Minor changes
+### Minor Changes
 
 - The `order` argument of
   [`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md)
@@ -467,7 +550,7 @@ CRAN release: 2022-04-14
   [`logl_test()`](https://biometryhub.github.io/biometryassist/reference/logl_test.md).
   ([\#17](https://github.com/biometryhub/biometryassist/issues/17))
 
-### Bug fixes
+### Bug Fixes
 
 - Aliased levels are printed properly in
   [`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md)
@@ -485,7 +568,7 @@ CRAN release: 2022-04-14
 
 CRAN release: 2022-01-28
 
-### Minor changes
+### Minor Changes
 
 - `mct.out()` has been renamed to
   [`multiple_comparisons()`](https://biometryhub.github.io/biometryassist/reference/multiple_comparisons.md)

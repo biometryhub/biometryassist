@@ -10,7 +10,8 @@ process_aliased(
   sed,
   classify,
   exclude_cols = c("predicted.value", "std.error", "df", "Names"),
-  vcov = NULL
+  vcov = NULL,
+  ndf = NULL
 )
 ```
 
@@ -38,7 +39,12 @@ process_aliased(
   estimable rows/columns alongside `sed` when supplied (`NULL`
   otherwise).
 
+- ndf:
+
+  Optional degrees of freedom. A comparison-specific (matrix) df is
+  subset alongside `sed`; a single df is returned unchanged.
+
 ## Value
 
 List containing processed predictions, sed matrix, aliased names and
-(when supplied) the subset `vcov`.
+(when supplied) the subset `vcov` and `ndf`.

@@ -10,7 +10,7 @@
 
 - **Michael Mumford**. Contributor.
 
-- **University of Adelaide**. Copyright holder, funder.  
+- **Adelaide University**. Copyright holder, funder.  
   https://adelaide.edu.au/
 
 - **Grains Research and Development Corporation**. Copyright holder,
@@ -20,16 +20,21 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/biometryhub/biometryassist/blob/main/DESCRIPTION)
+[`inst/CITATION`](https://github.com/biometryhub/biometryassist/blob/main/inst/CITATION)
 
 Nielsen S, Rogers S, Conway A (2026). *biometryassist: Functions to
-Assist Design and Analysis of Agronomic Experiments*. R package version
-1.5.0, <https://biometryhub.github.io/biometryassist/>.
+Assist Design and Analysis of Agronomic Experiments*. Adelaide
+University.
+[doi:10.32614/CRAN.package.biometryassist](https://doi.org/10.32614/CRAN.package.biometryassist).
+R package version 1.5.1,
+<https://biometryhub.github.io/biometryassist/>.
 
     @Manual{,
-      title = {biometryassist: Functions to Assist Design and Analysis of Agronomic Experiments},
+      title = {{biometryassist}: Functions to Assist Design and Analysis of Agronomic Experiments},
       author = {Sharon Nielsen and Sam Rogers and Annie Conway},
       year = {2026},
-      note = {R package version 1.5.0},
+      note = {R package version 1.5.1},
+      organization = {Adelaide University},
       url = {https://biometryhub.github.io/biometryassist/},
+      doi = {10.32614/CRAN.package.biometryassist},
     }

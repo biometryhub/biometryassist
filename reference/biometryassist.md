@@ -34,7 +34,7 @@ Other contributors:
 
 - Michael Mumford \[contributor\]
 
-- University of Adelaide (https://adelaide.edu.au/) \[copyright holder,
+- Adelaide University (https://adelaide.edu.au/) \[copyright holder,
   funder\]
 
 - Grains Research and Development Corporation (https://grdc.com.au/)

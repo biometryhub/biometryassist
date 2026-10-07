@@ -77,14 +77,19 @@ Requires the 'openxlsx2' package to be installed.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+my_design <- design("crd", treatments = c("A", "B", "C"), reps = 2,
+                    nrows = 2, ncols = 3, quiet = TRUE, plot = FALSE)
+file <- tempfile(fileext = ".xlsx")
+
 # Export with default colours
-export_design_to_excel(my_design, "treatments", "my_design.xlsx")
+export_design_to_excel(my_design, file)
+#> Excel file saved as: /tmp/RtmpueVw5R/file20fc780cfe52.xlsx
 
 # Export without colours
-export_design_to_excel(my_design, "treatments", "my_design.xlsx", palette = NULL)
+export_design_to_excel(my_design, file, palette = NULL)
+#> Excel file saved as: /tmp/RtmpueVw5R/file20fc780cfe52.xlsx
 
 # Export with custom palette
-export_design_to_excel(my_design, "treatments", "my_design.xlsx", palette = "viridis")
-} # }
+export_design_to_excel(my_design, file, palette = "viridis")
+#> Excel file saved as: /tmp/RtmpueVw5R/file20fc780cfe52.xlsx
 ```

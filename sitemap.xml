@@ -3,6 +3,7 @@
 <url><loc>https://biometryhub.github.io/biometryassist/CLAUDE.html</loc></url>
 <url><loc>https://biometryhub.github.io/biometryassist/CODE_OF_CONDUCT.html</loc></url>
 <url><loc>https://biometryhub.github.io/biometryassist/CONTRIBUTING.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/DESIGN-DECISIONS.html</loc></url>
 <url><loc>https://biometryhub.github.io/biometryassist/LICENSE-text.html</loc></url>
 <url><loc>https://biometryhub.github.io/biometryassist/LICENSE.html</loc></url>
 <url><loc>https://biometryhub.github.io/biometryassist/articles/choosing-multiple-comparisons.html</loc></url>
@@ -16,6 +17,7 @@
 <url><loc>https://biometryhub.github.io/biometryassist/news/index.html</loc></url>
 <url><loc>https://biometryhub.github.io/biometryassist/reference/add_buffers.html</loc></url>
 <url><loc>https://biometryhub.github.io/biometryassist/reference/aliased_note.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/asreml_denominator_df.html</loc></url>
 <url><loc>https://biometryhub.github.io/biometryassist/reference/autoplot.design.html</loc></url>
 <url><loc>https://biometryhub.github.io/biometryassist/reference/autoplot.html</loc></url>
 <url><loc>https://biometryhub.github.io/biometryassist/reference/autoplot.mct.html</loc></url>
@@ -42,6 +44,7 @@
 <url><loc>https://biometryhub.github.io/biometryassist/reference/get_r_os.html</loc></url>
 <url><loc>https://biometryhub.github.io/biometryassist/reference/get_r_version_compact.html</loc></url>
 <url><loc>https://biometryhub.github.io/biometryassist/reference/handle_deprecated_param.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/handle_removed_param.html</loc></url>
 <url><loc>https://biometryhub.github.io/biometryassist/reference/heat_map.html</loc></url>
 <url><loc>https://biometryhub.github.io/biometryassist/reference/index.html</loc></url>
 <url><loc>https://biometryhub.github.io/biometryassist/reference/install_asreml.html</loc></url>
@@ -68,9 +71,12 @@
 <url><loc>https://biometryhub.github.io/biometryassist/reference/remove_existing_asreml.html</loc></url>
 <url><loc>https://biometryhub.github.io/biometryassist/reference/resplot.html</loc></url>
 <url><loc>https://biometryhub.github.io/biometryassist/reference/resplt-deprecated.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/response_label.html</loc></url>
 <url><loc>https://biometryhub.github.io/biometryassist/reference/satab.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/sed_from_vcov.html</loc></url>
 <url><loc>https://biometryhub.github.io/biometryassist/reference/setup_colour_palette.html</loc></url>
 <url><loc>https://biometryhub.github.io/biometryassist/reference/shapiro_test.html</loc></url>
+<url><loc>https://biometryhub.github.io/biometryassist/reference/strip_asreml_specials.html</loc></url>
 <url><loc>https://biometryhub.github.io/biometryassist/reference/summary_graph.html</loc></url>
 <url><loc>https://biometryhub.github.io/biometryassist/reference/use_template.html</loc></url>
 <url><loc>https://biometryhub.github.io/biometryassist/reference/vario_df.html</loc></url>

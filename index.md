@@ -145,23 +145,24 @@ following in R to get the citation details:
 ``` r
 
 citation("biometryassist")
-```
-
-``` R
-#> To cite package 'biometryassist' in publications use:
+#> To cite biometryassist in publications, please use:
 #> 
 #>   Nielsen S, Rogers S, Conway A (2026). _biometryassist: Functions to
-#>   Assist Design and Analysis of Agronomic Experiments_. R package
-#>   version 1.5.0, <https://biometryhub.github.io/biometryassist/>.
+#>   Assist Design and Analysis of Agronomic Experiments_. Adelaide
+#>   University. doi:10.32614/CRAN.package.biometryassist
+#>   <https://doi.org/10.32614/CRAN.package.biometryassist>. R package
+#>   version 1.5.1, <https://biometryhub.github.io/biometryassist/>.
 #> 
 #> A BibTeX entry for LaTeX users is
 #> 
 #>   @Manual{,
-#>     title = {biometryassist: Functions to Assist Design and Analysis of Agronomic Experiments},
+#>     title = {{biometryassist}: Functions to Assist Design and Analysis of Agronomic Experiments},
 #>     author = {Sharon Nielsen and Sam Rogers and Annie Conway},
 #>     year = {2026},
-#>     note = {R package version 1.5.0},
+#>     note = {R package version 1.5.1},
+#>     organization = {Adelaide University},
 #>     url = {https://biometryhub.github.io/biometryassist/},
+#>     doi = {10.32614/CRAN.package.biometryassist},
 #>   }
 ```
 
@@ -180,6 +181,6 @@ for guidelines on how to get involved.
 
 ## Licence
 
-MIT © University of Adelaide Biometry Hub. See
+MIT © Adelaide University Biometry Hub. See
 [LICENSE.md](https://biometryhub.github.io/biometryassist/LICENSE.md)
 for details.

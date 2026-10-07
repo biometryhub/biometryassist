@@ -1,4 +1,4 @@
 # License
 
     YEAR: 2019
-    COPYRIGHT HOLDER: University of Adelaide Biometry Hub
+    COPYRIGHT HOLDER: Adelaide University Biometry Hub

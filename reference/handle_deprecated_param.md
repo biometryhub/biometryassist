@@ -1,6 +1,9 @@
 # Handle deprecated parameters
 
-Simple internal function to warn about deprecated parameters
+Internal function to warn about a deprecated parameter: one that is
+still a formal of the calling function and still works, but is no longer
+recommended. For a parameter that has been removed outright, use
+[`handle_removed_param()`](https://biometryhub.github.io/biometryassist/reference/handle_removed_param.md).
 
 ## Usage
 
@@ -17,21 +20,20 @@ handle_deprecated_param(
 
 - old_param:
 
-  Name of the deprecated parameter
+  Name of the deprecated parameter.
 
 - new_param:
 
-  Name of the replacement parameter or NULL if parameter is being
-  removed
+  Name of the replacement parameter, or `NULL` if none.
 
 - custom_msg:
 
-  Optional custom message to append to the warning
+  Optional custom message to append to the warning.
 
 - call_env:
 
-  Environment where to check for the deprecated parameter
+  Environment where to check for the deprecated parameter.
 
 ## Value
 
-Nothing, called for side effects (warnings)
+`NULL`, invisibly; called for its side effect (a warning).
