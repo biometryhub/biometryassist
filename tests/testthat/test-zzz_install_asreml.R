@@ -293,9 +293,10 @@ test_that("find_existing_package works correctly", {
 
 	# Test with matching files
 	withr::with_tempdir({
-		file.create("asreml_4.1.0.zip")
-		Sys.sleep(0.3)
-		file.create("asreml_4.2.0.zip")
+		file.create(c("asreml_4.1.0.zip", "asreml_4.2.0.zip"))
+		# Set the older file's mtime explicitly rather than sleeping between
+		# creations
+		Sys.setFileTime("asreml_4.1.0.zip", Sys.time() - 3600)
 		result <- find_existing_package()
 		expect_equal(basename(result), "asreml_4.2.0.zip") # Should get the most recent one
 	})
