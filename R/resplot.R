@@ -121,6 +121,11 @@ create_diagnostic_plots <- function(group_residuals, axes.size, label.size) {
 	breaks_seq <- seq(0.25, max_val, by = 0.5)
 	breaks_seq <- c(-rev(breaks_seq), breaks_seq)
 
+	# Build the shared theme once: constructing a complete theme is relatively
+	# expensive (~20 ms each in ggplot2 4.0), and all three plots use the same one
+	plot_theme <- ggplot2::theme_bw(base_size = axes.size) +
+		ggplot2::theme(plot.tag = ggplot2::element_text(size = label.size))
+
 	a <- ggplot2::ggplot(
 		data = group_residuals_clean,
 		mapping = ggplot2::aes(x = stdres)
@@ -131,9 +136,8 @@ create_diagnostic_plots <- function(group_residuals, axes.size, label.size) {
 			colour = "black",
 			breaks = breaks_seq
 		) +
-		ggplot2::theme_bw(base_size = axes.size) +
-		ggplot2::labs(y = "Frequency", x = "Standardised Residual", tag = "A") +
-		ggplot2::theme(plot.tag = ggplot2::element_text(size = label.size))
+		plot_theme +
+		ggplot2::labs(y = "Frequency", x = "Standardised Residual", tag = "A")
 
 	b <- ggplot2::ggplot(group_residuals_clean, ggplot2::aes(sample = stdres)) +
 		ggplot2::geom_qq(
@@ -143,13 +147,12 @@ create_diagnostic_plots <- function(group_residuals, axes.size, label.size) {
 			shape = 21
 		) +
 		ggplot2::geom_qq_line() +
-		ggplot2::theme_bw(base_size = axes.size) +
+		plot_theme +
 		ggplot2::labs(
 			y = "Standardised Residual",
 			x = "Theoretical",
 			tag = "B"
-		) +
-		ggplot2::theme(plot.tag = ggplot2::element_text(size = label.size))
+		)
 
 	c <- ggplot2::ggplot(
 		data = group_scatter_clean,
@@ -161,13 +164,12 @@ create_diagnostic_plots <- function(group_residuals, axes.size, label.size) {
 			size = 2,
 			shape = 21
 		) +
-		ggplot2::theme_bw(base_size = axes.size) +
+		plot_theme +
 		ggplot2::labs(
 			y = "Standardised Residual",
 			x = "Fitted Value",
 			tag = "C"
-		) +
-		ggplot2::theme(plot.tag = ggplot2::element_text(size = label.size))
+		)
 
 	list(histogram = a, qq = b, scatter = c)
 }
