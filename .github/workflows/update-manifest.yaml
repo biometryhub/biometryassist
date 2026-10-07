@@ -27,7 +27,7 @@ jobs:
         run: Rscript inst/build_manifest.R
 
       - name: Create PR if manifest changed
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "chore: update manifest [skip ci]"
