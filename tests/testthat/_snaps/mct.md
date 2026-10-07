@@ -19,10 +19,10 @@
     HSD value: 0.0969097 
     
     Predicted values:
-         Species predicted.value std.error  df groups   ci  low   up
-    1     setosa            0.25      0.03 147      a 0.06 0.19 0.30
-    2 versicolor            1.33      0.03 147      b 0.06 1.27 1.38
-    3  virginica            2.03      0.03 147      c 0.06 1.97 2.08
+         Species predicted.value std.error groups   ci  low   up
+    1     setosa            0.25      0.03      a 0.06 0.19 0.30
+    2 versicolor            1.33      0.03      b 0.06 1.27 1.38
+    3  virginica            2.03      0.03      c 0.06 1.97 2.08
 
 # mct removes aliased treatments in aov
 
