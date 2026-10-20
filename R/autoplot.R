@@ -422,10 +422,12 @@ autoplot.pairwise_comparisons <- function(
 #'   difference from the reference — so the interval clears the reference line
 #'   exactly when the comparison is significant (with `adjust = "dunnett"`).
 #'   Faceted by the `by` variable(s) when present. Significant comparisons are
-#'   flagged with an asterisk (`*`), prefixed to the y-axis label when unfaceted
-#'   or beside the interval when faceted.
+#'   flagged with an asterisk (`*`) — at the left edge of the panel beside the
+#'   level's label when unfaceted, or beside the interval when faceted. It is
+#'   drawn as a plot layer, so the y-axis labels can be restyled with
+#'   [ggplot2::scale_y_discrete()] without losing it.
 #'
-#' @importFrom ggplot2 autoplot ggplot aes geom_vline geom_linerange geom_point geom_text scale_y_discrete theme_bw labs theme element_text facet_wrap
+#' @importFrom ggplot2 autoplot ggplot aes geom_vline geom_linerange geom_point geom_text geom_blank theme_bw labs theme element_text facet_wrap
 #' @importFrom rlang check_dots_used
 #' @importFrom stats as.formula setNames
 #' @export
@@ -510,37 +512,42 @@ autoplot.reference_comparisons <- function(
 			axis.text.y = ggplot2::element_text(angle = label_rotation)
 		)
 
-	if (is.null(by)) {
-		# Unfaceted: prefix a "*" to the labels of significant levels (keeping
-		# labels right-justified against the axis). The reference carries no test.
-		sig_lookup <- stats::setNames(df$significant, as.character(df$level1))
-		labels <- vapply(
-			y_levels,
-			function(l) {
-				if (!is.na(sig_lookup[l]) && isTRUE(unname(sig_lookup[l]))) {
-					paste0("* ", l)
-				} else {
-					l
-				}
-			},
-			character(1)
-		)
-		plot <- plot +
-			ggplot2::scale_y_discrete(labels = stats::setNames(labels, y_levels))
-	} else {
-		# Faceted: mark significance beside each significant interval.
+	# Mark significance with a "*". Drawn as a layer (not via the y-axis labels)
+	# so a user-supplied scale_y_discrete() does not remove it. Unfaceted, it sits
+	# at the left edge of the panel beside the tick label; faceted, beside the
+	# interval (a left-edge star would only label the first facet's axis).
+	sig_df <- df[df$significant %in% TRUE, , drop = FALSE]
+	if (nrow(sig_df) > 0) {
+		# Padding so the asterisk does not overlap an interval or get clipped
+		# (text width does not train the x scale).
+		x_range <- range(c(df$xmin, df$xmax, ref_df$mean), na.rm = TRUE)
+		if (is.null(by)) {
+			sig_df$star_x <- -Inf
+			pad_x <- x_range[1] - 0.05 * diff(x_range)
+		} else {
+			sig_df$star_x <- sig_df$xmax
+			pad_x <- x_range[2] + 0.05 * diff(x_range)
+		}
 		plot <- plot +
 			ggplot2::geom_text(
-				data = df[df$significant, , drop = FALSE],
+				data = sig_df,
 				ggplot2::aes(
-					x = .data[["xmax"]],
+					x = .data[["star_x"]],
 					y = .data[["ylevel"]],
 					label = "*"
 				),
-				hjust = -0.4,
+				hjust = -0.3,
 				vjust = 0.75,
-				size = 6
+				size = 8
 			) +
+			ggplot2::geom_blank(
+				data = data.frame(x = pad_x),
+				ggplot2::aes(x = .data[["x"]])
+			)
+	}
+
+	if (!is.null(by)) {
+		plot <- plot +
 			ggplot2::facet_wrap(
 				stats::as.formula(paste("~", paste(by, collapse = " + "))),
 				labeller = ggplot2::label_both
