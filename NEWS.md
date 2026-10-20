@@ -1,3 +1,9 @@
+# biometryassist 1.5.2
+
+## Bug Fixes
+
+- `autoplot()` for `reference_comparisons()` output no longer loses the significance asterisks when the y-axis labels are changed with `scale_y_discrete()`. The asterisks are now drawn as a plot layer and are slightly larger; on unfaceted plots they sit beside the level labels inside the plot area. (#204)
+
 # biometryassist 1.5.1
 
 ## Minor Changes
