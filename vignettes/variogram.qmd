@@ -1,0 +1,511 @@
+---
+title: "Model Fitting Using the Sample Variogram"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    toc-location: right
+    embed-resources: true
+vignette: >
+  %\VignetteIndexEntry{Model Fitting Using the Sample Variogram}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+engine: knitr
+bibliography: references.bib
+---
+
+
+
+
+# Introduction
+
+The `variogram()` function plots the variogram for the spatial residual variance component for ASReml models.
+The variogram can be used for checking the assumptions of the model by revealing unexplained spatial patterns. 
+The function only works on model objects from ASReml, and the model has to have a two-dimensional spatial residual variance component.
+We will go into more detail below about how to use the variogram for model fitting, and then show a practical example of this approach using the functions from `biometryassist`.
+
+
+# Analysis Approach
+
+The variogram can be used in situations where we expect two-dimensional spatial correlation, and we want to find an appropriate model for this correlation. 
+For instance, in an agricultural field trial, we expect some correlation between the observed properties of adjacent plants in the field. We will refer to the two dimensions as "rows" and "columns" in this vignette, but they could equivalently have other names, such as "ranges" or "bays".
+
+There are multiple ways to account for spatial effects in a linear mixed model, including:
+
+* Assuming that the residuals follow an autoregressive process.
+
+* Adding random effects for the rows and/or columns, essentially assuming there is a different underlying mean on each row/column.
+
+* Adding a trend term across one of the dimensions, for instance a linear trend or a cubic spline.
+
+But it is difficult to know where to start with including spatial effects in the model. 
+@gilmour1997 recommend starting with a model assuming a separable two-dimensional AR1 process across the rows and columns. We can then compare the sample variogram to the theoretical variogram for a two-dimesional AR1 process, and use the differences to infer what changes are required to appropriately model the spatial pattern in the data.
+
+The theoretical variogram for a two-dimensional AR1 process increases from 0 at 0 row and column displacement to a plateau.
+How many lags it takes to reach this plateau depends on the strength of the correlation in each dimension.
+For instance, the following plot shows the theoretical variogram of a two-dimensional autoregressive process with 0.6 row correlation and 0.4 column correlation.
+<!-- , and [.0.4 overall variance?.]. -->
+
+
+![](figures/unnamed-chunk-1-1.png){fig-align="default"}
+
+However, for the sample variogram for observed data, we will not observe something exactly like the theoretical variogram.
+Instead, even assuming the residuals follow a two-dimensional AR1 process, we will observe the variogram increasing to a plateau and then oscillating around it.
+
+<!-- BEGINNINGS OF A BETTER PARAGRAPH: -->
+<!-- However, even if our data follow a separable two-dimensional autoregressive process, we will not observe something exactly like the theoretical variogram, because the sample variogram has increasing variance across row and column lags [NEED CITATION/MORE DETAILS?]. -->
+<!-- Instead, even assuming the residuals follow a two-dimensional AR1 process, we will observe the variogram increasing to a plateau and then randomly oscillating around it.  -->
+
+<!-- To provide an example of the sort of sample variograms we would like to see, the following four plots show data that has been simulated based on a two-dimensional AR1 process with the same correlation coefficients as the theoretical variogram above. -->
+<!-- As we can observe, they differ considerably from the theoretical variogram and from each other. -->
+
+<!-- ```{r, echo = FALSE, message = FALSE, warning = FALSE, results = 'hide'} -->
+<!-- # this needs to be checked -->
+
+<!-- # set a seed here for consistent output -->
+<!-- set.seed(2026) -->
+
+<!-- simulated_plots <- list() -->
+<!-- for (k in 1:4){ -->
+<!--   phi_row <- 0.6 # set autoregressive parameter for rows -->
+<!--   phi_col <- 0.4 # set autoregressive parameter for columns -->
+<!--   n_rows <- 14 -->
+<!--   n_cols <- 10 -->
+<!--   res.df <- matrix(nrow = n_rows, ncol = n_cols) # initialise -->
+<!--   res.df[1,1] <- rnorm(1) -->
+<!--   # build out first row: -->
+<!--   for (j in 2:n_cols){ -->
+<!--     res.df[1,j] <- phi_col*res.df[1,j-1] + rnorm(1) -->
+<!--   } -->
+<!--   # build out first col: -->
+<!--   for (i in 2:n_rows){ -->
+<!--     res.df[i,1] <- phi_row*res.df[i-1,1] + rnorm(1) -->
+<!--   } -->
+<!--   # fill out rest, one col at a time -->
+<!--   for (j in 2:n_cols){ -->
+<!--     for (i in 2:n_rows){ -->
+<!--       res.df[i,j] <- phi_row*res.df[i-1,j] + phi_col*res.df[i,j-1] - phi_row*phi_col*res.df[i-1,j-1] + rnorm(1) -->
+<!--     } -->
+<!--   } -->
+<!--   res.df <- as.data.frame(res.df) -->
+<!--   colnames(res.df) <- 1:ncol(res.df) -->
+<!--   res.df$row <- rownames(res.df) -->
+<!--   res.df <- res.df |>  -->
+<!--     pivot_longer(!row, names_to = "col", values_to = "residual") |> -->
+<!--     mutate(row = factor(row, levels = paste(1:n_rows)), col = factor(col, levels = paste(1:n_cols))) |> -->
+<!--     arrange(row, col) -->
+<!--   # heat_map(res.df, value = residual, x_axis = row, y_axis = col) -->
+<!--   sim.mod <- asreml(fixed = residual ~ 1,  -->
+<!--                     residual = ~ar1(row):ar1(col),  -->
+<!--                     data = res.df) -->
+<!--   simulated_plots[[k]] <- variogram(sim.mod)[[1]] -->
+<!-- } -->
+<!-- (simulated_plots[[1]] + simulated_plots[[2]]) / (simulated_plots[[3]] + simulated_plots[[4]]) -->
+<!-- ``` -->
+
+After hypothesised spatial effects are included in the model, we inspect the sample variogram again to determine the extent to which the patterns we observed have disappeared.
+Model fitting using the variogram is an iterative process, where the variogram is interpreted at each step.
+Other metrics can also be used to determine the extent to which the model has been improved at each step, such as the results of log-likelihood ratio tests or the Akaike's Information Criterion (AIC) values for the different models.
+
+Unfortunately, the process of determining what spatial effects are present based on the variogram is somewhat subjective. 
+@sec-case-study-1 below shows the process of interpreting sample variograms with a real dataset as an example.
+
+## Number of Rows and Columns
+
+It is important to note that we need to have enough rows or columns to fit an autoregressive process.
+A general rule of thumb is that there need to be at least 5 levels in the dimension values <!-- [CITATION HERE WOULD BE GOOD. BUT DIFFICULT TO FIND]. -->
+For instance, if there are less than 5 columns but 5 or more rows, we would fit an AR1 process only in the row dimension, and assume there is no correlation in the column dimension. 
+In ASReml syntax, we would write this as `ar1(row):id(column)`.
+
+In the case where we are only fitting an AR1 process along one dimension, we do not expect to see exactly an AR1 process in the other dimension, but we could still look for the presence of trend or random effects in that dimension.
+
+
+# Practical Example {#sec-case-study-1}
+
+To demonstrate the process outlined in the previous section, we will go through an example of using the variogram to find an appropriate spatial model for a dataset. The example is from @gilmour1997, where process of using the variogram for model-fitting is extensively discussed, and uses the Slate Hall wheat trial dataset which is publicly available in the `agridat` package.
+
+
+``` r
+# Load necessary packages
+library(tidyverse)
+library(asreml)
+library(biometryassist)
+
+# Load the data from the agridat package
+data <- agridat::gilmour.slatehall
+
+# Data formatting
+data <- data |>
+  mutate(row = factor(row), col = factor(col)) |>
+  arrange(row, col)
+```
+
+While our focus is on the use of the variogram, it is often a good idea to visualise the data before fitting models. Spatial patterns can sometimes be detected visually in the exploratory plots.
+
+The `heat_map()` function from `biometryassist` can be used to generate a heat map of the data. 
+As seen below, in the case of the Slate Hall data, the heat map reveals an increasing trend in yield across the rows.
+
+
+``` r
+data |> heat_map(value = yield, x_axis = row, y_axis = col)
+```
+
+
+![](figures/unnamed-chunk-3-1.png){fig-align="default"}
+
+We can also use the `summary_graph()` function to generate side-by-side boxplots showing the distribution of yield for each row and column. The side-by-side boxplot of yield by row supports the presence of a trend across the rows.
+
+
+``` r
+summary_graph(data = data, response = "yield", exp_var = "row")
+```
+
+
+![](figures/unnamed-chunk-4-1.png){fig-align="default"}
+
+
+
+``` r
+summary_graph(data = data, response = "yield", exp_var = "col")
+```
+
+
+![](figures/unnamed-chunk-5-1.png){fig-align="default"}
+
+As recommended by @gilmour1997, we first fit an initial linear mixed model using ASReml with an AR1:AR1 residual structure over the rows and columns.
+This allows us to calculate the sample variogram, which is plotted by the `variogram` function. 
+We also include the genotype as a fixed effect, and rep as a random effect in the model.
+
+
+``` r
+m1 <- asreml(yield ~ gen,
+             random = ~rep,
+             residual = ~ar1(row):ar1(col),
+             data = data)
+```
+
+We can now calculate and display the sample variogram of the first model by running the `variogram` function from `biometryassist` using the fitted ASReml model object as the input.
+
+
+``` r
+variogram(m1)
+```
+
+
+![](figures/unnamed-chunk-7-1.png){fig-align="default"}
+
+The sample variogram of our initial model does not fit the theoretical variogram of an AR1:AR1 process.
+The clearest deviation from this pattern is the increasing variance across row lags, which suggests the presence of a trend across the rows.
+This is in line with our initial impression from the exploratory plots.
+
+To make our model better fit the data, we will add a linear row effect, re-fit the model, and observe how the change impacts the sample variogram.
+If a linear trend does not accurately capture the trend, then we will still observe an increasing tendency across the rows in the variogram of the new model. In that case, we would need to explore other trend terms such as cubic splines.
+
+
+``` r
+m2 <- asreml(yield ~ gen + lin(row),
+                random = ~rep,
+                residual = ~ar1(row):ar1(col),
+                data = data)
+```
+
+```
+## ASReml Version 4.2 21/09/2026 10:12:56
+##           LogLik        Sigma2     DF     wall
+##  1     -742.1896      37392.58    124   10:12:56
+##  2     -732.6288      34187.13    124   10:12:56
+##  3     -725.6024      35433.58    124   10:12:56
+##  4     -723.3242      39758.19    124   10:12:56
+##  5     -722.8578      43918.28    124   10:12:56
+##  6     -722.8311      45103.99    124   10:12:56
+##  7     -722.8293      45402.24    124   10:12:56
+```
+
+
+``` r
+variogram(m2)
+```
+
+
+![](figures/unnamed-chunk-9-1.png){fig-align="default"}
+
+For the second model, we no longer see an increasing pattern in variogram across the row lag, which suggests that the trend has been captured well enough by the linear row effect. 
+
+We can also check the significance of this effect with the Wald test, where we find the linear row term has a p-value of around 0.0117, supporting its significance.
+
+
+``` r
+wald(m2, denDF = 'default')$Wald
+```
+
+```
+## ASReml Version 4.2 21/09/2026 10:12:57
+##           LogLik        Sigma2     DF     wall
+##  1     -722.8292      45477.53    124   10:12:57
+##  2     -722.8292      45483.67    124   10:12:57
+##  3     -722.8292      45498.58    124   10:12:57
+```
+
+```
+## [0;34m
+## Wald tests for fixed effects.[0m
+## [0;34mResponse: yield[0m
+## 
+##             Df denDF  F.inc        Pr
+## (Intercept)  1   7.3 3793.0 0.0000000
+## gen         24  83.1   22.6 0.0000000
+## lin(row)     1   9.5    9.7 0.0116671
+```
+
+However, there is still deviation from an AR1:AR1 process in the variogram for the second model. Instead of a random distribution at each row lag, we see ridges where the variance is higher or lower across different column lags at the same row lag. This suggests the presence of random row effects.
+
+There are also traces of a similar pattern for the columns, but the pattern in the rows is clearer so we will investigate it first by fitting a third model with a random row term, in addition to the linear row term already included.
+
+
+``` r
+m3 <- asreml(yield ~ gen + lin(row),
+                random = ~rep + row,
+                residual = ~ar1(row):ar1(col),
+                data = data)
+```
+
+```
+## ASReml Version 4.2 21/09/2026 10:12:57
+##           LogLik        Sigma2     DF     wall
+##  1     -732.1524      30074.69    124   10:12:57
+##  2     -726.0563      27937.51    124   10:12:57
+##  3     -721.1006      27164.63    124   10:12:57  (  1 restrained)
+##  4     -719.0413      27084.45    124   10:12:57  (  1 restrained)
+##  5     -718.5305      26184.63    124   10:12:57  (  1 restrained)
+##  6     -718.4968      25864.68    124   10:12:57  (  1 restrained)
+##  7     -718.4965      25831.41    124   10:12:57  (  1 restrained)
+```
+
+
+``` r
+variogram(m3)
+```
+
+
+![](figures/unnamed-chunk-12-1.png){fig-align="default"}
+
+We no longer see the identified patterns in the row lags, suggesting the random row term has improved the model. We can also check the significance of the random row term using the log-likelihood ratio test.
+
+
+``` r
+logl_test(m3, rand.terms = c("rep", "row"))
+```
+
+```
+##   Term LogLRT.pvalue
+## 1  rep         1.000
+## 2  row         0.002
+```
+
+The p-value of 0.002 suggests that the random row term is clearly significant.
+
+The variogram of the third model is close to an AR1:AR1 process. However, we can still see some signs of a ridge pattern on the column lags. For instance, the variance at a column lag of 1 is notably higher than at a column lag of 2, across most row lags.
+This pattern suggests the possibility of a random column term, so we will add this to the model and fit model 4. 
+
+
+``` r
+m4 <- asreml(yield ~ gen + lin(row),
+                random = ~rep + row + col,
+                residual = ~ar1(row):ar1(col),
+                data = data)
+```
+
+```
+## ASReml Version 4.2 21/09/2026 10:12:57
+##           LogLik        Sigma2     DF     wall
+##  1     -731.8597      28440.58    124   10:12:58
+##  2     -724.4951      25840.73    124   10:12:58
+##  3     -719.0729      25067.17    124   10:12:58
+##  4     -716.8311      25084.41    124   10:12:58  (  1 restrained)
+##  5     -716.2114      24318.66    124   10:12:58  (  1 restrained)
+##  6     -716.1670      23981.65    124   10:12:58  (  1 restrained)
+##  7     -716.1663      23946.58    124   10:12:58  (  1 restrained)
+```
+
+
+``` r
+variogram(m4)
+```
+
+
+![](figures/unnamed-chunk-15-1.png){fig-align="default"}
+
+The variogram now looks very close to what we would expect for an AR1:AR1 process. The semivariance initially increases from zero displacement along both axes, and then oscillates around a fairly constant level. 
+<!-- There are some slightly larger deviations for higher lags, but for a sample this is expected, since these are based on less observations *(maybe make a note here or earlier to explain this concept in more detail)* -->
+
+We can also check the significance of the row and column random terms together with the log-likelihood ratio test.
+
+
+``` r
+logl_test(m4, rand.terms = c("rep", "row", "col"))
+```
+
+```
+##   Term LogLRT.pvalue
+## 1  rep         1.000
+## 2  row         0.010
+## 3  col         0.031
+```
+
+The log-likelihood ratio test suggests that both our row and column random effects are clearly significant. The column effect is not as significant as the row effect, which makes sense given it was not as clear on the variogram.
+
+We can also check the fixed effects, to make sure that the linear row term is still significant with the additional random effects in the model.
+
+
+``` r
+wald(m4, denDF = 'default')$Wald
+```
+
+```
+## ASReml Version 4.2 21/09/2026 10:12:58
+##           LogLik        Sigma2     DF     wall
+##  1     -716.1663      23945.45    124   10:12:58
+##  2     -716.1663      23945.44    124   10:12:58
+##  3     -716.1663      23945.43    124   10:12:58
+```
+
+```
+## [0;34m
+## Wald tests for fixed effects.[0m
+## [0;34mResponse: yield[0m
+## 
+##             Df denDF  F.inc        Pr
+## (Intercept)  1  17.0 4009.0 0.0000000
+## gen         24  77.4   21.4 0.0000000
+## lin(row)     1  13.9   10.5 0.0059781
+```
+
+<!-- --- -->
+
+Another way to assess whether the additional spatial terms improved the model is using the AIC, which is included in the `summary()` of an ASReml model, for instance:
+
+
+``` r
+summary(m1)$aic
+```
+
+```
+## [1] 1466.026
+## attr(,"parameters")
+## [1] 4
+```
+
+
+
+|Model |Spatial Terms      |      AIC|
+|:-----|:------------------|--------:|
+|1     |                   | 1466.026|
+|2     |lin(row)           | 1453.659|
+|3     |lin(row), row      | 1446.993|
+|4     |lin(row), row, col | 1444.333|
+
+The AIC for each of our models calculated is displayed in @tbl-aic. We can see that the AIC has decreased at each step where additional terms were included, indicating a better fitting model.
+
+<!-- --- -->
+
+While we have not included this above, in order to be concise, the standard assumptions of linear regression should also be checked at each stage of model fitting. As discussed further in [another vignette - link], we can use the `resplot()` function from `biometryassist` to check the QQ-plot of the residuals and residuals vs fitted plot to assess the assumptions of normality, linearity and homoscedasticity.
+
+Below, we generate the residual plots for our initial model and our final model.
+
+
+``` r
+# Assumption plots for initial model
+resplot(m1)
+```
+
+
+![](figures/unnamed-chunk-19-1.png){fig-align="default"}
+
+
+``` r
+# Assumption plots for final model
+resplot(m4)
+```
+
+
+![](figures/unnamed-chunk-20-1.png){fig-align="default"}
+
+In this case, the assumptions are sufficiently satisfied for both the initial and final models.
+
+<!-- In this case, the residuals are sufficiently close to a normal distribution, by visual inspection of the QQ-plot (panel B) and the Shapiro-Wilk W test (which is inherently conservative and should not be relied on in all cases).  -->
+<!-- In the residuals vs fitted plot (panel C), while the residuals appear less variable for smaller fitted values, this is likely due to less observations, so the residuals are sufficiently homoskedastic. -->
+
+
+# Display Options
+
+## Multiple Plots
+
+In situations where there is a two-dimensional spatial variance structure fitted separately across a third dimension (for instance, using `dsum`  in ASReml), the `variogram` function will produce a separate variogram for every level of this dimension.
+The default behaviour of the function is to print each variogram as a separate plot, but up to six can be combined on a single plot with the argument `onepage = TRUE`. 
+
+This feature is particularly useful in field trials where the response was measured across the same number of rows and columns at different sites, dates or soil depths. In such cases, it is possible that there are different spatial trends on different row-column grids, which need to be observed separately.
+
+For example, in the multi-environment trial of corn from [@besag1999], sourced from the `agridat` package, yield was measured at six sites, each in a different county in North Carolina, each with 18 rows and 11 columns. With a model fitting a separate AR1:AR1 process at each site, we can visualise the variogram for each site as follows.
+
+
+``` r
+# Load the data
+besag.df <- agridat::besag.met
+besag.df <- besag.df |> 
+  mutate(across(c(row, col), factor)) |> 
+  arrange(county, col, row)
+
+# Fit the model
+besag.asr <- asreml(
+  fixed = yield ~ county,
+  random = ~ gen:county,
+  residual = ~ dsum( ~ ar1(col):ar1(row)|county),
+  trace = FALSE,
+  data = besag.df
+)
+
+# Plot the variograms
+variogram(besag.asr, onepage = TRUE)
+```
+
+```
+## [[1]]
+```
+
+
+![](figures/unnamed-chunk-21-1.png){fig-align="default"}
+
+
+
+Note that you will need a display window large enough to see all six variograms clearly, such as by making the plots pane in RStudio a full-screen window.
+
+## Changing Colour Scheme
+
+The colour scheme of the variogram plot can be changed from the default using the `palette` argument. The potential options are:
+
+* `"viridis"`
+* `"colo(u)r blind"` (both equivalent to `"viridis"`)
+* `"magma"`
+* `"inferno"`
+* `"plasma"`
+* `"cividis"`
+* `"rocket"`
+* `"mako"`
+* `"turbo"`
+* `"Spectral"`
+
+For example, we can use the colour blind friendly viridis colour scheme to display the variogram for the final model for to the Slate Hall wheat trial data from @sec-case-study-1 above.
+
+
+``` r
+variogram(m4, palette = "viridis")
+```
+
+
+![](figures/unnamed-chunk-23-1.png){fig-align="default"}
+
+
+# References
+
+::: {#refs}
+:::
