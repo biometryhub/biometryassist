@@ -554,3 +554,42 @@ test_that("autoplot.reference_comparisons facets by the `by` variable", {
 	expect_false(inherits(p$facet, "FacetNull"))
 	expect_silent(ggplot2::ggplot_build(p))
 })
+
+test_that("faceted autoplot places significance stars beside the interval", {
+	# Large treatment effects relative to the noise so every comparison is
+	# significant, exercising the faceted branch of the asterisk placement.
+	set.seed(1)
+	d <- expand.grid(
+		trt = factor(c("ctrl", "a", "b")),
+		site = factor(c("S1", "S2")),
+		rep = 1:5
+	)
+	d$y <- rnorm(nrow(d), sd = 0.1) + 10 * as.numeric(d$trt)
+	m <- aov(y ~ trt * site, data = d)
+	# Holm keeps the intervals deterministic (Dunnett uses Monte-Carlo qmvt).
+	out <- suppressMessages(reference_comparisons(
+		m,
+		classify = "trt:site",
+		reference = "ctrl",
+		by = "site",
+		adjust = "holm"
+	))
+	expect_true(all(out$p.value < attributes(out)$sig_level))
+
+	p <- autoplot(out)
+	geoms <- vapply(p$layers, function(l) class(l$geom)[1], character(1))
+	expect_true("GeomText" %in% geoms)
+	expect_true("GeomBlank" %in% geoms)
+
+	# Stars sit at the upper end of each significant interval, not at -Inf.
+	star_df <- p$layers[[which(geoms == "GeomText")]]$data
+	expect_equal(star_df$star_x, star_df$xmax)
+	expect_true(all(is.finite(star_df$star_x)))
+
+	# The blank layer pads the x range beyond the right-most interval end so the
+	# star is not clipped.
+	pad_x <- p$layers[[which(geoms == "GeomBlank")]]$data$x
+	expect_gt(pad_x, max(star_df$xmax))
+
+	expect_silent(ggplot2::ggplot_build(p))
+})
