@@ -21,6 +21,9 @@ library(asreml)
 library(biometryassist)
 library(patchwork)
 library(agridat)
+
+# Stop asreml writing ANSI colour codes into the precomputed output
+asreml.options(colourise = FALSE)
 ```
 
 
