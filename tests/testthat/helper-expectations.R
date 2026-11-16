@@ -211,6 +211,21 @@ capture_warnings_text <- function(expr) {
 	paste(testthat::capture_warnings(expr), collapse = "\n")
 }
 
+# Fit sommer::mmes() with iteration output suppressed, across sommer versions.
+# sommer < 4.5 takes `verbose` as a formal argument of mmes(); sommer >= 4.5
+# moved it to `control = mmes_control(diagnostics = list(verbose = ))` and
+# errors with "unused argument (verbose = FALSE)" if it is passed directly.
+fit_mmes_quiet <- function(...) {
+	if ("verbose" %in% names(formals(sommer::mmes))) {
+		quiet <- list(verbose = FALSE)
+	} else {
+		quiet <- list(
+			control = sommer::mmes_control(diagnostics = list(verbose = FALSE))
+		)
+	}
+	return(do.call(sommer::mmes, c(list(...), quiet)))
+}
+
 # Print plots to a null device for the rest of the calling test (or file, when
 # called at the top level of a test file), so printing
 # doesn't open the default device and write Rplots.pdf to the working directory.
