@@ -269,27 +269,30 @@ wald(m4, denDF = 'default')$Wald
 
 <!-- --- -->
 
-Another way to assess whether the additional spatial terms improved the model is using the AIC, which is included in the `summary()` of an ASReml model, for instance:
+Another way to assess whether the additional random terms improved the model is using the AIC, which is included in the `summary()` of an ASReml model, for instance:
 
 ```{r}
-summary(m1)$aic
+summary(m2)$aic
 ```
 
+Note that ASReml fits models by residual maximum likelihood (REML), and REML log-likelihoods, and hence AIC values, are only comparable between models with the same fixed effects.
+Model 1 is therefore not included in the comparison below, because it does not have the `lin(row)` fixed effect.
+The evidence for adding that term comes from the Wald test above instead.
 
 ```{r}
 #| label: tbl-aic
 #| echo: false
 
 data.frame(
-  Model = c("1", "2", "3", "4"),
-  `Spatial Terms` = c("", "lin(row)", "lin(row), row", "lin(row), row, col"),
-  AIC = c(summary(m1)$aic, summary(m2)$aic, summary(m3)$aic, summary(m4)$aic),
+  Model = c("2", "3", "4"),
+  `Spatial Terms` = c("lin(row)", "lin(row), row", "lin(row), row, col"),
+  AIC = c(summary(m2)$aic, summary(m3)$aic, summary(m4)$aic),
   check.names = FALSE
-) |> 
+) |>
   knitr::kable()
 ```
 
-The AIC for each of our models calculated is displayed in @tbl-aic. We can see that the AIC has decreased at each step where additional terms were included, indicating a better fitting model.
+The AIC for models 2 to 4 is displayed in @tbl-aic. We can see that the AIC has decreased at each step where additional random terms were included, indicating a better fitting model.
 
 <!-- --- -->
 
