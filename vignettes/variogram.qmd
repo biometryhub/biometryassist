@@ -46,8 +46,7 @@ How many lags it takes to reach this plateau depends on the strength of the corr
 For instance, the following plot shows the theoretical variogram of a two-dimensional autoregressive process with 0.6 row correlation and 0.4 column correlation.
 <!-- , and [.0.4 overall variance?.]. -->
 
-
-![](figures/unnamed-chunk-1-1.png){fig-align="default"}
+![](figures/theoretical-variogram-1.png)
 
 However, for the sample variogram for observed data, we will not observe something exactly like the theoretical variogram.
 Instead, even assuming the residuals follow a two-dimensional AR1 process, we will observe the variogram increasing to a plateau and then oscillating around it.
@@ -150,8 +149,7 @@ As seen below, in the case of the Slate Hall data, the heat map reveals an incre
 data |> heat_map(value = yield, x_axis = row, y_axis = col)
 ```
 
-
-![](figures/unnamed-chunk-3-1.png){fig-align="default"}
+![](figures/heatmap-yield-1.png)
 
 We can also use the `summary_graph()` function to generate side-by-side boxplots showing the distribution of yield for each row and column. The side-by-side boxplot of yield by row supports the presence of a trend across the rows.
 
@@ -160,8 +158,7 @@ We can also use the `summary_graph()` function to generate side-by-side boxplots
 summary_graph(data = data, response = "yield", exp_var = "row")
 ```
 
-
-![](figures/unnamed-chunk-4-1.png){fig-align="default"}
+![](figures/summary-yield-row-1.png)
 
 
 
@@ -169,8 +166,7 @@ summary_graph(data = data, response = "yield", exp_var = "row")
 summary_graph(data = data, response = "yield", exp_var = "col")
 ```
 
-
-![](figures/unnamed-chunk-5-1.png){fig-align="default"}
+![](figures/summary-yield-col-1.png)
 
 As recommended by @gilmour1997, we first fit an initial linear mixed model using ASReml with an AR1:AR1 residual structure over the rows and columns.
 This allows us to calculate the sample variogram, which is plotted by the `variogram` function. 
@@ -191,8 +187,7 @@ We can now calculate and display the sample variogram of the first model by runn
 variogram(m1)
 ```
 
-
-![](figures/unnamed-chunk-7-1.png){fig-align="default"}
+![](figures/variogram-m1-1.png)
 
 The sample variogram of our initial model does not fit the theoretical variogram of an AR1:AR1 process.
 The clearest deviation from this pattern is the increasing variance across row lags, which suggests the presence of a trend across the rows.
@@ -210,15 +205,15 @@ m2 <- asreml(yield ~ gen + lin(row),
 ```
 
 ```
-## ASReml Version 4.2 21/09/2026 10:12:56
+## ASReml Version 4.2 16/11/2026 22:23:29
 ##           LogLik        Sigma2     DF     wall
-##  1     -742.1896      37392.58    124   10:12:56
-##  2     -732.6288      34187.13    124   10:12:56
-##  3     -725.6024      35433.58    124   10:12:56
-##  4     -723.3242      39758.19    124   10:12:56
-##  5     -722.8578      43918.28    124   10:12:56
-##  6     -722.8311      45103.99    124   10:12:56
-##  7     -722.8293      45402.24    124   10:12:56
+##  1     -742.1896      37392.58    124   22:23:29
+##  2     -732.6288      34187.13    124   22:23:29
+##  3     -725.6024      35433.58    124   22:23:29
+##  4     -723.3242      39758.19    124   22:23:29
+##  5     -722.8578      43918.28    124   22:23:29
+##  6     -722.8311      45103.99    124   22:23:29
+##  7     -722.8293      45402.24    124   22:23:29
 ```
 
 
@@ -226,8 +221,7 @@ m2 <- asreml(yield ~ gen + lin(row),
 variogram(m2)
 ```
 
-
-![](figures/unnamed-chunk-9-1.png){fig-align="default"}
+![](figures/variogram-m2-1.png)
 
 For the second model, we no longer see an increasing pattern in variogram across the row lag, which suggests that the trend has been captured well enough by the linear row effect. 
 
@@ -239,17 +233,17 @@ wald(m2, denDF = 'default')$Wald
 ```
 
 ```
-## ASReml Version 4.2 21/09/2026 10:12:57
+## ASReml Version 4.2 16/11/2026 22:23:29
 ##           LogLik        Sigma2     DF     wall
-##  1     -722.8292      45477.53    124   10:12:57
-##  2     -722.8292      45483.67    124   10:12:57
-##  3     -722.8292      45498.58    124   10:12:57
+##  1     -722.8292      45477.53    124   22:23:29
+##  2     -722.8292      45483.67    124   22:23:29
+##  3     -722.8292      45498.58    124   22:23:29
 ```
 
 ```
-## [0;34m
-## Wald tests for fixed effects.[0m
-## [0;34mResponse: yield[0m
+## 
+## Wald tests for fixed effects.
+## Response: yield
 ## 
 ##             Df denDF  F.inc        Pr
 ## (Intercept)  1   7.3 3793.0 0.0000000
@@ -270,15 +264,15 @@ m3 <- asreml(yield ~ gen + lin(row),
 ```
 
 ```
-## ASReml Version 4.2 21/09/2026 10:12:57
+## ASReml Version 4.2 16/11/2026 22:23:29
 ##           LogLik        Sigma2     DF     wall
-##  1     -732.1524      30074.69    124   10:12:57
-##  2     -726.0563      27937.51    124   10:12:57
-##  3     -721.1006      27164.63    124   10:12:57  (  1 restrained)
-##  4     -719.0413      27084.45    124   10:12:57  (  1 restrained)
-##  5     -718.5305      26184.63    124   10:12:57  (  1 restrained)
-##  6     -718.4968      25864.68    124   10:12:57  (  1 restrained)
-##  7     -718.4965      25831.41    124   10:12:57  (  1 restrained)
+##  1     -732.1524      30074.69    124   22:23:29
+##  2     -726.0563      27937.51    124   22:23:29
+##  3     -721.1006      27164.63    124   22:23:29  (  1 restrained)
+##  4     -719.0413      27084.45    124   22:23:29  (  1 restrained)
+##  5     -718.5305      26184.63    124   22:23:29  (  1 restrained)
+##  6     -718.4968      25864.68    124   22:23:29  (  1 restrained)
+##  7     -718.4965      25831.41    124   22:23:29  (  1 restrained)
 ```
 
 
@@ -286,8 +280,7 @@ m3 <- asreml(yield ~ gen + lin(row),
 variogram(m3)
 ```
 
-
-![](figures/unnamed-chunk-12-1.png){fig-align="default"}
+![](figures/variogram-m3-1.png)
 
 We no longer see the identified patterns in the row lags, suggesting the random row term has improved the model. We can also check the significance of the random row term using the log-likelihood ratio test.
 
@@ -316,15 +309,15 @@ m4 <- asreml(yield ~ gen + lin(row),
 ```
 
 ```
-## ASReml Version 4.2 21/09/2026 10:12:57
+## ASReml Version 4.2 16/11/2026 22:23:30
 ##           LogLik        Sigma2     DF     wall
-##  1     -731.8597      28440.58    124   10:12:58
-##  2     -724.4951      25840.73    124   10:12:58
-##  3     -719.0729      25067.17    124   10:12:58
-##  4     -716.8311      25084.41    124   10:12:58  (  1 restrained)
-##  5     -716.2114      24318.66    124   10:12:58  (  1 restrained)
-##  6     -716.1670      23981.65    124   10:12:58  (  1 restrained)
-##  7     -716.1663      23946.58    124   10:12:58  (  1 restrained)
+##  1     -731.8597      28440.58    124   22:23:30
+##  2     -724.4951      25840.73    124   22:23:30
+##  3     -719.0729      25067.17    124   22:23:30
+##  4     -716.8311      25084.41    124   22:23:30  (  1 restrained)
+##  5     -716.2114      24318.66    124   22:23:30  (  1 restrained)
+##  6     -716.1670      23981.65    124   22:23:30  (  1 restrained)
+##  7     -716.1663      23946.58    124   22:23:30  (  1 restrained)
 ```
 
 
@@ -332,8 +325,7 @@ m4 <- asreml(yield ~ gen + lin(row),
 variogram(m4)
 ```
 
-
-![](figures/unnamed-chunk-15-1.png){fig-align="default"}
+![](figures/variogram-m4-1.png)
 
 The variogram now looks very close to what we would expect for an AR1:AR1 process. The semivariance initially increases from zero displacement along both axes, and then oscillates around a fairly constant level. 
 <!-- There are some slightly larger deviations for higher lags, but for a sample this is expected, since these are based on less observations *(maybe make a note here or earlier to explain this concept in more detail)* -->
@@ -362,17 +354,17 @@ wald(m4, denDF = 'default')$Wald
 ```
 
 ```
-## ASReml Version 4.2 21/09/2026 10:12:58
+## ASReml Version 4.2 16/11/2026 22:23:31
 ##           LogLik        Sigma2     DF     wall
-##  1     -716.1663      23945.45    124   10:12:58
-##  2     -716.1663      23945.44    124   10:12:58
-##  3     -716.1663      23945.43    124   10:12:58
+##  1     -716.1663      23945.45    124   22:23:31
+##  2     -716.1663      23945.44    124   22:23:31
+##  3     -716.1663      23945.43    124   22:23:31
 ```
 
 ```
-## [0;34m
-## Wald tests for fixed effects.[0m
-## [0;34mResponse: yield[0m
+## 
+## Wald tests for fixed effects.
+## Response: yield
 ## 
 ##             Df denDF  F.inc        Pr
 ## (Intercept)  1  17.0 4009.0 0.0000000
@@ -382,33 +374,35 @@ wald(m4, denDF = 'default')$Wald
 
 <!-- --- -->
 
-Another way to assess whether the additional spatial terms improved the model is using the AIC, which is included in the `summary()` of an ASReml model, for instance:
+Another way to assess whether the additional random terms improved the model is using the AIC, which is included in the `summary()` of an ASReml model, for instance:
 
 
 ``` r
-summary(m1)$aic
+summary(m2)$aic
 ```
 
 ```
-## [1] 1466.026
+## [1] 1453.659
 ## attr(,"parameters")
 ## [1] 4
 ```
 
+Note that ASReml fits models by residual maximum likelihood (REML), and REML log-likelihoods, and hence AIC values, are only comparable between models with the same fixed effects.
+Model 1 is therefore not included in the comparison below, because it does not have the `lin(row)` fixed effect.
+The evidence for adding that term comes from the Wald test above instead.
 
 
 |Model |Spatial Terms      |      AIC|
 |:-----|:------------------|--------:|
-|1     |                   | 1466.026|
 |2     |lin(row)           | 1453.659|
 |3     |lin(row), row      | 1446.993|
 |4     |lin(row), row, col | 1444.333|
 
-The AIC for each of our models calculated is displayed in @tbl-aic. We can see that the AIC has decreased at each step where additional terms were included, indicating a better fitting model.
+The AIC for models 2 to 4 is displayed in @tbl-aic. We can see that the AIC has decreased at each step where additional random terms were included, indicating a better fitting model.
 
 <!-- --- -->
 
-While we have not included this above, in order to be concise, the standard assumptions of linear regression should also be checked at each stage of model fitting. As discussed further in [another vignette - link], we can use the `resplot()` function from `biometryassist` to check the QQ-plot of the residuals and residuals vs fitted plot to assess the assumptions of normality, linearity and homoscedasticity.
+While we have not included this above, in order to be concise, the standard assumptions of linear regression should also be checked at each stage of model fitting. <!-- As discussed further in [another vignette - link], we --> We can use the `resplot()` function from `biometryassist` to check the QQ-plot of the residuals and residuals vs fitted plot to assess the assumptions of normality, linearity and homoscedasticity.
 
 Below, we generate the residual plots for our initial model and our final model.
 
@@ -418,8 +412,7 @@ Below, we generate the residual plots for our initial model and our final model.
 resplot(m1)
 ```
 
-
-![](figures/unnamed-chunk-19-1.png){fig-align="default"}
+![](figures/resplot-m1-1.png)
 
 
 ``` r
@@ -427,8 +420,7 @@ resplot(m1)
 resplot(m4)
 ```
 
-
-![](figures/unnamed-chunk-20-1.png){fig-align="default"}
+![](figures/resplot-m4-1.png)
 
 In this case, the assumptions are sufficiently satisfied for both the initial and final models.
 
@@ -472,8 +464,7 @@ variogram(besag.asr, onepage = TRUE)
 ## [[1]]
 ```
 
-
-![](figures/unnamed-chunk-21-1.png){fig-align="default"}
+![](figures/variogram-besag-1.png)
 
 
 
@@ -501,8 +492,7 @@ For example, we can use the colour blind friendly viridis colour scheme to displ
 variogram(m4, palette = "viridis")
 ```
 
-
-![](figures/unnamed-chunk-23-1.png){fig-align="default"}
+![](figures/variogram-m4-viridis-1.png)
 
 
 # References

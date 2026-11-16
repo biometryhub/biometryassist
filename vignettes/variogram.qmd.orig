@@ -56,7 +56,7 @@ How many lags it takes to reach this plateau depends on the strength of the corr
 For instance, the following plot shows the theoretical variogram of a two-dimensional autoregressive process with 0.6 row correlation and 0.4 column correlation.
 <!-- , and [.0.4 overall variance?.]. -->
 
-```{r, echo = FALSE}
+```{r theoretical-variogram, echo = FALSE}
 sigma <- 1
 var.th <- expand.grid(row.displ = 0:14, col.displ = 0:10)
 var.th$var <- 0.4*sigma + sigma*(1 - 0.6^(var.th$row.displ) * 0.4^(var.th$col.displ))
@@ -158,18 +158,18 @@ While our focus is on the use of the variogram, it is often a good idea to visua
 The `heat_map()` function from `biometryassist` can be used to generate a heat map of the data. 
 As seen below, in the case of the Slate Hall data, the heat map reveals an increasing trend in yield across the rows.
 
-```{r}
+```{r heatmap-yield}
 data |> heat_map(value = yield, x_axis = row, y_axis = col)
 ```
 
 We can also use the `summary_graph()` function to generate side-by-side boxplots showing the distribution of yield for each row and column. The side-by-side boxplot of yield by row supports the presence of a trend across the rows.
 
-```{r}
+```{r summary-yield-row}
 summary_graph(data = data, response = "yield", exp_var = "row")
 ```
 
 
-```{r}
+```{r summary-yield-col}
 summary_graph(data = data, response = "yield", exp_var = "col")
 ```
 
@@ -186,7 +186,7 @@ m1 <- asreml(yield ~ gen,
 
 We can now calculate and display the sample variogram of the first model by running the `variogram` function from `biometryassist` using the fitted ASReml model object as the input.
 
-```{r}
+```{r variogram-m1}
 variogram(m1)
 ```
 
@@ -204,7 +204,7 @@ m2 <- asreml(yield ~ gen + lin(row),
                 data = data)
 ```
 
-```{r}
+```{r variogram-m2}
 variogram(m2)
 ```
 
@@ -227,7 +227,7 @@ m3 <- asreml(yield ~ gen + lin(row),
                 data = data)
 ```
 
-```{r}
+```{r variogram-m3}
 variogram(m3)
 ```
 
@@ -249,7 +249,7 @@ m4 <- asreml(yield ~ gen + lin(row),
                 data = data)
 ```
 
-```{r}
+```{r variogram-m4}
 variogram(m4)
 ```
 
@@ -303,12 +303,12 @@ While we have not included this above, in order to be concise, the standard assu
 
 Below, we generate the residual plots for our initial model and our final model.
 
-```{r}
+```{r resplot-m1}
 # Assumption plots for initial model
 resplot(m1)
 ```
 
-```{r}
+```{r resplot-m4}
 # Assumption plots for final model
 resplot(m4)
 ```
@@ -330,7 +330,7 @@ This feature is particularly useful in field trials where the response was measu
 
 For example, in the multi-environment trial of corn from [@besag1999], sourced from the `agridat` package, yield was measured at six sites, each in a different county in North Carolina, each with 18 rows and 11 columns. With a model fitting a separate AR1:AR1 process at each site, we can visualise the variogram for each site as follows.
 
-```{r, echo = TRUE}
+```{r variogram-besag, echo = TRUE}
 # Load the data
 besag.df <- agridat::besag.met
 besag.df <- besag.df |> 
@@ -378,7 +378,7 @@ The colour scheme of the variogram plot can be changed from the default using th
 
 For example, we can use the colour blind friendly viridis colour scheme to display the variogram for the final model for to the Slate Hall wheat trial data from @sec-case-study-1 above.
 
-```{r}
+```{r variogram-m4-viridis}
 variogram(m4, palette = "viridis")
 ```
 
