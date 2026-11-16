@@ -41,3 +41,5 @@ CLAUDE\.md
 .env
 context.md
 .quarto
+^vignettes/variogram\.qmd\.orig$
+^vignettes/precompile\.R$
