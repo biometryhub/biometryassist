@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-05-22",
+  "updated": "2026-11-16",
   "packages": [
     {
       "asr_ver": "4.1.0.176",
@@ -568,7 +568,7 @@
       "os": "win",
       "os_ver": "win",
       "arm": false,
-      "published": "2026-05-06",
+      "published": "2026-09-09",
       "slug": "win-46",
       "url": "https://link.biometryhubwaite.com/win-46"
     }
