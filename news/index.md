@@ -2,6 +2,8 @@
 
 ## biometryassist 1.5.1
 
+CRAN release: 2026-10-07
+
 ### Minor Changes
 
 - Added citation information: `citation("biometryassist")` now gives the

@@ -22,5 +22,5 @@ fetch_manifest(
 ## Value
 
 A list as returned by
-[`jsonlite::fromJSON()`](https://jeroen.r-universe.dev/jsonlite/reference/fromJSON.html)
+[`jsonlite::fromJSON()`](https://rdrr.io/pkg/jsonlite/man/fromJSON.html)
 with at least a `packages` element (a list of package entries).

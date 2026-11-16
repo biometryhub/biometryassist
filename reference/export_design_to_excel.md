@@ -83,13 +83,13 @@ file <- tempfile(fileext = ".xlsx")
 
 # Export with default colours
 export_design_to_excel(my_design, file)
-#> Excel file saved as: /tmp/RtmpueVw5R/file20fc780cfe52.xlsx
+#> Excel file saved as: /tmp/RtmpO2ArSp/file1f1b3a9b38de.xlsx
 
 # Export without colours
 export_design_to_excel(my_design, file, palette = NULL)
-#> Excel file saved as: /tmp/RtmpueVw5R/file20fc780cfe52.xlsx
+#> Excel file saved as: /tmp/RtmpO2ArSp/file1f1b3a9b38de.xlsx
 
 # Export with custom palette
 export_design_to_excel(my_design, file, palette = "viridis")
-#> Excel file saved as: /tmp/RtmpueVw5R/file20fc780cfe52.xlsx
+#> Excel file saved as: /tmp/RtmpO2ArSp/file1f1b3a9b38de.xlsx
 ```
