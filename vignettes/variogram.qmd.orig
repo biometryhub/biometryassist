@@ -299,7 +299,7 @@ The AIC for models 2 to 4 is displayed in @tbl-aic. We can see that the AIC has 
 
 <!-- --- -->
 
-While we have not included this above, in order to be concise, the standard assumptions of linear regression should also be checked at each stage of model fitting. As discussed further in [another vignette - link], we can use the `resplot()` function from `biometryassist` to check the QQ-plot of the residuals and residuals vs fitted plot to assess the assumptions of normality, linearity and homoscedasticity.
+While we have not included this above, in order to be concise, the standard assumptions of linear regression should also be checked at each stage of model fitting. <!-- As discussed further in [another vignette - link], we --> We can use the `resplot()` function from `biometryassist` to check the QQ-plot of the residuals and residuals vs fitted plot to assess the assumptions of normality, linearity and homoscedasticity.
 
 Below, we generate the residual plots for our initial model and our final model.
 
