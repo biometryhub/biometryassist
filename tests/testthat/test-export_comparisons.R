@@ -180,6 +180,7 @@ test_that("max_hsd() takes the maximum over a matrix or by-group list", {
 	expect_equal(max_hsd(list(hsd = m)), 3)
 	expect_equal(max_hsd(list(hsd = list(a = m, b = 4))), 4)
 	expect_true(is.na(max_hsd(list(hsd = NULL))))
+	expect_true(is.na(max_hsd(list(hsd = matrix(NA_real_, 2, 2)))))
 })
 
 test_that("pairwise comparisons get 'difference' except for contrasts", {
@@ -231,4 +232,140 @@ test_that("invalid inputs give informative errors", {
 		export_comparisons_to_excel(iris_mc, file),
 		"Could not open existing file"
 	)
+})
+
+test_that("a missing openxlsx2 gives an informative error", {
+	mockery::stub(
+		export_comparisons_to_excel,
+		"rlang::is_installed",
+		function(pkg) FALSE
+	)
+	expect_error(
+		export_comparisons_to_excel(iris_mc, "unused.xlsx"),
+		"Package 'openxlsx2' is required"
+	)
+})
+
+test_that("further invalid inputs give informative errors", {
+	skip_if_not_installed("openxlsx2")
+	file <- withr::local_tempfile(fileext = ".xlsx")
+
+	expect_error(export_comparisons_to_excel(list(), file), "non-empty list")
+	expect_error(
+		export_comparisons_to_excel(iris_mc, file, friendly_names = NA_character_),
+		"must be TRUE or FALSE"
+	)
+})
+
+test_that("a failed save points to the file being open in Excel", {
+	skip_if_not_installed("openxlsx2")
+	bad <- file.path(withr::local_tempdir(), "no_such_dir", "out.xlsx")
+	expect_error(
+		export_comparisons_to_excel(iris_mc, bad),
+		"If it is open in Excel"
+	)
+})
+
+test_that("the sheet falls back to 'Comparisons' without a response label", {
+	skip_if_not_installed("openxlsx2")
+	file <- withr::local_tempfile(fileext = ".xlsx")
+
+	no_ylab <- iris_mc
+	attr(no_ylab, "ylab") <- NULL
+	expect_message(
+		export_comparisons_to_excel(no_ylab, file),
+		"Sheet 'Comparisons' written"
+	)
+})
+
+test_that("comparison_response() handles symbols and empty labels", {
+	x <- iris_mc
+	attr(x, "ylab") <- quote(yield)
+	expect_equal(comparison_response(x), "yield")
+	attr(x, "ylab") <- ""
+	expect_null(comparison_response(x))
+	attr(x, "ylab") <- NULL
+	expect_null(comparison_response(x))
+})
+
+test_that("the temporary sheet name avoids an existing sheet", {
+	skip_if_not_installed("openxlsx2")
+	file <- withr::local_tempfile(fileext = ".xlsx")
+
+	expect_message(export_comparisons_to_excel(
+		iris_mc,
+		file,
+		sheet = "biometryassist_tmp"
+	))
+	expect_message(export_comparisons_to_excel(iris_mc, file, sheet = "Main"))
+	expect_message(export_comparisons_to_excel(iris_rc, file, sheet = "Main"))
+
+	wb <- openxlsx2::wb_load(file)
+	expect_equal(
+		unname(wb$get_sheet_names()),
+		c("biometryassist_tmp", "Main")
+	)
+	expect_true("Max HSD" %in% sheet_cells(file, "biometryassist_tmp"))
+	expect_true("Reference level" %in% sheet_cells(file, "Main"))
+})
+
+test_that("by fits are titled by group and use the largest HSD", {
+	wb_aov <- aov(breaks ~ wool * tension, data = warpbreaks)
+	mc_by <- multiple_comparisons(wb_aov, classify = "wool:tension", by = "wool")
+	expect_equal(
+		default_section_title(mc_by),
+		"Means by wool and tension"
+	)
+	expect_equal(
+		comparison_header(mc_by)[["Max HSD"]],
+		max_hsd(mc_by)
+	)
+
+	rc_by <- reference_comparisons(
+		wb_aov,
+		classify = "wool:tension",
+		by = "wool",
+		reference = "L"
+	)
+	expect_equal(
+		default_section_title(rc_by),
+		"Comparisons with L (within each wool)"
+	)
+})
+
+test_that("section titles fall back for objects missing metadata", {
+	rc <- iris_rc
+	attr(rc, "reference") <- NULL
+	expect_equal(
+		default_section_title(rc),
+		"Comparisons with the reference level"
+	)
+	expect_true(is.na(comparison_header(rc)[["Reference level"]]))
+
+	no_factors <- structure(
+		list(predictions = data.frame(predicted.value = 1)),
+		class = "mct"
+	)
+	expect_equal(default_section_title(no_factors), "Means")
+})
+
+test_that("power transformations are tagged with their exponent", {
+	x <- structure(list(), class = "mct", trans = "power", power = -0.5)
+	expect_equal(mct_trans_tag(x), "power-0.5")
+
+	x <- iris_mc
+	attr(x, "trans") <- "power"
+	attr(x, "power") <- 0.5
+	header <- comparison_header(x)
+	expect_equal(header[["Transformation"]], "power0.5")
+	expect_true("Max HSD (power0.5 scale)" %in% names(header))
+	expect_true(
+		"estimated.power0.5.mean" %in% names(comparison_table(x, TRUE))
+	)
+})
+
+test_that("aliased levels are listed in the summary row", {
+	x <- iris_mc
+	attr(x, "aliased") <- c("A", "B")
+	expect_equal(comparison_header(x)[["Aliased levels"]], "A, B")
 })
