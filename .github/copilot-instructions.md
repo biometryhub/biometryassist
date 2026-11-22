@@ -54,7 +54,7 @@ The package centers on two workflows: **experimental design generation** and **p
 - `R/design_helpers.R` - internal helpers (`des_info`, `get_design_info`, etc.) that augment the raw `agricolae` design object with row/column layout.
 - `R/satab.R` - builds the skeletal ANOVA table (`satab` object, an S3 class with a `print` method) describing the design's sources of variation.
 - `R/create_buffers.R` (`add_buffers`) - adds buffer plots (edge/rows/columns/blocks) to a design layout.
-- `R/export_excel.R` (`export_design_to_excel`) - writes a design to a styled workbook.
+- `R/export_design_to_excel.R` (`export_design_to_excel`) - writes a design to a styled workbook.
 - `design()` returns a list of class `design` containing `$design` (data frame), `$plot.des` (ggplot/patchwork), `$satab`, and optionally `$seed`. Plotting is done via the `autoplot.design` S3 method.
 
 ### Analysis and visualisation workflow
