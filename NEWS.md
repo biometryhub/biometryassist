@@ -2,6 +2,7 @@
 
 ## Bug Fixes
 
+- `resplot(call = TRUE)` no longer shows the starting values `update()` adds to an `asreml` model's call (`G.param = <model>$G.param`, `R.param = ...`) when the model is named anything other than `model.asr`. Starting-value tables you supply yourself are still shown, since they change the model. (#207)
 - `autoplot()` for `reference_comparisons()` output no longer loses the significance asterisks when the y-axis labels are changed with `scale_y_discrete()`. The asterisks are now drawn as a plot layer and are slightly larger; on unfaceted plots they sit beside the level labels inside the plot area. (#204)
 
 # biometryassist 1.5.1
