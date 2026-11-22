@@ -202,19 +202,20 @@ extract_model_info.asreml <- function(model.obj, call = FALSE) {
 
 	model_call <- NULL
 	if (call) {
+		# update() adds starting values as `G.param = <model>$G.param` (and
+		# R.param). Drop that form whatever the model is named, but keep a
+		# deliberately supplied table (e.g. `G.param = gt` fixing a parameter),
+		# since it changes the model.
+		cl <- model.obj$call
+		for (p in c("G.param", "R.param")) {
+			arg <- cl[[p]]
+			if (is.call(arg) && identical(arg[[1]], as.name("$"))) {
+				cl[[p]] <- NULL
+			}
+		}
 		model_call <- paste(
-			trimws(deparse(model.obj$call, width.cutoff = 50)),
+			trimws(deparse(cl, width.cutoff = 50)),
 			collapse = "\n"
-		)
-		model_call <- gsub(
-			"G\\.param \\= model\\.asr\\$G\\.param, ",
-			"",
-			model_call
-		)
-		model_call <- gsub(
-			"R\\.param = model\\.asr\\$R\\.param, \\\n",
-			"",
-			model_call
 		)
 	}
 
