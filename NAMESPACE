@@ -42,6 +42,7 @@ export(autoplot)
 export(boxcox_profile)
 export(des_info)
 export(design)
+export(export_comparisons_to_excel)
 export(export_design_to_excel)
 export(heat_map)
 export(install_asreml)
@@ -126,6 +127,7 @@ importFrom(patchwork,
 )
 importFrom(pracma,interp2)
 importFrom(rlang,
+  "%||%",
   .data,
   as_string,
   check_dots_used,

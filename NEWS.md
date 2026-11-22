@@ -1,9 +1,14 @@
 # biometryassist 1.5.2
 
+## Major Changes
+
+- New function `export_comparisons_to_excel()` to save the results of `multiple_comparisons()`, `pairwise_comparisons()` and `reference_comparisons()` to an Excel workbook, one sheet per call. The workbook is created if it doesn't exist and is otherwise updated in place, replacing any sheet of the same name. (#209)
+
 ## Bug Fixes
 
 - `resplot(call = TRUE)` no longer shows the starting values `update()` adds to an `asreml` model's call (`G.param = <model>$G.param`, `R.param = ...`) when the model is named anything other than `model.asr`. Starting-value tables you supply yourself are still shown, since they change the model. (#207)
 - `autoplot()` for `reference_comparisons()` output no longer loses the significance asterisks when the y-axis labels are changed with `scale_y_discrete()`. The asterisks are now drawn as a plot layer and are slightly larger; on unfaceted plots they sit beside the level labels inside the plot area. (#204)
+- Fixed test failures reported by CRAN after sommer 4.5 moved the `verbose` argument of `mmes()` into `mmes_control()`. The tests now work with sommer versions before and after this change; package code was not affected (#210).
 
 # biometryassist 1.5.1
 
