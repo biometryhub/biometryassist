@@ -1062,12 +1062,11 @@ test_that("get_predictions works for sommer mmes models", {
 	# sommer must be attached: mmes() evaluates vsm()/ism() in the caller's scope.
 	suppressPackageStartupMessages(library(sommer))
 	load(test_path("data", "sommer_models.Rdata"), .GlobalEnv)
-	model_mmes <- mmes(
+	model_mmes <- fit_mmes_quiet(
 		Yield ~ Env,
 		random = ~ Name + Env:Name,
 		rcov = ~units,
-		data = model_mmes$data,
-		verbose = FALSE
+		data = model_mmes$data
 	)
 
 	pred <- get_predictions.mmes(model_mmes, classify = "Env")

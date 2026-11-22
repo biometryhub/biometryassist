@@ -173,6 +173,39 @@ test_that("extract_model_info.asreml covers single-facet else branch and call = 
 	expect_false(is.null(result$model_call))
 })
 
+test_that("extract_model_info.asreml drops G.param/R.param whatever the model name", {
+	fake_asr <- structure(
+		list(
+			R.param = list(units = list(variance = list(size = 10))),
+			residual = rnorm(10),
+			residuals = rnorm(10),
+			linear.predictors = rnorm(10),
+			call = quote(asreml(
+				fixed = y ~ x,
+				random = ~block,
+				G.param = my_fit$G.param,
+				R.param = my_fit$R.param,
+				data = dat
+			))
+		),
+		class = "asreml"
+	)
+	result <- biometryassist:::extract_model_info(fake_asr, call = TRUE)
+	expect_false(grepl("param", result$model_call))
+	expect_match(result$model_call, "random = ~block", fixed = TRUE)
+	expect_match(result$model_call, "data = dat", fixed = TRUE)
+
+	# A deliberately supplied parameter table changes the model, so it stays
+	fake_asr$call <- quote(asreml(
+		fixed = y ~ x,
+		random = ~block,
+		G.param = gt,
+		data = dat
+	))
+	result <- biometryassist:::extract_model_info(fake_asr, call = TRUE)
+	expect_match(result$model_call, "G.param = gt", fixed = TRUE)
+})
+
 test_that("Residual plots work for lme4", {
 	skip_if_not_installed("lme4")
 	p1 <- resplot(dat.lme4, call = TRUE)

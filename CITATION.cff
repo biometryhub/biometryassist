@@ -8,7 +8,7 @@ message: 'To cite package "biometryassist" in publications use:'
 type: software
 license: MIT
 title: 'biometryassist: Functions to Assist Design and Analysis of Agronomic Experiments'
-version: 1.5.1
+version: 1.5.2
 doi: 10.32614/CRAN.package.biometryassist
 identifiers:
 - type: doi
@@ -44,7 +44,7 @@ preferred-citation:
     given-names: Annie
     email: biometrytraining@adelaide.edu.au
   year: '2026'
-  notes: R package version 1.5.1
+  notes: R package version 1.5.2
   institution:
     name: Adelaide University
   url: https://biometryhub.github.io/biometryassist/
@@ -188,6 +188,7 @@ references:
   title: multcompView
   abstract: 'multcompView: Visualizations of Paired Comparisons'
   notes: Imports
+  url: https://lselzer.github.io/multcompview/
   repository: https://CRAN.R-project.org/package=multcompView
   authors:
   - family-names: Graves
@@ -324,7 +325,7 @@ references:
   title: Matrix
   abstract: 'Matrix: Sparse and Dense Matrix Classes and Methods'
   notes: Suggests
-  url: https://codeberg.org/jaganmn/Matrix
+  url: https://Matrix.R-forge.R-project.org
   repository: https://CRAN.R-project.org/package=Matrix
   authors:
   - family-names: Bates
@@ -560,14 +561,6 @@ references:
     email: wobbrock@uw.edu
   year: '2026'
   doi: 10.32614/CRAN.package.ARTool
-- type: software
-  title: asreml
-  abstract: 'asreml: Fits Linear Mixed Models using REML'
-  notes: Enhances
-  authors:
-  - name: The VSNi Team
-    email: asreml@vsni.co.uk
-  year: '2026'
 - type: software
   title: glmmTMB
   abstract: 'glmmTMB: Generalized Linear Mixed Models using Template Model Builder'

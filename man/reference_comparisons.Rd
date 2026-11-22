@@ -87,8 +87,10 @@ interval around each mean showing the (adjusted) confidence interval for the
 difference from the reference — so the interval clears the reference line
 exactly when the comparison is significant (with \code{adjust = "dunnett"}).
 Faceted by the \code{by} variable(s) when present. Significant comparisons are
-flagged with an asterisk (\code{*}), prefixed to the y-axis label when unfaceted
-or beside the interval when faceted.
+flagged with an asterisk (\code{*}) — at the left edge of the panel beside the
+level's label when unfaceted, or beside the interval when faceted. It is
+drawn as a plot layer, so the y-axis labels can be restyled with
+\code{\link[ggplot2:scale_y_discrete]{ggplot2::scale_y_discrete()}} without losing it.
 
 A \code{data.frame} of class \code{reference_comparisons} with one row per
 (group × non-reference level) and columns: any \code{by} column(s), \code{level1},

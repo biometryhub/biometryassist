@@ -41,7 +41,7 @@ jobs:
       # vsni_LICENSE: ${{ secrets.vsni_LICENSE }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # - name: Create and populate .Renviron file
       #   run: echo vsni_LICENSE="vsni_LICENSE" >> ~/.Renviron
