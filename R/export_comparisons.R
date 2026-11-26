@@ -44,7 +44,10 @@
 #' model was fitted on, i.e. the transformed scale when a transformation was
 #' used, because it cannot be validly back-transformed. For
 #' [reference_comparisons()] output the summary row also names the reference
-#' level. Any aliased levels are listed.
+#' level.
+#'
+#' Aliased (non-estimable) levels are not included in the results table, so
+#' any aliased levels are listed in a note directly below it.
 #'
 #' With `friendly_names = TRUE` the following columns are renamed:
 #' \itemize{
@@ -171,7 +174,8 @@ export_comparisons_to_excel <- function(
 		list(
 			title = section_title,
 			header = comparison_header(obj),
-			table = comparison_table(obj, friendly_names)
+			table = comparison_table(obj, friendly_names),
+			footnote = comparison_footnote(obj)
 		)
 	})
 
@@ -417,11 +421,30 @@ comparison_header <- function(x) {
 		}
 	}
 
-	aliased <- attr(x, "aliased")
-	if (length(aliased)) {
-		out[["Aliased levels"]] <- paste(aliased, collapse = ", ")
-	}
 	return(as.data.frame(out, check.names = FALSE, stringsAsFactors = FALSE))
+}
+
+
+#' Note written below an exported comparisons table
+#'
+#' Lists any aliased levels, which the comparison functions drop from their
+#' output, so readers know why those levels are missing from the table.
+#' @param x A comparison object.
+#' @returns An openxlsx2 `fmt_txt` rich-text string with the level names in
+#'   italics, or `NULL` when there is nothing to note.
+#' @keywords internal
+#' @noRd
+comparison_footnote <- function(x) {
+	aliased <- attr(x, "aliased")
+	if (!length(aliased)) {
+		return(NULL)
+	}
+	return(
+		openxlsx2::fmt_txt(
+			"Aliased levels (not estimable, so not included above): "
+		) +
+			openxlsx2::fmt_txt(paste(aliased, collapse = ", "), italic = TRUE)
+	)
 }
 
 
@@ -535,11 +558,6 @@ write_comparison_sheet <- function(wb, sheet, title, sections) {
 		row <- row + 1
 
 		wb$add_data(sheet = sheet, x = sec$header, start_row = row)
-		wb$add_font(
-			sheet = sheet,
-			dims = openxlsx2::wb_dims(row, seq_along(sec$header)),
-			italic = TRUE
-		)
 		row <- row + nrow(sec$header) + 2
 
 		wb$add_data_table(
@@ -548,7 +566,20 @@ write_comparison_sheet <- function(wb, sheet, title, sections) {
 			start_row = row,
 			table_style = "TableStyleLight9"
 		)
-		row <- row + nrow(sec$table) + 3
+		row <- row + nrow(sec$table) + 1
+
+		# Written directly below the table and, like the titles, left out of
+		# the column widths so it can overflow into neighbouring cells.
+		if (!is.null(sec$footnote)) {
+			wb$add_data(
+				sheet = sheet,
+				x = sec$footnote,
+				start_row = row,
+				col_names = FALSE
+			)
+			row <- row + 1
+		}
+		row <- row + 2
 
 		widths <- merge_widths(widths, col_widths(sec$header))
 		widths <- merge_widths(widths, col_widths(sec$table))

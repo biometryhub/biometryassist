@@ -364,8 +364,37 @@ test_that("power transformations are tagged with their exponent", {
 	)
 })
 
-test_that("aliased levels are listed in the summary row", {
+test_that("aliased levels are noted below the table, not in the summary", {
+	skip_if_not_installed("openxlsx2")
+	file <- withr::local_tempfile(fileext = ".xlsx")
+
 	x <- iris_mc
 	attr(x, "aliased") <- c("A", "B")
-	expect_equal(comparison_header(x)[["Aliased levels"]], "A, B")
+	expect_false(any(grepl("liased", names(comparison_header(x)))))
+	expect_null(comparison_footnote(iris_mc))
+	# Only the level names are italic, not the lead-in text
+	# (unclass(): as.character() on fmt_txt returns the plain text)
+	note_xml <- unclass(comparison_footnote(x))
+	expect_match(note_xml, "<i/></rPr><t[^>]*>A, B</t>", fixed = FALSE)
+	expect_match(note_xml, "<rPr/><t[^>]*>Aliased levels", fixed = FALSE)
+
+	expect_message(export_comparisons_to_excel(
+		list(x, iris_rc),
+		file,
+		sheet = "Aliased"
+	))
+	df <- openxlsx2::wb_to_df(
+		file,
+		sheet = "Aliased",
+		col_names = FALSE,
+		skip_empty_rows = FALSE
+	)
+	note <- "Aliased levels (not estimable, so not included above): A, B"
+	note_row <- which(df[[1]] == note)
+	expect_length(note_row, 1)
+	# Directly below the last row of the 3-level predictions table
+	expect_equal(df[[1]][note_row - 1], "virginica")
+	# The following section still starts after a gap
+	expect_true(is.na(df[[1]][note_row + 1]))
+	expect_true("Comparisons with setosa" %in% df[[1]])
 })

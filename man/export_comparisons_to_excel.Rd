@@ -67,7 +67,10 @@ letter groups remain the definitive result. The HSD is on the scale the
 model was fitted on, i.e. the transformed scale when a transformation was
 used, because it cannot be validly back-transformed. For
 \code{\link[=reference_comparisons]{reference_comparisons()}} output the summary row also names the reference
-level. Any aliased levels are listed.
+level.
+
+Aliased (non-estimable) levels are not included in the results table, so
+any aliased levels are listed in a note directly below it.
 
 With \code{friendly_names = TRUE} the following columns are renamed:
 \itemize{
